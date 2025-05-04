@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WALDO XP Test</title>
+  <style>
+    body {
+      background: #000;
+      color: white;
+      font-family: sans-serif;
+      padding: 40px;
+    }
+    .card {
+      background: #111;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 500px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+
+<div class="card" id="xpStatsCard">
+  <h3>🧠 WALDO XP Stats</h3>
+  <p><strong>Level:</strong> <span id="waldoLevel">Loading...</span></p>
+  <p><strong>Title:</strong> <span id="waldoTitle">Loading...</span></p>
+  <p><strong>XP:</strong> <span id="waldoXP">Loading...</span></p>
+  <p><strong>Likes:</strong> <span id="waldoLikes">Loading...</span></p>
+  <p><strong>Retweets:</strong> <span id="waldoRetweets">Loading...</span></p>
+  <p><strong>Minted Memes:</strong> <span id="waldoMemes">Loading...</span></p>
+  <p><strong>Battles Won:</strong> <span id="waldoBattles">Loading...</span></p>
+  <p><strong>Referrals:</strong> <span id="waldoReferrals">Loading...</span></p>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const wallet = "rnWfL48YCknW6PYewFLKfMKUymHCfj3aww"; // your test wallet
+    const res = await fetch(`http://localhost:5050/api/userStats?wallet=${wallet}`);
+    const data = await res.json();
+
+    document.getElementById("waldoLevel").textContent = `Level ${data.level}`;
+    document.getElementById("waldoTitle").textContent = data.title;
+    document.getElementById("waldoXP").textContent = data.xp;
+    document.getElementById("waldoLikes").textContent = data.likes;
+    document.getElementById("waldoRetweets").textContent = data.retweets;
+    document.getElementById("waldoMemes").textContent = data.memes;
+    document.getElementById("waldoBattles").textContent = data.battles;
+    document.getElementById("waldoReferrals").textContent = data.referrals.length || 0;
+  });
+</script>
+
+</body>
+</html>

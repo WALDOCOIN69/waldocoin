@@ -1,0 +1,56 @@
+<div style="text-align: center; margin-top: 40px;">
+    <h2 style="color: #e63e3e; font-size: 2em; margin-bottom: 20px;">Presale Ends In</h2>
+    <div id="waldoCountdown" style="
+      font-family: 'Courier New', monospace;
+      font-size: 48px;
+      color: red;
+      background: black;
+      padding: 20px 40px;
+      border: 3px solid red;
+      border-radius: 10px;
+      display: inline-block;
+      box-shadow: 0 0 15px red;
+    ">
+      Loading...
+    </div>
+  </div>
+  
+  <script>
+    const backendBase = "https://waldocoin-backend.onrender.com";
+  
+    function loadFrontendCountdown() {
+      fetch(`${backendBase}/api/presale/end-date`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.endDate) {
+            document.getElementById("waldoCountdown").textContent = "No date set";
+            return;
+          }
+  
+          const end = new Date(data.endDate).getTime();
+  
+          const update = () => {
+            const now = new Date().getTime();
+            const diff = end - now;
+  
+            if (diff <= 0) {
+              document.getElementById("waldoCountdown").textContent = "PRESALE ENDED";
+              return clearInterval(timer);
+            }
+  
+            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+  
+            document.getElementById("waldoCountdown").textContent =
+              `${d.toString().padStart(2, '0')}d ${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+          };
+  
+          update();
+          const timer = setInterval(update, 1000);
+        });
+    }
+  
+    loadFrontendCountdown();
+  </script>

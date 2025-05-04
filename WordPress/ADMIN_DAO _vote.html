@@ -1,0 +1,120 @@
+<div class="dao-admin p-4 bg-black text-white rounded-2xl shadow-md">
+    <h2 class="text-xl font-bold mb-4">🗳️ Create a DAO Proposal</h2>
+  
+    <form id="proposalForm" class="space-y-2 mb-6">
+      <input type="text" id="title" placeholder="Proposal Title" class="w-full p-2 rounded bg-gray-800 text-white" required />
+      <textarea id="description" placeholder="Description (optional)" class="w-full p-2 rounded bg-gray-800 text-white"></textarea>
+      <input type="text" id="options" placeholder="Options e.g. Yes/No(comma-separated)" class="w-full p-2 rounded bg-gray-800 text-white" required />
+      <input type="number" id="duration" placeholder="Voting Duration (hours)" value="hours to vote" class="w-full p-2 rounded bg-gray-800 text-white" />
+      <button type="submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-bold">📨 Submit Proposal</button>
+    </form>
+  
+    <h2 class="text-xl font-bold mb-3">📋 Active Proposals</h2>
+    <div id="proposalList" class="space-y-2">
+      <p>Loading proposals...</p>
+    </div>
+  
+    <div id="proposalDetail" class="mt-6 hidden border-t border-gray-700 pt-4">
+      <h3 class="text-lg font-semibold mb-2">📄 Proposal Details</h3>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+  
+  <script>
+    const API = "https://waldocoin-1.onrender.com/api";
+    const WALLET = localStorage.getItem("xumm_wallet") || prompt("Enter your WALDO wallet address");
+  
+    async function loadProposals() {
+      const listContainer = document.getElementById("proposalList");
+      listContainer.innerHTML = "<p>Loading proposals...</p>";
+      const res = await fetch(`${API}/proposals`);
+      const proposals = await res.json();
+  
+      if (!proposals.length) {
+        listContainer.innerHTML = "<p>No proposals found.</p>";
+        return;
+      }
+  
+      listContainer.innerHTML = "";
+      proposals.forEach(p => {
+        const btn = document.createElement("button");
+        btn.className = "block w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded";
+        btn.innerText = `${p.title} (expires ${new Date(p.expiresAt).toLocaleString()})`;
+        btn.onclick = () => showProposalDetails(p.id);
+        listContainer.appendChild(btn);
+      });
+    }
+  
+    async function showProposalDetails(id) {
+      const res = await fetch(`${API}/proposals/${id}`);
+      const data = await res.json();
+      const detail = document.getElementById("proposalDetail");
+      const content = document.getElementById("detailContent");
+      detail.classList.remove("hidden");
+  
+      const tallyRes = await fetch(`${API}/vote/tally/${id}`);
+      const tally = await tallyRes.json();
+      const expired = new Date(data.expiresAt) < new Date();
+  
+      content.innerHTML = `
+        <h4 class="text-white font-bold mb-1">${data.title}</h4>
+        <p class="text-sm mb-2">${data.description || 'No description'}</p>
+        <p class="text-xs mb-3 text-gray-400">⏳ Expires: ${new Date(data.expiresAt).toLocaleString()}</p>
+        ${data.options.map(option => `
+          <div class="mb-2 flex justify-between items-center">
+            <span>${option}</span>
+            <span class="font-mono">${tally.results?.[option] || 0} votes</span>
+            ${!expired ? `<button onclick="castVote('${id}', '${option}')" class="bg-green-600 hover:bg-green-700 text-sm px-2 py-1 rounded">Vote</button>` : '<span class="text-red-500 text-sm">Voting closed</span>'}
+          </div>
+        `).join('')}
+      `;
+    }
+  
+    async function castVote(proposalId, option) {
+      const res = await fetch(`${API}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proposalId, option, wallet: WALLET })
+      });
+  
+      if (res.ok) {
+        alert("✅ Vote submitted!");
+        await showProposalDetails(proposalId);
+      } else {
+        const error = await res.json();
+        alert("❌ " + error.error);
+      }
+    }
+  
+    document.getElementById("proposalForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const options = document.getElementById("options").value.split(',').map(opt => opt.trim()).filter(Boolean);
+      const duration = parseInt(document.getElementById("duration").value, 10) || 72;
+  
+      if (!title || options.length < 2) {
+        alert("Proposal must have a title and at least 2 options.");
+        return;
+      }
+  
+      const res = await fetch(`${API}/proposals/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, options, durationHours: duration })
+      });
+  
+      const result = await res.json();
+      if (res.ok) {
+        alert("✅ Proposal created!");
+        document.getElementById("proposalForm").reset();
+        await loadProposals();
+      } else {
+        alert("❌ " + result.error);
+      }
+    });
+  
+    document.addEventListener("DOMContentLoaded", loadProposals);
+  </script>
+  
+  

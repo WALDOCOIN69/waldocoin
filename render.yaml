@@ -1,0 +1,57 @@
+services:
+  # === WALDO Twitter Bot Worker ===
+  - type: worker
+    name: waldo-twitter-bot
+    runtime: python
+    rootDir: waldocoin-backend/waldo-twitter-bot
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10
+      - key: TWITTER_BEARER_TOKEN
+        sync: false
+      - key: TWITTER_API_KEY
+        sync: false
+      - key: TWITTER_API_SECRET
+        sync: false
+      - key: TWITTER_ACCESS_TOKEN
+        sync: false
+      - key: TWITTER_ACCESS_SECRET
+        sync: false
+      - key: XRPL_NODE
+        sync: false
+      - key: WALDO_ISSUER
+        sync: false
+      - key: DISTRIBUTOR_SECRET
+        sync: false
+      - key: DISTRIBUTOR_WALLET
+        sync: false
+
+  # === WALDO Backend API ===
+  - type: web
+    name: waldo-api
+    runtime: node
+    rootDir: waldocoin-backend
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: XUMM_API_KEY
+        sync: false
+      - key: XUMM_API_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: WALDO_ISSUER
+        sync: false
+      - key: WALDO_CURRENCY
+        sync: false
+      - key: PORT
+        value: 4000
+      - key: XRPL_NODE
+        sync: false
+      - key: DISTRIBUTOR_WALLET
+        sync: false
+      - key: DISTRIBUTOR_SECRET
+        sync: false
+

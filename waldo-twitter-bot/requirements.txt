@@ -1,0 +1,8 @@
+requests
+python-dotenv
+Flask
+Flask-Cors
+Flask-Limiter
+xrpl-py
+redis>=4.0
+

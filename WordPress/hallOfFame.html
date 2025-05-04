@@ -1,0 +1,279 @@
+<!-- WALDO Hall of Fame Final Full Version -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js/dist/Chart.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root { --padding-default: 10px; }
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background: #000;
+    font-family: 'Orbitron', sans-serif;
+    color: white;
+  }
+  #filterBar {
+    text-align: center;
+    margin: 30px auto;
+    padding: var(--padding-default);
+  }
+  #filterBar button {
+    font-family: 'Orbitron', sans-serif;
+    padding: 10px 20px;
+    margin: 5px;
+    background-color: #111;
+    color: white;
+    border: 1px solid #444;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+  #filterBar button.active,
+  #filterBar button:hover {
+    background-color: #ff5252;
+    color: #fff;
+    border-color: #ff7979;
+  }
+  #waldo-hof-title {
+    text-align: center;
+    font-size: 2.4rem;
+    color: #ff5252;
+    font-family: 'Orbitron', sans-serif;
+    animation: glow 2s ease-in-out infinite alternate;
+    letter-spacing: 1px;
+    margin: 60px auto 20px;
+    padding: var(--padding-default);
+  }
+  @keyframes glow {
+    from { text-shadow: 0 0 10px #ff5252, 0 0 20px #ff5252; }
+    to { text-shadow: 0 0 20px #ff7979, 0 0 30px #ff7979; }
+  }
+  #memeOfMonthWrapper {
+    text-align: center;
+    margin: 60px auto 30px;
+    padding: var(--padding-default);
+  }
+  #memeOfMonthWrapper h3 {
+    color: #ffd700;
+    font-size: 2rem;
+    text-shadow: 0 0 10px #ffd700;
+    margin-bottom: 20px;
+  }
+  #memeOfMonth img {
+    max-width: 100%;
+    width: 90%;
+    border-radius: 12px;
+    box-shadow: 0 0 25px #ffd700;
+    cursor: pointer;
+  }
+  #memeOfMonth .meta {
+    margin-top: 10px;
+    color: #ddd;
+    font-size: 0.95rem;
+  }
+  .carousel-container {
+    max-width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    scroll-behavior: smooth;
+  }
+  .carousel-slide {
+    scroll-snap-align: center;
+    flex: 0 0 auto;
+    width: 240px;
+    height: 320px;
+    background: #111;
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(255, 82, 82, 0.4);
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+  .carousel-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+  .carousel-caption {
+    position: absolute;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    width: 100%;
+    text-align: center;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 40px;
+    text-align: center;
+    font-size: 0.95rem;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(255, 82, 82, 0.25);
+  }
+  .leaderboard-table th, .leaderboard-table td {
+    border: 1px solid #333;
+    padding: 12px;
+    color: #eee;
+  }
+  .leaderboard-table th {
+    background-color: #1a1a1a;
+    color: #ff5252;
+    text-shadow: 0 0 10px #ff5252;
+  }
+  .leaderboard-table tr:nth-child(even) { background-color: #141414; }
+  .leaderboard-table tr:hover { background-color: #2a2a2a; }
+  canvas {
+    background: #0a0a0a;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 40px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+    width: 100% !important;
+    height: auto !important;
+  }
+  .chart-section {
+    text-align: center;
+    margin-top: 60px;
+    padding: var(--padding-default);
+  }
+  .chart-section h3 {
+    color: #00e0ff;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #00e0ff;
+  }
+  .chart-section.gold h3 {
+    color: #ffd700;
+    text-shadow: 0 0 10px #ffd700;
+  }
+  #shareButton {
+    display: block;
+    margin: 40px auto 60px;
+    text-align: center;
+    background: #00ff99;
+    color: black;
+    border: 1px solid #00c77b;
+    padding: 14px 28px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0, 255, 153, 0.4);
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  #shareButton:hover {
+    background: #00c77b;
+    box-shadow: 0 0 25px rgba(0, 255, 153, 0.7);
+  }
+  #modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+  }
+</style>
+
+<h2 id="waldo-hof-title">🏆 WALDO Hall of Fame</h2>
+<div id="filterBar">
+  <button data-filter="tier5" class="active">Tier 5 Only</button>
+  <button data-filter="month">This Month</button>
+  <button data-filter="all">All Time</button>
+</div>
+<div id="memeOfMonthWrapper">
+  <h3>🌟 Meme of the Month</h3>
+  <div id="memeOfMonth"></div>
+</div>
+<div class="carousel-container" id="carouselGallery"></div>
+<table class="leaderboard-table">
+  <thead><tr><th>Wallet</th><th>Total Memes Minted</th><th>Total XP</th><th>Tier 5 Memes</th></tr></thead>
+  <tbody id="leaderboardBody"><tr><td colspan="4">Loading...</td></tr></tbody>
+</table>
+<div class="chart-section"><h3>📈 Meme XP vs Tier</h3><canvas id="xpTierChart"></canvas></div>
+<div class="chart-section gold"><h3>📅 Monthly Tier Breakdown</h3><canvas id="monthlyTierChart"></canvas></div>
+<button id="shareButton">🔗 Share This Page</button>
+<div id="modal" onclick="this.style.display='none'"><img id="modalImg"></div>
+
+<script>
+const API = "https://waldocoin.live/api/minted";
+fetch(API).then(res => res.json()).then(data => {
+  const container = document.getElementById("carouselGallery");
+  const monthContainer = document.getElementById("memeOfMonth");
+  const leaderboardBody = document.getElementById("leaderboardBody");
+
+  if (!data.length) return container.innerHTML = '<p style="color: #888; text-align: center;">No memes yet.</p>';
+
+  const top = data.reduce((max, m) => m.xp > max.xp ? m : max, data[0]);
+  monthContainer.innerHTML = `<img src="${top.image_url}" onclick="showFull('${top.image_url}')"><div class='meta'>XP: ${top.xp} | Tier: ${top.tier}</div>`;
+
+  data.slice(0, 20).forEach(meme => {
+    const slide = document.createElement("div");
+    slide.className = "carousel-slide";
+    slide.innerHTML = `<img src="${meme.image_url}" onclick="showFull('${meme.image_url}')"><div class="carousel-caption">XP: ${meme.xp} | Tier: ${meme.tier}</div>`;
+    container.appendChild(slide);
+  });
+
+  const scores = {};
+  data.forEach(m => {
+    const w = m.wallet;
+    if (!scores[w]) scores[w] = { count: 0, xp: 0, t5: 0 };
+    scores[w].count++; scores[w].xp += m.xp; if (m.tier == 5) scores[w].t5++;
+  });
+
+  Object.entries(scores).sort((a,b)=>b[1].xp-a[1].xp).forEach(([wallet, val]) => {
+    leaderboardBody.innerHTML += `<tr><td>${wallet.slice(0,6)}...${wallet.slice(-4)}</td><td>${val.count}</td><td>${val.xp}</td><td>${val.t5}</td></tr>`;
+  });
+
+  const tierXp = Array(6).fill(0);
+  data.forEach(m => tierXp[m.tier] += m.xp);
+  new Chart(document.getElementById("xpTierChart"), {
+    type: "bar",
+    data: {
+      labels: ["0","1","2","3","4","5"],
+      datasets: [{ label: "Total XP", backgroundColor: "#ff5252", data: tierXp }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+
+  const monthly = {};
+  data.forEach(m => {
+    const month = new Date(m.mintedAt).toLocaleDateString("default", { year: 'numeric', month: 'short' });
+    if (!monthly[month]) monthly[month] = 0;
+    if (m.tier == 5) monthly[month]++;
+  });
+  new Chart(document.getElementById("monthlyTierChart"), {
+    type: "line",
+    data: {
+      labels: Object.keys(monthly),
+      datasets: [{ label: "Tier 5 Memes", borderColor: "#ffd700", data: Object.values(monthly) }]
+    },
+    options: { responsive: true }
+  });
+});
+
+function showFull(url) {
+  const modal = document.getElementById("modal");
+  document.getElementById("modalImg").src = url;
+  modal.style.display = "flex";
+}
+
+document.getElementById("shareButton").onclick = () => {
+  if (navigator.share) navigator.share({ title: "WALDO Hall of Fame", url: window.location.href });
+  else alert("Sharing not supported on this browser.");
+};
+</script>

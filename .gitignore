@@ -1,0 +1,76 @@
+# ────────────────────────────────
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Flask / SQLite / Redis
+.env
+*.db
+*.sqlite
+*.sqlite3
+dump.rdb
+
+# WALDO Specific
+waldocoin-backend/db.json
+waldo-api/__pycache__/
+waldo-api/waldo.db
+waldo-twitter-bot/__pycache__/
+waldo-twitter-bot/waldo.db
+
+# Logs & Temp
+*.log
+logs/
+*.tmp
+*.bak
+*.old
+*.swp
+
+# Build Artifacts
+dist/
+build/
+coverage/
+
+# Frontend Builds
+*.bundle.js
+*.map
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# IDE Configs
+.idea/
+.vscode/
+
+# System Files
+*.local
+
+# Compressed files
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+*.dmg
+*.iso
+*.jar
+
+# Executables
+*.exe
+*.dll
+*.so
+*.o
+*.com
+*.class
+<<<<<<< HEAD
+# Prevent accidental nested clones
+waldocoin-backend/waldocoin-backend/
+=======
+>>>>>>> b57a866 (🔥 Wipe repo and push clean WALDO backend project)
