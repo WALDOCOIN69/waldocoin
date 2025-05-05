@@ -67,4 +67,14 @@ router.get("/status/:wallet", async (req, res) => {
   });
 });
 
+// ✅ Redis Ping Health Check
+router.get("/ping", async (req, res) => {
+  try {
+    const pong = await redis.ping();
+    res.json({ redis: pong });
+  } catch (err) {
+    res.status(500).json({ error: "Redis error", details: err.message });
+  }
+});
+
 export default router;
