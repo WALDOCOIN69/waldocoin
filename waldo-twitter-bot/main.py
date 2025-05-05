@@ -18,7 +18,7 @@ load_dotenv()
 
 # === CONFIG ===
 USE_MOCK_DATA = True
-DEFAULT_REWARD_TYPE = 'stake'
+DEFAULT_REWARD_TYPE = 'instant'
 MOCK_WALLET = "rXYZ1234567890ABCDEF"
 LIVE_MODE = os.getenv("LIVE_MODE", "false").lower() == "true"
 
@@ -165,9 +165,6 @@ def payout_instant(tweet_id):
 import threading
 import time
 
-@app.before_first_request
-def activate_job():
-    threading.Thread(target=run_background_polling, daemon=True).start()
 
 def run_background_polling():
     while True:
@@ -178,6 +175,7 @@ def run_background_polling():
         time.sleep(600)  # every 10 minutes
 
 if __name__ == "__main__":
+    fetch_and_store()  # <-- manually trigger fetch once
     threading.Thread(target=run_background_polling, daemon=True).start()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5050)))
-   
+ 
