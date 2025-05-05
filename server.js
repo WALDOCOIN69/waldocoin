@@ -3,12 +3,12 @@ import dotenv from "dotenv";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
-import loginRoute from "./routes/login.js";
-import claimRoute from "./routes/claim.js";
-import mintRoute from "./routes/mint.js";
-import mintConfirmRoute from "./routes/mintConfirm.js";
-import rewardRoute from "./routes/reward.js";
-import tweetsRoute from "./routes/tweets.js";
+import loginRoute from "./waldocoin-backend/routes/login.js";
+import claimRoute from "./waldocoin-backend/routes/claim.js";
+import mintRoute from "./waldocoin-backend/routes/mint.js";
+import mintConfirmRoute from "./waldocoin-backend/routes/mintConfirm.js";
+import rewardRoute from "./waldocoin-backend/routes/reward.js";
+import tweetsRoute from "./waldocoin-backend/routes/tweets.js";
 
 dotenv.config();
 
