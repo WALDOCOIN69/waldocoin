@@ -1,7 +1,6 @@
 # ────────────────────────────────
 # Node.js
 node_modules/
-package-lock.json
 yarn.lock
 
 # Python
@@ -69,8 +68,6 @@ Thumbs.db
 *.o
 *.com
 *.class
-<<<<<<< HEAD
+
 # Prevent accidental nested clones
 waldocoin-backend/waldocoin-backend/
-=======
->>>>>>> b57a866 (🔥 Wipe repo and push clean WALDO backend project)

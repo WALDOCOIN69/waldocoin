@@ -9,6 +9,9 @@ import mintRoute from "./waldocoin-backend/routes/mint.js";
 import mintConfirmRoute from "./waldocoin-backend/routes/mintConfirm.js";
 import rewardRoute from "./waldocoin-backend/routes/reward.js";
 import tweetsRoute from "./waldocoin-backend/routes/tweets.js";
+import adminSecurity from "./routes/adminSecurity.js"
+
+
 
 dotenv.config();
 
@@ -17,6 +20,7 @@ const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/admin/security", adminSecurity)
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,

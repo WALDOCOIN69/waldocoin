@@ -1,0 +1,31 @@
+.gitignore
+package.json
+README.md
+render.yaml
+server.js
+waldo-project-structure.txt
+waldo-twitter-bot/main.py
+waldo-twitter-bot/requirements.txt
+waldo-twitter-bot/upgrade_db.py
+waldo-twitter-bot/view_db.py
+waldocoin-backend/README.md
+waldocoin-backend/routes/claim.js
+waldocoin-backend/routes/login.js
+waldocoin-backend/routes/mint.js
+waldocoin-backend/routes/mintConfirm.js
+waldocoin-backend/routes/reward.js
+waldocoin-backend/routes/tweets.js
+waldocoin-backend/routes/vote.js
+waldocoin-backend/utils/autodistribute.js
+WordPress/ADMIN_DAO _vote.html
+WordPress/CONNET BUTTONS.HTML
+WordPress/DAO_card.html
+WordPress/frontend_countdown.html
+WordPress/hallOfFame.html
+WordPress/PRESALE_BUTTON
+WordPress/Presale.html
+WordPress/statsDashboardBACKUP.html
+WordPress/waldo_admin_full_panel.html
+WordPress/waldo_admin_panel_with_dao.html
+WordPress/WALDOcoin_dashboard_mobile_ready.html
+WordPress/xp-test.html

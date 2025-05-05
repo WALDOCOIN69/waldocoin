@@ -1,8 +1,8 @@
-// 📁 routes/claim.js
 import express from 'express'
 import { XummSdk } from 'xumm-sdk'
 import dotenv from 'dotenv'
 import fs from 'fs'
+import { logViolation, isAutoBlocked } from '../utils/security.js'
 
 dotenv.config()
 
@@ -18,7 +18,6 @@ const INSTANT_FEE_PERCENT = 0.10
 const STAKE_FEE_PERCENT = 0.05
 const BURN_RATE = 0.02
 
-// Monthly tier caps
 const tierCaps = {
   1: 36,
   2: 72,
@@ -27,20 +26,23 @@ const tierCaps = {
   5: 1800
 }
 
-// Reward base lookup
 function getBaseRewardByTier(tier) {
   const map = { 1: 1, 2: 2, 3: 5, 4: 25, 5: 50 }
   return map[tier] || null
 }
 
-// 📤 POST /api/claim
 router.post('/', async (req, res) => {
-  const { wallet, stake, tier } = req.body
+  const { wallet, stake, tier, memeId } = req.body
   if (!wallet || typeof stake !== 'boolean' || !tier) {
     return res.status(400).json({ error: "Missing required fields" })
   }
 
   try {
+    // 🔒 Check for auto-block
+    if (await isAutoBlocked(wallet)) {
+      return res.status(403).json({ error: "❌ This wallet is temporarily blocked due to repeated abuse." })
+    }
+
     const db = JSON.parse(fs.readFileSync(DB_PATH))
     db.rewards = db.rewards || {}
     db.rewards[wallet] = db.rewards[wallet] || {}
@@ -51,6 +53,7 @@ router.post('/', async (req, res) => {
 
     const log = db.rewards[wallet][monthKey]._log || []
     if (log.length >= 10) {
+      await logViolation(wallet, "claim_limit_exceeded", { memeId, currentLogLength: log.length })
       return res.status(400).json({
         success: false,
         error: "❌ You’ve already claimed rewards for 10 memes this month."
@@ -58,9 +61,11 @@ router.post('/', async (req, res) => {
     }
 
     const baseReward = getBaseRewardByTier(tier)
-    if (!baseReward) return res.status(400).json({ error: "Invalid tier" })
+    if (!baseReward) {
+      await logViolation(wallet, "invalid_tier", { tier, memeId })
+      return res.status(400).json({ error: "Invalid tier" })
+    }
 
-    // Calculate reward based on claim type
     let reward = stake 
       ? baseReward * 1.15 * (1 - STAKE_FEE_PERCENT)
       : baseReward * (1 - INSTANT_FEE_PERCENT)
@@ -69,18 +74,17 @@ router.post('/', async (req, res) => {
     const maxAllowed = tierCaps[tier]
 
     if ((claimedThisMonth + reward) > maxAllowed) {
+      await logViolation(wallet, "tier_cap_exceeded", { tier, reward, claimedThisMonth, memeId })
       return res.json({
         success: false,
         error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WALDO this month.`
       })
     }
 
-    // Fee logic
     const feePercent = stake ? STAKE_FEE_PERCENT : INSTANT_FEE_PERCENT
     const burnAmount = (baseReward * feePercent * BURN_RATE).toFixed(4)
     const xrpConvertAmount = (baseReward * feePercent - burnAmount).toFixed(4)
 
-    // Create XUMM payout
     const payload = await xumm.payload.create({
       txjson: {
         TransactionType: "Payment",
@@ -97,15 +101,15 @@ router.post('/', async (req, res) => {
       }
     })
 
-    // Save claim to db
+    // Save reward
     db.rewards[wallet][monthKey][tier] = claimedThisMonth + reward
     db.rewards[wallet][monthKey]._log = log.concat({
       timestamp: new Date().toISOString(),
       tier,
       stake,
-      reward: reward.toFixed(2)
+      reward: reward.toFixed(2),
+      memeId
     })
-
     fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2))
 
     return res.json({
@@ -120,8 +124,10 @@ router.post('/', async (req, res) => {
 
   } catch (e) {
     console.error("❌ Error processing claim:", e.message)
-    return res.status(500).json({ error: e.message })
+    await logViolation(wallet, "server_error", { error: e.message, memeId })
+    return res.status(500).json({ error: "Internal server error" })
   }
 })
 
 export default router
+
