@@ -11,8 +11,8 @@
     pre { background:#222; padding:20px; border-radius:8px; margin-top:20px; }
     .card { margin-bottom:40px; }
     input, textarea { padding:10px; width:100%; margin:5px 0 10px; background:#222; color:white; border:1px solid #444; border-radius:5px; }
+    .hidden { display: none; }
   </style>
-  <button onclick="logout()" style="float:right; background:#444;">🚪 Logout</button>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <title>WALDO Admin Panel</title>
@@ -192,47 +192,13 @@
 
 </div>
 <script>
-    
-  function logout() {
-    localStorage.removeItem("adminToken");
-    alert("Logged out.");
-    window.location.href = "/admin-login.html";
-  }  
-  const WALLET = localStorage.getItem("xumm_wallet") || prompt("Enter your WALDO wallet address");
-  const base = "https://waldocoin-1.onrender.com";
-  async function adminLogin(e) {
-    e.preventDefault();
-    const password = document.getElementById("adminPass").value;
+  const base = "https://waldocoin-1.onrender.com"; 
+  const WALLET = localStorage.getItem("xumm_wallet") || "";
   
-    const res = await fetch(`${base}/api/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
-    });
-  
-    const data = await res.json();
-    if (data.token) {
-      localStorage.setItem("adminToken", data.token);
-      alert("✅ Logged in!");
-      window.location.href = "/admin-panel.html";
-    } else {
-      alert("❌ Login failed");
-    }
-  }
-  
-    if (!localStorage.getItem("adminToken")) {
-      alert("❌ Not logged in as admin.");
-      window.location.href = "/admin-login.html";
-    }
-
-
     // 🔄 Toggle Presale Phase
     function togglePhase() {
       fetch(`${base}/api/admin/toggle-phase`, {
         method: 'POST',
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
-        }
       })
       .then(res => res.json())
       .then(data => alert("Phase switched to: " + data.newPhase))
@@ -249,9 +215,7 @@
     
     // 📈 Show WALDO Live Stats
     function showLiveStats() {
-      fetch(`${base}/api/admin/presale-stats`, {
-        headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
-      })
+      fetch(`${base}/api/admin/presale-stats`)
       .then(res => res.json())
       .then(data => {
         alert(`💰 WALDO Sold: ${data.totalSold}\n🔥 Top Wallet: ${data.topWallet}`);
@@ -267,8 +231,7 @@
     function runDebugTools() {
       fetch(`${base}/api/debug/fake-battle`, {
         method: 'POST',
-        headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
-
+       
       })
       .then(res => res.json())
       .then(data => alert("✅ Fake battle created"))
@@ -280,7 +243,7 @@
       const wallet = prompt("Enter wallet address to lookup:");
       if (!wallet) return;
       fetch(`${base}/api/admin/wallet-lookup?address=${wallet}`, {
-        headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+    
 
       })
       .then(res => res.json())
@@ -297,7 +260,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
+       
       },
       body: JSON.stringify({ endDate: date })
     })
@@ -334,15 +297,15 @@
           const s = Math.floor((diff % (1000 * 60)) / 1000);
           document.getElementById("timerOutput").textContent = `${d}d ${h}h ${m}m ${s}s remaining`;
         }, 1000);
-      });
-  }
+        });
+      }
 
   window.onload = loadPresaleEnd;
   async function loadWalletAnalytics() {
     const address = prompt("Enter wallet address:");
     if (!address) return;
     const res = await fetch(`${base}/api/phase9/analytics/wallet/${address}`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+      
 
     });
     const data = await res.json();
@@ -351,8 +314,7 @@
 
   async function loadBattleStats() {
     const res = await fetch(`${base}/api/phase9/analytics/battles`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
-    }
+      
 
     });
     const data = await res.json();
@@ -361,7 +323,7 @@
 
   async function loadAirdropStats() {
     const res = await fetch(`${base}/api/phase9/analytics/airdrops`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
 
     });
     const data = await res.json();
@@ -370,7 +332,7 @@
 
   async function loadAdminLogs() {
     const res = await fetch(`${base}/api/phase9/admin/logs`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+  
 
     });
     const data = await res.json();
@@ -413,7 +375,7 @@
       console.error(`Error fetching balance for ${wallet}`, err);
       return "—";
     }
-  }
+  };
   // ⬇️ Download Presale CSV
   function downloadCSV() {
     window.open(`${base}/admin/export/presale`, "_blank");
@@ -429,7 +391,7 @@
     const url = `${base}/admin/export/presale?start=${start}&end=${end}`;
   
     fetch(url, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+   
 
     })
       .then(res => {
@@ -450,22 +412,19 @@
   async function createFakeBattle() {
     const res = await fetch(`${base}/api/debug/fake-battle`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+  
 
     });
     output(await res.json());
   }
   async function viewBattles() {
     const res = await fetch(`${base}/api/debug/battles`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
-
     });
     output(await res.json());
   }
   async function resetBattle() {
     const res = await fetch(`${base}/api/reset/reset-active`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
 
     });
     output(await res.json());
@@ -475,7 +434,6 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
       },
       body: JSON.stringify({ wallet: "rVoter420", choice })
     });
@@ -483,7 +441,6 @@
   }
   async function payout() {
     const res1 = await fetch(`${base}/api/debug/battles`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
 
     });
     const battles = await res1.json();
@@ -492,7 +449,6 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
       },
       body: JSON.stringify({ battleId: latest.battleId })
     });
@@ -508,7 +464,6 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
       },
       body: JSON.stringify({ wallet, amount })
     
@@ -540,7 +495,6 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
         },
         body: JSON.stringify(entry)
       });
@@ -551,7 +505,6 @@
   // 👑 Legendary Table Loader
 async function loadTopLegendary() {
   const res = await fetch(`${base}/api/minted`, {
-    headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` },
   });
   const data = await res.json();
   const table = document.getElementById("legendaryRows");
@@ -605,7 +558,6 @@ async function loadBuyers() {
   try {
     const res = await fetch(`${base}/api/presale/feed`, {
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
       }
     });
     const data = await res.json();
@@ -655,7 +607,6 @@ let allHistory = [];
 async function loadAirdropHistory() {
   try {
     const res = await fetch(`${base}/admin/airdrops`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
 
     });
     allHistory = await res.json();
@@ -705,13 +656,12 @@ loadAirdropHistory();
     e.preventDefault();
     const title = document.getElementById("daoTitle").value.trim();
     const description = document.getElementById("daoDescription").value.trim();
-    const options = document.getElementById("daoOptions").value.split(",").map(o => o.trim());
+    const options = document.getElementById("daoOptions").value.split(",").map(o => o.trim()).filter(Boolean);
     const duration = parseInt(document.getElementById("daoDuration").value);
   
     if (!title || options.length < 2 || isNaN(duration)) {
       return alert("Please complete all required fields correctly.");
     }
-  
     const res = await fetch(`${base}/api/proposals`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -738,6 +688,7 @@ loadAirdropHistory();
       showProposalDetails(proposalId); // Refresh proposal view
     } else {
       alert("❌ Failed to vote.");
+      
     }
   }
   // 📋 Load Proposals
@@ -768,7 +719,7 @@ proposals.forEach(p => {
   
   }
  // 🧾 Show Proposal Details + Voting (Safe DOM rendering)
-async function showProposalDetails(id) {
+ async function showProposalDetails(id) {
   const res = await fetch(`${base}/api/proposals/${id}`);
   const data = await res.json();
 
@@ -797,9 +748,14 @@ async function showProposalDetails(id) {
   content.appendChild(descEl);
   content.appendChild(expEl);
 
+  const total = Object.values(tally.results || {}).reduce((a, b) => a + b, 0);
+  const totalVotesEl = document.createElement("p");
+  totalVotesEl.className = "text-sm mt-2 text-gray-300";
+  totalVotesEl.textContent = `🗳️ Total Votes: ${total}`;
+  content.appendChild(totalVotesEl);
+
   (data.options || []).forEach(option => {
     const count = tally.results?.[option] || 0;
-    const total = Object.values(tally.results || {}).reduce((a, b) => a + b, 0);
     const percent = total ? ((count / total) * 100).toFixed(1) : 0;
 
     const container = document.createElement('div');
@@ -849,19 +805,60 @@ async function showProposalDetails(id) {
     content.appendChild(container);
   });
 }
+  // 📊 Render Analytics
+  function renderAnalytics(data) {
+    const output = document.getElementById("analyticsOutput");
+    output.textContent = JSON.stringify(data, null, 2);
+  }
+
+  // 🖼️ Render Meme Image
+  function renderMemeImage(url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.width = 80;
+    img.style.borderRadius = "8px";
+    return img;
+  }
+
+  // 📜 Output to Debug Console
+
+  function output(data) {
+    const output = document.getElementById("output");
+    output.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  }
   
-      document.addEventListener("DOMContentLoaded", () => {
-        loadTopLegendary(); 
-        loadDAOProposals();
-        loadAirdropHistory();
-        renderQueue();
-        document.getElementById("daoProposalForm").addEventListener("submit", submitProposal);
-      
-        // 👇 SHOW DAO CARD
-        const daoCard = document.querySelector(".dao-admin");
-        if (daoCard) daoCard.style.display = "block";
-      });
-      
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      // Load all initial data
+      loadTopLegendary(); 
+      loadDAOProposals();
+      loadAirdropHistory();
+      renderQueue();
+      loadPresaleEnd();
+  
+      // DAO proposal form setup
+      const proposalForm = document.getElementById("daoProposalForm");
+      if (proposalForm) {
+        proposalForm.addEventListener("submit", submitProposal);
+      }
+  
+      // DAO section visibility
+      const daoCard = document.querySelector(".dao-admin");
+      if (daoCard) daoCard.style.display = "block";
+  
+      // Safely re-bind admin panel buttons
+      document.querySelector("button[onclick='loadWalletAnalytics()']")?.addEventListener("click", loadWalletAnalytics);
+      document.querySelector("button[onclick='loadBattleStats()']")?.addEventListener("click", loadBattleStats);
+      document.querySelector("button[onclick='loadAirdropStats()']")?.addEventListener("click", loadAirdropStats);
+      document.querySelector("button[onclick='loadAdminLogs()']")?.addEventListener("click", loadAdminLogs);
+      document.querySelector("button[onclick='runDebugTools()']")?.addEventListener("click", runDebugTools);
+      document.querySelector("button[onclick='openAirdropTools()']")?.addEventListener("click", openAirdropTools);
+      document.querySelector("button[onclick='openWalletAnalytics()']")?.addEventListener("click", openWalletAnalytics);
+  
+    } catch (err) {
+      console.error("❌ Error during admin panel load:", err);
+    }
+  });
 </script>
 </body>
 </html>

@@ -553,7 +553,13 @@
           banner.style.display = "none";
         }, 5000); // auto-hide after 5 seconds
       }
-      
+      function renderAnalytics(data) {
+        const pre = document.getElementById("analyticsOutput");
+        pre.textContent = "⏳ Loading...";
+        setTimeout(() => {
+          pre.textContent = JSON.stringify(data, null, 2);
+        }, 200);
+      }
       function dismissWaldoNotification() {
         document.getElementById("waldoNotification").style.display = "none";
       }      

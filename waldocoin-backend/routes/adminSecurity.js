@@ -4,12 +4,11 @@ import { logViolation, isAutoBlocked } from "../utils/security.js";
 
 const router = express.Router();
 
-
-// Middleware to protect routes
+// 🔐 Middleware: Restrict access to trusted admin origins only
 router.use((req, res, next) => {
-  const key = req.header("x-admin-key");
-  if (key !== ADMIN_KEY) {
-    return res.status(403).json({ error: "🚫 Unauthorized" });
+  const origin = req.get("referer") || "";
+  if (!origin.includes("waldocoin2.local") && !origin.includes("waldocoin.live")) {
+    return res.status(403).json({ error: "Restricted admin origin" });
   }
   next();
 });
