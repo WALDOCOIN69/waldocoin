@@ -7,17 +7,9 @@ const router = express.Router();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const battlesPath = path.join(__dirname, "..", "battles.json");
 
-// Ensure file exists
-function ensureBattleFile() {
-  if (!fs.existsSync(battlesPath)) {
-    fs.writeFileSync(battlesPath, "[]");
-  }
-}
-
-// POST /api/debug/fake-battle
-router.post("/fake-battle", (req, res) => {
+// 🧱 Create a Fake Battle
+router.post("/debug/fake-battle", (req, res) => {
   try {
-    ensureBattleFile();
     const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
     const newBattle = {
       battleId: "test-" + Date.now(),
@@ -31,20 +23,68 @@ router.post("/fake-battle", (req, res) => {
     fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
     res.json({ success: true, battleId: newBattle.battleId });
   } catch (err) {
-    console.error("❌ Failed to create fake battle:", err);
-    res.status(500).json({ error: "Failed to create fake battle" });
+    res.status(500).json({ error: "Failed to create fake battle", details: err.message });
   }
 });
 
-// GET /api/debug/battles
-router.get("/battles", (req, res) => {
+// 👁️ View All Battles
+router.get("/debug/battles", (req, res) => {
   try {
-    ensureBattleFile();
     const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
     res.json(data);
   } catch (err) {
-    console.error("❌ Failed to read battles.json:", err);
-    res.status(500).json({ error: "Failed to read battles.json" });
+    res.status(500).json({ error: "Failed to read battles.json", details: err.message });
+  }
+});
+
+// ♻️ Reset Active Battle
+router.post("/reset/reset-active", (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
+    if (data.length === 0) return res.json({ success: false, message: "No active battle to reset." });
+
+    data[0].ended = true;
+    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
+    res.json({ success: true, message: "Active battle has been reset." });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to reset battle", details: err.message });
+  }
+});
+
+// 🗳️ Cast Vote
+router.post("/battle/vote", (req, res) => {
+  const { wallet, choice } = req.body;
+  if (!wallet || !choice) return res.status(400).json({ error: "Missing wallet or choice." });
+
+  try {
+    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
+    const activeBattle = data.find(b => !b.ended);
+    if (!activeBattle) return res.status(404).json({ error: "No active battle found." });
+
+    activeBattle.votes[choice] = (activeBattle.votes[choice] || 0) + 1;
+    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
+    res.json({ success: true, votes: activeBattle.votes });
+  } catch (err) {
+    res.status(500).json({ error: "Voting failed", details: err.message });
+  }
+});
+
+// 💸 Trigger Payout
+router.post("/battle/payout", (req, res) => {
+  const { battleId } = req.body;
+  if (!battleId) return res.status(400).json({ error: "Missing battleId" });
+
+  try {
+    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
+    const battle = data.find(b => b.battleId === battleId);
+    if (!battle || battle.ended) return res.status(400).json({ error: "Invalid or ended battle" });
+
+    // Simulated payout logic — customize this later to send actual WALDO
+    battle.ended = true;
+    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
+    res.json({ success: true, message: `Payout complete for ${battleId}` });
+  } catch (err) {
+    res.status(500).json({ error: "Payout failed", details: err.message });
   }
 });
 
