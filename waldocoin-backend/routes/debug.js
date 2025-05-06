@@ -1,38 +1,53 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
 const router = express.Router();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const battlesPath = path.join(__dirname, "..", "battles.json");
 
-const dbPath = path.resolve("battles.json");
-
-// GET /api/debug/battles
-router.get("/battles", (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(dbPath));
-    res.json(data.battles || []);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to read battles.json" });
+// Ensure file exists
+function ensureBattleFile() {
+  if (!fs.existsSync(battlesPath)) {
+    fs.writeFileSync(battlesPath, "[]");
   }
-});
+}
 
 // POST /api/debug/fake-battle
 router.post("/fake-battle", (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(dbPath));
+    ensureBattleFile();
+    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
     const newBattle = {
-      battleId: "fake_" + Date.now(),
-      meme1: "meme_1",
-      meme2: "meme_2",
+      battleId: "test-" + Date.now(),
+      meme1: "test-meme-1",
+      meme2: "test-meme-2",
+      startTime: new Date().toISOString(),
       votes: { meme1: 0, meme2: 0 },
-      start: new Date().toISOString(),
-      durationHours: 24
+      ended: false,
     };
-    db.battles.unshift(newBattle);
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-    res.json({ success: true, newBattle });
+    data.unshift(newBattle);
+    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
+    res.json({ success: true, battleId: newBattle.battleId });
   } catch (err) {
-    res.status(500).json({ error: "Failed to write fake battle" });
+    console.error("❌ Failed to create fake battle:", err);
+    res.status(500).json({ error: "Failed to create fake battle" });
+  }
+});
+
+// GET /api/debug/battles
+router.get("/battles", (req, res) => {
+  try {
+    ensureBattleFile();
+    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Failed to read battles.json:", err);
+    res.status(500).json({ error: "Failed to read battles.json" });
   }
 });
 
 export default router;
+
+
