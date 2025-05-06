@@ -22,6 +22,8 @@ waldo-api/__pycache__/
 waldo-api/waldo.db
 waldo-twitter-bot/__pycache__/
 waldo-twitter-bot/waldo.db
+battles.json
+
 
 # Logs & Temp
 *.log
