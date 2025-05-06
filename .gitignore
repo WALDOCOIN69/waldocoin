@@ -71,3 +71,5 @@ Thumbs.db
 
 # Prevent accidental nested clones
 waldocoin-backend/waldocoin-backend/
+node_modules/
+.env

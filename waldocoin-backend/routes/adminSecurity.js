@@ -3,7 +3,7 @@ import redis from "../utils/redisClient.js";
 import { logViolation, isAutoBlocked } from "../utils/security.js";
 
 const router = express.Router();
-const ADMIN_KEY = "waldogodmode2025";
+
 
 // Middleware to protect routes
 router.use((req, res, next) => {

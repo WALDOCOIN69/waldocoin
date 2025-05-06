@@ -1,6 +1,10 @@
+<!DOCTYPE html>
+<html>
+
 <div class="dao-admin p-4 bg-black text-white rounded-2xl shadow-md">
     <h2 class="text-xl font-bold mb-4">🗳️ Create a DAO Proposal</h2>
-  
+    </div>
+    <div>
     <form id="proposalForm" class="space-y-2 mb-6">
       <input type="text" id="title" placeholder="Proposal Title" class="w-full p-2 rounded bg-gray-800 text-white" required />
       <textarea id="description" placeholder="Description (optional)" class="w-full p-2 rounded bg-gray-800 text-white"></textarea>
@@ -8,7 +12,7 @@
       <input type="number" id="duration" placeholder="Voting Duration (hours)" value="hours to vote" class="w-full p-2 rounded bg-gray-800 text-white" />
       <button type="submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-bold">📨 Submit Proposal</button>
     </form>
-  
+  </div>
     <h2 class="text-xl font-bold mb-3">📋 Active Proposals</h2>
     <div id="proposalList" class="space-y-2">
       <p>Loading proposals...</p>
@@ -18,7 +22,6 @@
       <h3 class="text-lg font-semibold mb-2">📄 Proposal Details</h3>
       <div id="detailContent"></div>
     </div>
-  </div>
   
   <script>
     const API = "https://waldocoin-1.onrender.com/api";
@@ -116,5 +119,5 @@
   
     document.addEventListener("DOMContentLoaded", loadProposals);
   </script>
-  
+  </html>
   

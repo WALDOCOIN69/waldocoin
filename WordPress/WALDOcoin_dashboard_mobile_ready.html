@@ -1098,6 +1098,7 @@ button, input { width: 100%; font-size: 1rem; padding: 10px 12px; }
             const modal = document.getElementById("nftModal");
             const img = document.getElementById("nftModalImg");
             img.src = imageUrl;
+            img.onerror = () => img.src = '/placeholder.jpg';
             modal.style.display = "flex";
           }
         
@@ -1176,6 +1177,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("nftModal");
   const img = document.getElementById("nftModalImg");
   img.src = imageUrl;
+  img.onerror = () => img.src = '/placeholder.jpg';
   modal.style.display = "flex";
 }
 function closeNFTModal() {

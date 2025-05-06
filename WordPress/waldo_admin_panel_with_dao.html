@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WALDO Full Admin Panel</title>
   <style>
     body { background:#111; color:white; font-family:sans-serif; padding:40px; }
     h2 { color:#e63e3e; }
@@ -13,18 +12,21 @@
     .card { margin-bottom:40px; }
     input, textarea { padding:10px; width:100%; margin:5px 0 10px; background:#222; color:white; border:1px solid #444; border-radius:5px; }
   </style>
+  <button onclick="logout()" style="float:right; background:#444;">🚪 Logout</button>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <title>WALDO Admin Panel</title>
 </head>
 <body>
-
   <div class="card">
     <h2>📊 Admin Analytics</h2>
     <button onclick="loadWalletAnalytics()">📌 Wallet Analytics</button>
     <button onclick="loadBattleStats()">⚔️ Battle Stats</button>
     <button onclick="loadAirdropStats()">🎁 Airdrop Stats</button>
     <button onclick="loadAdminLogs()">📜 Admin Logs</button>
-    <pre id="analyticsOutput">Waiting for admin input...</pre>
-  </div>
+  <pre id="analyticsOutput">Waiting for admin input...</pre>
 <h1>🚨 WALDO Admin Panel</h1>
+</div>
 
 <!-- Meme Battle Debug Tools -->
 <div class="card">
@@ -36,7 +38,8 @@
   <button onclick="voteMeme('meme2')">🗳️ Vote Meme 2</button>
   <button onclick="payout()">💸 Trigger Payout</button>
   <pre id="output">Waiting for admin input...</pre>
-</div>
+</div> <!-- Closing tag added -->
+
 <div class="card">
   <h2>🛠️ Admin Quick Tools</h2>
   <div style="display: flex; flex-wrap: wrap; gap: 10px;">
@@ -45,8 +48,8 @@
     <button onclick="openAirdropTools()">📦 Airdrop Tools</button>
     <button onclick="runDebugTools()">🧪 Debug Buttons</button>
     <button onclick="openWalletAnalytics()">🔍 Wallet Analytics</button>
-  </div>
-</div>
+  </div> <!-- Closing tag added -->
+</div> <!-- Missing closing tag added -->
 
 <!-- Presale Countdown -->
 <div class="card">
@@ -55,7 +58,8 @@
   <input type="date" id="presaleEnd" name="presaleEnd" />
   <button onclick="setPresaleEndDate()">💾 Save End Date</button>
   <pre id="timerOutput">Loading current timer...</pre>
-</div>
+</div> <!-- Closing tag added -->
+
 <!-- Presale Summary -->
 <div class="card">
   <h2>📊 Presale Summary</h2>
@@ -69,8 +73,8 @@
       <input type="date" id="startDate" style="margin-right: 10px;" />
       <input type="date" id="endDate" />
       <button onclick="downloadCSVByDate()" style="margin-left: 10px;">📁 Export CSV by Date</button>
-    </div>
-    
+    <canvas id="waldoChart" height="60" style="margin-top:20px;"></canvas>
+
      <table>
       <thead>
         <tr>
@@ -96,6 +100,7 @@
     <input type="date" id="historyEnd" />
     <button onclick="downloadAirdropHistoryCSV()" style="margin-left: 10px;">Export History CSV</button>
   </div>
+  <div>
   <table>
     <thead><tr><th>Wallet</th><th>Amount</th><th>Date</th></tr></thead>
     <tbody id="airdropHistoryRows"><tr><td colspan="3">Loading...</td></tr></tbody>
@@ -165,48 +170,87 @@
   </form>
   <pre id="trustOutput">Waiting for wallet trustline check...</pre>
 </div>
-
-<!-- DAO Proposal Management -->
-<div class="card">
-  <h2>🗳️ DAO Proposal System</h2>
-  <form id="proposalForm" onsubmit="submitProposal(event)">
-    <input type="text" id="title" placeholder="Proposal Title" required />
-    <textarea id="description" placeholder="Description (optional)"></textarea>
-    <input type="text" id="options" placeholder="Options (comma-separated)" required />
-    <input type="number" id="duration" placeholder="24 (hours)" required />
+<!-- DAO Proposal Section -->
+<div class="card dao-admin">
+  <h2>🗳️ Create a DAO Proposal</h2>
+  <form id="daoProposalForm">
+    <input type="text" id="daoTitle" placeholder="Proposal Title" required />
+    <textarea id="daoDescription" placeholder="Description (optional)"></textarea>
+    <input type="text" id="daoOptions" placeholder="Options e.g. Yes,No" required />
+    <input type="number" id="daoDuration" placeholder="Voting Duration (hours)" value="24" />
     <button type="submit">📨 Submit Proposal</button>
   </form>
 
-  <h3>📋 Active Proposals</h3>
-  <div id="proposalList">Loading proposals...</div>
+  <h2>📋 Active Proposals</h2>
+  <div id="proposalListDAO"><p>Loading proposals...</p></div>
 
-  <div id="proposalDetail" class="hidden" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
-    <h4>📄 Proposal Details</h4>
+  <div id="proposalDetailDAO" class="mt-6 hidden">
+    <h3>📄 Proposal Details</h3>
     <div id="detailContent"></div>
   </div>
 </div>
 
-
+</div>
 <script>
-  const adminKey = "waldogod2025";
-  const backendBase = "https://waldocoin-backend.onrender.com";
+    
+  function logout() {
+    localStorage.removeItem("adminToken");
+    alert("Logged out.");
+    window.location.href = "/admin-login.html";
+  }  
+  const WALLET = localStorage.getItem("xumm_wallet") || prompt("Enter your WALDO wallet address");
+  const base = "https://waldocoin-1.onrender.com";
+  async function adminLogin(e) {
+    e.preventDefault();
+    const password = document.getElementById("adminPass").value;
+  
+    const res = await fetch(`${base}/api/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+  
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem("adminToken", data.token);
+      alert("✅ Logged in!");
+      window.location.href = "/admin-panel.html";
+    } else {
+      alert("❌ Login failed");
+    }
+  }
+  
+    if (!localStorage.getItem("adminToken")) {
+      alert("❌ Not logged in as admin.");
+      window.location.href = "/admin-login.html";
+    }
 
 
     // 🔄 Toggle Presale Phase
     function togglePhase() {
-      fetch('/api/admin/toggle-phase', {
+      fetch(`${base}/api/admin/toggle-phase`, {
         method: 'POST',
-        headers: { 'x-admin-key': 'waldogod2025' }
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
+        }
       })
       .then(res => res.json())
       .then(data => alert("Phase switched to: " + data.newPhase))
       .catch(err => alert("Failed to switch phase"));
     }
-  
+    function addToQueue(e) {
+      e.preventDefault();
+      const wallet = document.getElementById("airdropWallet").value.trim();
+      const amount = parseFloat(document.getElementById("airdropAmount").value);
+      if (!wallet || isNaN(amount)) return alert("Invalid entry.");
+      queue.push({ wallet, amount });
+      renderQueue();
+    }
+    
     // 📈 Show WALDO Live Stats
     function showLiveStats() {
-      fetch('/api/admin/presale-stats', {
-        headers: { 'x-admin-key': 'waldogod2025' }
+      fetch(`${base}/api/admin/presale-stats`, {
+        headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
       })
       .then(res => res.json())
       .then(data => {
@@ -214,17 +258,17 @@
       })
       .catch(err => alert("Error fetching stats"));
     }
-  
     // 📦 Open Airdrop Tools
     function openAirdropTools() {
-      window.location.href = "/admin-airdrop-panel"; // swap for your internal route
-    }
+        window.location.href = "/admin-airdrop-panel"; // swap for your internal route
+      }
   
     // 🧪 Run Debug Tools
     function runDebugTools() {
-      fetch('/api/debug/fake-battle', {
+      fetch(`${base}/api/debug/fake-battle`, {
         method: 'POST',
-        headers: { 'x-admin-key': 'waldogod2025' }
+        headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
       })
       .then(res => res.json())
       .then(data => alert("✅ Fake battle created"))
@@ -235,8 +279,9 @@
     function openWalletAnalytics() {
       const wallet = prompt("Enter wallet address to lookup:");
       if (!wallet) return;
-      fetch(`/api/admin/wallet-lookup?address=${wallet}`, {
-        headers: { 'x-admin-key': 'waldogod2025' }
+      fetch(`${base}/api/admin/wallet-lookup?address=${wallet}`, {
+        headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
       })
       .then(res => res.json())
       .then(data => {
@@ -248,14 +293,15 @@
   function setPresaleEndDate() {
     const date = document.getElementById("presaleEnd").value;
     if (!date) return alert("Pick a valid date.");
-    fetch(`${backendBase}/api/admin/set-end-date`, {
+    fetch(`${base}/api/admin/set-end-date`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-key": adminKey
+        "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
       },
       body: JSON.stringify({ endDate: date })
     })
+    
     .then(res => res.json())
     .then(data => {
       if (data.success) {
@@ -264,10 +310,11 @@
       } else {
         alert("Failed to save: " + data.error);
       }
-    });
+    })
+    .catch(err => alert("Error: " + err.message));
   }
   function loadPresaleEnd() {
-    fetch(`${backendBase}/api/presale/end-date`)
+    fetch(`${base}/api/presale/end-date`)
       .then(res => res.json())
       .then(data => {
         if (!data.endDate) return document.getElementById("timerOutput").textContent = "No end date set.";
@@ -295,7 +342,8 @@
     const address = prompt("Enter wallet address:");
     if (!address) return;
     const res = await fetch(`${base}/api/phase9/analytics/wallet/${address}`, {
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     const data = await res.json();
     renderAnalytics(data);
@@ -303,7 +351,9 @@
 
   async function loadBattleStats() {
     const res = await fetch(`${base}/api/phase9/analytics/battles`, {
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
+    }
+
     });
     const data = await res.json();
     renderAnalytics(data);
@@ -311,7 +361,8 @@
 
   async function loadAirdropStats() {
     const res = await fetch(`${base}/api/phase9/analytics/airdrops`, {
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     const data = await res.json();
     renderAnalytics(data);
@@ -319,7 +370,8 @@
 
   async function loadAdminLogs() {
     const res = await fetch(`${base}/api/phase9/admin/logs`, {
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     const data = await res.json();
     renderAnalytics(data);
@@ -377,7 +429,8 @@
     const url = `${base}/admin/export/presale?start=${start}&end=${end}`;
   
     fetch(url, {
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     })
       .then(res => {
         if (!res.ok) throw new Error("CSV export failed");
@@ -397,20 +450,23 @@
   async function createFakeBattle() {
     const res = await fetch(`${base}/api/debug/fake-battle`, {
       method: "POST",
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     output(await res.json());
   }
   async function viewBattles() {
     const res = await fetch(`${base}/api/debug/battles`, {
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     output(await res.json());
   }
   async function resetBattle() {
     const res = await fetch(`${base}/api/reset/reset-active`, {
       method: "POST",
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     output(await res.json());
   }
@@ -419,7 +475,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-key": adminKey
+        "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
       },
       body: JSON.stringify({ wallet: "rVoter420", choice })
     });
@@ -427,7 +483,8 @@
   }
   async function payout() {
     const res1 = await fetch(`${base}/api/debug/battles`, {
-      headers: { "x-admin-key": adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     const battles = await res1.json();
     const latest = battles[0];
@@ -435,7 +492,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-key": adminKey
+        "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
       },
       body: JSON.stringify({ battleId: latest.battleId })
     });
@@ -451,13 +508,13 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-key": adminKey
+        "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
       },
       body: JSON.stringify({ wallet, amount })
+    
     });
     output(await res.json());
   }
-  
   // 🔍 Trustline
   async function checkTrustline(e) {
     e.preventDefault();
@@ -467,29 +524,23 @@
   }
   
   // 🎁 Airdrop Queue
-  const queue = [];
-  function addToQueue(e) {
-    e.preventDefault();
-    const wallet = document.getElementById("airdropWallet").value.trim();
-    const amount = parseFloat(document.getElementById("airdropAmount").value);
-    if (wallet && amount > 0) {
-      queue.push({ wallet, amount });
-      renderQueue();
-    }
-  }
+  const queue = JSON.parse(localStorage.getItem("airdropQueue")) || [];
+
   function renderQueue() {
+    localStorage.setItem("airdropQueue", JSON.stringify(queue));
     const rows = document.getElementById("airdropQueueRows");
     rows.innerHTML = queue.length
       ? queue.map(q => `<tr><td>${q.wallet}</td><td>${q.amount}</td></tr>`).join("")
       : "<tr><td colspan='2'>No queued drops.</td></tr>";
   }
   async function sendAirdrops() {
+    localStorage.setItem("airdropQueue", JSON.stringify(queue));
     for (const entry of queue) {
       const res = await fetch(`${base}/api/admin/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-key": adminKey
+          "Authorization": `Bearer ${localStorage.getItem('adminToken')}` 
         },
         body: JSON.stringify(entry)
       });
@@ -498,32 +549,64 @@
   }
   
   // 👑 Legendary Table Loader
-  async function loadTopLegendary() {
-    const res = await fetch(`${base}/api/minted`);
-    const data = await res.json();
-    const table = document.getElementById("legendaryRows");
-    table.innerHTML = "";
-  
-    const top = data.filter(m => m.xp >= 100).sort((a, b) => b.xp - a.xp).slice(0, 10);
-    if (!top.length) return table.innerHTML = "<tr><td colspan='5'>No Legendary memes yet.</td></tr>";
-  
-    for (const meme of top) {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${meme.wallet}</td>
-        <td>${meme.xp}</td>
-        <td class="legendary">👑 Legendary</td>
-        <td><img src="${meme.image_url}" width="80"></td>
-        <td>${new Date(meme.mintedAt).toLocaleDateString()}</td>
-      `;
-      table.appendChild(row);
-    }
+async function loadTopLegendary() {
+  const res = await fetch(`${base}/api/minted`, {
+    headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` },
+  });
+  const data = await res.json();
+  const table = document.getElementById("legendaryRows");
+  table.innerHTML = "";
+
+  const top = data
+    .filter(m => m.xp >= 100)
+    .sort((a, b) => b.xp - a.xp)
+    .slice(0, 10);
+
+  if (!top.length) {
+    table.innerHTML = "<tr><td colspan='5'>No Legendary memes yet.</td></tr>";
+    return;
+  }
+
+  for (const meme of top) {
+    const row = document.createElement("tr");
+
+const walletTd = document.createElement("td");
+walletTd.textContent = meme.wallet;
+
+const xpTd = document.createElement("td");
+xpTd.textContent = meme.xp;
+
+const tierTd = document.createElement("td");
+tierTd.textContent = "👑 Legendary";
+tierTd.className = "legendary";
+
+const imageTd = document.createElement("td");
+const img = document.createElement("img");
+img.src = meme.image_url;
+img.width = 80;
+img.style.borderRadius = "8px";
+imageTd.appendChild(img);
+
+const dateTd = document.createElement("td");
+dateTd.textContent = new Date(meme.mintedAt).toLocaleDateString();
+
+row.appendChild(walletTd);
+row.appendChild(xpTd);
+row.appendChild(tierTd);
+row.appendChild(imageTd);
+row.appendChild(dateTd);
+table.appendChild(row);
+
+  }
+}
     let allBuyers = [];
 
 async function loadBuyers() {
   try {
     const res = await fetch(`${base}/api/presale/feed`, {
-      headers: { "x-admin-key": adminKey }
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
+      }
     });
     const data = await res.json();
     allBuyers = data;
@@ -566,17 +649,14 @@ function filterBuyers() {
   );
   renderBuyers(filtered);
 }
-drawWaldoChart();
-setInterval(drawWaldoChart, 60000); // refresh every minute
-
-  }
 
 let allHistory = [];
 
 async function loadAirdropHistory() {
   try {
     const res = await fetch(`${base}/admin/airdrops`, {
-      headers: { 'x-admin-key': adminKey }
+      headers: { "Authorization": `Bearer ${localStorage.getItem('adminToken')}` }
+
     });
     allHistory = await res.json();
     renderHistory(allHistory);
@@ -616,202 +696,173 @@ function downloadAirdropHistoryCSV() {
   document.body.appendChild(a);
   a.click();
   a.remove();
-}
-
+};
 // Auto-load
 loadAirdropHistory();
-</script>
-<div class="dao-admin p-4 bg-black text-white rounded-2xl shadow-md">
-    <h2 class="text-xl font-bold mb-4">🗳️ Create a DAO Proposal</h2>
   
-    <form id="proposalForm" class="space-y-2 mb-6">
-      <input type="text" id="title" placeholder="Proposal Title" class="w-full p-2 rounded bg-gray-800 text-white" required />
-      <textarea id="description" placeholder="Description (optional)" class="w-full p-2 rounded bg-gray-800 text-white"></textarea>
-      <input type="text" id="options" placeholder="Options e.g. Yes/No(comma-separated)" class="w-full p-2 rounded bg-gray-800 text-white" required />
-      <input type="number" id="duration" placeholder="Voting Duration (hours)" value="24" class="w-full p-2 rounded bg-gray-800 text-white" />
-      <button type="submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-bold">📨 Submit Proposal</button>
-    </form>
+  // 🎯 Submit New Proposal
+  async function submitProposal(e) {
+    e.preventDefault();
+    const title = document.getElementById("daoTitle").value.trim();
+    const description = document.getElementById("daoDescription").value.trim();
+    const options = document.getElementById("daoOptions").value.split(",").map(o => o.trim());
+    const duration = parseInt(document.getElementById("daoDuration").value);
   
-    <h2 class="text-xl font-bold mb-3">📋 Active Proposals</h2>
-    <div id="proposalList" class="space-y-2">
-      <p>Loading proposals...</p>
-    </div>
-  
-    <div id="proposalDetail" class="mt-6 hidden border-t border-gray-700 pt-4">
-      <h3 class="text-lg font-semibold mb-2">📄 Proposal Details</h3>
-      <div id="detailContent"></div>
-    </div>
-  </div>
-  
-  <script>
-    const API = "https://waldocoin-1.onrender.com/api";
-    const WALLET = localStorage.getItem("xumm_wallet") || prompt("Enter your WALDO wallet address");
-  
-    async function loadProposals() {
-      const listContainer = document.getElementById("proposalList");
-      listContainer.innerHTML = "<p>Loading proposals...</p>";
-      const res = await fetch(`${API}/proposals`);
-      const proposals = await res.json();
-  
-      if (!proposals.length) {
-        listContainer.innerHTML = "<p>No proposals found.</p>";
-        return;
-      }
-  
-      listContainer.innerHTML = "";
-      proposals.forEach(p => {
-        const btn = document.createElement("button");
-        btn.className = "block w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded";
-        btn.innerText = `${p.title} (expires ${new Date(p.expiresAt).toLocaleString()})`;
-        btn.onclick = () => showProposalDetails(p.id);
-        listContainer.appendChild(btn);
-      });
+    if (!title || options.length < 2 || isNaN(duration)) {
+      return alert("Please complete all required fields correctly.");
     }
   
-    async function showProposalDetails(id) {
-      const res = await fetch(`${API}/proposals/${id}`);
-      const data = await res.json();
-      const detail = document.getElementById("proposalDetail");
-      const content = document.getElementById("detailContent");
-      detail.classList.remove("hidden");
-  
-      const tallyRes = await fetch(`${API}/vote/tally/${id}`);
-      const tally = await tallyRes.json();
-      const expired = new Date(data.expiresAt) < new Date();
-  
-      content.innerHTML = `
-        <h4 class="text-white font-bold mb-1">${data.title}</h4>
-        <p class="text-sm mb-2">${data.description || 'No description'}</p>
-        <p class="text-xs mb-3 text-gray-400">⏳ Expires: ${new Date(data.expiresAt).toLocaleString()}</p>
-        ${data.options.map(option => `
-          <div class="mb-2 flex justify-between items-center">
-            <span>${option}</span>
-            <span class="font-mono">${tally.results?.[option] || 0} votes</span>
-            ${!expired ? `<button onclick="castVote('${id}', '${option}')" class="bg-green-600 hover:bg-green-700 text-sm px-2 py-1 rounded">Vote</button>` : '<span class="text-red-500 text-sm">Voting closed</span>'}
-          </div>
-        `).join('')}
-      `;
-    }
-  
-    async function castVote(proposalId, option) {
-      const res = await fetch(`${API}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ proposalId, option, wallet: WALLET })
-      });
-  
-      if (res.ok) {
-        alert("✅ Vote submitted!");
-        await showProposalDetails(proposalId);
-      } else {
-        const error = await res.json();
-        alert("❌ " + error.error);
-      }
-    }
-  
-    document.getElementById("proposalForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("title").value.trim();
-      const description = document.getElementById("description").value.trim();
-      const options = document.getElementById("options").value.split(',').map(opt => opt.trim()).filter(Boolean);
-      const duration = parseInt(document.getElementById("duration").value, 10) || 72;
-  
-      if (!title || options.length < 2) {
-        alert("Proposal must have a title and at least 2 options.");
-        return;
-      }
-  
-      const res = await fetch(`${API}/proposals/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, options, durationHours: duration })
-      });
-  
-      const result = await res.json();
-      if (res.ok) {
-        alert("✅ Proposal created!");
-        document.getElementById("proposalForm").reset();
-        await loadProposals();
-      } else {
-        alert("❌ " + result.error);
-      }
+    const res = await fetch(`${base}/api/proposals`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, options, duration, wallet: WALLET })
     });
-    async function loadProposals() {
-      const listContainer = document.getElementById("proposalList");
-      listContainer.innerHTML = "Loading...";
-      const res = await fetch(`${backendBase}/api/proposals`);
-      const proposals = await res.json();
-    
-      if (!proposals.length) {
-        listContainer.innerHTML = "<p>No proposals found.</p>";
-        return;
-      }
-    
-      listContainer.innerHTML = "";
-      proposals.forEach(p => {
-        const btn = document.createElement("button");
-        btn.className = "block w-full text-left p-2 bg-[#222] hover:bg-[#333] rounded";
-        btn.innerText = `${p.title} (expires ${new Date(p.expiresAt).toLocaleString()})`;
-        btn.onclick = () => showProposalDetails(p.id);
-        listContainer.appendChild(btn);
+  
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ Proposal submitted!");
+      loadDAOProposals();
+    } else {
+      alert("❌ Failed to submit proposal.");
+    }
+  }async function castVote(proposalId, choice) {
+    const res = await fetch(`${base}/api/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ proposalId, choice, wallet: WALLET })
+    });
+  
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ Vote cast!");
+      showProposalDetails(proposalId); // Refresh proposal view
+    } else {
+      alert("❌ Failed to vote.");
+    }
+  }
+  // 📋 Load Proposals
+  async function loadDAOProposals() {
+    const listContainer = document.getElementById("proposalListDAO");
+    listContainer.innerHTML = "Loading...";
+    const res = await fetch(`${base}/api/proposals`);
+    const proposals = await res.json();
+  
+    if (!proposals.length) {
+      listContainer.innerHTML = "<p>No proposals found.</p>";
+      return;
+    }
+  
+    listContainer.innerHTML = ""; // clear first
+if (!proposals.length) {
+  listContainer.innerHTML = "<p>No proposals found.</p>";
+  return;
+}
+
+proposals.forEach(p => {
+  const btn = document.createElement("button");
+  btn.innerText = `${p.title} (expires ${new Date(p.expiresAt).toLocaleString()})`;
+  btn.onclick = () => showProposalDetails(p.id);
+  listContainer.appendChild(btn);
+});
+
+  
+  }
+ // 🧾 Show Proposal Details + Voting (Safe DOM rendering)
+async function showProposalDetails(id) {
+  const res = await fetch(`${base}/api/proposals/${id}`);
+  const data = await res.json();
+
+  const tallyRes = await fetch(`${base}/api/vote/tally/${id}`);
+  const tally = await tallyRes.json();
+
+  const expired = new Date(data.expiresAt) < new Date();
+  const content = document.getElementById("detailContent");
+  const detail = document.getElementById("proposalDetailDAO");
+  detail.classList.remove("hidden");
+  content.innerHTML = ""; // clear previous content safely
+
+  const titleEl = document.createElement('h4');
+  titleEl.className = 'text-white font-bold mb-1';
+  titleEl.textContent = data.title;
+
+  const descEl = document.createElement('p');
+  descEl.className = 'text-sm mb-2';
+  descEl.textContent = data.description || 'No description';
+
+  const expEl = document.createElement('p');
+  expEl.className = 'text-xs mb-3 text-gray-400';
+  expEl.textContent = `⏳ Expires: ${new Date(data.expiresAt).toLocaleString()}`;
+
+  content.appendChild(titleEl);
+  content.appendChild(descEl);
+  content.appendChild(expEl);
+
+  (data.options || []).forEach(option => {
+    const count = tally.results?.[option] || 0;
+    const total = Object.values(tally.results || {}).reduce((a, b) => a + b, 0);
+    const percent = total ? ((count / total) * 100).toFixed(1) : 0;
+
+    const container = document.createElement('div');
+    container.className = 'mb-3';
+
+    const optionWrapper = document.createElement('div');
+    optionWrapper.className = 'flex justify-between mb-1';
+
+    const optionLabel = document.createElement('span');
+    optionLabel.textContent = option;
+
+    const voteStats = document.createElement('span');
+    voteStats.className = 'font-mono';
+    voteStats.textContent = `${count} votes (${percent}%)`;
+
+    optionWrapper.appendChild(optionLabel);
+    optionWrapper.appendChild(voteStats);
+    container.appendChild(optionWrapper);
+
+    const barWrapper = document.createElement('div');
+    barWrapper.style.background = '#333';
+    barWrapper.style.borderRadius = '5px';
+    barWrapper.style.overflow = 'hidden';
+
+    const bar = document.createElement('div');
+    bar.style.width = `${percent}%`;
+    bar.style.background = '#e63e3e';
+    bar.style.height = '12px';
+
+    barWrapper.appendChild(bar);
+    container.appendChild(barWrapper);
+
+    if (!expired) {
+      const voteBtn = document.createElement('button');
+      voteBtn.textContent = "Vote";
+      voteBtn.onclick = () => castVote(id, option);
+      voteBtn.style.marginTop = "5px";
+      voteBtn.className = "bg-green-600 hover:bg-green-700 text-sm px-2 py-1 rounded";
+      container.appendChild(voteBtn);
+    } else {
+      const closedLabel = document.createElement('span');
+      closedLabel.className = 'text-red-500 text-sm';
+      closedLabel.textContent = 'Voting closed';
+      container.appendChild(closedLabel);
+    }
+
+    content.appendChild(container);
+  });
+}
+  
+      document.addEventListener("DOMContentLoaded", () => {
+        loadTopLegendary(); 
+        loadDAOProposals();
+        loadAirdropHistory();
+        renderQueue();
+        document.getElementById("daoProposalForm").addEventListener("submit", submitProposal);
+      
+        // 👇 SHOW DAO CARD
+        const daoCard = document.querySelector(".dao-admin");
+        if (daoCard) daoCard.style.display = "block";
       });
-    }
-    
-    async function showProposalDetails(id) {
-      const res = await fetch(`${backendBase}/api/proposals/${id}`);
-      const data = await res.json();
-      const tallyRes = await fetch(`${backendBase}/api/vote/tally/${id}`);
-      const tally = await tallyRes.json();
-    
-      const detail = document.getElementById("proposalDetail");
-      const content = document.getElementById("detailContent");
-      detail.classList.remove("hidden");
-    
-      const expired = new Date(data.expiresAt) < new Date();
-      content.innerHTML = `
-        <h4>${data.title}</h4>
-        <p>${data.description || "No description provided."}</p>
-        <p><strong>Expires:</strong> ${new Date(data.expiresAt).toLocaleString()}</p>
-        <h5>Vote Tally:</h5>
-        <ul>
-          ${Object.entries(tally).map(([opt, count]) => `<li>${opt}: ${count}</li>`).join("")}
-        </ul>
-        ${expired ? "<p style='color:gray;'>Voting closed</p>" : ""}
-      `;
-    }
-    
-    async function submitProposal(e) {
-      e.preventDefault();
-      const title = document.getElementById("title").value.trim();
-      const description = document.getElementById("description").value.trim();
-      const options = document.getElementById("options").value.trim().split(",");
-      const duration = parseInt(document.getElementById("duration").value);
-    
-      const res = await fetch(`${backendBase}/api/proposals`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-key": adminKey
-        },
-        body: JSON.stringify({ title, description, options, duration })
-      });
-    
-      const data = await res.json();
-      if (data.success) {
-        alert("Proposal created!");
-        loadProposals();
-        document.getElementById("proposalForm").reset();
-      } else {
-        alert("Error creating proposal: " + data.error);
-      }
-    }
-    
-    window.addEventListener("DOMContentLoaded", loadProposals);
-    
-  
-    document.addEventListener("DOMContentLoaded", loadProposals);
-  </script>
-  
-  
+      
+</script>
 </body>
 </html>
+  
