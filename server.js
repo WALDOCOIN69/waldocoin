@@ -10,8 +10,7 @@ import mintConfirmRoute from "./waldocoin-backend/routes/mintConfirm.js";
 import rewardRoute from "./waldocoin-backend/routes/reward.js";
 import tweetsRoute from "./waldocoin-backend/routes/tweets.js";
 import adminSecurity from "./waldocoin-backend/routes/adminsecurity.js";
-import debugRoutes from "./routes/debug.js";
-
+import debugRoutes from "./waldocoin-backend/routes/debug.js";
 
 dotenv.config();
 
