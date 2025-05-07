@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const battlesPath = path.join(__dirname, "..", "battles.json");
 
 // 🧱 Create a Fake Battle
-router.post("/debug/fake-battle", (req, res) => {
+router.post("/fake-battle", (req, res) => {
   try {
     const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
     const newBattle = {
@@ -28,7 +28,7 @@ router.post("/debug/fake-battle", (req, res) => {
 });
 
 // 👁️ View All Battles
-router.get("/debug/battles", (req, res) => {
+router.get("/battles", (req, res) => {
   try {
     const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
     res.json(data);
@@ -38,7 +38,7 @@ router.get("/debug/battles", (req, res) => {
 });
 
 // ♻️ Reset Active Battle
-router.post("/reset/reset-active", (req, res) => {
+router.post("/reset-active", (req, res) => {
   try {
     const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
     if (data.length === 0) return res.json({ success: false, message: "No active battle to reset." });
@@ -52,7 +52,7 @@ router.post("/reset/reset-active", (req, res) => {
 });
 
 // 🗳️ Cast Vote
-router.post("/battle/vote", (req, res) => {
+router.post("/vote", (req, res) => {
   const { wallet, choice } = req.body;
   if (!wallet || !choice) return res.status(400).json({ error: "Missing wallet or choice." });
 
@@ -70,7 +70,7 @@ router.post("/battle/vote", (req, res) => {
 });
 
 // 💸 Trigger Payout
-router.post("/battle/payout", (req, res) => {
+router.post("/payout", (req, res) => {
   const { battleId } = req.body;
   if (!battleId) return res.status(400).json({ error: "Missing battleId" });
 
@@ -79,8 +79,7 @@ router.post("/battle/payout", (req, res) => {
     const battle = data.find(b => b.battleId === battleId);
     if (!battle || battle.ended) return res.status(400).json({ error: "Invalid or ended battle" });
 
-    // Simulated payout logic — customize this later to send actual WALDO
-    battle.ended = true;
+    battle.ended = true; // Simulated logic — replace with actual payout later
     fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
     res.json({ success: true, message: `Payout complete for ${battleId}` });
   } catch (err) {
