@@ -7,6 +7,11 @@ const router = express.Router();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const battlesPath = path.join(__dirname, "..", "battles.json");
 
+// ✅ Ensure battles.json exists
+if (!fs.existsSync(battlesPath)) {
+  fs.writeFileSync(battlesPath, "[]", "utf8");
+}
+
 // 🧱 Create a Fake Battle
 router.post("/fake-battle", (req, res) => {
   try {
