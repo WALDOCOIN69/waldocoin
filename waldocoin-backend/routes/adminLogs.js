@@ -1,12 +1,11 @@
 import express from "express";
 const router = express.Router();
 
-// 🪵 Mock Admin Logs
 router.get("/logs", (req, res) => {
   res.json([
-    { timestamp: Date.now(), action: "Created test battle", by: "admin" },
-    { timestamp: Date.now(), action: "Reset active battle", by: "admin" },
-    { timestamp: Date.now(), action: "Airdrop executed", by: "system" }
+    { type: "login", wallet: "rABC123", timestamp: new Date().toISOString() },
+    { type: "mint", wallet: "rDEF456", timestamp: new Date().toISOString() },
+    { type: "claim", wallet: "rGHI789", timestamp: new Date().toISOString() }
   ]);
 });
 
