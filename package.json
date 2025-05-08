@@ -17,6 +17,7 @@
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
     "redis": "^5.0.1",
+    "xrpl": "^4.2.5",
     "xumm-sdk": "^1.11.2"
   }
 }
