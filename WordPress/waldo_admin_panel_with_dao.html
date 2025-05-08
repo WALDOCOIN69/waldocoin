@@ -423,38 +423,33 @@
     output(await res.json());
   }
   async function resetBattle() {
-    const res = await fetch(`${base}/api/reset/reset-active`, {
+    const res = await fetch(`${base}/api/debug/reset-active`, {
       method: "POST",
-
     });
     output(await res.json());
   }
+
   async function voteMeme(choice) {
-    const res = await fetch(`${base}/api/battle/vote`, {
+    const res = await fetch(`${base}/api/debug/vote`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ wallet: "rVoter420", choice })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet: "rVoter420", choice }),
     });
     output(await res.json());
-  }
-  async function payout() {
-    const res1 = await fetch(`${base}/api/debug/battles`, {
-
-    });
-    const battles = await res1.json();
-    const latest = battles[0];
-    const res2 = await fetch(`${base}/api/battle/payout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ battleId: latest.battleId })
-    });
-    output(await res2.json());
   }
   
+  async function payout() {
+    const res1 = await fetch(`${base}/api/debug/battles`);
+    const battles = await res1.json();
+    const latest = battles[0];
+    const res2 = await fetch(`${base}/api/debug/payout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ battleId: latest.battleId }),
+    });
+    output(await res2.json());
+    
+  }
   // ✍️ Manual Sender
   async function sendManual(e) {
     e.preventDefault();
