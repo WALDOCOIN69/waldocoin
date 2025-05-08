@@ -3,19 +3,19 @@ import dotenv from "dotenv";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
-import loginRoute from "./waldocoin-backend/routes/login.js";
-import claimRoute from "./waldocoin-backend/routes/claim.js";
-import mintRoute from "./waldocoin-backend/routes/mint.js";
-import mintConfirmRoute from "./waldocoin-backend/routes/mintConfirm.js";
-import rewardRoute from "./waldocoin-backend/routes/reward.js";
-import tweetsRoute from "./waldocoin-backend/routes/tweets.js";
-import adminSecurity from "./waldocoin-backend/routes/adminsecurity.js";
-import analyticsRoutes from "./waldocoin-backend/routes/analytics.js";
-import adminLogsRoutes from "./waldocoin-backend/routes/adminLogs.js";
-import presaleRoutes from "./waldocoin-backend/routes/presale.js";
-import voteRoutes from "./waldocoin-backend/routes/vote.js";
-import trustlineRoute from "./waldocoin-backend/routes/trustline.js";
-import debugRoutes from "./waldocoin-backend/routes/debug.js";
+import loginRoute from "./routes/login.js";
+import claimRoute from "./routes/claim.js";
+import mintRoute from "./routes/mint.js";
+import mintConfirmRoute from "./routes/mintConfirm.js";
+import rewardRoute from "./routes/reward.js";
+import tweetsRoute from "./routes/tweets.js";
+import adminSecurity from "./routes/adminsecurity.js";
+import analyticsRoutes from "./routes/analytics.js";
+import adminLogsRoutes from "./routes/adminLogs.js";
+import presaleRoutes from "./routes/presale.js";
+import voteRoutes from "./routes/vote.js";
+import trustlineRoute from "./routes/trustline.js";
+import debugRoutes from "./routes/debug.js";
 
 
 dotenv.config();
