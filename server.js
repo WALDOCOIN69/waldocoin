@@ -10,7 +10,12 @@ import mintConfirmRoute from "./waldocoin-backend/routes/mintConfirm.js";
 import rewardRoute from "./waldocoin-backend/routes/reward.js";
 import tweetsRoute from "./waldocoin-backend/routes/tweets.js";
 import adminSecurity from "./waldocoin-backend/routes/adminsecurity.js";
-import debugRoutes from "./waldocoin-backend/routes/debug.js";
+import debugRoutes from "./routes/debug.js";
+import analyticsRoutes from "./waldocoin-backend/routes/analytics.js";
+import adminLogsRoutes from "./waldocoin-backend/routes/adminLogs.js";
+import presaleRoutes from "./waldocoin-backend/routes/presale.js";
+import voteRoutes from "./waldocoin-backend/routes/vote.js";
+import trustlineRoute from "./routes/trustline.js";
 
 dotenv.config();
 
@@ -21,6 +26,9 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/admin/security", adminSecurity)
 app.use("/api/debug", debugRoutes);
+app.use("/api/presale", presaleRoutes);
+app.use("/api/vote", voteRoutes);
+app.use("/api/trustline", trustlineRoute);
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -38,6 +46,9 @@ app.use("/api/mint", mintRoute);
 app.use("/api/mint/confirm", mintConfirmRoute);
 app.use("/api/reward", rewardRoute);
 app.use("/api/tweets", tweetsRoute);
+app.use("/api/phase9/analytics", analyticsRoutes);
+app.use("/api/phase9/admin", adminLogsRoutes);
+
 
 app.get("/", (req, res) => {
   res.json({ status: "🚀 WALDO API is live!" });
