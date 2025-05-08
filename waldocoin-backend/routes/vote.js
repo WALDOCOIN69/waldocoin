@@ -1,8 +1,8 @@
-const express = require("express");
-const router = express.Router();
-const db = require("../utils/db");
-const getWaldoBalance = require("../utils/getWaldoBalance");
+import express from "express";
+import db from "../utils/db.js";
+import getWaldoBalance from "../utils/getWaldoBalance.js";
 
+const router = express.Router();
 const MIN_REQUIRED_WALDO = 10000;
 
 router.post("/", async (req, res) => {
@@ -37,4 +37,21 @@ router.post("/", async (req, res) => {
   return res.json({ success: true });
 });
 
-module.exports = router;
+// ✅ Tally Route — make sure it's ABOVE the export
+router.get("/tally/:id", (req, res) => {
+  const proposal = db.proposals[req.params.id];
+  if (!proposal || !proposal.votes) {
+    return res.json({ results: {} });
+  }
+
+  const tally = {};
+  Object.values(proposal.votes).forEach(choice => {
+    tally[choice] = (tally[choice] || 0) + 1;
+  });
+
+  res.json({ results: tally });
+});
+
+export default router;
+
+
