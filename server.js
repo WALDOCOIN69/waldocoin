@@ -14,7 +14,7 @@ import analyticsRoutes from "./waldocoin-backend/routes/analytics.js";
 import adminLogsRoutes from "./waldocoin-backend/routes/adminLogs.js";
 import presaleRoutes from "./waldocoin-backend/routes/presale.js";
 import voteRoutes from "./waldocoin-backend/routes/vote.js";
-import trustlineRoute from "./routes/trustline.js";
+import trustlineRoute from "./waldocoin-backend/routes/trustline.js";
 import debugRoutes from "./waldocoin-backend/routes/debug.js";
 
 
