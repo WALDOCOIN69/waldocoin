@@ -5,7 +5,7 @@ const router = express.Router();
 
 const XRPL_NODE = "https://s1.ripple.com:51234"; // Mainnet
 const WALDO_ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F"; // Your WALDO issuer address
-const CURRENCY = "WALDO";
+const CURRENCY = "WLO";
 
 // POST /api/trustline/check
 router.post("/check", async (req, res) => {
