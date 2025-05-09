@@ -4,7 +4,7 @@ import fetch from "node-fetch";
 const router = express.Router();
 
 const XRPL_NODE = "https://s1.ripple.com:51234"; // Mainnet
-const WALDO_ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F"; // Your WALDO issuer address
+const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"; // Your WALDO issuer address
 const CURRENCY = "WLO";
 
 // POST /api/trustline/check
