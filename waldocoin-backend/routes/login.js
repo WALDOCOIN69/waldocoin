@@ -1,4 +1,4 @@
-// 📁 routes/login.js
+// ✅ routes/login.js — XUMM QR login route
 import express from "express";
 import { Xumm } from "xumm-sdk";
 import dotenv from "dotenv";
@@ -11,9 +11,7 @@ const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 router.get("/", async (req, res) => {
   try {
     const payload = {
-      txjson: {
-        TransactionType: "SignIn"
-      }
+      txjson: { TransactionType: "SignIn" }
     };
 
     const created = await xumm.payload.create(payload);
@@ -28,4 +26,5 @@ router.get("/", async (req, res) => {
   }
 });
 
-export default router;
+export default router; 
+
