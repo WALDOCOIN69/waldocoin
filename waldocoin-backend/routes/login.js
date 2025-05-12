@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
-import XummSdk from "xumm-sdk"; // ✅ Use default import
+import xummSdkPkg from "xumm-sdk"; // 👈 CommonJS compatibility for ESM
+const XummSdk = xummSdkPkg.default; // 👈 Pull out the actual constructor
 
 dotenv.config();
 
