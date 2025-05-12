@@ -1,11 +1,11 @@
-// ✅ routes/login.js — XUMM QR login route
 import express from "express";
-import { Xumm } from "xumm-sdk";
 import dotenv from "dotenv";
+import pkg from "xumm-sdk"; // ✅ Fix for CommonJS
 
 dotenv.config();
-const router = express.Router();
+const { Xumm } = pkg; // ✅ Extract from default import
 
+const router = express.Router();
 const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 router.get("/", async (req, res) => {
@@ -26,5 +26,4 @@ router.get("/", async (req, res) => {
   }
 });
 
-export default router; 
-
+export default router;
