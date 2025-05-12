@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <title>WALDO Admin Panel</title>
   <style>
     body { background:#111; color:white; font-family:sans-serif; padding:40px; }
     h2 { color:#e63e3e; }
+    .waldo-chart, .waldo-chart-2 { margin-top: 20px; }
+    .flex-wrap-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
     table { width:100%; border-collapse:collapse; background:#222; margin-bottom:20px; }
     th, td { padding:10px; border:1px solid #444; text-align:left; }
     th { background:#e63e3e; }
@@ -12,106 +19,91 @@
     .card { margin-bottom:40px; }
     input, textarea { padding:10px; width:100%; margin:5px 0 10px; background:#222; color:white; border:1px solid #444; border-radius:5px; }
     .hidden { display: none; }
+    .export-history-btn { margin-left: 10px; }
+    .date-input { margin-right: 10px; }
+    .margin-spacing { margin: 10px 0; }
+    .margin-10 { margin: 10px 0; }
+    .margin-10 { margin: 10px 0; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <title>WALDO Admin Panel</title>
 </head>
 <body>
   <div class="card">
     <h2>📊 Admin Analytics</h2>
-    <button onclick="loadWalletAnalytics()">📌 Wallet Analytics</button>
-    <button onclick="loadBattleStats()">⚔️ Battle Stats</button>
-    <button onclick="loadAirdropStats()">🎁 Airdrop Stats</button>
-    <button onclick="loadAdminLogs()">📜 Admin Logs</button>
+    <button type="button" onclick="loadWalletAnalytics()">📌 Wallet Analytics</button>
+    <button type="button" onclick="loadBattleStats()">⚔️ Battle Stats</button>
+    <button type="button" onclick="loadAirdropStats()">🎁 Airdrop Stats</button>
+    <button type="button" onclick="loadAdminLogs()">📜 Admin Logs</button>
   <pre id="analyticsOutput">Waiting for admin input...</pre>
 <h1>🚨 WALDO Admin Panel</h1>
 </div>
-
 <!-- Meme Battle Debug Tools -->
 <div class="card">
-  <h2>⚔️ Meme Battle Debug</h2>
-  <button onclick="createFakeBattle()">🧱 Create Fake Battle</button>
-  <button onclick="viewBattles()">👁️ View Battles</button>
-  <button onclick="resetBattle()">♻️ Reset Active</button>
-  <button onclick="voteMeme('meme1')">🗳️ Vote Meme 1</button>
-  <button onclick="voteMeme('meme2')">🗳️ Vote Meme 2</button>
-  <button onclick="payout()">💸 Trigger Payout</button>
-  <pre id="output">Waiting for admin input...</pre>
-</div> <!-- Closing tag added -->
-
-<div class="card">
-  <h2>🛠️ Admin Quick Tools</h2>
-  <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-    <button onclick="togglePhase()">🔄 Phase Switcher</button>
-    <button onclick="showLiveStats()">📈 Live Stats</button>
-    <button onclick="openAirdropTools()">📦 Airdrop Tools</button>
-    <button onclick="runDebugTools()">🧪 Debug Buttons</button>
-    <button onclick="openWalletAnalytics()">🔍 Wallet Analytics</button>
-  </div> <!-- Closing tag added -->
-</div> <!-- Missing closing tag added -->
-
+    <button type="button" onclick="togglePhase()">🔄 Phase Switcher</button>
+    <button type="button" onclick="showLiveStats()">📈 Live Stats</button>
+    <button type="button" onclick="openAirdropTools()">📦 Airdrop Tools</button>
+    <button type="button" onclick="runDebugTools()">🧪 Debug Buttons</button>
+    <button type="button" onclick="openWalletAnalytics()">🔍 Wallet Analytics</button>
+  </div>
 <!-- Presale Countdown -->
 <div class="card">
   <h2>⏲️ Presale Countdown Controls</h2>
   <label for="presaleEnd">Presale End Date (YYYY-MM-DD):</label>
-  <input type="date" id="presaleEnd" name="presaleEnd" />
-  <button onclick="setPresaleEndDate()">💾 Save End Date</button>
+  <input type="date" id="presaleEnd" name="presaleEnd" input>
+  <button type="button" onclick="setPresaleEndDate()">💾 Save End Date</button>
   <pre id="timerOutput">Loading current timer...</pre>
 </div> <!-- Closing tag added -->
 
 <!-- Presale Summary -->
 <div class="card">
   <h2>📊 Presale Summary</h2>
-  <button onclick="downloadCSV()">⬇️ Download Presale CSV</button>
-  <button onclick="loadBuyers()">🔄 Refresh Buyer List</button>
+  <button type="button" onclick="downloadCSV()">⬇️ Download Presale CSV</button>
+  <button type="button" onclick="loadBuyers()">🔄 Refresh Buyer List</button>
   <p><strong>WALDO Sold:</strong> <span id="totalWaldo">...</span><br>
-     <strong>XRP Collected:</strong> <span id="totalXrp">...</span></p>
-     <input type="text" id="presaleSearch" placeholder="Search wallet, email or tier..." style="margin-bottom: 10px; padding: 10px; width: 100%; border-radius: 5px; border: 1px solid #444; background: #222; color: white;" oninput="filterBuyers()" />
-     <div style="margin: 10px 0;">
-      <label>Filter by Date:</label><br />
-      <input type="date" id="startDate" style="margin-right: 10px;" />
-      <input type="date" id="endDate" />
-      <button onclick="downloadCSVByDate()" style="margin-left: 10px;">📁 Export CSV by Date</button>
-    <canvas id="waldoChart" height="60" style="margin-top:20px;"></canvas>
-
-     <table>
+  <strong>XRP Collected:</strong> <span id="totalXrp">...</span></p>
+  <div class="margin-10">
+  <div class="margin-10">
+    <label for="startDate">Filter by Date:</label><br>
+    <input type="date" id="startDate" class="date-input">
+    <input type="date" id="endDate" class="date-input" >
+    <canvas id="waldoChart2" height="60" class="waldo-chart-2"></canvas>
+  </div>
+  <table>
       <thead>
         <tr>
-          <th>Wallet</th>
-          <th>XRP</th>
-          <th>WALDO</th>
-          <th>Email</th>
-          <th>Timestamp</th>
-          <th>WALDO Balance</th> <!-- new column -->
+          <th scope="col">Wallet</th>
+          <th scope="col">XRP</th>
+          <th scope="col">WALDO</th>
+          <th scope="col">Email</th>
+          <th scope="col">Timestamp</th>
+          <th scope="col">WALDO Balance</th> <!-- new column -->
         </tr>
       </thead>
 
       <!-- airdop history-->
     <tbody id="buyerRows"><tr><td colspan="5">Loading...</td></tr></tbody>
   </table>
-</div>
 <div class="card">
   <h2>🎁 Airdrop History</h2>
-  <input type="text" id="airdropSearch" placeholder="Search wallet...">
-  <div style="margin: 10px 0;">
-    <label>Filter by Date:</label><br />
-    <input type="date" id="historyStart" style="margin-right: 10px;" />
-    <input type="date" id="historyEnd" />
-    <button onclick="downloadAirdropHistoryCSV()" style="margin-left: 10px;">Export History CSV</button>
+<input type="date" id="historyStart" class="date-input">
+  <div class="margin-10">
+    <button type="button" onclick="downloadAirdropHistoryCSV()" class="export-history-btn">Export History CSV</button>
+    <input type="date" id="historyEnd">
+    <button type="button" onclick="downloadAirdropHistoryCSV()" class="export-history-btn">Export History CSV</button>
   </div>
   <div>
   <table>
-    <thead><tr><th>Wallet</th><th>Amount</th><th>Date</th></tr></thead>
+    <thead><tr><th scope="col">Wallet</th><th scope="col">Amount</th><th scope="col">Date</th></tr></thead>
     <tbody id="airdropHistoryRows"><tr><td colspan="3">Loading...</td></tr></tbody>
   </table>
+  </div>
 </div>
 
 <!-- Minted Memes -->
 <div class="card">
   <h2>🖼️ Minted Memes</h2>
   <table>
-    <thead><tr><th>Wallet</th><th>XP</th><th>Tier</th><th>Image</th><th>Minted At</th></tr></thead>
+    <thead><tr><th scope="col">Wallet</th><th scope="col">XP</th><th scope="col">Tier</th><th scope="col">Image</th><th scope="col">Minted At</th></tr></thead>
     <tbody id="mintedRows"><tr><td colspan="5">Loading...</td></tr></tbody>
   </table>
 </div>
@@ -120,7 +112,7 @@
 <div class="card">
   <h2>👑 Top Legendary Memes</h2>
   <table>
-    <thead><tr><th>Wallet</th><th>XP</th><th>Tier</th><th>Image</th><th>Minted</th></tr></thead>
+    <thead><tr><th scope="col">Wallet</th><th scope="col">XP</th><th scope="col">Tier</th><th scope="col">Image</th><th scope="col">Minted</th></tr></thead>
     <tbody id="legendaryRows"><tr><td colspan="5">Loading...</td></tr></tbody>
   </table>
 </div>
@@ -129,7 +121,7 @@
 <div class="card">
   <h2>📈 XP Leaderboard</h2>
   <table>
-    <thead><tr><th>Wallet</th><th>XP</th><th>Level</th><th>Memes Minted</th><th>Battles Won</th></tr></thead>
+    <thead><tr><th scope="col">Wallet</th><th scope="col">XP</th><th scope="col">Level</th><th scope="col">Memes Minted</th><th scope="col">Battles Won</th></tr></thead>
     <tbody id="xpRows"><tr><td colspan="5">Loading...</td></tr></tbody>
   </table>
 </div>
@@ -138,15 +130,15 @@
 <div class="card">
   <h2>🎁 Airdrop Queue</h2>
   <form onsubmit="addToQueue(event)">
-    <input type="text" id="airdropWallet" placeholder="Enter XRP Wallet Address" required />
-    <input type="number" id="airdropAmount" placeholder="WALDO Amount" required />
+    <input type="text" id="airdropWallet" placeholder="Enter XRP Wallet Address" required>
+    <input type="number" id="airdropAmount" placeholder="WALDO Amount" required>
     <button type="submit">➕ Add to Queue</button>
   </form>
-  <button onclick="sendAirdrops()">🚀 Send All Airdrops</button>
-  <button onclick="downloadAirdropCSV()">📁 Export Airdrop Queue</button>
+  <button type="button" onclick="sendAirdrops()">🚀 Send All Airdrops</button>
+  <button type="button" onclick="downloadAirdropCSV()">📁 Export Airdrop Queue</button>
 
   <table>
-    <thead><tr><th>Wallet</th><th>Amount</th></tr></thead>
+    <thead><tr><th scope="col">Wallet</th><th scope="col">Amount</th></tr></thead>
     <tbody id="airdropQueueRows"><tr><td colspan="2">No queued drops.</td></tr></tbody>
   </table>
 </div>
@@ -155,8 +147,8 @@
 <div class="card">
   <h2>✍️ Manual WALDO Sender</h2>
   <form onsubmit="sendManual(event)">
-    <input type="text" id="manualWallet" placeholder="XRP Wallet Address" required />
-    <input type="number" id="manualAmount" placeholder="Amount to Send" required />
+    <input type="text" id="manualWallet" placeholder="XRP Wallet Address" required>
+    <input type="number" id="manualAmount" placeholder="Amount to Send" required>
     <button type="submit">📤 Send WALDO</button>
   </form>
 </div>
@@ -165,7 +157,7 @@
 <div class="card">
   <h2>🔍 Trustline Checker</h2>
   <form onsubmit="checkTrustline(event)">
-    <input type="text" id="trustWallet" placeholder="XRP Wallet Address" required />
+    <input type="text" id="trustWallet" placeholder="XRP Wallet Address" required>
     <button type="submit">🔍 Check</button>
   </form>
   <pre id="trustOutput">Waiting for wallet trustline check...</pre>
@@ -174,10 +166,10 @@
 <div class="card dao-admin">
   <h2>🗳️ Create a DAO Proposal</h2>
   <form id="daoProposalForm">
-    <input type="text" id="daoTitle" placeholder="Proposal Title" required />
+    <input type="text" id="daoTitle" placeholder="Proposal Title" required>
     <textarea id="daoDescription" placeholder="Description (optional)"></textarea>
-    <input type="text" id="daoOptions" placeholder="Options e.g. Yes,No" required />
-    <input type="number" id="daoDuration" placeholder="Voting Duration (hours)" value="24" />
+    <input type="text" id="daoOptions" placeholder="Options e.g. Yes,No" required>
+    <input type="number" id="daoDuration" placeholder="Voting Duration (hours)" value="24">
     <button type="submit">📨 Submit Proposal</button>
   </form>
 
@@ -231,7 +223,6 @@
     function runDebugTools() {
       fetch(`${base}/api/debug/fake-battle`, {
         method: 'POST',
-       
       })
       .then(res => res.json())
       .then(data => alert("✅ Fake battle created"))
@@ -260,7 +251,6 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-       
       },
       body: JSON.stringify({ endDate: date })
     })
@@ -391,8 +381,6 @@
     const url = `${base}/admin/export/presale?start=${start}&end=${end}`;
   
     fetch(url, {
-   
-
     })
       .then(res => {
         if (!res.ok) throw new Error("CSV export failed");
@@ -465,14 +453,21 @@
     });
     output(await res.json());
   }
-  // 🔍 Trustline
   async function checkTrustline(e) {
     e.preventDefault();
     const wallet = document.getElementById("trustWallet").value.trim();
-    const res = await fetch(`${base}/api/trustline/check?wallet=${wallet}`);
-    document.getElementById("trustOutput").textContent = JSON.stringify(await res.json(), null, 2);
+  
+    const res = await fetch(`${base}/api/trustline/check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet })
+    });
+  
+    const data = await res.json();
+    document.getElementById("trustOutput").textContent = JSON.stringify(data, null, 2);
   }
   
+
   // 🎁 Airdrop Queue
   const queue = JSON.parse(localStorage.getItem("airdropQueue")) || [];
 
@@ -855,6 +850,7 @@ proposals.forEach(p => {
     }
   });
 </script>
+</div>
 </body>
 </html>
   
