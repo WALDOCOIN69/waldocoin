@@ -1,28 +1,29 @@
 // 📁 waldocoin-backend/routes/login.js
-import express from 'express'
-import { logViolation, isAutoBlocked } from '../utils/security.js'
+import express from "express";
+import { Xumm } from "xumm-sdk";
+import dotenv from "dotenv";
 
-const router = express.Router()
+dotenv.config();
+const router = express.Router();
 
-router.post('/wallet', async (req, res) => {
-  const { wallet } = req.body
+const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-  if (!wallet || !wallet.startsWith('r') || wallet.length < 25) {
-    await logViolation(wallet || 'unknown', "invalid_wallet", { reason: "format" })
-    return res.status(400).json({ error: "Invalid or missing wallet address." })
+router.get("/", async (req, res) => {
+  try {
+    const payload = {
+      txjson: { TransactionType: "SignIn" }
+    };
+
+    const created = await xumm.payload.create(payload);
+    res.json({
+      success: true,
+      qr: created.refs.qr_png,
+      uuid: created.uuid
+    });
+  } catch (err) {
+    console.error("❌ XUMM login error:", err.message);
+    res.status(500).json({ success: false, error: "Could not create login QR." });
   }
+});
 
-  if (await isAutoBlocked(wallet)) {
-    await logViolation(wallet, "login_attempt_blocked", { reason: "auto_blocked_status" })
-    return res.status(403).json({ error: "🚫 This wallet is blocked due to prior violations." })
-  }
-
-  // Optional: Track login attempt
-  await logViolation(wallet, "login_attempt", { ip: req.ip })
-
-  // ✅ Success response
-  res.json({ success: true, message: "Wallet verified and accepted." })
-})
-
-export default router
-
+export default router;
