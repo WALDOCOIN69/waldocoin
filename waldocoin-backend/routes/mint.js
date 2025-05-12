@@ -6,6 +6,8 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+console.log("🔍 ENV KEY:", process.env.XUMM_API_KEY);
+console.log("🔍 ENV SECRET:", process.env.XUMM_API_SECRET);
 const router = express.Router()
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET)
 const DB_PATH = "./db.json"
