@@ -6,7 +6,9 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const { default: XummSdk } = await import("xumm-sdk");
+    const xummModule = await import("xumm-sdk");
+    const XummSdk = xummModule.default.default; // ✅ DOUBLE .default works in ESM mode on Render
+
     const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     const payload = {
@@ -28,4 +30,4 @@ router.get("/", async (req, res) => {
   }
 });
 
-export default router; // ✅ ✅ ✅ THIS was missing
+export default router;
