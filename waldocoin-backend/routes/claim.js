@@ -93,6 +93,14 @@ router.post("/", async (req, res) => {
       });
     }
 
+    console.log("🧪 Creating payload with:", {
+      wallet,
+      stake,
+      tier,
+      reward,
+      issuer: ISSUER
+    });
+
     const payload = await xumm.payload.create({
       txjson: {
         TransactionType: "Payment",
@@ -130,9 +138,10 @@ router.post("/", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ XUMM Claim Error:", err);
+    console.error("❌ XUMM Claim Error:", err?.response?.data || err.message || err);
     res.status(500).json({ success: false, error: "XUMM claim failed." });
   }
 });
 
 export default router;
+
