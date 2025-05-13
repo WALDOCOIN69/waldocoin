@@ -6,9 +6,7 @@ import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 import { createRequire } from "module";
 
-const { createRequire } = require("module");
 const require = createRequire(import.meta.url);
-
 const Xumm = require("xumm-sdk").default;
 const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
