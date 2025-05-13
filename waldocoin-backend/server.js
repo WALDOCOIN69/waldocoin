@@ -53,6 +53,10 @@ app.use("/api/phase9/admin", adminLogsRoutes);
 app.get("/", (req, res) => {
   res.json({ status: "🚀 WALDO API is live!" });
 });
+// Simple API Health Check (Ping Endpoint)
+app.get('/api/ping', (req, res) => {
+  res.status(200).json({ status: "✅ WALDO API is online" });
+});
 
 app.listen(PORT, () => {
   console.log(`✅ WALDO API running on http://localhost:${PORT}`);
