@@ -6,6 +6,10 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url); // CommonJS fallback
+const { Xumm } = require("xumm-sdk");           // <- This works in Render
 
 dotenv.config();
 const router = express.Router();
@@ -43,11 +47,9 @@ router.post("/", async (req, res) => {
   if (!wallet || typeof stake !== "boolean" || !tier) {
     return res.status(400).json({ error: "Missing required fields" });
   }
+
   try {
-    const xummPkg = await import("xumm-sdk");
-    const Xumm = xummPkg.default || xummPkg.Xumm || xummPkg;
     const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-  
 
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
@@ -136,14 +138,14 @@ router.post("/", async (req, res) => {
       qr: payload.refs.qr_png,
       reward: reward.toFixed(2)
     });
-  } 
-  catch (err) {
+
+  } catch (err) {
     const reason =
       err?.response?.data ||
       err?.data ||
       err?.message ||
       err;
-  
+
     console.error("❌ XUMM Claim Error:", reason);
     res.status(500).json({
       success: false,
