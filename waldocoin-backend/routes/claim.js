@@ -1,3 +1,5 @@
+// routes/claim.js
+
 import express from "express";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -8,7 +10,6 @@ import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const Xumm = require("xumm-sdk").default;
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 dotenv.config();
 const router = express.Router();
@@ -48,7 +49,7 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET); // ✅ Now valid
+    const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
@@ -154,3 +155,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
