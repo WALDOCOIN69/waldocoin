@@ -45,9 +45,8 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const xummPkg = await import("xumm-sdk");
-    const XummSdk = xummPkg.default || xummPkg;
-    const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+    const { Xumm } = await import("xumm-sdk");
+    const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
