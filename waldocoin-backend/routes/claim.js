@@ -1,5 +1,3 @@
-// routes/claim.js
-
 import express from "express";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -8,8 +6,8 @@ import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 import { createRequire } from "module";
 
-const require = createRequire(import.meta.url); // CommonJS fallback
-const { Xumm } = require("xumm-sdk");           // <- This works in Render
+const require = createRequire(import.meta.url);
+const Xumm = require("xumm-sdk"); // ✅ FIXED: no destructuring
 
 dotenv.config();
 const router = express.Router();
@@ -47,10 +45,9 @@ router.post("/", async (req, res) => {
   if (!wallet || typeof stake !== "boolean" || !tier) {
     return res.status(400).json({ error: "Missing required fields" });
   }
+
   try {
-    const Xumm = require("xumm-sdk");
-    const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-  
+    const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET); // ✅ Now valid
 
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
@@ -120,7 +117,6 @@ router.post("/", async (req, res) => {
       }
     });
 
-    // Save reward
     db.rewards[wallet][monthKey][tier] = claimedThisMonth + reward;
     db.rewards[wallet][monthKey]._log = log.concat({
       timestamp: new Date().toISOString(),
