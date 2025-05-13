@@ -2,8 +2,6 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-
-import loginRoute from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mintConfirm.js";
@@ -16,6 +14,7 @@ import presaleRoutes from "./routes/presale.js";
 import voteRoutes from "./routes/vote.js";
 import trustlineRoute from "./routes/trustline.js";
 import debugRoutes from "./routes/debug.js";
+import loginRoute from "./routes/login.js";
 
 
 dotenv.config();

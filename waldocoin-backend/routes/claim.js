@@ -49,7 +49,7 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+    const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
