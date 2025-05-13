@@ -136,10 +136,20 @@ router.post("/", async (req, res) => {
       qr: payload.refs.qr_png,
       reward: reward.toFixed(2)
     });
-
-  } catch (err) {
-    console.error("❌ XUMM Claim Error:", err?.response?.data || err.message || err);
-    res.status(500).json({ success: false, error: "XUMM claim failed." });
+  } 
+  catch (err) {
+    const reason =
+      err?.response?.data ||
+      err?.data ||
+      err?.message ||
+      err;
+  
+    console.error("❌ XUMM Claim Error:", reason);
+    res.status(500).json({
+      success: false,
+      error: "XUMM claim failed.",
+      detail: reason
+    });
   }
 });
 
