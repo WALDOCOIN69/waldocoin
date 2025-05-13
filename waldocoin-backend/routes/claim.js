@@ -4,7 +4,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import xumm from "../utils/xummClient.cjs"; // ✅ Import shared Xumm client
+import xumm from "../utils/xummClient.js";
+
 
 dotenv.config();
 const router = express.Router();
