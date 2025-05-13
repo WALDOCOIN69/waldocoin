@@ -47,9 +47,10 @@ router.post("/", async (req, res) => {
   if (!wallet || typeof stake !== "boolean" || !tier) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-
   try {
+    const Xumm = require("xumm-sdk");
     const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+  
 
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
