@@ -1,15 +1,10 @@
-// routes/claim.js
-
 import express from "express";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
-const Xumm = require("xumm-sdk").default;
+import xumm from "../utils/xummClient.cjs"; // ✅ Import shared Xumm client
 
 dotenv.config();
 const router = express.Router();
@@ -22,7 +17,6 @@ const DB_PATH = path.join(__dirname, "../db.json");
 // Constants
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
 const CURRENCY = "WLD";
-const WALDO_TO_XRP = 0.0042;
 
 const INSTANT_FEE_PERCENT = 0.10;
 const STAKE_FEE_PERCENT = 0.05;
@@ -49,8 +43,6 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
         error: "❌ This wallet is temporarily blocked due to repeated abuse."
@@ -94,14 +86,6 @@ router.post("/", async (req, res) => {
         error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WALDO this month.`
       });
     }
-
-    console.log("🧪 Creating payload with:", {
-      wallet,
-      stake,
-      tier,
-      reward,
-      issuer: ISSUER
-    });
 
     const payload = await xumm.payload.create({
       txjson: {
