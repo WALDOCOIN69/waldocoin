@@ -7,7 +7,8 @@ import { isAutoBlocked, logViolation } from "../utils/security.js";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const Xumm = require("xumm-sdk"); // ✅ FIXED: no destructuring
+const XummSdk = require("xumm-sdk");
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 dotenv.config();
 const router = express.Router();
@@ -153,4 +154,3 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
