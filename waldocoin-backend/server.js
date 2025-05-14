@@ -15,6 +15,8 @@ import voteRoutes from "./routes/vote.js";
 import trustlineRoute from "./routes/trustline.js";
 import debugRoutes from "./routes/debug.js";
 import loginRoute from "./routes/login.js";
+import userStatsRoute from "./routes/userstats.js";
+
 
 
 dotenv.config();
@@ -29,6 +31,7 @@ app.use("/api/debug", debugRoutes);
 app.use("/api/presale", presaleRoutes);
 app.use("/api/vote", voteRoutes);
 app.use("/api/trustline", trustlineRoute);
+app.use("/api/userStats", userStatsRoute);
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
