@@ -1,15 +1,12 @@
-// routes/price.js
 import express from "express";
-import fetch from "node-fetch";
+import axios from "axios";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const response = await fetch("https://api.sologenic.org/api/v1/token/WALDO");
-    const data = await response.json();
-
-    const fullHistory = data?.token?.marketData?.history || [];
+    const response = await axios.get("https://api.sologenic.org/api/v1/token/WALDO");
+    const fullHistory = response.data?.token?.marketData?.history || [];
 
     // Send only last 7 days
     const last7Days = fullHistory.slice(-7);
