@@ -67,4 +67,5 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Failed to load tweet data." });
   }
 });
+export default router;
 

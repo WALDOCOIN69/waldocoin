@@ -1,25 +1,23 @@
-// routes/userstats.js
 import express from "express";
 const router = express.Router();
 
-// Dummy user stats – replace this with real DB/Redis logic later
-router.get("/", async (req, res) => {
-  const { wallet } = req.query;
-  if (!wallet) {
-    return res.status(400).json({ error: "Wallet address is required." });
-  }
+router.get("/", (req, res) => {
+  const wallet = req.query.wallet;
 
-  res.json({
+  // Simulate "realistic" user stats
+  const fakeUserStats = {
     wallet,
-    xp: 420,
+    xp: 850, // Adjust to simulate different levels
     level: 3,
     title: "Meme Knight",
-    likes: 1000,
-    retweets: 300,
+    likes: 1125,
+    retweets: 225,
     memes: 5,
     battles: 2,
-    referrals: []
-  });
+    referrals: ["rTestReferrer1", "rTestReferrer2"]
+  };
+
+  res.json(fakeUserStats);
 });
 
 export default router;
