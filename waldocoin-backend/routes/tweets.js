@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
       {
         wallet,
         tweet_id: "1780011111111111111",
-        image_url: "https://via.placeholder.com/300x200.png?text=Meme+1",
+        image_url: "https://placehold.co/300x200?text=Meme+1",
         likes: 180,
         retweets: 30,
         waldo_amount: 4.5
@@ -27,7 +27,7 @@ router.get("/", async (req, res) => {
       {
         wallet,
         tweet_id: "1780022222222222222",
-        image_url: "https://via.placeholder.com/300x200.png?text=Meme+2",
+        image_url: "https://placehold.co/300x200?text=Meme+2",
         likes: 320,
         retweets: 75,
         waldo_amount: 9.3
@@ -54,7 +54,7 @@ router.get("/", async (req, res) => {
       tweets.push({
         wallet,
         tweet_id: id,
-        image_url: mediaUrl || "https://via.placeholder.com/300x200.png?text=Missing+Image",
+        image_url: mediaUrl || "https://via.placeholder.co/300x200.png?text=Missing+Image",
         likes: tweet?.data?.public_metrics?.like_count || 0,
         retweets: tweet?.data?.public_metrics?.retweet_count || 0,
         waldo_amount: 0 // Will be calculated later
