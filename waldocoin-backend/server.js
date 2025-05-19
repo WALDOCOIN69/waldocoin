@@ -2,7 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import XummSdk from "xumm-sdk";
+import pkg from "xumm-sdk"; // ✅ This is the only correct xumm-sdk import
+
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mintConfirm.js";
@@ -23,6 +24,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5050;
 
+const XummSdk = pkg;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 app.use(cors());
@@ -53,6 +55,7 @@ app.use("/api/reward", rewardRoute);
 app.use("/api/tweets", tweetsRoute);
 app.use("/api/phase9/analytics", analyticsRoutes);
 app.use("/api/phase9/admin", adminLogsRoutes);
+
 
 // ✅ XUMM Login Route
 app.get("/api/login", async (req, res) => {
