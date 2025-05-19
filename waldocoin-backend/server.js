@@ -24,7 +24,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-const XummSdk = pkg;
+const { XummSdk } = pkg; // ✅ correct
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 app.use(cors());
