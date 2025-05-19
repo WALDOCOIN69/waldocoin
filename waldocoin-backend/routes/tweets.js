@@ -1,7 +1,11 @@
 import express from "express";
 import { TwitterApi } from "twitter-api-v2";
 
+const router = express.Router();
 const twitterClient = new TwitterApi(process.env.TWITTER_BEARER);
+
+// Set to true for dummy data (optional)
+const USE_FAKE_DATA = false;
 
 router.get("/", async (req, res) => {
   const wallet = req.query.wallet;
@@ -30,8 +34,7 @@ router.get("/", async (req, res) => {
   }
 
   try {
-    const tweetIds = ["1780011111111111111", "1780022222222222222"]; // ← placeholder
-
+    const tweetIds = ["1780011111111111111", "1780022222222222222"]; // Placeholder list
     const tweets = [];
 
     for (const id of tweetIds) {
