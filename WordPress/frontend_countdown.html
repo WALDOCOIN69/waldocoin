@@ -1,20 +1,27 @@
-<div style="text-align: center; margin-top: 40px;">
-    <h2 style="color: #e63e3e; font-size: 2em; margin-bottom: 20px;">Presale Ends In</h2>
-    <div id="waldoCountdown" style="
-      font-family: 'Courier New', monospace;
-      font-size: 48px;
-      color: red;
-      background: black;
-      padding: 20px 40px;
-      border: 3px solid red;
-      border-radius: 10px;
-      display: inline-block;
-      box-shadow: 0 0 15px red;
-    ">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Presale Countdown</title>
+  <style>
+    .countdown-container {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .presale-heading {
+      color: #e63e3e;
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+<div class="countdown-container">
+    <h2 class="presale-heading">Presale Ends In</h2>
+    <div id="waldoCountdown" class="countdown-display">
       Loading...
     </div>
   </div>
-  
   <script>
     const backendBase = "https://waldocoin-backend.onrender.com";
   
@@ -54,3 +61,5 @@
   
     loadFrontendCountdown();
   </script>
+</body>
+</html>

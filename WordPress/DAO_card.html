@@ -1,9 +1,9 @@
+<!DOCTYPE html>
 <!-- WALDO DAO Voting Card -->
-<div class="card" id="daoVotingCard" style="grid-column: 1 / -1;">
+<div class="card full-width-card" id="daoVotingCard">
     <h2>🗳 WALDOcoin DAO Voting</h2>
     <div id="proposalContainer">Loading proposal...</div>
   </div>
-  
   <script>
   async function loadDAOProposal() {
     const res = await fetch("/api/proposals");
@@ -12,7 +12,6 @@
       document.getElementById("proposalContainer").textContent = "No active proposals.";
       return;
     }
-  
     const proposal = data[0];
     const wallet = localStorage.getItem("xummWallet");
     const hasVoted = proposal.votes && proposal.votes[wallet];
@@ -21,13 +20,11 @@
       : proposal.choices.map(c =>
           `<button onclick="voteDAO('${proposal.id}', '${c}')">${c}</button>`
         ).join(" ");
-  
     document.getElementById("proposalContainer").innerHTML = `
       <h3>${proposal.title}</h3>
       ${voteHTML}
     `;
   }
-  
   async function voteDAO(id, choice) {
     const wallet = localStorage.getItem("xummWallet");
     const res = await fetch("/api/vote", {
@@ -43,9 +40,7 @@
       showWaldoNotification(`❌ Vote failed: ${data.error}`);
     }
   }
-  
   document.addEventListener("DOMContentLoaded", () => {
     loadDAOProposal();
   });
   </script>
-  

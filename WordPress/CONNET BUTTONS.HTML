@@ -1,13 +1,52 @@
-<div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 40px;">
-    <button 
-      onclick="window.location.href='/connect-wallet'"
-      style="background: #25c2a0; color: black; font-weight: bold; font-size: 16px; padding: 12px 24px; border-radius: 10px; border: none; cursor: pointer;">
-      🔗 Connect XAMAN Wallet
-    </button>
-  
-    <button 
-      onclick="window.location.href='/hall-of-fame'"
-      style="background: gold; color: black; font-weight: bold; font-size: 16px; padding: 12px 24px; border-radius: 10px; border: none; cursor: pointer;">
-      🌟 WALDO Hall of Fame
-    </button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Connect Wallet</title>
+</head>
+<body>
+<div class="button-container">
+  <button 
+    id="connectWalletBtn"
+    type="button"
+    onclick="window.location.href='/connect-wallet'"
+    class="connect-wallet-button">
+    🔗 Connect XAMAN Wallet
+  </button>
+
+  <div id="trustlineWarning" class="trustline-warning">
+    <h3 class="trustline-warning-title">⚠️ Add WALDO Trustline</h3>
+    <p>To receive WALDO rewards, you must first add the WALDO trustline to your XRP wallet.</p>
+    <a href="https://xumm.app/detect/trust?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO" target="_blank">
+      <span class="add-trustline-button">➕ Add WALDO Trustline</span>
+    </a>
   </div>
+
+  <button
+    type="button"
+    onclick="window.location.href='/hall-of-fame'"
+    class="hall-of-fame-button">
+    🌟 WALDO Hall of Fame
+  </button>
+</div>
+
+<script>
+  async function checkTrustline(wallet) {
+    const res = await fetch("https://waldocoin-1.onrender.com/api/trustline/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet })
+    });
+    const data = await res.json();
+    if (data.success && !data.trustline) {
+      document.getElementById("trustlineWarning").style.display = "block";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const wallet = localStorage.getItem("xumm_wallet");
+    if (wallet) checkTrustline(wallet);
+  });
+</script>
+</body>
+</html>

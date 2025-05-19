@@ -1,33 +1,27 @@
-// routes/login.js
 import express from "express";
+import XummSdk from 'xumm-sdk'; 
 import dotenv from "dotenv";
-
 dotenv.config();
-const router = express.Router();
 
+const router = express.Router();
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 router.get("/", async (req, res) => {
   try {
-    console.log("⚡ Dynamically importing xumm-sdk...");
-
-    const xummPkg = await import("xumm-sdk");
-    const XummSdk = xummPkg.default || xummPkg;
-    const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-    const payload = {
-      txjson: { TransactionType: "SignIn" }
-    };
-
-    const created = await xumm.payload.create(payload);
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "SignIn",
+      },
+    });
 
     res.json({
-      success: true,
-      qr: created.refs.qr_png,
-      uuid: created.uuid
+      qr: payload.refs.qr_png,
+      uuid: payload.uuid,
     });
   } catch (err) {
-    console.error("❌ XUMM login error:", err);
-    res.status(500).json({ success: false, error: "XUMM login failed." });
+    console.error("❌ Error creating XUMM payload:", err);
+    res.status(500).json({ error: "Failed to create XUMM sign-in." });
   }
 });
 
 export default router;
+

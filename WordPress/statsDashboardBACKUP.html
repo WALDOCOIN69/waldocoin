@@ -1,231 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WALDOcoin Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js/dist/Chart.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
-  <style>
-    body {
-      background-image: url("https://waldocoin2.local/wp-content/uploads/2025/03/1737843965137.jpg");
-      background-repeat: repeat;
-      background-size: 200px;
-      background-attachment: fixed;
-      background-color: #000;
-      color: white;
-      font-family: sans-serif;
-    }
-    
-    .container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 30px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px;
-    }
-  
-    .card {
-      background: #111;
-      color: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
-    }
-    .big-card {
-      grid-column: 1 / -1;
-      padding: 30px;
-      font-size: 1.1rem;
-    }
-    @media (max-width: 768px) {
-      .big-card {
-        font-size: 1rem;
-        padding: 20px;
-      }
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: center;
-    }
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #333;
-    }
-    thead th {
-      background: #222;
-      color: #25c2a0;
-      font-weight: bold;
-    }
-    .info-icon {
-    font-size: 18px;
-     cursor: help;
-    }
-    .tooltip-wrapper {
-      position: relative;
-      display: inline-block;
-    }
-    
-    .tooltip-icon {
-      background: #25c2a0;
-      color: black;
-      font-size: 14px;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 50%;
-      cursor: pointer;
-      line-height: 1;
-    }
-    
-    .tooltip-text {
-      visibility: hidden;
-      width: 240px;
-      background-color: #111;
-      color: #25c2a0;
-      text-align: center;
-      border-radius: 6px;
-      padding: 8px;
-      position: absolute;
-      z-index: 1;
-      bottom: 125%;
-      left: 50%;
-      margin-left: -120px;
-      opacity: 0;
-      transition: opacity 0.3s;
-      box-shadow: 0 0 10px #25c2a0;
-    }
-    
-    .tooltip-wrapper:hover .tooltip-text {
-      visibility: visible;
-      opacity: 1;
-    }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js/dist/Chart.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style>
+        body {
+            background-image: url("https://waldocoin2.local/wp-content/uploads/2025/03/1737843965137.jpg");
+            background-repeat: repeat;
+            background-size: 200px;
+            background-attachment: fixed;
+            background-color: #000;
+            color: white;
+            font-family: sans-serif;
+        }
 
-    .card {
-      background: #111;
-      color: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
-      animation: fadeInUp 0.8s ease;
-      position: relative;
-    }
-    
-    .card h1, .card h2, .card h3 {
-      color: white;
-      text-align: center;
-    }
-    .disconnect-btn {
-      display: block;
-      margin: 0 auto 10px;
-      background: red;
-      color: white;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .meme-thumb {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 8px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .meme-thumb:hover {
-      transform: scale(1.1);
-      box-shadow: 0 0 10px #fb2f2f;
-    }
-    .flip-card {
-      background-color: transparent;
-      width: 200px;
-      height: 280px;
-      perspective: 1000px;
-    }
-    
-    .flip-card-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 0.8s;
-      transform-style: preserve-3d;
-    }
-    
-    .flip-card:hover .flip-card-inner {
-      transform: rotateY(180deg);
-    }
-    
-    .flip-card-front, .flip-card-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      border-radius: 12px;
-      box-shadow: 0 0 10px #ff5252;
-      background: #111;
-      color: white;
-    }
-    
-    .flip-card-back {
-      transform: rotateY(180deg);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      text-align: center;
-    }
-    
-    .battle-badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: bold;
-      margin-top: 10px;
-      animation: pulse 1.5s infinite;
-    }
-    .badge-open { background: #25c2a0; color: black; box-shadow: 0 0 10px #25c2a0; }
-    .badge-expired { background: #ff4136; color: white; box-shadow: 0 0 10px #ff4136; }
-    .badge-complete { background: #0074D9; color: white; box-shadow: 0 0 10px #0074D9; }
-    .badge-waiting { background: #FFDC00; color: black; box-shadow: 0 0 10px #FFDC00; }
-    @keyframes pulseBanner {
-      0% { box-shadow: 0 0 10px #25c2a0; }
-      50% { box-shadow: 0 0 20px #25c2a0; }
-      100% { box-shadow: 0 0 10px #25c2a0; }
-    }
-    
-    #waldoNotification {
-      display: none;
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #111;
-      color: white;
-      padding: 15px 25px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px #25c2a0;
-      z-index: 9999;
-      font-weight: bold;
-      text-align: center;
-      animation: pulseBanner 2s infinite;
-      max-width: 90%;
-    }
-    @keyframes pulseBanner {
-      0% { box-shadow: 0 0 10px #25c2a0; }
-      50% { box-shadow: 0 0 20px #25c2a0; }
-      100% { box-shadow: 0 0 10px #25c2a0; }
-    }
-  </style>
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        .card {
+            background: #111;
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .big-card {
+            grid-column: 1 / -1;
+            padding: 30px;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .big-card {
+                font-size: 1rem;
+                padding: 20px;
+            }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        thead th {
+            background: #222;
+            color: #25c2a0;
+            font-weight: bold;
+        }
+
+        .tooltip-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip-icon {
+            background: #25c2a0;
+            color: black;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 240px;
+            background-color: #111;
+            color: #25c2a0;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -120px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 10px #25c2a0;
+        }
+
+        .tooltip-wrapper:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .disconnect-btn {
+            display: block;
+            margin: 0 auto 10px;
+            background: red;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .meme-thumb {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .meme-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px #fb2f2f;
+        }
+
+        .flip-card {
+            background-color: transparent;
+            width: 200px;
+            height: 280px;
+            perspective: 1000px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            box-shadow: 0 0 10px #ff5252;
+            background: #111;
+            color: white;
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .battle-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 10px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .badge-open {
+            background: #25c2a0;
+            color: black;
+            box-shadow: 0 0 10px #25c2a0;
+        }
+
+        .badge-expired {
+            background: #ff4136;
+            color: white;
+            box-shadow: 0 0 10px #ff4136;
+        }
+
+        .badge-complete {
+            background: #0074D9;
+            color: white;
+            box-shadow: 0 0 10px #0074D9;
+        }
+
+        .badge-waiting {
+            background: #FFDC00;
+            color: black;
+            box-shadow: 0 0 10px #FFDC00;
+        }
+
+        @keyframes pulseBanner {
+            0% {
+                box-shadow: 0 0 10px #25c2a0;
+            }
+
+            50% {
+                box-shadow: 0 0 20px #25c2a0;
+            }
+
+            100% {
+                box-shadow: 0 0 10px #25c2a0;
+            }
+        }
+
+        #waldoNotification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px #25c2a0;
+            z-index: 9999;
+            font-weight: bold;
+            text-align: center;
+            animation: pulseBanner 2s infinite;
+            max-width: 90%;
+        }
+
+        .xrpl-link {
+            color: #ffcc00;
+        }
+
+        .centered-flex-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
-<div id="waldoNotification">
-  <span id="waldoMessage"></span>
-  <button onclick="dismissWaldoNotification()" style="margin-left: 20px; background: transparent; border: 1px solid #25c2a0; color: #25c2a0; padding: 4px 10px; border-radius: 6px; cursor: pointer;">Dismiss</button>
-</div>
-<div class="container">
-
+    <div id="waldoNotification">
+        <span id="waldoMessage"></span>
+        <button onclick="dismissWaldoNotification()" class="disconnect-btn">Dismiss</button>
+    </div>
+    <div class="container">
 <div id="battleNotification" style="
   display: none;
   position: fixed;
@@ -270,12 +295,10 @@
       <p id="twitterLinkStatus" style="margin-top: 6px; color: #25c2a0; text-align: center;"></p>
     </div>
   </div>
-  
-  
     <!-- Member Level Card -->
     <div class="card">
       <h2>🎮 Member Level</h2>
-      <p><img id="userLevelIcon" class="level-icon" src="https://via.placeholder.com/150" alt="Level Icon"> <strong id="userLevelName">Loading...</strong></p>
+      <p><img id="userLevelIcon" class="level-icon" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png" alt="Level Icon"> <strong id="userLevelName">Loading...</strong></p>
       <progress id="levelProgress" value="0" max="100" style="width: 100%; height: 20px;"></progress>
     </div>
 
@@ -353,7 +376,6 @@
         <p style="text-align: center;">👥 Referrals: <strong id="refCount">0</strong></p>
       </div>
     </div>
-    
     <!-- Recent Activity Card -->
     <div class="card">
       <h2>📰 Recent Activity</h2>
@@ -392,14 +414,14 @@
         <table>
           <thead>
             <tr>
-              <th>Tier</th>
-              <th>Likes</th>
-              <th>Retweets</th>
-              <th>Base</th>
-              <th>Instant Payout</th>
-              <th>Stake Payout</th>
-              <th>Max No-Stake (x40)</th>
-              <th>Max Stake (x40)</th>
+              <th scope="col">Tier</th>
+              <th scope="col">Likes</th>
+              <th scope="col">Retweets</th>
+              <th scope="col">Base</th>
+              <th scope="col">Instant Payout</th>
+              <th scope="col">Stake Payout</th>
+              <th scope="col">Max No-Stake (x40)</th>
+              <th scope="col">Max Stake (x40)</th>
             </tr>
           </thead>
           <tbody id="rewardTierBody"></tbody>
@@ -407,7 +429,7 @@
       </div>
     </div>
      <!-- Media card -->
-    <div class="card">
+    <div class="centered-flex-container">
       <img src="https://waldocoin2.local/wp-content/uploads/2025/03/1737843965524.jpg" alt="WALDO Promo" style="width: 100%; border-radius: 8px;">
       <h1>Use #WaldoMeme on Tweets for Rewards.</h1>
     </div>
@@ -440,7 +462,6 @@
       <div class="pagination" id="pagination"></div>
     </div>
   </div>
-  
     <!-- WALDOcoin Battle Arena -->
     <div class="card big-card" style="text-align: center; background-color: #181818;" id="battleArena">
       <h2>🔥 Meme Battle Arena</h2>
@@ -450,14 +471,14 @@
           <div style="flex: 1; min-width: 300px;">
             <h3>Meme 1</h3>
             <a id="meme1Link" target="_blank">
-              <img id="meme1Img" src="https://via.placeholder.com/300x300?text=Meme+1" alt="Meme 1" class="meme-thumb" style="width: 100%; border-radius: 8px;">
+              <img id="meme1Img" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/300x300?text=Meme+1" alt="Meme 1" class="meme-thumb" style="width: 100%; border-radius: 8px;">
             </a>
             <button onclick="voteBattle('meme1')">Vote for Meme 1</button>
           </div>
           <div style="flex: 1; min-width: 300px;">
             <h3>Meme 2</h3>
             <a id="meme2Link" target="_blank">
-              <img id="meme2Img" src="https://via.placeholder.com/300x300?text=Meme+2" alt="Meme 2" class="meme-thumb" style="width: 100%; border-radius: 8px;">
+              <img id="meme2Img" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png300x300?text=Meme+2" alt="Meme 2" class="meme-thumb" style="width: 100%; border-radius: 8px;">
             </a>
             <button onclick="voteBattle('meme2')">Vote for Meme 2</button>
           </div>
@@ -484,32 +505,27 @@
           >
             🧠 Start New Battle (100 WALDO)
           </button>
-        
           <button
-            onclick="acceptBattle()"
-            style="width: 100%; max-width: 400px; padding: 10px 14px; border-radius: 6px; background: #25c2a0; color: black; font-weight: bold; font-size: 16px; border: none;"
-          >
-            🤜 Accept Current Battle (50 WALDO)
-          </button>
+           onclick="acceptBattle()"
+          style="...">
+          🤜 Accept Current Battle (50 WALDO)
+</button>
+
         </div>
       </div>
     </div>
-<!-- 🧠 My Minted Meme NFTs -->
-<div class="card" style="grid-column: 1 / -1;">
-</div> <!-- Closing the first unclosed div -->
 
 <!-- 🧠 My Minted Meme NFTs -->
 <div class="card" style="grid-column: 1 / -1;">
   <h3>🧠 My Minted Meme NFTs</h3>
   <div class="minted-gallery" style="display: flex; flex-wrap: wrap; gap: 20px;">
-    
     <!-- Tier 3 Example -->
-    <div class="flip-card" onclick="showNFTModal('https://via.placeholder.com/600x400.png?text=Meme+NFT+Tier+3')">
+    <div class="flip-card" onclick="showNFTModal('https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/600x400.png?text=Meme+NFT+Tier+3')">
       <div class="flip-card-inner">
         <div class="flip-card-front">
-          <img src="https://via.placeholder.com/300x200.png?text=WALDO+NFT+Tier+3" alt="NFT Tier 3" style="width:100%; height:auto; border-radius: 10px;">
+          <img src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/300x200.png?text=WALDO+NFT+Tier+3" alt="NFT Tier 3" style="width:100%; height:auto; border-radius: 10px;">
         </div>
-        <div class="flip-card-back" style="padding: 15px;">
+        <div class="flip-card-back padded-back">
           <p><strong>XP:</strong> 72</p>
           <p><strong>Tier:</strong> 3</p>
           <p><strong>Minted:</strong> Apr 17, 2025</p>
@@ -519,27 +535,26 @@
     </div>
 
     <!-- Tier 5 Example -->
-    <div class="flip-card" onclick="showNFTModal('https://via.placeholder.com/600x400.png?text=Meme+NFT+Tier+5')">
+    <div class="flip-card" onclick="showNFTModal('https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/600x400.png?text=Meme+NFT+Tier+5')">
       <div class="flip-card-inner">
         <div class="flip-card-front">
-          <img src="https://via.placeholder.com/300x200.png?text=WALDO+NFT+Tier+5" alt="NFT Tier 5" style="width:100%; height:auto; border-radius: 10px;">
+          <img src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/300x200.png?text=WALDO+NFT+Tier+5" alt="NFT Tier 5" style="width:100%; height:auto; border-radius: 10px;">
         </div>
         <div class="flip-card-back" style="padding: 15px;">
-          <p><strong>XP:</strong> 150</p>
+          <a href="https://bithomp.com/nft/MEME1337" target="_blank" class="xrpl-link">🔗 View on XRPL</a>
           <p><strong>Tier:</strong> 5</p>
           <p><strong>Minted:</strong> Apr 16, 2025</p>
           <a href="https://bithomp.com/nft/MEME1337" target="_blank" style="color:#ffcc00;">🔗 View on XRPL</a>
         </div>
       </div>
     </div>
-    
   </div>
 </div>
 
 <!-- Modal Viewer -->
 <div id="nftModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center;">
   <span onclick="closeNFTModal()" style="position:absolute; top:20px; right:30px; font-size:30px; color:white; cursor:pointer;">&times;</span>
-  <img id="nftModalImg" src="https://via.placeholder.com/600x400.png?text=NFT+Preview" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 0 20px #fb2f2f;">
+  <img id="nftModalImg" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/600x400.png?text=NFT+Preview" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 0 20px #fb2f2f;">
 </div>
 
   </div>
@@ -799,7 +814,7 @@
               const start = (currentPage - 1) * pageSize;
               const rows = data.slice(start, start + pageSize).map(m => `
                 <tr>
-                  <td><a href="${m.url}" target="_blank"><img src="https://via.placeholder.com/80x80.png?text=Meme" class="meme-thumb"></a></td>
+                  <td><a href="${m.url}" target="_blank"><img src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/80x80.png?text=Meme" class="meme-thumb"></a></td>
                   <td>${m.retweets}</td>
                   <td>${m.likes}</td>
                   <td>${m.xp}</td>
@@ -872,7 +887,5 @@
             document.getElementById("nftModal").style.display = "none";
           }
         </script>
-      
         </body>
         </html>
-        

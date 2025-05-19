@@ -36,7 +36,8 @@
 <script>
   document.addEventListener("DOMContentLoaded", async () => {
     const wallet = "rnWfL48YCknW6PYewFLKfMKUymHCfj3aww"; // your test wallet
-    const res = await fetch(`http://localhost:5050/api/userStats?wallet=${wallet}`);
+    const baseURL = "https://waldocoin-backend-api.onrender.com";
+    const res = await fetch(`${baseURL}/api/userStats?wallet=${wallet}`);
     const data = await res.json();
 
     document.getElementById("waldoLevel").textContent = `Level ${data.level}`;
