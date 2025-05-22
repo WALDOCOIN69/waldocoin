@@ -56,6 +56,25 @@ app.use("/api/tweets", tweetsRoute);
 app.use("/api/phase9/analytics", analyticsRoutes);
 app.use("/api/phase9/admin", adminLogsRoutes);
 
+app.get("/api/login/status/:uuid", async (req, res) => {
+  const { uuid } = req.params;
+
+  try {
+    const result = await xumm.payload.get(uuid);
+
+    if (result.meta.signed === true && result.response.account) {
+      return res.json({
+        signed: true,
+        wallet: result.response.account
+      });
+    }
+
+    res.json({ signed: false });
+  } catch (err) {
+    console.error("❌ Error checking login status:", err);
+    res.status(500).json({ error: "Failed to check sign-in status." });
+  }
+});
 
 // ✅ XUMM Login Route
 app.get("/api/login", async (req, res) => {

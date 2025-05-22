@@ -3,15 +3,19 @@ import fetch from "node-fetch";
 
 const router = express.Router();
 
-const XRPL_NODE = "https://s1.ripple.com:51234"; // Mainnet
-const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"; // Your WALDO issuer address
+// 🌐 XRPL Mainnet endpoint
+const XRPL_NODE = "https://s1.ripple.com:51234";
+
+// WALDO token info
+const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
 const CURRENCY = "WLO";
 
-// POST /api/trustline/check
-router.post("/check", async (req, res) => {
-  const { wallet } = req.body;
+// ✅ GET /api/login/trustline-check?wallet=rXYZ
+router.get("/check", async (req, res) => {
+  const wallet = req.query.wallet;
+
   if (!wallet) {
-    return res.status(400).json({ success: false, error: "Missing wallet address." });
+    return res.status(400).json({ hasWaldoTrustline: false, error: "Missing wallet parameter." });
   }
 
   try {
@@ -27,15 +31,16 @@ router.post("/check", async (req, res) => {
     const json = await response.json();
     const lines = json?.result?.lines || [];
 
-    const hasTrustline = lines.some(
+    const hasWaldoTrustline = lines.some(
       line => line.currency === CURRENCY && line.account === WALDO_ISSUER
     );
 
-    res.json({ success: true, wallet, trustline: hasTrustline });
+    res.json({ hasWaldoTrustline });
   } catch (err) {
-    console.error("Trustline check failed:", err.message);
-    res.status(500).json({ success: false, error: "Trustline check failed." });
+    console.error("❌ Trustline check failed:", err.message);
+    res.status(500).json({ hasWaldoTrustline: false, error: "Trustline check failed." });
   }
 });
 
 export default router;
+
