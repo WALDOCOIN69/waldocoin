@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import pkg from "xumm-sdk"; // ✅ This is the only correct xumm-sdk import
-
+import loginRoutes from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mintConfirm.js";
@@ -29,6 +29,7 @@ const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/login", loginRoutes);
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -108,4 +109,3 @@ app.get("/api/ping", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ WALDO API running on http://localhost:${PORT}`);
 });
-
