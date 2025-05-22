@@ -14,10 +14,11 @@ import analyticsRoutes from "./routes/analytics.js";
 import adminLogsRoutes from "./routes/adminLogs.js";
 import presaleRoutes from "./routes/presale.js";
 import voteRoutes from "./routes/vote.js";
-import trustlineRoute from "./routes/trustline.js";
 import debugRoutes from "./routes/debug.js";
 import userStatsRoute from "./routes/userstats.js";
 import priceRoute from "./routes/price.js";
+import trustlineRoute from "./routes/trustline.js";
+
 
 dotenv.config();
 

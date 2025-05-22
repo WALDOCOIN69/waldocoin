@@ -1008,9 +1008,85 @@ async function voteDAO(id, choice) {
   window.addEventListener('resize', sendHeightToParent);
   setTimeout(sendHeightToParent, 1000);
 
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    document.getElementById("walletAddress").textContent = wallet;
+    document.getElementById("referralLink").value = `https://waldocoin2.local/?ref=${wallet}`;
+    generateRewardTable();
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadDAOProposal();
+    const res = await fetch(`${baseURL}/api/price`);
+    const data = await res.json();
+    const history = data?.history || [];
+
+    document.getElementById("waldoLevel").textContent = `Level ${data.level}`;
+    document.getElementById("waldoTitle").textContent = data.title;
+    document.getElementById("waldoXP").textContent = data.xp;
+    document.getElementById("waldoLikes").textContent = data.likes;
+    document.getElementById("waldoRetweets").textContent = data.retweets;
+    document.getElementById("waldoMemes").textContent = data.memes;
+    document.getElementById("waldoBattles").textContent = data.battles;
+    document.getElementById("waldoReferrals").textContent = data.referrals.length || 0;
+
+    const previousLevel = parseInt(localStorage.getItem("waldoLastLevel") || "1");
+    if (data.level > previousLevel) {
+      showWaldoNotification(`🚀 You've leveled up to Level ${data.level}: ${data.title}!`);
+      localStorage.setItem("waldoLastLevel", data.level);
+    }
+
+    const tweetsRes = await fetch(`${baseURL}/api/tweets?wallet=${wallet}`);
+    const tweets = (await tweetsRes.json()).filter(t => t.wallet === wallet);
+
+    const totalLikes = tweets.reduce((sum, t) => sum + t.likes, 0);
+    const topLikes = Math.max(...tweets.map(t => t.likes), 0);
+    const totalEarned = tweets.reduce((sum, t) => sum + (t.waldo_amount || 0), 0);
+
+    const tweetData = tweets.map(t => {
+      const xp = Math.floor(t.likes / 10) + Math.floor(t.retweets / 15);
+      const tier = rewardTiers.slice().reverse().find(rt => t.likes >= rt.likes && t.retweets >= rt.retweets)?.tier || 0;
+      return { ...t, xp, tier, url: `https://twitter.com/i/web/status/${t.tweet_id}` };
+    });
+
+    renderMemeTable(tweetData);
+    document.getElementById("totalLikes").textContent = totalLikes;
+    document.getElementById("topMemeLikes").textContent = `${topLikes} likes`;
+    document.getElementById("waldoTotalEarnedDisplay").textContent = `${totalEarned.toFixed(2)} WALDO`;
+    document.getElementById("activityFeed").innerHTML = tweetData.slice(0, 5).map(t => `<li>Posted meme with ${t.likes} likes, earned ${t.waldo_amount || 0} WALDO</li>`).join("");
+
+    const xpSeries = tweetData.map(t => t.xp);
+    const labels = tweetData.map((t, i) => `Meme ${i + 1}`);
+    new Chart(document.getElementById("xpChart"), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'XP Gained',
+          data: xpSeries,
+          borderColor: '#fb2f2f',
+          backgroundColor: 'rgba(251,47,47,0.2)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: 'white' } } },
+        scales: {
+          x: { ticks: { color: 'white' } },
+          y: { ticks: { color: 'white' } }
+        }
+      }
+    });
+
+    await refreshXPStats();
+    loadWaldoChart();
+    loadDAOProposal();
+    setInterval(refreshXPStats, 60000);
+  } catch (err) {
+
+    console.error("❌ Dashboard load failed:", err);
+    showWaldoNotification("❌ Could not load dashboard. Check console.");
+  }
 });
 </script>
 </body>
