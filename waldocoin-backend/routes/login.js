@@ -8,6 +8,9 @@ dotenv.config();
 const router = express.Router();
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
+const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
+const CURRENCY = "WLO";
+
 // 🔐 Create XUMM Sign-In Payload
 router.get("/", async (req, res) => {
   try {
@@ -53,11 +56,12 @@ router.get("/trustline-check", async (req, res) => {
   const { wallet } = req.query;
 
   if (!wallet) {
-    return res.status(400).json({ error: "Missing wallet parameter." });
+    return res.status(400).json({ hasWaldoTrustline: false, error: "Missing wallet parameter." });
   }
 
+  const client = new Client("wss://s1.ripple.com"); // ✅ XRPL MAINNET
+
   try {
-    const client = new Client("wss://s.altnet.rippletest.net:51233"); // use mainnet if you're live
     await client.connect();
 
     const response = await client.request({
@@ -66,15 +70,20 @@ router.get("/trustline-check", async (req, res) => {
     });
 
     const hasWaldoTrustline = response.result.lines.some(
-      line => line.currency === "WLO" && line.account === "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
+      line => line.currency === CURRENCY && line.account === WALDO_ISSUER
     );
 
-    await client.disconnect();
     res.json({ hasWaldoTrustline });
   } catch (err) {
     console.error("❌ Trustline check failed:", err);
-    res.status(500).json({ error: "Trustline check failed." });
+    res.status(500).json({
+      hasWaldoTrustline: false,
+      error: "Trustline check failed. Try again later."
+    });
+  } finally {
+    await client.disconnect();
   }
 });
 
 export default router;
+
