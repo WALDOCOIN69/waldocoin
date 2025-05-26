@@ -9,8 +9,12 @@ redis.on("error", (err) => {
   console.error("❌ Redis Client Error", err);
 });
 
-await redis.connect();
+// Only connect once (manually from server.js)
+async function connectRedis() {
+  if (!redis.isOpen) {
+    await redis.connect();
+    console.log("✅ Redis connected");
+  }
+}
 
-console.log("✅ Redis connected");
-
-export default redis;
+export { redis, connectRedis };

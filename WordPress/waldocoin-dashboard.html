@@ -65,11 +65,24 @@ html, body {
       color: white;
       text-align: center;
     }
- .level-title.level-1 { color: #ff2626; }   
-.level-title.level-2 { color: #298cf5; }   
-.level-title.level-3 { color: #ff930e; }   
-.level-title.level-4 { color: #63f707; }   
-.level-title.level-5 { color: rgb(255, 196, 0); }      
+    .level-title {
+      margin: 10px 0;
+      font-weight: bold;
+      color: #25c2a0;
+    }
+    .level-icon {
+  width: 100px; /* Adjust as needed */
+  height: auto; /* Keeps the aspect ratio intact */
+  display: block;
+  margin: 0 auto 10px; /* Centers and adds spacing below */
+  border-radius: 8px; /* Optional for rounded corners */
+}
+
+    .level-title.level-1 { color: #ff2626; }   
+    .level-title.level-2 { color: #298cf5; }   
+    .level-title.level-3 { color: #ff930e; }   
+    .level-title.level-4 { color: #63f707; }   
+    .level-title.level-5 { color: rgb(255, 196, 0); }      
     
     table {
       width: 100%;
@@ -890,13 +903,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const wallet = getWallet();
   if (!wallet) return (location.href = "/connect-wallet/");
 
-  document.getElementById("referralLink").value = `https://waldocoin2.local/?ref=${wallet}`;
   document.getElementById("walletAddress").textContent = `Wallet: ${wallet}`;
+  document.getElementById("referralLink").value = `https://waldocoin2.local/?ref=${wallet}`;
   generateRewardTable();
 
   try {
-    const res = await fetch(`${baseURL}/api/userStats?wallet=${wallet}`);
-    const data = await res.json();
+    const userRes = await fetch(`${baseURL}/api/userStats?wallet=${wallet}`);
+    const userData = await userRes.json();
     document.getElementById("waldoXP").textContent = data.xp;
     document.getElementById("waldoLevel").textContent = `Level ${data.level}`;
     document.getElementById("waldoTitle").textContent = data.title;
@@ -907,82 +920,111 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("waldoReferrals").textContent = data.referrals.length;
     document.getElementById("levelProgress").value = Math.min(100, (data.xp % 250));
     document.getElementById("xpToNextLevel").textContent = `${calculateXPToNextLevel(data.xp)} XP`;
-  
-const levelTitle = levelTitles[data.level] || `Level ${data.level}`;
-levelIcon.src = levelImages[data.level] || levelImages[1];
-levelIcon.alt = `${levelTitle} Icon`;
-levelIcon.title = `You're a ${levelTitle}`;
 
-const titleElem = document.getElementById("userLevelTitle");
-titleElem.textContent = levelTitle;
-titleElem.className = `center-text level-title level-${data.level}`;
+    const twitterInput = document.getElementById("twitterHandle");
+    const linkButton = document.querySelector("button[onclick='linkTwitter()']");
+    const statusText = document.getElementById("twitterLinkStatus");  
+    const levelTitle = levelTitles[data.level] || `Level ${data.level}`;
+    const levelIcon = document.getElementById("userLevelIcon");
 
-document.getElementById("waldoTitle").textContent = levelTitles[data.level] || `Level ${data.level}`;
-;
+    if (userData.twitterHandle) {
+      twitterInput.value = userData.twitterHandle;
+      twitterInput.disabled = true;
+      linkButton.disabled = true;
+      linkButton.style.background = "grey";
+      statusText.textContent = "🔒 Twitter handle linked and locked.";
 
-    const tweetsRes = await fetch(`${baseURL}/api/tweets?wallet=${wallet}`);
-    const tweets = (await tweetsRes.json()).filter(t => t.wallet === wallet);
+      levelIcon.src = levelImages[data.level] || levelImages[1];
+      levelIcon.alt = `${levelTitle} Icon`;
+      levelIcon.title = `You're a ${levelTitle}`;
 
-    const totalLikes = tweets.reduce((sum, t) => sum + t.likes, 0);
-    const topLikes = Math.max(...tweets.map(t => t.likes), 0);
-    const totalEarned = tweets.reduce((sum, t) => sum + (t.waldo_amount || 0), 0);
-    const topMeme = tweets.find(t => t.likes === topLikes);
 
-    const tweetData = tweets.map(t => {
-      const xp = Math.floor(t.likes / 10) + Math.floor(t.retweets / 15);
-      const tier = rewardTiers.slice().reverse().find(rt => t.likes >= rt.likes && t.retweets >= rt.retweets)?.tier || 0;
-      return { ...t, xp, tier, url: `https://twitter.com/i/web/status/${t.tweet_id}` };
-    });
+      const titleElem = document.getElementById("userLevelTitle");
+      titleElem.textContent = levelTitle;
+      titleElem.className = `center-text level-title level-${data.level}`;
 
-    renderMemeTable(tweetData);
-    document.getElementById("totalLikes").textContent = totalLikes;
-    document.getElementById("topMemeLikes").textContent = `${topLikes} likes`;
-    document.getElementById("waldoTotalEarnedDisplay").textContent = `${totalEarned.toFixed(2)} WALDO`;
-    document.getElementById("activityFeed").innerHTML = tweetData.slice(0, 5).map(t =>
-      `<li>Posted meme with ${t.likes} likes, earned ${t.waldo_amount || 0} WALDO</li>`).join("");
+      document.getElementById("waldoTitle").textContent = levelTitles[data.level] || `Level ${data.level}`;
 
-    if (topMeme) {
-      document.getElementById("socialHandle").textContent = topMeme.handle || "@unknown";
-      document.getElementById("topMemeImage").src = topMeme.image_url;
-      document.getElementById("topMemeLink").href = `https://twitter.com/i/web/status/${topMeme.tweet_id}`;
-    }
+      const tweetsRes = await fetch(`${baseURL}/api/tweets?wallet=${wallet}`);
+      const tweets = (await tweetsRes.json()).filter(t => t.wallet === wallet);
 
-    const xpSeries = tweetData.map(t => t.xp);
-    const labels = tweetData.map((_, i) => `Meme ${i + 1}`);
-    new Chart(document.getElementById("xpChart"), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'XP Gained',
-          data: xpSeries,
-          borderColor: '#fb2f2f',
-          backgroundColor: 'rgba(251,47,47,0.2)',
-          fill: true,
-          tension: 0.3
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { labels: { color: 'white' } } },
-        scales: {
-          x: { ticks: { color: 'white' } },
-          y: { ticks: { color: 'white' } }
-        }
+      const totalLikes = tweets.reduce((sum, t) => sum + t.likes, 0);
+      const topLikes = Math.max(...tweets.map(t => t.likes), 0);
+      const totalEarned = tweets.reduce((sum, t) => sum + (t.waldo_amount || 0), 0);
+      const topMeme = tweets.find(t => t.likes === topLikes);
+
+      try {
+        const tweetData = tweets.map(t => {
+          const xp = Math.floor(t.likes / 10) + Math.floor(t.retweets / 15);
+          const tier = rewardTiers.slice().reverse().find(rt => t.likes >= rt.likes && t.retweets >= rt.retweets)?.tier || 0;
+          return { ...t, xp, tier, url: `https://twitter.com/i/web/status/${t.tweet_id}` };
+        });
+      } catch (err) {
+        console.error("❌ Dashboard load failed:", err);
+        showWaldoNotification("❌ Could not load dashboard. Check console.");
       }
-    });
 
-    await loadWaldoChart();
-    await loadDAOProposal();
-    setInterval(refreshXPStats, 60000);
+      renderMemeTable(tweetData);
+      document.getElementById("totalLikes").textContent = totalLikes;
+      document.getElementById("topMemeLikes").textContent = `${topLikes} likes`;
+      document.getElementById("waldoTotalEarnedDisplay").textContent = `${totalEarned.toFixed(2)} WALDO`;
+      document.getElementById("activityFeed").innerHTML = tweetData.slice(0, 5).map(t =>
+        `<li>Posted meme with ${t.likes} likes, earned ${t.waldo_amount || 0} WALDO</li>`).join("");
+
+      if (topMeme) {
+        document.getElementById("socialHandle").textContent = topMeme.handle || "@unknown";
+        document.getElementById("topMemeImage").src = topMeme.image_url;
+        document.getElementById("topMemeLink").href = `https://twitter.com/i/web/status/${topMeme.tweet_id}`;
+      }
+
+      const xpSeries = tweetData.map(t => t.xp);
+      const labels = tweetData.map((_, i) => `Meme ${i + 1}`);
+      new Chart(document.getElementById("xpChart"), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'XP Gained',
+            data: xpSeries,
+            borderColor: '#fb2f2f',
+            backgroundColor: 'rgba(251,47,47,0.2)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: 'white' } } },
+          scales: {
+            x: { ticks: { color: 'white' } },
+            y: { ticks: { color: 'white' } }
+          }
+        }
+      });
+
+      await loadWaldoChart();
+      await loadDAOProposal();
+      setInterval(refreshXPStats, 60000);
+    }
   } catch (err) {
     console.error("❌ Dashboard load failed:", err);
     showWaldoNotification("❌ Could not load dashboard. Check console.");
   }
 });
-</script>
+  function sendHeightToParent() {
+    const height = document.body.scrollHeight;
+    parent.postMessage({ height }, 'https://waldocoin.live'); // Security check: send only to your parent domain
+  window.addEventListener('load', sendHeightToParent);
+  window.addEventListener('resize', sendHeightToParent);
+  setTimeout(sendHeightToParent, 1000);
+  }
 
-<script>
+  // Logout handler example (sends logout message to parent)
+  function logoutWallet() {
+    localStorage.removeItem("xummWallet");
+    parent.postMessage({ logout: true }, 'https://waldocoin.live');
+  }
+
 function sendHeightToParent() {
   const height = document.body.scrollHeight;
   parent.postMessage({ height }, '*');
@@ -990,10 +1032,8 @@ function sendHeightToParent() {
 window.addEventListener('load', sendHeightToParent);
 window.addEventListener('resize', sendHeightToParent);
 setTimeout(sendHeightToParent, 1000);
-</script>
 <!-- All your HTML content -->
 
-<script>
 function showCustomWelcome() {
   showWaldoNotification("🚀 WALDO Dashboard Loaded!");
 }

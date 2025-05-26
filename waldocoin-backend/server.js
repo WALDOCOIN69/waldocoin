@@ -18,20 +18,22 @@ import debugRoutes from "./routes/debug.js";
 import userStatsRoute from "./routes/userstats.js";
 import priceRoute from "./routes/price.js";
 import trustlineRoute from "./routes/trustline.js";
-
+import linkTwitterRoute from "./routes/linkTwitter.js";
+import { redis, connectRedis } from "./redisClient.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5050;
-
-const { XummSdk } = pkg; // ✅ correct
+const { XummSdk } = pkg;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use("/api/login", loginRoutes);
 
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 50,
@@ -39,10 +41,10 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
 app.use(limiter);
 
-// ⬇️ Mount all routes
+// Routes
+app.use("/api/linkTwitter", linkTwitterRoute);
 app.use("/api/admin/security", adminSecurity);
 app.use("/api/debug", debugRoutes);
 app.use("/api/presale", presaleRoutes);
@@ -58,19 +60,14 @@ app.use("/api/tweets", tweetsRoute);
 app.use("/api/phase9/analytics", analyticsRoutes);
 app.use("/api/phase9/admin", adminLogsRoutes);
 
+// XUMM Login check
 app.get("/api/login/status/:uuid", async (req, res) => {
   const { uuid } = req.params;
-
   try {
     const result = await xumm.payload.get(uuid);
-
     if (result.meta.signed === true && result.response.account) {
-      return res.json({
-        signed: true,
-        wallet: result.response.account
-      });
+      return res.json({ signed: true, wallet: result.response.account });
     }
-
     res.json({ signed: false });
   } catch (err) {
     console.error("❌ Error checking login status:", err);
@@ -78,26 +75,20 @@ app.get("/api/login/status/:uuid", async (req, res) => {
   }
 });
 
-// ✅ XUMM Login Route
+// XUMM login request
 app.get("/api/login", async (req, res) => {
   try {
     const payload = await xumm.payload.create({
-      txjson: {
-        TransactionType: "SignIn",
-      },
+      txjson: { TransactionType: "SignIn" },
     });
-
-    res.json({
-      qr: payload.refs.qr_png,
-      uuid: payload.uuid,
-    });
+    res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
   } catch (err) {
     console.error("❌ Error creating XUMM payload:", err);
     res.status(500).json({ error: "Failed to create XUMM sign-in." });
   }
 });
 
-// 🩺 Health Check
+// Health check
 app.get("/", (req, res) => {
   res.json({ status: "🚀 WALDO API is live!" });
 });
@@ -106,7 +97,20 @@ app.get("/api/ping", (req, res) => {
   res.status(200).json({ status: "✅ WALDO API is online" });
 });
 
-// ▶️ Start Server
-app.listen(PORT, () => {
-  console.log(`✅ WALDO API running on http://localhost:${PORT}`);
-});
+// Startup block
+const startServer = async () => {
+  try {
+    await connectRedis();
+    console.log("✅ Redis connected");
+
+    app.listen(PORT, () => {
+      console.log(`✅ WALDO API running on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Startup failed:", err);
+    process.exit(1);
+  }
+};
+
+startServer(); // 🔁 Call the startup function
+

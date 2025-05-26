@@ -54,4 +54,6 @@ services:
         sync: false
       - key: DISTRIBUTOR_SECRET
         sync: false
+      - key: NFT_STORAGE_API_KEY   # ✅ moved here
+        sync: false
 
