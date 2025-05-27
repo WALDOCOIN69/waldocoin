@@ -1,5 +1,5 @@
 import express from "express";
-import redis from "../redisClient.js"; // adjust path if needed
+import { redis } from "../redisClient.js"; // adjust path if needed
 const router = express.Router();
 
 router.get("/", async (req, res) => {
