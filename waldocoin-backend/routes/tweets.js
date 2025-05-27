@@ -1,5 +1,6 @@
 // routes/tweets.js
 import express from "express";
+import dotenv from "dotenv";
 import { TwitterApi } from "twitter-api-v2";
 import { redis } from "../redisClient.js";
 
