@@ -1,4 +1,4 @@
-import redis from "./redisClient.js";
+import { redis } from "../redisClient.js";
 
 // 📌 Config
 const MAX_VIOLATIONS = 3;
