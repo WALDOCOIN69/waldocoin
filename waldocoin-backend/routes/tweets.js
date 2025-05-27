@@ -1,10 +1,13 @@
+// routes/tweets.js
 import express from "express";
 import { TwitterApi } from "twitter-api-v2";
+import { redis } from "../redisClient.js";
 
+dotenv.config();
 const router = express.Router();
 const twitterClient = new TwitterApi(process.env.TWITTER_BEARER);
 
-// Set to true for dummy data (optional)
+// Set to true to enable static dummy data
 const USE_FAKE_DATA = false;
 
 router.get("/", async (req, res) => {
@@ -19,7 +22,8 @@ router.get("/", async (req, res) => {
         image_url: "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
         likes: 180,
         retweets: 30,
-        waldo_amount: 4.5
+        waldo_amount: 4.5,
+        nftMinted: false
       },
       {
         wallet,
@@ -27,14 +31,15 @@ router.get("/", async (req, res) => {
         image_url: "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
         likes: 320,
         retweets: 75,
-        waldo_amount: 9.3
+        waldo_amount: 9.3,
+        nftMinted: true
       }
     ];
     return res.json(tweets);
   }
 
   try {
-    const tweetIds = ["1780011111111111111", "1780022222222222222"]; // Placeholder list
+    const tweetIds = ["1780011111111111111", "1780022222222222222"]; // Placeholder list from DB or logic
     const tweets = [];
 
     for (const id of tweetIds) {
@@ -45,14 +50,19 @@ router.get("/", async (req, res) => {
       });
 
       const mediaUrl = tweet?.includes?.media?.[0]?.url;
+      const likes = tweet?.data?.public_metrics?.like_count || 0;
+      const retweets = tweet?.data?.public_metrics?.retweet_count || 0;
+      const redisKey = `meme:nft_minted:${id}`;
+      const isMinted = await redis.get(redisKey);
 
       tweets.push({
         wallet,
         tweet_id: id,
         image_url: mediaUrl || "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
-        likes: tweet?.data?.public_metrics?.like_count || 0,
-        retweets: tweet?.data?.public_metrics?.retweet_count || 0,
-        waldo_amount: 0
+        likes,
+        retweets,
+        waldo_amount: 0,
+        nftMinted: !!isMinted
       });
     }
 
