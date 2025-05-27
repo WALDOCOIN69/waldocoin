@@ -8,7 +8,7 @@ const router = express.Router();
 const twitterClient = new TwitterApi(process.env.TWITTER_BEARER);
 
 // Set to true to enable static dummy data
-const USE_FAKE_DATA = false;
+const USE_FAKE_DATA = true;
 
 router.get("/", async (req, res) => {
   const wallet = req.query.wallet;
@@ -33,8 +33,18 @@ router.get("/", async (req, res) => {
         retweets: 75,
         waldo_amount: 9.3,
         nftMinted: true
-      }
-    ];
+      },
+  {
+    wallet,
+    tweet_id: "178001111555511111111",
+    image_url: "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
+    likes: 600,
+    retweets: 120,
+    waldo_amount: 10,
+    nftMinted: false
+  }
+];
+
     return res.json(tweets);
   }
 
