@@ -20,6 +20,7 @@ import priceRoute from "./routes/price.js";
 import trustlineRoute from "./routes/trustline.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import { redis, connectRedis } from "./redisClient.js";
+import proposalRoutes from "./routes/proposals.js";
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.use("/api/reward", rewardRoute);
 app.use("/api/tweets", tweetsRoute);
 app.use("/api/phase9/analytics", analyticsRoutes);
 app.use("/api/phase9/admin", adminLogsRoutes);
+app.use("/api/proposals", proposalRoutes);
 
 // XUMM Login check
 app.get("/api/login/status/:uuid", async (req, res) => {
