@@ -1,6 +1,10 @@
-app.post("/api/vote", async (req, res) => {
+import express from "express";
+const router = express.Router();
+
+router.post("/", async (req, res) => {
   const { proposalId, choice, wallet } = req.body;
-  if (!proposalId || !choice || !wallet) return res.status(400).json({ success: false, error: "Missing fields" });
+  if (!proposalId || !choice || !wallet)
+    return res.status(400).json({ success: false, error: "Missing fields" });
 
   try {
     // Fetch WALDO balance from XRPL
@@ -21,7 +25,6 @@ app.post("/api/vote", async (req, res) => {
 
     const waldoBalance = parseFloat(waldoLine?.balance || "0");
 
-    // Fixed price logic
     const WALDO_PRICE_XRP = 0.01;
     const REQUIRED_XRP = 100;
     const requiredWaldo = REQUIRED_XRP / WALDO_PRICE_XRP;
@@ -33,7 +36,7 @@ app.post("/api/vote", async (req, res) => {
       });
     }
 
-    // ... existing vote storage logic here ...
+    // ✅ Your vote logic (e.g., Redis or DB insert) goes here
 
     return res.json({ success: true });
   } catch (err) {
@@ -41,5 +44,8 @@ app.post("/api/vote", async (req, res) => {
     return res.status(500).json({ success: false, error: "Server error" });
   }
 });
+
+export default router; // ✅ This fixes the import in server.js
+
 
 
