@@ -23,6 +23,11 @@
     .date-input { margin-right: 10px; }
     .margin-spacing { margin: 10px 0; }
     .margin-10 { margin: 10px 0; }
+    .proposal-item { border:1px solid #444; padding:10px; margin-bottom:10px; }
+    .proposal-item button:hover {
+  background-color: #bb2d2d;
+  transition: background 0.2s ease;
+}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -109,6 +114,12 @@
       <h3>📄 Proposal Details</h3>
       <div id="detailContent"></div>
     </div>
+    <div class="card dao-admin">
+  <h2>🗳️ DAO Admin Controls</h2>
+<div id="proposalListDAOAdmin">
+  <p>Loading DAO admin proposals...</p>
+</div>
+  </div>
   </div>
 <script>
   const base = "https://waldocoin-1.onrender.com"; 
@@ -632,6 +643,37 @@ proposals.forEach(p => {
   btn.onclick = () => showProposalDetails(p.id);
   listContainer.appendChild(btn);
 });
+async function loadDAOAdminList() {
+  const container = document.getElementById("proposalListDAOAdmin");
+  container.innerHTML = "Loading DAO admin proposals...";
+
+  try {
+    const res = await fetch(`${base}/api/proposals`);
+    const proposals = await res.json();
+
+    if (!proposals.length) {
+      container.innerHTML = "<p>No proposals found.</p>";
+      return;
+    }
+
+    container.innerHTML = "";
+    proposals.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "proposal-item";
+      div.innerHTML = `
+        <strong>${p.title}</strong>
+        <p>ID: ${p.id} | Expires: ${new Date(p.expiresAt).toLocaleString()}</p>
+        <button type="button" onclick="confirmDelete('${p.id}', '${p.title}')">🗑 Delete</button>
+        <button type="button" onclick="forceExpire('${p.id}')">⏳ Force Expire</button>
+      `;
+      container.appendChild(div);
+    });
+  } catch (err) {
+    container.innerHTML = "<p>❌ Failed to load proposals.</p>";
+    console.error("Failed to load admin proposals:", err);
+  }
+}
+
 
   
   }
@@ -705,7 +747,9 @@ proposals.forEach(p => {
     barWrapper.appendChild(bar);
     container.appendChild(barWrapper);
 
-    if (!expired) {
+   if (!expired) {
+  checkWaldoBalance(WALLET).then(eligible => {
+    if (eligible) {
       const voteBtn = document.createElement('button');
       voteBtn.textContent = "Vote";
       voteBtn.onclick = () => castVote(id, option);
@@ -713,12 +757,14 @@ proposals.forEach(p => {
       voteBtn.className = "bg-green-600 hover:bg-green-700 text-sm px-2 py-1 rounded";
       container.appendChild(voteBtn);
     } else {
-      const closedLabel = document.createElement('span');
-      closedLabel.className = 'text-red-500 text-sm';
-      closedLabel.textContent = 'Voting closed';
-      container.appendChild(closedLabel);
+      const warn = document.createElement('div');
+      warn.textContent = "⚠️ Must hold 10,000+ WALDO to vote (100 XRP)";
+      warn.style.color = "#e63e3e";
+      warn.style.marginTop = "8px";
+      container.appendChild(warn);
     }
-
+  });
+}
     content.appendChild(container);
   });
 }
@@ -744,39 +790,82 @@ proposals.forEach(p => {
     output.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
   }
   
-  document.addEventListener("DOMContentLoaded", () => {
-    try {
-      // Load all initial data
-      loadTopLegendary(); 
-      loadDAOProposals();
-      loadAirdropHistory();
-      renderQueue();
-      loadPresaleEnd();
-  
-      // DAO proposal form setup
-      const proposalForm = document.getElementById("daoProposalForm");
-      if (proposalForm) {
-        proposalForm.addEventListener("submit", submitProposal);
-      }
-  
-      // DAO section visibility
-      const daoCard = document.querySelector(".dao-admin");
-      if (daoCard) daoCard.style.display = "block";
-  
-      // Safely re-bind admin panel buttons
-      document.querySelector("button[onclick='loadWalletAnalytics()']")?.addEventListener("click", loadWalletAnalytics);
-      document.querySelector("button[onclick='loadBattleStats()']")?.addEventListener("click", loadBattleStats);
-      document.querySelector("button[onclick='loadAirdropStats()']")?.addEventListener("click", loadAirdropStats);
-      document.querySelector("button[onclick='loadAdminLogs()']")?.addEventListener("click", loadAdminLogs);
-      document.querySelector("button[onclick='runDebugTools()']")?.addEventListener("click", runDebugTools);
-      document.querySelector("button[onclick='openAirdropTools()']")?.addEventListener("click", openAirdropTools);
-      document.querySelector("button[onclick='openWalletAnalytics()']")?.addEventListener("click", openWalletAnalytics);
-  
-    } catch (err) {
-      console.error("❌ Error during admin panel load:", err);
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    // Load all initial data
+    loadTopLegendary(); 
+    loadDAOProposals();
+    loadDAOAdminList(); 
+    loadAirdropHistory();
+    renderQueue();
+    loadPresaleEnd();
+
+    // DAO proposal form setup
+    const proposalForm = document.getElementById("daoProposalForm");
+    if (proposalForm) {
+      proposalForm.addEventListener("submit", submitProposal);
     }
-  });
+
+    // DAO section visibility
+    const daoCard = document.querySelector(".dao-admin");
+    if (daoCard) daoCard.style.display = "block";
+
+    // Safely re-bind admin panel buttons
+    document.querySelector("button[onclick='loadWalletAnalytics()']")?.addEventListener("click", loadWalletAnalytics);
+    document.querySelector("button[onclick='loadBattleStats()']")?.addEventListener("click", loadBattleStats);
+    document.querySelector("button[onclick='loadAirdropStats()']")?.addEventListener("click", loadAirdropStats);
+    document.querySelector("button[onclick='loadAdminLogs()']")?.addEventListener("click", loadAdminLogs);
+    document.querySelector("button[onclick='runDebugTools()']")?.addEventListener("click", runDebugTools);
+    document.querySelector("button[onclick='openAirdropTools()']")?.addEventListener("click", openAirdropTools);
+    document.querySelector("button[onclick='openWalletAnalytics()']")?.addEventListener("click", openWalletAnalytics);
+
+  } catch (err) {
+    console.error("❌ Error during admin panel load:", err);
+  }
+});
+
+// 🔒 Confirm Delete
+function confirmDelete(id, title) {
+  if (confirm(`Are you sure you want to delete proposal: "${title}"?`)) {
+    fetch(`https://waldocoin-1.onrender.com/api/proposals/delete/${id}`, {
+      method: "DELETE"
+    })
+      .then(res => res.json())
+      .then(data => alert("✅ Proposal deleted"))
+      .catch(err => alert("❌ Failed to delete proposal"));
+  }
+}
+function forceExpire(id) {
+  fetch(`${base}/api/proposals/expire/${id}`, {
+    method: "POST"
+  })
+  .then(res => res.json())
+  .then(data => alert("✅ Proposal manually expired."))
+  .catch(err => alert("❌ Failed to expire proposal."));
+}
+async function checkWaldoBalance(wallet) {
+  try {
+    const res = await fetch(`https://s1.ripple.com:51234`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "account_lines",
+        params: [{ account: wallet }]
+      })
+    });
+    const data = await res.json();
+    const lines = data?.result?.lines || [];
+    const waldoLine = lines.find(
+      l => l.currency === "WALDO" && l.account === "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F"
+    );
+    const balance = parseFloat(waldoLine?.balance || "0");
+    return balance >= 10000; // 100 XRP worth
+  } catch (err) {
+    console.error("Balance check failed:", err);
+    return false;
+  }
+}
+
 </script>
 </body>
 </html>
-  

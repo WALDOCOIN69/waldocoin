@@ -497,6 +497,26 @@ html, body {
       .container {
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       }
+      .nft-modal {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.nft-modal.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.nft-modal-image {
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.nft-modal.show .nft-modal-image {
+  transform: scale(1);
+}
+
     }
     </style>
     </head>
@@ -729,9 +749,25 @@ function showWaldoNotification(message) {
   banner.style.display = "block";
   setTimeout(() => banner.style.display = "none", 5000);
 }
-
 function dismissWaldoNotification() {
   document.getElementById("waldoNotification").style.display = "none";
+}
+
+function closeNFTModal() {
+  const modal = document.getElementById("nftModal");
+  modal.classList.remove("show");
+  setTimeout(() => {
+    modal.style.display = "none";
+  }, 300); // Match the CSS transition time
+}
+function openNFTModalWithImage(qrUrl) {
+  const modal = document.getElementById("nftModal");
+  const img = document.getElementById("nftModalImg");
+  img.src = qrUrl;
+  modal.style.display = "flex";
+  setTimeout(() => {
+    modal.classList.add("show");
+  }, 10); // Allow display to apply before fade-in
 }
 
 function calculateXPToNextLevel(xp) {
@@ -801,7 +837,14 @@ function renderMemeTable(data) {
         <td>${m.tier ? `Tier ${m.tier}` : '-'}</td>
         <td>${m.tier ? `<button onclick="claimWaldo(${m.tier}, false)">💰 Claim</button>` : '<span style="color:gray">—</span>'}</td>
         <td>${m.tier ? `<button onclick="claimWaldo(${m.tier}, true)">📈 Stake</button>` : '<span style="color:gray">—</span>'}</td>
-        <td>${m.xp >= 60 ? `<button onclick="mintMeme('${m.tweet_id}', '${m.image_url}', ${m.likes}, ${m.retweets})">Mint</button>` : '<span style="color:gray">—</span>'}</td>
+      <td>
+  ${m.xp >= 60 && !m.nftMinted
+    ? `<button id="mintBtn-${m.tweet_id}" class="button-style" onclick="startMintFlow('${m.tweet_id}')">🖼️ Mint NFT</button>`
+    : m.nftMinted
+    ? '<span style="color:#25c2a0;font-weight:bold;">✅ Minted</span>'
+    : '<span style="color:gray">—</span>'}
+</td>
+
       </tr>`).join("");
     document.getElementById("memeTableBody").innerHTML = rows;
 
@@ -817,6 +860,26 @@ function renderMemeTable(data) {
   }
 
   drawPage();
+}
+async function refreshMintStatuses() {
+  const wallet = getWallet();
+  if (!wallet) return;
+
+  try {
+    const res = await fetch(`${baseURL}/api/tweets?wallet=${wallet}`);
+    const tweets = await res.json();
+    tweets.forEach(t => {
+      if (t.nftMinted) {
+        const btn = document.getElementById(`mintBtn-${t.tweet_id}`);
+        if (btn) {
+          btn.innerText = "✅ Minted";
+          btn.disabled = true;
+        }
+      }
+    });
+  } catch (err) {
+    console.error("❌ Mint status refresh failed:", err);
+  }
 }
 
 async function loadWaldoChart() {
@@ -910,21 +973,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     const userRes = await fetch(`${baseURL}/api/userStats?wallet=${wallet}`);
     const userData = await userRes.json();
-    document.getElementById("waldoXP").textContent = data.xp;
-    document.getElementById("waldoLevel").textContent = `Level ${data.level}`;
-    document.getElementById("waldoTitle").textContent = data.title;
-    document.getElementById("waldoLikes").textContent = data.likes;
-    document.getElementById("waldoRetweets").textContent = data.retweets;
-    document.getElementById("waldoMemes").textContent = data.memes;
-    document.getElementById("waldoBattles").textContent = data.battles;
-    document.getElementById("waldoReferrals").textContent = data.referrals.length;
-    document.getElementById("levelProgress").value = Math.min(100, (data.xp % 250));
-    document.getElementById("xpToNextLevel").textContent = `${calculateXPToNextLevel(data.xp)} XP`;
+document.getElementById("waldoXP").textContent = userData.xp;
+document.getElementById("waldoLevel").textContent = `Level ${userData.level}`;
+document.getElementById("waldoTitle").textContent = userData.title;
+document.getElementById("waldoLikes").textContent = userData.likes;
+document.getElementById("waldoRetweets").textContent = userData.retweets;
+document.getElementById("waldoMemes").textContent = userData.memes;
+document.getElementById("waldoBattles").textContent = userData.battles;
+document.getElementById("waldoReferrals").textContent = userData.referrals.length;
+document.getElementById("levelProgress").value = Math.min(100, (userData.xp % 250));
+document.getElementById("xpToNextLevel").textContent = `${calculateXPToNextLevel(userData.xp)} XP`;
 
     const twitterInput = document.getElementById("twitterHandle");
     const linkButton = document.querySelector("button[onclick='linkTwitter()']");
     const statusText = document.getElementById("twitterLinkStatus");  
-    const levelTitle = levelTitles[data.level] || `Level ${data.level}`;
+    const levelTitle = levelTitles[data.level] || `Level ${userData.level}`;
     const levelIcon = document.getElementById("userLevelIcon");
 
     if (userData.twitterHandle) {
@@ -1001,10 +1064,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         }
       });
-
       await loadWaldoChart();
       await loadDAOProposal();
       setInterval(refreshXPStats, 60000);
+      setInterval(refreshMintStatuses, 2 * 60 * 1000); // every 2 minutes
+
     }
   } catch (err) {
     console.error("❌ Dashboard load failed:", err);
@@ -1038,6 +1102,76 @@ function showCustomWelcome() {
   showWaldoNotification("🚀 WALDO Dashboard Loaded!");
 }
 window.addEventListener("load", showCustomWelcome);
+async function startMintFlow(tweetId) {
+  const wallet = getWallet();
+  if (!wallet) return showWaldoNotification("🔌 Connect your wallet first.");
+}
+  try {
+    const res = await fetch(`${baseURL}/api/mint`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tweetId, wallet })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.open(data.redirect, "_blank");
+    } else {
+      openNFTModalWithImage(data.qr); // ✅ Use this instead of manually editing modal DOM
+    }
+
+    const poll = setInterval(async () => {
+      const confirmRes = await fetch(`${baseURL}/api/mint/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tweetId })
+      });
+      const confirmData = await confirmRes.json();
+      if (confirmData.success) {
+        clearInterval(poll);
+        showWaldoNotification("🎉 NFT Minted Successfully!");
+        document.getElementById(`mintBtn-${tweetId}`).innerText = "✅ Minted";
+        document.getElementById(`mintBtn-${tweetId}`).disabled = true;
+      }
+    }, 5000);
+  } catch (err) {
+    console.error("❌ Mint Error:", err);
+    showWaldoNotification("❌ Mint failed: " + err.message);
+  }
+  async function linkTwitter() {
+    const handle = document.getElementById("twitterHandle").value.trim();
+    const wallet = getWallet();
+    const statusText = document.getElementById("twitterLinkStatus");
+
+    if (!handle || !handle.startsWith("@")) {
+      statusText.textContent = "❌ Please enter a valid Twitter handle.";
+      return;
+    }
+
+    try {
+      const res = await fetch(`${baseURL}/api/linkTwitter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet, twitterHandle: handle })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        statusText.textContent = "✅ Twitter handle linked!";
+        document.getElementById("twitterHandle").disabled = true;
+        const button = document.querySelector("button[onclick='linkTwitter()']");
+        button.disabled = true;
+        button.style.background = "grey";
+      } else {
+        statusText.textContent = "❌ Failed: " + data.error;
+      }
+    } catch (err) {
+      console.error("Link Twitter error:", err);
+      statusText.textContent = "❌ Server error linking Twitter.";
+    }
+}
 </script>
 </body>
 </html>

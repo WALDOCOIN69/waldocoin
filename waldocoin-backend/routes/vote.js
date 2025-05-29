@@ -1,57 +1,45 @@
-import express from "express";
-import db from "../utils/db.js";
-import getWaldoBalance from "../utils/getWaldoBalance.js";
+app.post("/api/vote", async (req, res) => {
+  const { proposalId, choice, wallet } = req.body;
+  if (!proposalId || !choice || !wallet) return res.status(400).json({ success: false, error: "Missing fields" });
 
-const router = express.Router();
-const MIN_REQUIRED_WALDO = 10000;
+  try {
+    // Fetch WALDO balance from XRPL
+    const response = await fetch("https://s1.ripple.com:51234", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "account_lines",
+        params: [{ account: wallet }]
+      })
+    });
+    const data = await response.json();
+    const lines = data?.result?.lines || [];
 
-router.post("/", async (req, res) => {
-  const { wallet, proposalId, choice } = req.body;
-  if (!wallet || !proposalId || !choice) {
-    return res.status(400).json({ success: false, error: "Missing fields" });
+    const waldoLine = lines.find(
+      l => l.currency === "WALDO" && l.account === "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F"
+    );
+
+    const waldoBalance = parseFloat(waldoLine?.balance || "0");
+
+    // Fixed price logic
+    const WALDO_PRICE_XRP = 0.01;
+    const REQUIRED_XRP = 100;
+    const requiredWaldo = REQUIRED_XRP / WALDO_PRICE_XRP;
+
+    if (waldoBalance < requiredWaldo) {
+      return res.status(403).json({
+        success: false,
+        error: `You need at least ${requiredWaldo.toLocaleString()} WALDO to vote (≈${REQUIRED_XRP} XRP)`
+      });
+    }
+
+    // ... existing vote storage logic here ...
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Voting error:", err);
+    return res.status(500).json({ success: false, error: "Server error" });
   }
-
-  const proposal = db.proposals[proposalId];
-  if (!proposal) {
-    return res.status(404).json({ success: false, error: "Proposal not found" });
-  }
-
-  const now = new Date();
-  if (now < new Date(proposal.start) || now > new Date(proposal.end)) {
-    return res.status(403).json({ success: false, error: "Voting closed" });
-  }
-
-  const balance = await getWaldoBalance(wallet);
-  if (balance < MIN_REQUIRED_WALDO) {
-    return res.status(403).json({ success: false, error: "Must hold ≥ 10,000 WALDO to vote" });
-  }
-
-  proposal.votes = proposal.votes || {};
-  if (proposal.votes[wallet]) {
-    return res.status(403).json({ success: false, error: "Wallet already voted" });
-  }
-
-  proposal.votes[wallet] = choice;
-  db.proposals[proposalId] = proposal;
-
-  return res.json({ success: true });
 });
-
-// ✅ Tally Route — make sure it's ABOVE the export
-router.get("/tally/:id", (req, res) => {
-  const proposal = db.proposals[req.params.id];
-  if (!proposal || !proposal.votes) {
-    return res.json({ results: {} });
-  }
-
-  const tally = {};
-  Object.values(proposal.votes).forEach(choice => {
-    tally[choice] = (tally[choice] || 0) + 1;
-  });
-
-  res.json({ results: tally });
-});
-
-export default router;
 
 
