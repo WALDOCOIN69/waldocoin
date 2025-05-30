@@ -31,11 +31,13 @@ const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 // Middlewares
 app.use(cors({
-  origin: ["https://waldocoin.live", "http://localhost:3000"], // allow prod and local dev
+  origin: ["https://waldocoin.live", "http://localhost:3000"],
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-admin-key"],
-  credentials: true
+  credentials: true,
+  exposedHeaders: ["Content-Disposition"] // for file downloads
 }));
+
 
 app.use(express.json());
 app.use("/api/login", loginRoutes);
