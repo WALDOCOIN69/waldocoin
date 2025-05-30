@@ -26,13 +26,26 @@ import { XummSdk } from "xumm-sdk";
 
 const app = express();
 
+
 app.use(cors({
-  origin: ["https://waldocoin.live", "https://waldocoin-1.onrender.com"],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "https://waldocoin.live",
+      "https://www.waldocoin.live", // just in case
+      "https://waldocoin-1.onrender.com"
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-admin-key"],
   credentials: true,
   exposedHeaders: ["Content-Disposition"]
 }));
+
 
 const PORT = process.env.PORT || 5050;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
