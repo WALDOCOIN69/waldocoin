@@ -21,23 +21,30 @@ import trustlineRoute from "./routes/trustline.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import { redis, connectRedis } from "./redisClient.js";
 import proposalRoutes from "./routes/proposals.js";
+import { XummSdk } from "xumm-sdk";
+import dotenv from "dotenv";
+dotenv.config(); // ⬅️ MOVE THIS TO THE FIRST LINE
+
+const PORT = process.env.PORT || 5050;
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5050;
-const { XummSdk } = pkg;
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+app.set("trust proxy", 1); // needed for accurate IP logging with proxies
 
-// Middlewares
+// 🔒 CORS fix for WALDO admin dashboard
 app.use(cors({
-  origin: ["https://waldocoin.live", "http://localhost:3000"],
+  origin: (origin, callback) => {
+    const allowed = ["https://waldocoin.live", "https://waldocoin-1.onrender.com"];
+    if (!origin || allowed.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-admin-key"],
   credentials: true,
-  exposedHeaders: ["Content-Disposition"] // for file downloads
+  exposedHeaders: ["Content-Disposition"]
 }));
-
 
 app.use(express.json());
 app.use("/api/login", loginRoutes);
