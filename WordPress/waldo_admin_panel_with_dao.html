@@ -620,65 +620,34 @@ loadAirdropHistory();
     }
   }
   // 📋 Load Proposals
-  async function loadDAOProposals() {
-    const listContainer = document.getElementById("proposalListDAO");
-    listContainer.innerHTML = "Loading...";
-    const res = await fetch(`${base}/api/proposals`);
-    const proposals = await res.json();
-  
-    if (!proposals.length) {
-      listContainer.innerHTML = "<p>No proposals found.</p>";
-      return;
-    }
-  
-    listContainer.innerHTML = ""; // clear first
-if (!proposals.length) {
-  listContainer.innerHTML = "<p>No proposals found.</p>";
-  return;
-}
-
-proposals.forEach(p => {
-  const btn = document.createElement("button");
-  btn.innerText = `${p.title} (expires ${new Date(p.expiresAt).toLocaleString()})`;
-  btn.onclick = () => showProposalDetails(p.id);
-  listContainer.appendChild(btn);
-});
-async function loadDAOAdminList() {
-  const container = document.getElementById("proposalListDAOAdmin");
-  container.innerHTML = "Loading DAO admin proposals...";
+async function loadDAOProposals() {
+  const listContainer = document.getElementById("proposalListDAO");
+  listContainer.innerHTML = "Loading...";
 
   try {
     const res = await fetch(`${base}/api/proposals`);
     const proposals = await res.json();
 
     if (!proposals.length) {
-      container.innerHTML = "<p>No proposals found.</p>";
+      listContainer.innerHTML = "<p>No proposals found.</p>";
       return;
     }
 
-    container.innerHTML = "";
+    listContainer.innerHTML = ""; // Clear old content
+
     proposals.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "proposal-item";
-      div.innerHTML = `
-        <strong>${p.title}</strong>
-        <p>ID: ${p.id} | Expires: ${new Date(p.expiresAt).toLocaleString()}</p>
-        <button type="button" onclick="confirmDelete('${p.id}', '${p.title}')">🗑 Delete</button>
-        <button type="button" onclick="forceExpire('${p.id}')">⏳ Force Expire</button>
-      `;
-      container.appendChild(div);
+      const btn = document.createElement("button");
+      btn.innerText = `${p.title} (expires ${new Date(p.expiresAt).toLocaleString()})`;
+      btn.onclick = () => showProposalDetails(p.id);
+      listContainer.appendChild(btn);
     });
   } catch (err) {
-    container.innerHTML = "<p>❌ Failed to load proposals.</p>";
-    console.error("Failed to load admin proposals:", err);
+    console.error("❌ Failed to load proposals:", err);
+    listContainer.innerHTML = "<p>❌ Error loading proposals.</p>";
   }
 }
-
-
-  
-  }
  // 🧾 Show Proposal Details + Voting (Safe DOM rendering)
- async function showProposalDetails(id) {
+async function showProposalDetails(id) {
   const res = await fetch(`${base}/api/proposals/${id}`);
   const data = await res.json();
 
@@ -789,7 +758,22 @@ async function loadDAOAdminList() {
     const output = document.getElementById("output");
     output.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
   }
-  
+async function loadDAOAdminList() {
+  try {
+    const res = await fetch(`${base}/api/proposals`);
+    const proposals = await res.json();
+    const listEl = document.getElementById("proposalListDAOAdmin");
+    listEl.innerHTML = proposals.map(p => `
+      <div class="proposal-entry">
+        <strong>${p.title}</strong>
+        <button onclick="confirmDelete('${p.id}', '${p.title}')">🗑️ Delete</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error("❌ Error loading DAO admin list:", err);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   try {
     // Load all initial data
@@ -865,7 +849,6 @@ async function checkWaldoBalance(wallet) {
     return false;
   }
 }
-
 </script>
 </body>
 </html>

@@ -987,7 +987,7 @@ document.getElementById("xpToNextLevel").textContent = `${calculateXPToNextLevel
     const twitterInput = document.getElementById("twitterHandle");
     const linkButton = document.querySelector("button[onclick='linkTwitter()']");
     const statusText = document.getElementById("twitterLinkStatus");  
-    const levelTitle = levelTitles[data.level] || `Level ${userData.level}`;
+    const levelTitle = levelTitles[userData.level] || `Level ${userData.level}`;
     const levelIcon = document.getElementById("userLevelIcon");
 
     if (userData.twitterHandle) {
@@ -997,16 +997,16 @@ document.getElementById("xpToNextLevel").textContent = `${calculateXPToNextLevel
       linkButton.style.background = "grey";
       statusText.textContent = "🔒 Twitter handle linked and locked.";
 
-      levelIcon.src = levelImages[data.level] || levelImages[1];
+      levelIcon.src = levelImages[userData.level] || levelImages[1];
       levelIcon.alt = `${levelTitle} Icon`;
       levelIcon.title = `You're a ${levelTitle}`;
 
 
+
       const titleElem = document.getElementById("userLevelTitle");
       titleElem.textContent = levelTitle;
-      titleElem.className = `center-text level-title level-${data.level}`;
-
-      document.getElementById("waldoTitle").textContent = levelTitles[data.level] || `Level ${data.level}`;
+      titleElem.className = `center-text level-title level-${userData.level}`;
+      document.getElementById("waldoTitle").textContent = levelTitles[userData.level] || `Level ${userData.level}`;
 
       const tweetsRes = await fetch(`${baseURL}/api/tweets?wallet=${wallet}`);
       const tweets = (await tweetsRes.json()).filter(t => t.wallet === wallet);
