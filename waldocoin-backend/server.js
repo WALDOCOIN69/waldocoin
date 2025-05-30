@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config(); // ⬅️ MOVE THIS TO THE FIRST LINE
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import pkg from "xumm-sdk"; // ✅ This is the only correct xumm-sdk import
@@ -22,13 +23,11 @@ import linkTwitterRoute from "./routes/linkTwitter.js";
 import { redis, connectRedis } from "./redisClient.js";
 import proposalRoutes from "./routes/proposals.js";
 import { XummSdk } from "xumm-sdk";
-import dotenv from "dotenv";
-dotenv.config(); // ⬅️ MOVE THIS TO THE FIRST LINE
+
+
 
 const PORT = process.env.PORT || 5050;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-dotenv.config();
 
 const app = express();
 app.set("trust proxy", 1); // needed for accurate IP logging with proxies
