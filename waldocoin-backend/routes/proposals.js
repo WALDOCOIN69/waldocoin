@@ -45,7 +45,7 @@ router.post("/", async (req, res) => {
 });
 
 // 📄 GET a single proposal
-router.get("/:id", async (req, res) => {
+router.get("/view/:id", async (req, res) => {
   const data = await redis.hGetAll(`proposal:${req.params.id}`);
   if (!data || Object.keys(data).length === 0) {
     return res.status(404).json({ error: "Proposal not found" });
