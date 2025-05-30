@@ -26,14 +26,14 @@ import { XummSdk } from "xumm-sdk";
 
 const app = express();
 
+const allowedOrigins = [
+  "https://waldocoin.live",
+  "https://www.waldocoin.live",
+  "https://waldocoin-1.onrender.com"
+];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = [
-      "https://waldocoin.live",
-      "https://www.waldocoin.live", // just in case
-      "https://waldocoin-1.onrender.com"
-    ];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -44,7 +44,10 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "x-admin-key"],
   credentials: true,
   exposedHeaders: ["Content-Disposition"]
-}));
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // ✅ Preflight handler
 
 
 const PORT = process.env.PORT || 5050;
