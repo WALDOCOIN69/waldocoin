@@ -2,14 +2,15 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-// Set dummy fallback values BEFORE route imports
+// Fallback dummy values BEFORE imports that use them
 process.env.XUMM_API_KEY = process.env.XUMM_API_KEY || "dummy";
 process.env.XUMM_API_SECRET = process.env.XUMM_API_SECRET || "dummy";
 
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import pkg from "xumm-sdk"; // ✅ This is the only correct xumm-sdk import
+import { XummSdk } from "xumm-sdk";
+
 import loginRoutes from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
@@ -26,12 +27,14 @@ import userStatsRoute from "./routes/userstats.js";
 import priceRoute from "./routes/price.js";
 import trustlineRoute from "./routes/trustline.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
-import { redis, connectRedis } from "./redisClient.js";
 import proposalRoutes from "./routes/proposals.js";
-import { XummSdk } from "xumm-sdk";
+import { redis, connectRedis } from "./redisClient.js";
 
 const app = express();
+const PORT = process.env.PORT || 5050;
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
+// CORS setup
 const allowedOrigins = [
   "https://waldocoin.live",
   "https://www.waldocoin.live",
@@ -53,21 +56,10 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ Preflight handler
-
-
-const PORT = process.env.PORT || 5050;
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-app.set("trust proxy", 1); // needed for accurate IP logging with proxies
-
-// 🔒 CORS fix for WALDO admin dashboard
-
-
+app.options("*", cors(corsOptions));
+app.set("trust proxy", 1);
 app.use(express.json());
-app.use("/api/login", loginRoutes);
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 50,
@@ -78,6 +70,12 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Routes
+app.use("/api/login", loginRoutes);
+app.use("/api/claim", claimRoute);
+app.use("/api/mint", mintRoute);
+app.use("/api/mint/confirm", mintConfirmRoute);
+app.use("/api/reward", rewardRoute);
+app.use("/api/tweets", tweetsRoute);
 app.use("/api/linkTwitter", linkTwitterRoute);
 app.use("/api/admin/security", adminSecurity);
 app.use("/api/debug", debugRoutes);
@@ -86,16 +84,20 @@ app.use("/api/vote", voteRoutes);
 app.use("/api/trustline", trustlineRoute);
 app.use("/api/userStats", userStatsRoute);
 app.use("/api/price", priceRoute);
-app.use("/api/claim", claimRoute);
-app.use("/api/mint", mintRoute);
-app.use("/api/mint/confirm", mintConfirmRoute);
-app.use("/api/reward", rewardRoute);
-app.use("/api/tweets", tweetsRoute);
 app.use("/api/phase9/analytics", analyticsRoutes);
 app.use("/api/phase9/admin", adminLogsRoutes);
 app.use("/api/proposals", proposalRoutes);
 
-// XUMM Login check
+// Health check
+app.get("/", (req, res) => {
+  res.json({ status: "🚀 WALDO API is live!" });
+});
+
+app.get("/api/ping", (req, res) => {
+  res.status(200).json({ status: "✅ WALDO API is online" });
+});
+
+// XUMM login routes
 app.get("/api/login/status/:uuid", async (req, res) => {
   const { uuid } = req.params;
   try {
@@ -110,7 +112,6 @@ app.get("/api/login/status/:uuid", async (req, res) => {
   }
 });
 
-// XUMM login request
 app.get("/api/login", async (req, res) => {
   try {
     const payload = await xumm.payload.create({
@@ -123,16 +124,7 @@ app.get("/api/login", async (req, res) => {
   }
 });
 
-// Health check
-app.get("/", (req, res) => {
-  res.json({ status: "🚀 WALDO API is live!" });
-});
-
-app.get("/api/ping", (req, res) => {
-  res.status(200).json({ status: "✅ WALDO API is online" });
-});
-
-// Startup block
+// Start server
 const startServer = async () => {
   try {
     await connectRedis();
@@ -147,5 +139,4 @@ const startServer = async () => {
   }
 };
 
-startServer(); // 🔁 Call the startup function
-
+startServer();
