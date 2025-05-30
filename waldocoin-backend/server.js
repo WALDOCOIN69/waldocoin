@@ -1,7 +1,7 @@
 import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config(); // ⬅️ MOVE THIS TO THE FIRST LINE
-import cors from "cors";
 import rateLimit from "express-rate-limit";
 import pkg from "xumm-sdk"; // ✅ This is the only correct xumm-sdk import
 import loginRoutes from "./routes/login.js";
@@ -24,26 +24,23 @@ import { redis, connectRedis } from "./redisClient.js";
 import proposalRoutes from "./routes/proposals.js";
 import { XummSdk } from "xumm-sdk";
 
-
-
-const PORT = process.env.PORT || 5050;
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
 const app = express();
-app.set("trust proxy", 1); // needed for accurate IP logging with proxies
 
-// 🔒 CORS fix for WALDO admin dashboard
 app.use(cors({
-  origin: (origin, callback) => {
-    const allowed = ["https://waldocoin.live", "https://waldocoin-1.onrender.com"];
-    if (!origin || allowed.includes(origin)) return callback(null, true);
-    return callback(new Error("Not allowed by CORS"));
-  },
+  origin: ["https://waldocoin.live", "https://waldocoin-1.onrender.com"],
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-admin-key"],
   credentials: true,
   exposedHeaders: ["Content-Disposition"]
 }));
+
+const PORT = process.env.PORT || 5050;
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+
+app.set("trust proxy", 1); // needed for accurate IP logging with proxies
+
+// 🔒 CORS fix for WALDO admin dashboard
+
 
 app.use(express.json());
 app.use("/api/login", loginRoutes);
