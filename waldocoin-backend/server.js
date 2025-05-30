@@ -69,24 +69,29 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Routes
-app.use("/api/login", loginRoutes);
-app.use("/api/claim", claimRoute);
-app.use("/api/mint", mintRoute);
-app.use("/api/mint/confirm", mintConfirmRoute);
-app.use("/api/reward", rewardRoute);
-app.use("/api/tweets", tweetsRoute);
-app.use("/api/linkTwitter", linkTwitterRoute);
-app.use("/api/admin/security", adminSecurity);
-app.use("/api/debug", debugRoutes);
-app.use("/api/presale", presaleRoutes);
-app.use("/api/vote", voteRoutes);
-app.use("/api/trustline", trustlineRoute);
-app.use("/api/userStats", userStatsRoute);
-app.use("/api/price", priceRoute);
-app.use("/api/phase9/analytics", analyticsRoutes);
-app.use("/api/phase9/admin", adminLogsRoutes);
-app.use("/api/proposals", proposalRoutes);
+// Route registration with logs for debugging
+const register = (path, route) => {
+  console.log("✅ Registering route:", path);
+  app.use(path, route);
+};
+
+register("/api/login", loginRoutes);
+register("/api/claim", claimRoute);
+register("/api/mint", mintRoute);
+register("/api/mint/confirm", mintConfirmRoute);
+register("/api/reward", rewardRoute);
+register("/api/tweets", tweetsRoute);
+register("/api/linkTwitter", linkTwitterRoute);
+register("/api/admin/security", adminSecurity);
+register("/api/debug", debugRoutes);
+register("/api/presale", presaleRoutes);
+register("/api/vote", voteRoutes);
+register("/api/trustline", trustlineRoute);
+register("/api/userStats", userStatsRoute);
+register("/api/price", priceRoute);
+register("/api/phase9/analytics", analyticsRoutes);
+register("/api/phase9/admin", adminLogsRoutes);
+register("/api/proposals", proposalRoutes);
 
 // Health check
 app.get("/", (req, res) => {
@@ -140,3 +145,4 @@ const startServer = async () => {
 };
 
 startServer();
+
