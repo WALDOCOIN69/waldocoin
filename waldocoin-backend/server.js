@@ -1,7 +1,13 @@
+// Must be first
+import dotenv from "dotenv";
+dotenv.config();
+
+// Set dummy fallback values BEFORE route imports
+process.env.XUMM_API_KEY = process.env.XUMM_API_KEY || "dummy";
+process.env.XUMM_API_SECRET = process.env.XUMM_API_SECRET || "dummy";
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-dotenv.config(); // ⬅️ MOVE THIS TO THE FIRST LINE
 import rateLimit from "express-rate-limit";
 import pkg from "xumm-sdk"; // ✅ This is the only correct xumm-sdk import
 import loginRoutes from "./routes/login.js";
