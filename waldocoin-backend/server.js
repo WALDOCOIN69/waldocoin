@@ -20,10 +20,10 @@ dotenv.config();
 process.env.XUMM_API_KEY = process.env.XUMM_API_KEY || "dummy";
 process.env.XUMM_API_SECRET = process.env.XUMM_API_SECRET || "dummy";
 
-//import express from "express";
-//import cors from "cors";
-//import rateLimit from "express-rate-limit";
-//import { XummSdk } from "xumm-sdk";
+import express from "express";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import { XummSdk } from "xumm-sdk";
 
 //import loginRoutes from "./routes/login.js";
 //import claimRoute from "./routes/claim.js";
