@@ -83,14 +83,25 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Safe route registration with error handling
 const safeRegister = (path, route) => {
   try {
-    console.log("✅ Registering route:", path);
+    console.log("🧪 Attempting to register route:", path);
+
+    // Force string checks to catch empty colon cases
+    if (!path || typeof path !== 'string') {
+      throw new Error(`Invalid path value: ${path}`);
+    }
+
+    if (/:.+:/.test(path)) {
+      throw new Error(`❌ BAD PATH: ${path}`);
+    }
+
     app.use(path, route);
+    console.log(`✅ Route registered: ${path}`);
   } catch (err) {
-    console.error(`❌ Failed to register route: ${path}`, err);
-    throw err;
+    console.error(`❌ Route FAILED: ${path}`);
+    console.error(err.stack);
+    process.exit(1);
   }
 };
 
