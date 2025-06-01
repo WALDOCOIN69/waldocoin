@@ -105,7 +105,7 @@ const safeRegister = (path, route) => {
 };
 
 safeRegister("/api/login", loginRoutes);
-safeRegister("/api/claim", claimRoute);
+//safeRegister("/api/claim", claimRoute);
 //safeRegister("/api/mint", mintRoute);
 //safeRegister("/api/mint/confirm", mintConfirmRoute);
 //safeRegister("/api/reward", rewardRoute);
