@@ -29,8 +29,8 @@ dotenv.config();
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-// 💥 Dummy fallback route to prevent router error
-router.post("/confirm", async (req, res) => {
+// ✅ FIXED: Changed route path from "/confirm" to "/"
+router.post("/", async (req, res) => {
   res.json({ success: true, message: "Mint confirm stub active" });
 });
 
