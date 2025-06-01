@@ -5,10 +5,11 @@ export const patchRouter = (router, file) => {
     const original = router[method];
     router[method] = function (path, ...handlers) {
       if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.warn(`⚠️ Possibly malformed route in ${file}: ${method.toUpperCase()} ${path}`);
-        path = path.replace(/:([^\/]+):/g, ":$1"); // Sanitize accidental double colons
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path} — skipping`);
+        return; // ⛔️ Prevent registering bad route
       }
       return original.call(this, path, ...handlers);
     };
   }
 };
+
