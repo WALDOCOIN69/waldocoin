@@ -1,9 +1,16 @@
-// 📁 waldocoin-backend/routes/reward.js
-import express from 'express'
-const router = express.Router()
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { patchRouter } from "../utils/patchRouter.js"; // ✅
 
-router.get('/', (req, res) => {
-  res.json({ status: '🎁 Reward route placeholder active.' })
-})
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-export default router
+const router = express.Router();
+patchRouter(router, path.basename(__filename)); // ✅ patch
+
+router.get("/", (req, res) => {
+  res.json({ status: "🎁 Reward route placeholder active." });
+});
+
+export default router;

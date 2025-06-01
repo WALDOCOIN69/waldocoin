@@ -6,13 +6,29 @@ import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 import xumm from "../utils/xummClient.js";
 
+// ✅ Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Patch router for bad route detection
+const patchRouter = (router, file) => {
+  const methods = ["get", "post", "use"];
+  for (const method of methods) {
+    const original = router[method];
+    router[method] = function (path, ...handlers) {
+      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+      }
+      return original.call(this, path, ...handlers);
+    };
+  }
+};
 
 dotenv.config();
 const router = express.Router();
+patchRouter(router, path.basename(__filename));
 
 // Setup DB path
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, "../db.json");
 
 // Constants

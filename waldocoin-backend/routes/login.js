@@ -2,10 +2,32 @@ import express from "express";
 import dotenv from "dotenv";
 import { XummSdk } from "xumm-sdk";
 import { Client } from "xrpl";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// ✅ Setup __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Patch router for invalid route patterns
+const patchRouter = (router, file) => {
+  const methods = ["get", "post", "use"];
+  for (const method of methods) {
+    const original = router[method];
+    router[method] = function (path, ...handlers) {
+      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+      }
+      return original.call(this, path, ...handlers);
+    };
+  }
+};
 
 dotenv.config();
 
 const router = express.Router();
+patchRouter(router, path.basename(__filename));
+
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
