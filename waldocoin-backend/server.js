@@ -3,7 +3,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import loginRoutes from "./routes/login.js";
-app.use("/api/login", loginRoutes);
+
 
 dotenv.config();
 
@@ -11,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5050;
 
 // ✅ CORS setup
+app.use("/api/login", loginRoutes);
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "OPTIONS"],
