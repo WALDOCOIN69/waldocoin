@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import loginRoutes from "./routes/login.js";
+app.use("/api/login", loginRoutes);
 
 dotenv.config();
 
