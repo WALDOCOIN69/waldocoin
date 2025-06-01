@@ -87,13 +87,12 @@ const safeRegister = (path, route) => {
   try {
     console.log("🧪 Attempting to register route:", path);
 
-    // Force string checks to catch empty colon cases
-    if (!path || typeof path !== 'string') {
-      throw new Error(`Invalid path value: ${path}`);
-    }
-
-    if (/:.+:/.test(path)) {
-      throw new Error(`❌ BAD PATH: ${path}`);
+    // 🧨 Manually inspect route stack for all paths
+    const routerStack = route.stack || [];
+    for (const layer of routerStack) {
+      if (typeof layer?.route?.path === "string" && /:[^\/]+:/.test(layer.route.path)) {
+        throw new Error(`❌ BAD NESTED ROUTE: ${layer.route.path}`);
+      }
     }
 
     app.use(path, route);
@@ -107,21 +106,21 @@ const safeRegister = (path, route) => {
 
 safeRegister("/api/login", loginRoutes);
 safeRegister("/api/claim", claimRoute);
-safeRegister("/api/mint", mintRoute);
-safeRegister("/api/mint/confirm", mintConfirmRoute);
-safeRegister("/api/reward", rewardRoute);
-safeRegister("/api/tweets", tweetsRoute);
-safeRegister("/api/linkTwitter", linkTwitterRoute);
-safeRegister("/api/admin/security", adminSecurity);
-safeRegister("/api/debug", debugRoutes);
-safeRegister("/api/presale", presaleRoutes);
-safeRegister("/api/vote", voteRoutes);
-safeRegister("/api/trustline", trustlineRoute);
-safeRegister("/api/userStats", userStatsRoute);
-safeRegister("/api/price", priceRoute);
-safeRegister("/api/phase9/analytics", analyticsRoutes);
-safeRegister("/api/phase9/admin", adminLogsRoutes);
-safeRegister("/api/proposals", proposalRoutes);
+//safeRegister("/api/mint", mintRoute);
+//safeRegister("/api/mint/confirm", mintConfirmRoute);
+//safeRegister("/api/reward", rewardRoute);
+//safeRegister("/api/tweets", tweetsRoute);
+//safeRegister("/api/linkTwitter", linkTwitterRoute);
+//safeRegister("/api/admin/security", adminSecurity);
+//safeRegister("/api/debug", debugRoutes);
+//safeRegister("/api/presale", presaleRoutes);
+//safeRegister("/api/vote", voteRoutes);
+//safeRegister("/api/trustline", trustlineRoute);
+//safeRegister("/api/userStats", userStatsRoute);
+//safeRegister("/api/price", priceRoute);
+//safeRegister("/api/phase9/analytics", analyticsRoutes);
+//safeRegister("/api/phase9/admin", adminLogsRoutes);
+//safeRegister("/api/proposals", proposalRoutes);
 
 // Health check
 app.get("/", (req, res) => {
