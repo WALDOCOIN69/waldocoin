@@ -1,3 +1,4 @@
+// utils/patchRouter.js - PATCH INCLUDED LOCALLY HERE FOR SAFETY CHECKS
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
@@ -9,7 +10,7 @@ const patchRouter = (router, file) => {
       return original.call(this, path, ...handlers);
     };
   }
-}
+};
 
 // Must be first
 import dotenv from "dotenv";
@@ -82,29 +83,34 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Route registration with logs for debugging
-const register = (path, route) => {
-  console.log("✅ Registering route:", path);
-  app.use(path, route);
+// Safe route registration with error handling
+const safeRegister = (path, route) => {
+  try {
+    console.log("✅ Registering route:", path);
+    app.use(path, route);
+  } catch (err) {
+    console.error(`❌ Failed to register route: ${path}`, err);
+    throw err;
+  }
 };
 
-register("/api/login", loginRoutes);
-register("/api/claim", claimRoute);
-register("/api/mint", mintRoute);
-register("/api/mint/confirm", mintConfirmRoute);
-register("/api/reward", rewardRoute);
-register("/api/tweets", tweetsRoute);
-register("/api/linkTwitter", linkTwitterRoute);
-register("/api/admin/security", adminSecurity);
-register("/api/debug", debugRoutes);
-register("/api/presale", presaleRoutes);
-register("/api/vote", voteRoutes);
-register("/api/trustline", trustlineRoute);
-register("/api/userStats", userStatsRoute);
-register("/api/price", priceRoute);
-register("/api/phase9/analytics", analyticsRoutes);
-register("/api/phase9/admin", adminLogsRoutes);
-register("/api/proposals", proposalRoutes);
+safeRegister("/api/login", loginRoutes);
+safeRegister("/api/claim", claimRoute);
+safeRegister("/api/mint", mintRoute);
+safeRegister("/api/mint/confirm", mintConfirmRoute);
+safeRegister("/api/reward", rewardRoute);
+safeRegister("/api/tweets", tweetsRoute);
+safeRegister("/api/linkTwitter", linkTwitterRoute);
+safeRegister("/api/admin/security", adminSecurity);
+safeRegister("/api/debug", debugRoutes);
+safeRegister("/api/presale", presaleRoutes);
+safeRegister("/api/vote", voteRoutes);
+safeRegister("/api/trustline", trustlineRoute);
+safeRegister("/api/userStats", userStatsRoute);
+safeRegister("/api/price", priceRoute);
+safeRegister("/api/phase9/analytics", analyticsRoutes);
+safeRegister("/api/phase9/admin", adminLogsRoutes);
+safeRegister("/api/proposals", proposalRoutes);
 
 // Health check
 app.get("/", (req, res) => {
@@ -156,6 +162,12 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+app._router.stack.forEach(r => {
+  if (r.route && r.route.path) {
+    console.log("✅ Loaded route:", r.route.path);
+  }
+});
 
 startServer();
 
