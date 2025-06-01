@@ -1,5 +1,14 @@
+// routes/vote.js
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { patchRouter } from "../utils/patchRouter.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
+patchRouter(router, path.basename(__filename));
 
 router.post("/", async (req, res) => {
   const { proposalId, choice, wallet } = req.body;
@@ -45,7 +54,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-export default router; // ✅ This fixes the import in server.js
+export default router;
 
 
 
