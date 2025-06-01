@@ -104,7 +104,7 @@ const safeRegister = (path, route) => {
   }
 };
 
-safeRegister("/api/login", loginRoutes);
+//safeRegister("/api/login", loginRoutes);
 //safeRegister("/api/claim", claimRoute);
 //safeRegister("/api/mint", mintRoute);
 //safeRegister("/api/mint/confirm", mintConfirmRoute);
@@ -122,6 +122,9 @@ safeRegister("/api/login", loginRoutes);
 //safeRegister("/api/phase9/admin", adminLogsRoutes);
 //safeRegister("/api/proposals", proposalRoutes);
 
+app.get("/test", (req, res) => res.send("✅ Minimal route works"));
+
+
 // Health check
 app.get("/", (req, res) => {
   res.json({ status: "🚀 WALDO API is live!" });
@@ -132,31 +135,31 @@ app.get("/api/ping", (req, res) => {
 });
 
 // XUMM login routes
-app.get("/api/login/status/:uuid", async (req, res) => {
-  const { uuid } = req.params;
-  try {
-    const result = await xumm.payload.get(uuid);
-    if (result.meta.signed === true && result.response.account) {
-      return res.json({ signed: true, wallet: result.response.account });
-    }
-    res.json({ signed: false });
-  } catch (err) {
-    console.error("❌ Error checking login status:", err);
-    res.status(500).json({ error: "Failed to check sign-in status." });
-  }
-});
+//app.get("/api/login/status/:uuid", async (req, res) => {
+ // const { uuid } = req.params;
+ // try {
+   // const result = await xumm.payload.get(uuid);
+   // if (result.meta.signed === true && result.response.account) {
+    //  return res.json({ signed: true, wallet: result.response.account });
+  // }
+  //  res.json({ signed: false });
+  //} catch (err) {
+   // console.error("❌ Error checking login status:", err);
+    //res.status(500).json({ error: "Failed to check sign-in status." });
+ // }
+//});
 
-app.get("/api/login", async (req, res) => {
-  try {
-    const payload = await xumm.payload.create({
-      txjson: { TransactionType: "SignIn" },
-    });
-    res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
-  } catch (err) {
-    console.error("❌ Error creating XUMM payload:", err);
-    res.status(500).json({ error: "Failed to create XUMM sign-in." });
-  }
-});
+//app.get("/api/login", async (req, res) => {
+  //try {
+   //const payload = await xumm.payload.create({
+      //txjson: { TransactionType: "SignIn" },
+    //});
+    //res.json({ qr: payload.refs.qr_png, uuid: payload.uuid });
+  //} catch (err) {
+   // console.error("❌ Error creating XUMM payload:", err);
+   // res.status(500).json({ error: "Failed to create XUMM sign-in." });
+  //}
+//});
 
 // Start server
 const startServer = async () => {
