@@ -4,13 +4,13 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import getXummClient from "../utils/xummClient.js"; // ✅ Correct import
+import getXummClient from "../utils/xummClient.js";
 
-// ✅ Fix __dirname for ES modules
+// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Patch router for bad route detection
+// Route patching for safety
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
@@ -102,8 +102,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ FIXED: use correct client loader
-  const xummClient = getXummClient(); 
+    // ✅ Use persistent client instance (NO await!)
+    const xummClient = getXummClient();
 
     const payload = await xummClient.payload.create({
       txjson: {
@@ -157,4 +157,5 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
 

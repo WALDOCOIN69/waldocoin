@@ -10,9 +10,10 @@ if (!XUMM_API_KEY || !XUMM_API_SECRET) {
   throw new Error("❌ Missing XUMM credentials");
 }
 
-// ✅ create one persistent XUMM client instance
-const xummClientInstance = new XummSdk(XUMM_API_KEY, XUMM_API_SECRET);
+console.log("✅ XUMM client initialized");
+
+const xummClient = new XummSdk(XUMM_API_KEY, XUMM_API_SECRET);
 
 export default function getXummClient() {
-  return xummClientInstance;
+  return xummClient;
 }
