@@ -1,20 +1,12 @@
 // utils/xummClient.js
-import { XummSdk } from "xumm-sdk";
+export default async function getXummClient() {
+  const { XummSdk } = await import("xumm-sdk");
+  const { XUMM_API_KEY, XUMM_API_SECRET } = process.env;
 
-let client = null;
-
-export default function getXummClient() {
-  if (!client || client?.isClosed) {
-    const { XUMM_API_KEY, XUMM_API_SECRET } = process.env;
-
-    if (!XUMM_API_KEY || !XUMM_API_SECRET) {
-      console.error("❌ Missing XUMM credentials");
-      throw new Error("Missing XUMM credentials");
-    }
-
-    console.log("✅ Initializing fresh XUMM client...");
-    client = new XummSdk(XUMM_API_KEY, XUMM_API_SECRET);
+  if (!XUMM_API_KEY || !XUMM_API_SECRET) {
+    throw new Error("❌ Missing XUMM credentials");
   }
 
-  return client;
+  return new XummSdk(XUMM_API_KEY, XUMM_API_SECRET);
 }
+

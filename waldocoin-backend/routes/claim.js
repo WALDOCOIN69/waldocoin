@@ -103,7 +103,8 @@ router.post("/", async (req, res) => {
     }
 
     // ✅ FIXED: use correct client loader
-    const xummClient = getXummClient();
+  const xummClient = await getXummClient();
+
 
     const payload = await xummClient.payload.create({
       txjson: {
