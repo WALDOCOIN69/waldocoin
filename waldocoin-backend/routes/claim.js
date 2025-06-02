@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import xummClient from "../utils/xummClient.js";
+import getXummClient from "../utils/xummClient.js"; // async client version
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -102,8 +102,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Use persistent client instance (NO await!)
-
+    // ✅ Back to working async pattern
+    const xummClient = await getXummClient();
 
     const payload = await xummClient.payload.create({
       txjson: {
