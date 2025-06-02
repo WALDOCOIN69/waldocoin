@@ -1,104 +1,159 @@
-// 🔐 Safely register routes and detect malformed paths
-const safeRegister = (path, route) => {
-  try {
-    console.log("🧪 Attempting to register route:", path);
+import express from "express";
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { isAutoBlocked, logViolation } from "../utils/security.js";
+import xumm from "../utils/xummClient.js";
 
-    const routerStack = route.stack || [];
-    for (const layer of routerStack) {
-      if (typeof layer?.route?.path === "string" && /:[^\/]+:/.test(layer.route.path)) {
-        throw new Error(`❌ BAD NESTED ROUTE: ${layer.route.path}`);
+// ✅ Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Patch router for bad route detection
+const patchRouter = (router, file) => {
+  const methods = ["get", "post", "use"];
+  for (const method of methods) {
+    const original = router[method];
+    router[method] = function (path, ...handlers) {
+      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
       }
-    }
-
-    app.use(path, route);
-    console.log(`✅ Route registered: ${path}`);
-  } catch (err) {
-    console.error(`❌ Route FAILED: ${path}`);
-    console.error(err.stack);
-    process.exit(1);
+      return original.call(this, path, ...handlers);
+    };
   }
 };
 
-import express from "express";
-import cors from "cors";
-import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
-
-// 🌐 Load environment variables
 dotenv.config();
+const router = express.Router();
+patchRouter(router, path.basename(__filename));
 
-// 🛠️ Express app setup
-const app = express();
-const PORT = process.env.PORT || 5050;
+// Setup DB path
+const DB_PATH = path.join(__dirname, "../db.json");
 
-// ✅ Core middleware
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
-}));
-app.use(express.json());
+// Constants
+const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
+const CURRENCY = "WLD";
 
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
-  message: "Too many requests. Please slow down.",
+const INSTANT_FEE_PERCENT = 0.10;
+const STAKE_FEE_PERCENT = 0.05;
+const BURN_RATE = 0.02;
+
+const tierCaps = {
+  1: 36,
+  2: 72,
+  3: 180,
+  4: 900,
+  5: 1800
+};
+
+function getBaseRewardByTier(tier) {
+  const map = { 1: 1, 2: 2, 3: 5, 4: 25, 5: 50 };
+  return map[tier] || null;
+}
+
+router.post("/", async (req, res) => {
+  const { wallet, stake, tier, memeId } = req.body;
+
+  if (!wallet || typeof stake !== "boolean" || !tier) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    if (await isAutoBlocked(wallet)) {
+      return res.status(403).json({
+        error: "❌ This wallet is temporarily blocked due to repeated abuse."
+      });
+    }
+
+    const db = JSON.parse(fs.readFileSync(DB_PATH));
+    db.rewards = db.rewards || {};
+    db.rewards[wallet] = db.rewards[wallet] || {};
+
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    db.rewards[wallet][monthKey] = db.rewards[wallet][monthKey] || {};
+
+    const log = db.rewards[wallet][monthKey]._log || [];
+    if (log.length >= 10) {
+      await logViolation(wallet, "claim_limit_exceeded", { memeId, currentLogLength: log.length });
+      return res.status(400).json({
+        success: false,
+        error: "❌ You’ve already claimed rewards for 10 memes this month."
+      });
+    }
+
+    const baseReward = getBaseRewardByTier(tier);
+    if (!baseReward) {
+      await logViolation(wallet, "invalid_tier", { tier, memeId });
+      return res.status(400).json({ error: "Invalid tier" });
+    }
+
+    let reward = stake
+      ? baseReward * 1.15 * (1 - STAKE_FEE_PERCENT)
+      : baseReward * (1 - INSTANT_FEE_PERCENT);
+
+    const claimedThisMonth = db.rewards[wallet][monthKey][tier] || 0;
+    const maxAllowed = tierCaps[tier];
+
+    if ((claimedThisMonth + reward) > maxAllowed) {
+      await logViolation(wallet, "tier_cap_exceeded", { tier, reward, claimedThisMonth, memeId });
+      return res.json({
+        success: false,
+        error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WALDO this month.`
+      });
+    }
+
+    const payload = await xumm.payload.create({
+      txjson: {
+        TransactionType: "Payment",
+        Destination: wallet,
+        Amount: {
+          currency: CURRENCY,
+          value: reward.toFixed(2),
+          issuer: ISSUER
+        }
+      },
+      options: {
+        submit: true,
+        expire: 300
+      }
+    });
+
+    db.rewards[wallet][monthKey][tier] = claimedThisMonth + reward;
+    db.rewards[wallet][monthKey]._log = log.concat({
+      timestamp: new Date().toISOString(),
+      tier,
+      stake,
+      reward: reward.toFixed(2),
+      memeId
+    });
+
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+
+    res.json({
+      success: true,
+      uuid: payload.uuid,
+      signUrl: payload.next.always,
+      qr: payload.refs.qr_png,
+      reward: reward.toFixed(2)
+    });
+
+  } catch (err) {
+    const reason =
+      err?.response?.data ||
+      err?.data ||
+      err?.message ||
+      err;
+
+    console.error("❌ XUMM Claim Error:", reason);
+    res.status(500).json({
+      success: false,
+      error: "XUMM claim failed.",
+      detail: reason
+    });
+  }
 });
-app.use(limiter);
 
-// ✅ Simple health check routes
-app.get("/", (req, res) => {
-  res.json({ status: "🚀 WALDO API is live!" });
-});
-
-app.get("/api/ping", (req, res) => {
-  res.json({ status: "✅ WALDO API is online" });
-});
-
-app.get("/test", (req, res) => {
-  res.send("✅ Minimal route works");
-});
-
-// ✅ Route imports
-import loginRoutes from "./routes/login.js";
-import claimRoute from "./routes/claim.js";
-import mintRoute from "./routes/mint.js";
-import mintConfirmRoute from "./routes/mintConfirm.js";
-import rewardRoute from "./routes/reward.js";
-import tweetsRoute from "./routes/tweets.js";
-import linkTwitterRoute from "./routes/linkTwitter.js";
-import adminSecurity from "./routes/adminsecurity.js";
-import debugRoutes from "./routes/debug.js";
-import presaleRoutes from "./routes/presale.js";
-import voteRoutes from "./routes/vote.js";
-import trustlineRoute from "./routes/trustline.js";
-import userStatsRoute from "./routes/userstats.js";
-import priceRoute from "./routes/price.js";
-import analyticsRoutes from "./routes/analytics.js";
-import adminLogsRoutes from "./routes/adminLogs.js";
-import proposalRoutes from "./routes/proposals.js";
-
-// ✅ Route registration (after app init!)
-app.use("/api/login", loginRoutes);
-safeRegister("/api/claim", claimRoute);
-safeRegister("/api/mint", mintRoute);
-safeRegister("/api/mint/confirm", mintConfirmRoute);
-safeRegister("/api/reward", rewardRoute);
-safeRegister("/api/tweets", tweetsRoute);
-safeRegister("/api/linkTwitter", linkTwitterRoute);
-safeRegister("/api/admin/security", adminSecurity);
-safeRegister("/api/debug", debugRoutes);
-safeRegister("/api/presale", presaleRoutes);
-safeRegister("/api/vote", voteRoutes);
-safeRegister("/api/trustline", trustlineRoute);
-safeRegister("/api/userStats", userStatsRoute);
-safeRegister("/api/price", priceRoute);
-safeRegister("/api/phase9/analytics", analyticsRoutes);
-safeRegister("/api/phase9/admin", adminLogsRoutes);
-safeRegister("/api/proposals", proposalRoutes);
-
-// ✅ Start server
-app.listen(PORT, () => {
-  console.log(`✅ WALDO API running at http://localhost:${PORT}`);
-});
+export default router;
 
