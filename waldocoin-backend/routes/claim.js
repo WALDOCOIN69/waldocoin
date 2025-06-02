@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
+import { createXummClient } from "../utils/xummClient.js"; // ✅ SAFE import
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -26,16 +27,6 @@ const patchRouter = (router, file) => {
 dotenv.config();
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
-
-// ✅ Lazy-load XUMM to prevent cold client bug
-let xumm;
-const getXummClient = async () => {
-  if (!xumm) {
-    const { XummSdk } = await import("xumm-sdk");
-    xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-  }
-  return xumm;
-};
 
 // DB path
 const DB_PATH = path.join(__dirname, "../db.json");
@@ -111,7 +102,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const xummClient = await getXummClient();
+    // ✅ Use fresh XUMM instance
+    const xummClient = createXummClient();
 
     const payload = await xummClient.payload.create({
       txjson: {
@@ -165,3 +157,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
