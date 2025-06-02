@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import { createXummClient } from "../utils/xummClient.js"; // ✅ SAFE import
+import getXummClient from "../utils/xummClient.js";
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -102,8 +102,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Use fresh XUMM instance
-    const xummClient = createXummClient();
+    // ✅ Use correct XUMM instance
+    const xummClient = getXummClient();
 
     const payload = await xummClient.payload.create({
       txjson: {
