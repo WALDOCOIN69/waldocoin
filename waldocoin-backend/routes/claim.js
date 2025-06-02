@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import getXummClient from "../utils/xummClient.js";
+import getXummClient from "../utils/xummClient.js"; // ✅ Correct import
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -102,7 +102,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Use correct XUMM instance
+    // ✅ FIXED: use correct client loader
     const xummClient = getXummClient();
 
     const payload = await xummClient.payload.create({
