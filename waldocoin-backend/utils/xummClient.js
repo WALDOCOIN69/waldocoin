@@ -1,12 +1,18 @@
 // utils/xummClient.js
-export default async function getXummClient() {
-  const { XummSdk } = await import("xumm-sdk");
-  const { XUMM_API_KEY, XUMM_API_SECRET } = process.env;
+import { XummSdk } from "xumm-sdk";
+import dotenv from "dotenv";
 
-  if (!XUMM_API_KEY || !XUMM_API_SECRET) {
-    throw new Error("❌ Missing XUMM credentials");
-  }
+dotenv.config();
 
-  return new XummSdk(XUMM_API_KEY, XUMM_API_SECRET);
+const { XUMM_API_KEY, XUMM_API_SECRET } = process.env;
+
+if (!XUMM_API_KEY || !XUMM_API_SECRET) {
+  throw new Error("❌ Missing XUMM credentials");
 }
 
+// Singleton instance
+const xummClient = new XummSdk(XUMM_API_KEY, XUMM_API_SECRET);
+
+export default function getXummClient() {
+  return xummClient;
+}
