@@ -4,7 +4,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import xumm from "../utils/xummClient.js";
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -28,16 +27,24 @@ dotenv.config();
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-// Setup DB path
+// ✅ Lazy-load XUMM to prevent cold client bug
+let xumm;
+const getXummClient = async () => {
+  if (!xumm) {
+    const { XummSdk } = await import("xumm-sdk");
+    xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+  }
+  return xumm;
+};
+
+// DB path
 const DB_PATH = path.join(__dirname, "../db.json");
 
 // Constants
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
 const CURRENCY = "WLD";
-
 const INSTANT_FEE_PERCENT = 0.10;
 const STAKE_FEE_PERCENT = 0.05;
-const BURN_RATE = 0.02;
 
 const tierCaps = {
   1: 36,
@@ -104,7 +111,9 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const payload = await xumm.payload.create({
+    const xummClient = await getXummClient();
+
+    const payload = await xummClient.payload.create({
       txjson: {
         TransactionType: "Payment",
         Destination: wallet,
@@ -156,4 +165,3 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
