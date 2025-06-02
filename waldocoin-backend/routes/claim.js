@@ -60,7 +60,7 @@ app.get("/test", (req, res) => {
 });
 
 // ✅ Route imports
-import loginRoutes from "./routes/login.js";
+import loginRoutes from "./login.js";
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mintConfirm.js";
