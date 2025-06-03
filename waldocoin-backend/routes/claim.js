@@ -3,11 +3,8 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import pkg from "xumm-sdk"; // 👈 FIXED
-const { Xumm } = pkg;
-
+import getXummClient from "../utils/xummClient.js"; // ✅ Fresh instance each time
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -103,8 +100,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // 🧯 FIX: create a new client every time INSIDE the route
-    const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+    // ✅ Create new client inside route to prevent "client closed"
+    const xummClient = getXummClient();
 
     const payload = await xummClient.payload.create({
       txjson: {
@@ -158,5 +155,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
 
