@@ -3,36 +3,20 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import pkg from "xumm-sdk";
+const { Xumm } = pkg;
 
-import { getXummClient } from "../utils/xummClient.js";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 
-// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Route patching for safety
-const patchRouter = (router, file) => {
-  const methods = ["get", "post", "use"];
-  for (const method of methods) {
-    const original = router[method];
-    router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
-      }
-      return original.call(this, path, ...handlers);
-    };
-  }
-};
-
 dotenv.config();
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
 
 const DB_PATH = path.join(__dirname, "../db.json");
-
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
-const CURRENCY = "WLO"; // ✅ FIXED WALDO CURRENCY
+const CURRENCY = "WLO";
 const INSTANT_FEE_PERCENT = 0.10;
 const STAKE_FEE_PERCENT = 0.05;
 
@@ -101,8 +85,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ FIX: Always create new XUMM client inside route
-    const xummClient = getXummClient();
+    // 🧯 FIX: create a new XUMM client instance inside this handler
+    const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     const payload = await xummClient.payload.create({
       txjson: {
