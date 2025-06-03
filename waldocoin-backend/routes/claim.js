@@ -3,9 +3,8 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import pkg from "xumm-sdk";
-const { Xumm } = pkg;
 
+import { getXummClient } from "../utils/xummClient.js";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,6 +14,7 @@ dotenv.config();
 const router = express.Router();
 
 const DB_PATH = path.join(__dirname, "../db.json");
+
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
 const CURRENCY = "WLO";
 const INSTANT_FEE_PERCENT = 0.10;
@@ -29,8 +29,7 @@ const tierCaps = {
 };
 
 function getBaseRewardByTier(tier) {
-  const map = { 1: 1, 2: 2, 3: 5, 4: 25, 5: 50 };
-  return map[tier] || null;
+  return { 1: 1, 2: 2, 3: 5, 4: 25, 5: 50 }[tier] || null;
 }
 
 router.post("/", async (req, res) => {
@@ -41,6 +40,11 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    // ✅ Fresh XUMM client per request
+    console.log("🔐 Instantiating new Xumm client...");
+    const xummClient = getXummClient();
+    console.log("✅ Xumm client instantiated");
+
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
         error: "❌ This wallet is temporarily blocked due to repeated abuse."
@@ -85,9 +89,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // 🧯 FIX: create a new XUMM client instance inside this handler
-    const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
+    // ✅ Create XUMM sign payload
+    console.log("📦 Creating payload...");
     const payload = await xummClient.payload.create({
       txjson: {
         TransactionType: "Payment",
@@ -140,3 +143,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
