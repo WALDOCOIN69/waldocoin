@@ -3,30 +3,16 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import getXummClient from "../utils/xummClient.js"; // ✅ Fresh instance each time
+import pkg from "xumm-sdk";
+const { Xumm } = pkg;
+
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 
-// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Route patching for safety
-const patchRouter = (router, file) => {
-  const methods = ["get", "post", "use"];
-  for (const method of methods) {
-    const original = router[method];
-    router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
-      }
-      return original.call(this, path, ...handlers);
-    };
-  }
-};
-
 dotenv.config();
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
 
 const DB_PATH = path.join(__dirname, "../db.json");
 
@@ -100,8 +86,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Create new client inside route to prevent "client closed"
-    const xummClient = getXummClient();
+    // 🔥 Critical Fix: create Xumm inline
+    const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     const payload = await xummClient.payload.create({
       txjson: {
