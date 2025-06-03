@@ -85,25 +85,23 @@ router.post("/", async (req, res) => {
         error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WLO this month.`
       });
     }
+const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-    // 🔥 Create new Xumm client on every call
-    const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-    const payload = await xummClient.payload.create({
-      txjson: {
-        TransactionType: "Payment",
-        Destination: wallet,
-        Amount: {
-          currency: CURRENCY,
-          value: reward.toFixed(2),
-          issuer: ISSUER
-        }
-      },
-      options: {
-        submit: true,
-        expire: 300
-      }
-    });
+const payload = await xummClient.payload.create({
+  txjson: {
+    TransactionType: "Payment",
+    Destination: wallet,
+    Amount: {
+      currency: CURRENCY,
+      value: reward.toFixed(2),
+      issuer: ISSUER
+    }
+  },
+  options: {
+    submit: true,
+    expire: 300
+  }
+});
 
     db.rewards[wallet][monthKey][tier] = claimedThisMonth + reward;
     db.rewards[wallet][monthKey]._log = log.concat({
