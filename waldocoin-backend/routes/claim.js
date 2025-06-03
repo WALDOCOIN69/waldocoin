@@ -17,7 +17,7 @@ const router = express.Router();
 const DB_PATH = path.join(__dirname, "../db.json");
 
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
-const CURRENCY = "WLD";
+const CURRENCY = "WLO"; // 👈 FIXED HERE
 const INSTANT_FEE_PERCENT = 0.10;
 const STAKE_FEE_PERCENT = 0.05;
 
@@ -82,11 +82,11 @@ router.post("/", async (req, res) => {
       await logViolation(wallet, "tier_cap_exceeded", { tier, reward, claimedThisMonth, memeId });
       return res.json({
         success: false,
-        error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WALDO this month.`
+        error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WLO this month.`
       });
     }
 
-    // 🔥 Critical Fix: create Xumm inline
+    // 🔥 Create new Xumm client on every call
     const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     const payload = await xummClient.payload.create({
@@ -141,4 +141,3 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
