@@ -1,9 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
-import { XummSdk } from "xumm-sdk";
+import pkg from "xumm-sdk";
+const { XummSdk } = pkg; // ✅ GOOD
+
 import { Client } from "xrpl";
 import path from "path";
 import { fileURLToPath } from "url";
+
+console.log("🧼 Login route confirmed patched");
 
 // ✅ Setup __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
