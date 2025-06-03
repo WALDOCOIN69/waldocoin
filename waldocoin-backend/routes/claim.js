@@ -1,12 +1,10 @@
-console.log("🔥 CLAIM ROUTE IS LIVE AND UPDATED");
-
 import express from "express";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { Xumm } from "xumm-sdk";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-import getXummClient from "../utils/xummClient.js"; // async client version
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -30,10 +28,8 @@ dotenv.config();
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-// DB path
 const DB_PATH = path.join(__dirname, "../db.json");
 
-// Constants
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
 const CURRENCY = "WLD";
 const INSTANT_FEE_PERCENT = 0.10;
@@ -104,9 +100,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Back to working async pattern
-    const xummClient = await getXummClient();
-console.log("🧪 XUMM payload type:", typeof xummClient?.payload?.create);
+    // 🧯 FIX: create a new client every time INSIDE the route
+    const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     const payload = await xummClient.payload.create({
       txjson: {
