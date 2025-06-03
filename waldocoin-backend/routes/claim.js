@@ -3,8 +3,11 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { Xumm } from "xumm-sdk";
+import pkg from "xumm-sdk"; // 👈 FIXED
+const { Xumm } = pkg;
+
 import { isAutoBlocked, logViolation } from "../utils/security.js";
+
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
