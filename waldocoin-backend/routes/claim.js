@@ -1,3 +1,5 @@
+console.log("🔥 CLAIM ROUTE IS LIVE AND UPDATED");
+
 import express from "express";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -104,6 +106,7 @@ router.post("/", async (req, res) => {
 
     // ✅ Back to working async pattern
     const xummClient = await getXummClient();
+console.log("🧪 XUMM payload type:", typeof xummClient?.payload?.create);
 
     const payload = await xummClient.payload.create({
       txjson: {
