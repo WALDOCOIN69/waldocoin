@@ -3,21 +3,36 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import pkg from "xumm-sdk";
-const { Xumm } = pkg;
 
+import { getXummClient } from "../utils/xummClient.js";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 
+// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Route patching for safety
+const patchRouter = (router, file) => {
+  const methods = ["get", "post", "use"];
+  for (const method of methods) {
+    const original = router[method];
+    router[method] = function (path, ...handlers) {
+      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+      }
+      return original.call(this, path, ...handlers);
+    };
+  }
+};
+
 dotenv.config();
 const router = express.Router();
+patchRouter(router, path.basename(__filename));
 
 const DB_PATH = path.join(__dirname, "../db.json");
 
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
-const CURRENCY = "WLO"; // 👈 FIXED HERE
+const CURRENCY = "WLO"; // ✅ FIXED WALDO CURRENCY
 const INSTANT_FEE_PERCENT = 0.10;
 const STAKE_FEE_PERCENT = 0.05;
 
@@ -82,26 +97,28 @@ router.post("/", async (req, res) => {
       await logViolation(wallet, "tier_cap_exceeded", { tier, reward, claimedThisMonth, memeId });
       return res.json({
         success: false,
-        error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WLO this month.`
+        error: `Monthly cap reached for Tier ${tier}. You’ve already claimed ${claimedThisMonth.toFixed(2)} WALDO this month.`
       });
     }
-const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-const payload = await xummClient.payload.create({
-  txjson: {
-    TransactionType: "Payment",
-    Destination: wallet,
-    Amount: {
-      currency: CURRENCY,
-      value: reward.toFixed(2),
-      issuer: ISSUER
-    }
-  },
-  options: {
-    submit: true,
-    expire: 300
-  }
-});
+    // ✅ FIX: Always create new XUMM client inside route
+    const xummClient = getXummClient();
+
+    const payload = await xummClient.payload.create({
+      txjson: {
+        TransactionType: "Payment",
+        Destination: wallet,
+        Amount: {
+          currency: CURRENCY,
+          value: reward.toFixed(2),
+          issuer: ISSUER
+        }
+      },
+      options: {
+        submit: true,
+        expire: 300
+      }
+    });
 
     db.rewards[wallet][monthKey][tier] = claimedThisMonth + reward;
     db.rewards[wallet][monthKey]._log = log.concat({
