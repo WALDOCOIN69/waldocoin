@@ -3,6 +3,8 @@ const { Xumm } = pkg;
 
 console.log("🧨 FORCING REBUILD TO PURGE CACHE");
 console.log("🧪 LOADED XUMM CLIENT CORRECTLY");
+console.log("🧼 Dummy deploy trigger");
+
 
 export const getXummClient = () =>
   new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
