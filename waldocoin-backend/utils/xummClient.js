@@ -1,10 +1,7 @@
+// utils/xummClient.js
 import pkg from "xumm-sdk";
-const { Xumm } = pkg;
-
-console.log("🧨 FORCING REBUILD TO PURGE CACHE");
-console.log("🧪 LOADED XUMM CLIENT CORRECTLY");
-console.log("🧼 Dummy deploy trigger");
-
+const { XummSdk } = pkg;
 
 export const getXummClient = () =>
-  new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+  new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+
