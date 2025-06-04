@@ -4,8 +4,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-
-import { getXummClient } from "../utils/xummClient.js";
+import xummClient from "../utils/xummClient.js"; // ✅ pre-instantiated client
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 
 dotenv.config();
@@ -33,7 +32,6 @@ function getBaseRewardByTier(tier) {
 }
 
 router.post("/", async (req, res) => {
-  const xummClient = getXummClient(); // ✅ Correct lazy init
   const { wallet, stake, tier, memeId } = req.body;
 
   if (!wallet || typeof stake !== "boolean" || !tier) {
