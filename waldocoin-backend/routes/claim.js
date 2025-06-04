@@ -5,15 +5,14 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import xummClient from "../utils/xummClient.js"; // ✅ Singleton client
+import { getXummClient } from "../utils/xummClient.js";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const router = express.Router();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, "../db.json");
 
 const ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
@@ -34,6 +33,7 @@ function getBaseRewardByTier(tier) {
 }
 
 router.post("/", async (req, res) => {
+  const xummClient = getXummClient(); // ✅ Correct lazy init
   const { wallet, stake, tier, memeId } = req.body;
 
   if (!wallet || typeof stake !== "boolean" || !tier) {
@@ -87,7 +87,6 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Create XUMM sign payload
     console.log("📦 Creating payload...");
     const payload = await xummClient.payload.create({
       txjson: {
@@ -141,4 +140,3 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
