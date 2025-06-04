@@ -1,6 +1,8 @@
 // utils/xummClient.js
-import pkg from "xumm-sdk"; // 👈 This is CRUCIAL — don't use `import { Xumm }`
-const { Xumm } = pkg;
+import { createRequire } from "module";
+const require = createRequire(import.meta.url); // ✅ Enables CommonJS import
+
+const { Xumm } = require("xumm-sdk"); // ✅ Proper CommonJS import of Xumm
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -15,5 +17,5 @@ export function getXummClient() {
   }
   return xummClient;
 }
-// 🔁 Force redeploy - do not remove
+
 console.log("🧩 xummClient.js was loaded 🔍");
