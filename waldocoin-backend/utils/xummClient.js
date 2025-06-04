@@ -1,5 +1,5 @@
 // utils/xummClient.js
-import pkg from "xumm-sdk"; // ✅ FIXED CommonJS import
+import pkg from "xumm-sdk"; // 👈 This is CRUCIAL — don't use `import { Xumm }`
 const { Xumm } = pkg;
 
 import dotenv from "dotenv";
