@@ -1,11 +1,8 @@
 // utils/xummClient.js
-import { XummSdk } from "xumm-sdk";
-import dotenv from "dotenv";
-dotenv.config();
+import pkg from "xumm-sdk";
+const { Xumm } = pkg;
 
-// ✅ Create persistent instance ONCE
-const xummClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-console.log("🧪 LOADED XUMM CLIENT CORRECTLY WaldoCoin");
+export const getXummClient = () => xummClient;
 
-export default xummClient;
