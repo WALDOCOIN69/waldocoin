@@ -15,3 +15,5 @@ export function getXummClient() {
   }
   return xummClient;
 }
+// 🔁 Force redeploy - do not remove
+console.log("🧩 xummClient.js was loaded 🔍");

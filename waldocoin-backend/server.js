@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import { connectRedis } from "./redisClient.js"; // ✅ Adjust path if needed
+import { connectRedis } from "./redisClient.js";
+import { getXummClient } from "./utils/xummClient.js?V=1";
 
 // 🌐 Load environment variables
 dotenv.config();
@@ -29,7 +30,7 @@ const safeRegister = (path, route) => {
 };
 
 app.use((req, res, next) => {
-  if (req.path.substr(-1) === '/' && req.path.length > 1) {
+  if (req.path.endsWith("/") && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
     res.redirect(301, req.path.slice(0, -1) + query);
   } else {
@@ -92,6 +93,10 @@ safeRegister("/api/proposals", proposalRoutes);
 // 🚀 Start everything
 const startServer = async () => {
   await connectRedis();
+
+  // 🧪 TEMP: Force XUMM SDK instantiation for debug
+  getXummClient();
+
   app.listen(PORT, () => {
     console.log(`✅ WALDO API running at http://localhost:${PORT}`);
   });
@@ -101,3 +106,4 @@ startServer().catch(err => {
   console.error("❌ WALDO API startup failed:", err);
   process.exit(1);
 });
+
