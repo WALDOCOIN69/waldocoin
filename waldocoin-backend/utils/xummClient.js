@@ -1,9 +1,9 @@
 // utils/xummClient.js
 import pkg from "xumm-sdk";
+const { Xumm } = pkg;
+
 import dotenv from "dotenv";
 dotenv.config();
-
-const { Xumm } = pkg;
 
 let xummClient = null;
 
