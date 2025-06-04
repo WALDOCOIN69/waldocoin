@@ -1,10 +1,11 @@
+// routes/claim.js
 import express from "express";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import xummClient from "../utils/xummClient.js";
+import xummClient from "../utils/xummClient.js"; // ✅ Singleton client
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,9 +41,7 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    // ✅ Fresh XUMM client per request
-    console.log("🔐 Instantiating new Xumm client...");
-    console.log("✅ Xumm client instantiated");
+    console.log("✅ Using persistent XUMM client...");
 
     if (await isAutoBlocked(wallet)) {
       return res.status(403).json({
