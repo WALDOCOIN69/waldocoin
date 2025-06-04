@@ -1,6 +1,7 @@
 // utils/xummClient.js
-import XummSdk from "xumm-sdk";
-import dotenv from "dotenv";
+import { XummSdk } from 'xumm-sdk'; // ✅ Correct ESM import
+
+import dotenv from 'dotenv';
 dotenv.config();
 
 let xummClient = null;
@@ -15,3 +16,4 @@ export function getXummClient() {
 }
 
 console.log("🧩 xummClient.js was loaded 🔍");
+
