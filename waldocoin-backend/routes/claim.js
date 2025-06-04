@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { getXummClient } from "../utils/xummClient.js";
+import xummClient from "../utils/xummClient.js";
 import { isAutoBlocked, logViolation } from "../utils/security.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,7 +42,6 @@ router.post("/", async (req, res) => {
   try {
     // ✅ Fresh XUMM client per request
     console.log("🔐 Instantiating new Xumm client...");
-    const xummClient = getXummClient();
     console.log("✅ Xumm client instantiated");
 
     if (await isAutoBlocked(wallet)) {
