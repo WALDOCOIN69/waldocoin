@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
     const lines = data?.result?.lines || [];
 
     const waldoLine = lines.find(
-      l => l.currency === "WALDO" && l.account === "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F"
+      l => l.currency === "WLO" && l.account === "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
     );
 
     const waldoBalance = parseFloat(waldoLine?.balance || "0");
