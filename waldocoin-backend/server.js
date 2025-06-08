@@ -29,6 +29,19 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "x-admin-key"]
 }));
 
+// 🔁 Global CORS headers middleware (REQUIRED for Render)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-admin-key");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  next();
+});
+
+// ✅ Handle preflight OPTIONS request globally
+app.options("*", (req, res) => {
+  res.sendStatus(200);
+});
+
 // ✅ JSON & rate limiting
 app.use(express.json());
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 100, message: "Too many requests. Please slow down." });
