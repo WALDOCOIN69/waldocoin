@@ -117,8 +117,8 @@ safeRegister("/api/presale", presaleRoutes);
 safeRegister("/api/vote", voteRoutes);
 safeRegister("/api/trustline", trustlineRoute);
 safeRegister("/api/userStats", userStatsRoute);
-safeRegister("/api/price", priceRoute);
-//safeRegister("/api/phase9/analytics", analyticsRoutes);
+//safeRegister("/api/price", priceRoute);
+safeRegister("/api/phase9/analytics", analyticsRoutes);
 safeRegister("/api/phase9/admin", adminLogsRoutes);
 safeRegister("/api/proposals", proposalRoutes);
 
