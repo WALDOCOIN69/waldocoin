@@ -105,8 +105,8 @@ import proposalRoutes from "./routes/proposals.js";
 
 // ✅ Register routes
 app.use("/api/login", loginRoutes);
-safeRegister("/api/claim", claimRoute);
-//safeRegister("/api/mint", mintRoute);
+//safeRegister("/api/claim", claimRoute);
+safeRegister("/api/mint", mintRoute);
 safeRegister("/api/mint/confirm", mintConfirmRoute);
 safeRegister("/api/reward", rewardRoute);
 safeRegister("/api/tweets", tweetsRoute);
