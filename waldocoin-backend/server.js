@@ -3,7 +3,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import { connectRedis } from "./redisClient.js";
-import { getXummClient } from "./utils/xummClient.js?V=1";
+import { getXummClient } from "./utils/xummClient.js";
 
 // 🌐 Load environment variables
 dotenv.config();
@@ -62,14 +62,17 @@ app.get("/", (req, res) => res.json({ status: "🚀 WALDO API is live!" }));
 app.get("/api/ping", (req, res) => res.json({ status: "✅ WALDO API is online" }));
 app.get("/test", (req, res) => res.send("✅ Minimal route works"));
 
-// ✅ Route registration helper
+// ✅ Route registration helper with debug
 const safeRegister = (path, route) => {
   try {
     console.log(`🧪 Attempting to register route: ${path}`);
     const routerStack = route.stack || [];
     for (const layer of routerStack) {
-      if (typeof layer?.route?.path === "string" && /:[^\/]+:/.test(layer.route.path)) {
-        throw new Error(`❌ BAD NESTED ROUTE: ${layer.route.path}`);
+      if (typeof layer?.route?.path === "string") {
+        console.log(`👉 Route path: ${layer.route.path}`);
+        if (/:.+:.*/.test(layer.route.path)) {
+          throw new Error(`❌ BAD ROUTE SYNTAX: ${layer.route.path}`);
+        }
       }
     }
     app.use(path, route);
@@ -134,4 +137,5 @@ startServer().catch(err => {
   console.error("❌ WALDO API startup failed:", err);
   process.exit(1);
 });
+
 
