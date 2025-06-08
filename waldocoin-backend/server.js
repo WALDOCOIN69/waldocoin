@@ -120,7 +120,7 @@ safeRegister("/api/userStats", userStatsRoute);
 safeRegister("/api/price", priceRoute);
 safeRegister("/api/phase9/analytics", analyticsRoutes);
 safeRegister("/api/phase9/admin", adminLogsRoutes);
-safeRegister("/api/proposals", proposalRoutes);
+//safeRegister("/api/proposals", proposalRoutes);
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5050;
