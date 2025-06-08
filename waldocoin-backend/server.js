@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import { validateRoutes } from "./utils/validateRoutes.js";
 import { connectRedis } from "./redisClient.js";
 import { getXummClient } from "./utils/xummClient.js";
 
@@ -17,6 +18,11 @@ const allowedOrigins = [
   "https://www.waldocoin.live",
   "http://localhost:3000"
 ];
+validateRoutes(); // 🚨 Auto-scan routes before startup
+
+validateRoutes();
+console.log("🧪 Route validation complete. No issues.");
+
 
 app.use(cors({
   origin: function (origin, callback) {
