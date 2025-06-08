@@ -1,9 +1,11 @@
+// checkRoutes.js
 import fs from 'fs';
 import path from 'path';
 
 const ROUTES_DIR = './routes';
+const SERVER_FILE = './server.js';
 
-function scanDirForBadPaths(dir) {
+function scanRoutesDirForBadPaths(dir) {
   const files = fs.readdirSync(dir);
   let broken = [];
 
@@ -11,22 +13,42 @@ function scanDirForBadPaths(dir) {
     const filePath = path.join(dir, file);
     const content = fs.readFileSync(filePath, 'utf8');
 
-    const regex = /router\.(get|post|put|delete|patch)\(['"`](\/:[^\/]+:[^'"`]+)['"`]/g;
+    // 🚨 Detect malformed :param: usage in router.<method>() definitions
+    const regex = /router\.(get|post|put|delete|patch|use)\s*\(\s*['"`]\/:[^'"`\/]+:[^'"`\/]*['"`]/g;
     let match;
     while ((match = regex.exec(content)) !== null) {
-      broken.push({ file, path: match[2] });
+      broken.push({ source: file, line: match[0], type: 'router.*()' });
     }
   }
 
   return broken;
 }
 
-const result = scanDirForBadPaths(ROUTES_DIR);
-if (result.length === 0) {
+function scanServerForBadSafeRegisters(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  let broken = [];
+
+  // 🚨 Detect malformed :param: usage in safeRegister() calls
+  const regex = /safeRegister\(\s*['"`]\/:[^'"`\/]+:[^'"`\/]*['"`]/g;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    broken.push({ source: 'server.js', line: match[0], type: 'safeRegister()' });
+  }
+
+  return broken;
+}
+
+const routeIssues = scanRoutesDirForBadPaths(ROUTES_DIR);
+const serverIssues = scanServerForBadSafeRegisters(SERVER_FILE);
+
+const allIssues = [...routeIssues, ...serverIssues];
+
+if (allIssues.length === 0) {
   console.log("✅ No malformed route paths found!");
 } else {
   console.log("❌ Found malformed route paths:");
-  result.forEach(r => {
-    console.log(`- ${r.file} ➜ ${r.path}`);
+  allIssues.forEach(({ source, line, type }) => {
+    console.log(`- ${source} [${type}] ➜ ${line}`);
   });
+  process.exit(1); // optional: fail the check
 }

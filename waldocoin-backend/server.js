@@ -105,7 +105,7 @@ import proposalRoutes from "./routes/proposals.js";
 
 // ✅ Register routes
 app.use("/api/login", loginRoutes);
-//safeRegister("/api/claim", claimRoute);
+safeRegister("/api/claim", claimRoute);
 safeRegister("/api/mint", mintRoute);
 safeRegister("/api/mint/confirm", mintConfirmRoute);
 safeRegister("/api/reward", rewardRoute);
@@ -121,6 +121,9 @@ safeRegister("/api/price", priceRoute);
 safeRegister("/api/phase9/analytics", analyticsRoutes);
 safeRegister("/api/phase9/admin", adminLogsRoutes);
 safeRegister("/api/proposals", proposalRoutes);
+
+import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
+scheduleWipeMemeJob(); // ⏰ Start daily wipe job
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5050;
