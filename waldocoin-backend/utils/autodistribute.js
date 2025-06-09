@@ -11,7 +11,7 @@ await client.connect()
 const DISTRIBUTOR_WALLET = process.env.DISTRIBUTOR_WALLET
 const DISTRIBUTOR_SECRET = process.env.DISTRIBUTOR_SECRET
 const WALDO_ISSUER = process.env.WALDO_ISSUER
-const WALDO_CURRENCY = 'WLD' // or 'WALDO' depending on your trustline
+const WALDO_CURRENCY = 'WLD' // or 'WALDO' if that’s the token name
 
 const processedTxs = new Set()
 
@@ -39,7 +39,7 @@ async function sendWaldo(destination, waldoAmount) {
     Destination: destination,
     Amount: {
       currency: WALDO_CURRENCY,
-      value: (waldoAmount / 1000000).toFixed(6), // WALDO = 6 decimals
+      value: (waldoAmount / 1_000_000).toFixed(6),
       issuer: WALDO_ISSUER
     }
   }
@@ -62,7 +62,7 @@ async function monitorTransactions() {
     accounts: [DISTRIBUTOR_WALLET]
   })
 
-  console.log(`📡 Subscribed to incoming XRP on: ${DISTRIBUTOR_WALLET}`)
+  console.log(`📡 Listening for XRP sent to: ${DISTRIBUTOR_WALLET}`)
 
   client.on('transaction', async (event) => {
     const tx = event.transaction
@@ -89,34 +89,32 @@ async function monitorTransactions() {
           const sendHash = await sendWaldo(senderWallet, totalWaldo)
           processedTxs.add(txHash)
 
-          // Optional: Save to disk
           fs.appendFileSync('processed-log.txt', `${txHash}\n`)
 
-          // Log to presale system
           logPresalePurchase(senderWallet, xrpAmount, totalWaldo, bonusPercent)
 
-          console.log(`🎯 Sent ${totalWaldo} ${WALDO_CURRENCY} to ${senderWallet} (Bonus: ${bonusPercent}%)`)
+          console.log(`🎯 Sent ${totalWaldo} WALDO to ${senderWallet} (Bonus: ${bonusPercent}%)`)
         } catch (err) {
-          console.error(`❌ Error sending to ${senderWallet}:`, err.message)
+          console.error(`❌ Error sending WALDO to ${senderWallet}:`, err.message)
         }
       } else {
-        console.log(`⚠️ Skipped: TX from ${senderWallet} was only ${xrpAmount} XRP`)
+        console.log(`⚠️ Ignored: ${xrpAmount} XRP from ${senderWallet} < 10 XRP threshold`)
       }
-      // 🔌 Graceful shutdown on Ctrl+C or server stop
-process.on("SIGINT", async () => {
-  console.log("\n👋 Shutting down WALDO distributor gracefully...");
-  try {
-    await client.disconnect();
-    console.log("🔌 XRPL client disconnected cleanly.");
-  } catch (err) {
-    console.error("❌ Error disconnecting client:", err.message);
-  }
-  process.exit();
-});
-
     }
   })
 }
 
-monitorTransactions().catch(console.error)
+await monitorTransactions().catch(console.error)
+
+process.on("SIGINT", async () => {
+  console.log("\n👋 Shutting down WALDO distributor gracefully...")
+  try {
+    await client.disconnect()
+    console.log("🔌 XRPL client disconnected cleanly.")
+  } catch (err) {
+    console.error("❌ Disconnect failed:", err.message)
+  }
+  process.exit()
+})
+
 

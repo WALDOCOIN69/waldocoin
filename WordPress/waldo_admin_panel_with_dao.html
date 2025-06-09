@@ -42,14 +42,92 @@
     <h1>🚨 WALDO Admin Panel</h1>
   </div>
 
-  <!-- Presale Countdown -->
-  <div class="card">
-    <h2>⏲️ Presale Countdown Controls</h2>
-    <label for="presaleEnd">Presale End Date (YYYY-MM-DD):</label>
-    <input type="date" id="presaleEnd" name="presaleEnd">
-    <button type="button" onclick="setPresaleEndDate()">💾 Save End Date</button>
-    <pre id="timerOutput">Loading current timer...</pre>
-  </div>
+<div class="card">
+  <h2>⏲️ Presale Countdown Controls</h2>
+  <label for="presaleEnd">Presale End Date (YYYY-MM-DD):</label>
+  <input type="date" id="presaleEnd" name="presaleEnd">
+  <button type="button" onclick="setPresaleEndDate()">💾 Save End Date</button>
+  <pre id="timerOutput">Loading current timer...</pre>
+</div>
+<script>
+  // 🔁 Load current presale end date on page load
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchPresaleEndDate();
+  });
+
+  async function fetchPresaleEndDate() {
+    try {
+      const res = await fetch("https://waldocoin-backend.onrender.com/api/presale/end-date");
+      const data = await res.json();
+
+      if (data.endDate) {
+        const date = new Date(data.endDate);
+        document.getElementById("presaleEnd").value = date.toISOString().split("T")[0];
+        renderCountdownTimer(date);
+      } else {
+        document.getElementById("timerOutput").innerText = "⚠️ No end date set yet.";
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch presale end date:", err);
+      document.getElementById("timerOutput").innerText = "❌ Error loading presale end date.";
+    }
+  }
+
+  async function setPresaleEndDate() {
+    const dateInput = document.getElementById("presaleEnd").value;
+    if (!dateInput) {
+      alert("Please select a date first.");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://waldocoin-backend.onrender.com/api/presale/end-date", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": ""
+        },
+        body: JSON.stringify({ endDate: new Date(dateInput).toISOString() })
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        alert("✅ Presale end date updated!");
+        renderCountdownTimer(new Date(result.endDate));
+      } else {
+        throw new Error(result.error || "Unknown error");
+      }
+    } catch (err) {
+      console.error("❌ Failed to set presale end date:", err);
+      alert("❌ Failed to save presale end date.");
+    }
+  }
+
+  function renderCountdownTimer(endDate) {
+    const output = document.getElementById("timerOutput");
+
+    function update() {
+      const now = new Date();
+      const diff = endDate - now;
+
+      if (diff <= 0) {
+        output.innerText = "🚨 Presale has ended.";
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      output.innerText = `⏳ ${days}d ${hours}h ${minutes}m ${seconds}s remaining`;
+      setTimeout(update, 1000);
+    }
+
+    update();
+  }
+</script>
 
   <!-- Presale Summary -->
   <div class="card">
@@ -122,7 +200,7 @@
   </div>
   </div>
 <script>
-  const base = "https://waldocoin-1.onrender.com"; 
+  const base = "https://waldocoin-backend.onrender.com"; 
   const WALLET = localStorage.getItem("xumm_wallet") || "";
   
     // 🔄 Toggle Presale Phase
@@ -811,7 +889,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // 🔒 Confirm Delete
 function confirmDelete(id, title) {
   if (confirm(`Are you sure you want to delete proposal: "${title}"?`)) {
-    fetch(`https://waldocoin-1.onrender.com/api/proposals/delete/${id}`, {
+    fetch(`https://waldocoin-backend.onrender.com/api/proposals/delete/${id}`, {
       method: "DELETE"
     })
       .then(res => res.json())

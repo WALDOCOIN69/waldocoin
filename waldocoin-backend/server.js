@@ -18,7 +18,6 @@ const allowedOrigins = [
   "https://www.waldocoin.live",
   "http://localhost:3000"
 ];
-validateRoutes(); // 🚨 Auto-scan routes before startup
 
 validateRoutes();
 console.log("🧪 Route validation complete. No issues.");
@@ -73,14 +72,24 @@ const safeRegister = (path, route) => {
   try {
     console.log(`🧪 Attempting to register route: ${path}`);
     const routerStack = route.stack || [];
+
     for (const layer of routerStack) {
-      if (typeof layer?.route?.path === "string") {
-        console.log(`👉 Route path: ${layer.route.path}`);
-        if (/:.+:.*/.test(layer.route.path)) {
-          throw new Error(`❌ BAD ROUTE SYNTAX: ${layer.route.path}`);
+      const routePath = layer?.route?.path;
+      if (typeof routePath === "string") {
+        console.log(`👉 Route path detected: ${routePath}`);
+
+        // Detect patterns like ":param:" (invalid), or missing param name
+        if (/:[^\/:]+:/.test(routePath) || /:[^\/]+:$/.test(routePath)) {
+          throw new Error(`❌ BAD NESTED ROUTE PATTERN: ${routePath}`);
+        }
+
+        // Optional: catch missing param names entirely
+        if (/:(\/|$)/.test(routePath)) {
+          throw new Error(`❌ MISSING PARAM NAME IN ROUTE: ${routePath}`);
         }
       }
     }
+
     app.use(path, route);
     console.log(`✅ Route registered: ${path}`);
   } catch (err) {
@@ -89,6 +98,7 @@ const safeRegister = (path, route) => {
     process.exit(1);
   }
 };
+
 
 // ✅ Routes
 import loginRoutes from "./routes/login.js";

@@ -1,0 +1,23 @@
+<!-- 🧨 WALDOcoin Presale Popup Modal -->
+<div id="waldoPresaleModal" style="display: none; position: fixed; z-index: 99999; inset: 0; background: rgba(0,0,0,0.85);">
+  <div style="background: #111; border: 3px solid red; color: white; border-radius: 20px; width: 90%; max-width: 450px; padding: 30px; margin: 15% auto; text-align: center; font-family: 'Arial Black', sans-serif; box-shadow: 0 0 20px red; position: relative;">
+    <span onclick="document.getElementById('waldoPresaleModal').style.display='none'"
+          style="position: absolute; top: 10px; right: 20px; color: white; font-size: 28px; cursor: pointer;">&times;</span>
+    <h2 style="color: #FFD700; margin-bottom: 10px;">🚨 WALDOcoin Presale Incoming</h2>
+    <p style="font-size: 1.2rem; line-height: 1.6;">
+      The presale officially begins on <strong>July 01, 2025</strong>.<br>
+      Get your XRP ready. It’s about to get degen.
+    </p>
+    <div style="margin-top: 20px; font-size: 0.95rem; color: #bbb;">
+      Limited supply • Early bonus tiers • Meme economy revolution
+    </div>
+  </div>
+</div>
+
+<script>
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      document.getElementById("waldoPresaleModal").style.display = "block";
+    }, 500); // Delay by 0.5s after page load
+  });
+</script>

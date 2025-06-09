@@ -1,0 +1,57 @@
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<div style="background:#000; padding:20px; text-align:center; font-family:'Press Start 2P', monospace; border:2px dashed #ff0033; border-radius:16px; box-shadow:0 0 18px rgba(255,0,0,0.5); max-width:480px; margin:0 auto;">
+  <h2 style="color:#fff; font-size:14px; margin-bottom:16px; text-transform:uppercase; letter-spacing:1px;">
+    🚀 WALDOcoin Presale Countdown
+  </h2>
+  <div id="presaleCountdown" style="font-size:16px; font-weight:bold; color:#ff0033; text-shadow: 0 0 6px #ff0033, 0 0 12px #ff0033;">
+    Loading countdown...
+  </div>
+</div>
+
+<script>
+  async function loadPresaleCountdown() {
+    try {
+      const res = await fetch("https://waldocoin-backend.onrender.com/api/presale/end-date");
+      const data = await res.json();
+
+      if (!data.endDate) {
+        document.getElementById("presaleCountdown").innerText = "🚨 No presale end date set.";
+        return;
+      }
+
+      const endDate = new Date(data.endDate);
+      renderCountdown(endDate);
+    } catch (err) {
+      console.error("❌ Countdown fetch error:", err);
+      document.getElementById("presaleCountdown").innerText = "❌ Countdown error.";
+    }
+  }
+
+  function renderCountdown(endDate) {
+    const el = document.getElementById("presaleCountdown");
+
+    function update() {
+      const now = new Date();
+      const diff = endDate - now;
+
+      if (diff <= 0) {
+        el.innerText = "🔥 Presale Ended";
+        return;
+      }
+
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diff / (1000 * 60)) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+
+      el.innerText = `${d}D ${h}H ${m}M ${s}S`;
+      setTimeout(update, 1000);
+    }
+
+    update();
+  }
+
+  document.addEventListener("DOMContentLoaded", loadPresaleCountdown);
+</script>
+
