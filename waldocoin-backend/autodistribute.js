@@ -10,6 +10,10 @@ const requiredVars = ['DISTRIBUTOR_WALLET', 'DISTRIBUTOR_SECRET', 'WALDO_ISSUER'
 for (const v of requiredVars) {
   if (!process.env[v]) throw new Error(`❌ Missing required env variable: ${v}`)
 }
+await redisClient.connect().catch(err => {
+  console.error('🚨 Failed to connect to Redis:', err.message)
+  process.exit(1)
+})
 
 const client = new xrpl.Client(process.env.XRPL_NODE)
 await client.connect()

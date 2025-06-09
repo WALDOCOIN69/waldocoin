@@ -62,7 +62,7 @@ services:
     runtime: node
     rootDir: waldocoin-backend
     buildCommand: "npm install"
-    startCommand: "node utils/autodistribute.js"
+    startCommand: node autodistribute.js
     envVars:
       - key: XRPL_NODE
         sync: false
