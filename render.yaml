@@ -56,14 +56,13 @@ services:
         sync: false
       - key: NFT_STORAGE_API_KEY
         sync: false
-
-  # === WALDO Auto Distributor Worker ===
+  
   - type: worker
     name: waldo-autodistribute
     runtime: node
     rootDir: waldocoin-backend
     buildCommand: "npm install"
-    startCommand: "node autodistribute.js"
+    startCommand: "node utils/autodistribute.js"
     envVars:
       - key: XRPL_NODE
         sync: false
