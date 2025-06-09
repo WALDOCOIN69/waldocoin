@@ -57,12 +57,11 @@ services:
       - key: NFT_STORAGE_API_KEY
         sync: false
 
-services:
   # === WALDO Auto Distributor Worker ===
   - type: worker
     name: waldo-autodistribute
     runtime: node
-    rootDir: waldocoin-backend/utils  # <-- POINTS TO WHERE autodistribute.js IS
+    rootDir: waldocoin-backend
     buildCommand: "npm install"
     startCommand: "node autodistribute.js"
     envVars:
