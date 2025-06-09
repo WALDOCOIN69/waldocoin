@@ -5,12 +5,27 @@ import dotenv from "dotenv";
 import { validateRoutes } from "./utils/validateRoutes.js";
 import { connectRedis } from "./redisClient.js";
 import { getXummClient } from "./utils/xummClient.js";
+import helmet from 'helmet'
+
+
 
 // 🌐 Load environment variables
 dotenv.config();
+console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
 // 🛠️ Express app setup
 const app = express();
+app.use(helmet())
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next();
+});
+
+app.get("/api/version", (req, res) => {
+  res.json({ version: "1.0.0", updated: "2025-06-09", uptime: process.uptime() })
+});
 
 // ✅ Allow only trusted frontend origins
 const allowedOrigins = [

@@ -1,15 +1,27 @@
 {
   "name": "waldocoin-backend",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Backend services for WALDOcoin - XRPL meme-to-earn platform",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node server.js",
+    "start": "node server.js",
+    "check:routes": "node checkRoutes.js",
+    "validate:api": "node utils/validateRoutes.js",
+    "lint": "echo \"(Optional) Add ESLint here later\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "crypto",
+    "xrpl",
+    "xumm",
+    "nft",
+    "waldo",
+    "meme",
+    "backend"
+  ],
+  "author": "Christian A. Tomicic",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.9.0",
     "cors": "^2.8.5",
@@ -17,11 +29,12 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
     "mime": "^4.0.7",
     "nft.storage": "^3.4.0",
     "node-cron": "^4.1.0",
     "node-fetch": "^2.7.0",
-    "redis": "^5.0.1",
+    "redis": "^5.5.6",
     "twitter-api-v2": "^1.23.2",
     "uuid": "^11.1.0",
     "xrpl": "^4.2.5",

@@ -1,24 +1,30 @@
-// utils/patchRouter.js
-export const patchRouter = (router, file) => {
-  const methods = ["get", "post", "use"];
+export const patchRouter = (router, file = 'unknown') => {
+  const methods = ['get', 'post', 'use', 'put', 'delete', 'patch']
+
   for (const method of methods) {
-    const original = router[method];
+    const original = router[method]
     router[method] = function (path, ...handlers) {
-      if (typeof path === "string") {
-        // Catch malformed patterns like /path/:param: or /path/:
+      if (typeof path === 'string') {
+        // Detect double colon (e.g., /api/:user:/something)
         if (/:[^/]+:/.test(path)) {
-          console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path} — DOUBLE COLON`);
-          return;
+          console.error(
+            `❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path} — DOUBLE COLON usage`
+          )
+          return
         }
-        // Catch routes missing param name like "/:"
+        // Detect malformed param like '/:'
         if (/\/:($|[^a-zA-Z_])/.test(path)) {
-          console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path} — MISSING PARAM NAME`);
-          return;
+          console.error(
+            `❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path} — MISSING PARAM NAME`
+          )
+          return
         }
       }
-      return original.call(this, path, ...handlers);
-    };
+
+      return original.call(this, path, ...handlers)
+    }
   }
-};
+}
+
 
 

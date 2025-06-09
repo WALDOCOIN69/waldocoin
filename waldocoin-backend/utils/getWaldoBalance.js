@@ -1,28 +1,29 @@
-// utils/getWaldoBalance.js
-import { Client } from "xrpl";
+import { Client } from 'xrpl'
 
-const ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"; // WALDO issuer
-const CURRENCY = "WLO"; // or "WLD" if you're using the short name
+const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+const CURRENCY = 'WLO' // WALDO token
 
-export default async function getWaldoBalance(wallet) {
-  const client = new Client("wss://s1.ripple.com"); // Mainnet; use testnet if needed
-  await client.connect();
+export default async function getWaldoBalance(wallet, node = 'wss://s1.ripple.com') {
+  const client = new Client(node)
 
   try {
+    await client.connect()
+
     const response = await client.request({
-      command: "account_lines",
+      command: 'account_lines',
       account: wallet
-    });
+    })
 
-    const line = response.result.lines.find(
+    const waldoLine = response.result.lines.find(
       l => l.currency === CURRENCY && l.account === ISSUER
-    );
+    )
 
-    return line ? parseFloat(line.balance) : 0;
+    return waldoLine ? parseFloat(waldoLine.balance) : 0
   } catch (err) {
-    console.error("Failed to fetch WALDO balance:", err.message);
-    return 0;
+    console.error(`❌ Failed to fetch WALDO balance for ${wallet}:`, err.message)
+    return 0
   } finally {
-    client.disconnect();
+    await client.disconnect()
   }
 }
+
