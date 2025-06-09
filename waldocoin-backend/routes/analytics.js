@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { redis } from "../../redisClient.js";
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -23,35 +24,48 @@ const patchRouter = (router, file) => {
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-// 📌 Wallet Analytics (Mock)
-router.get("/wallet/:address", (req, res) => {
+// 📌 Wallet Analytics from Redis
+router.get("/wallet/:address", async (req, res) => {
   const { address } = req.params;
-  res.json({
-    address,
-    bonusTier: "Tier 2",
-    email: "user@example.com",
-    joined: "2025-04-01T12:00:00Z",
-    memesMinted: 12,
-    battlesWon: 3
-  });
+  try {
+    const key = `wallet:${address}:analytics`;
+    const data = await redis.hGetAll(key);
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(404).json({ error: "No analytics found for wallet." });
+    }
+    res.json({ address, ...data });
+  } catch (err) {
+    console.error("❌ Wallet analytics error:", err);
+    res.status(500).json({ error: "Failed to load wallet analytics." });
+  }
 });
 
-// ⚔️ Battle Stats (Mock)
-router.get("/battles", (req, res) => {
-  res.json({
-    totalBattles: 42,
-    mostVotedMeme: "meme1",
-    avgVotesPerBattle: 77.3
-  });
+// ⚔️ Battle Stats from Redis
+router.get("/battles", async (req, res) => {
+  try {
+    const data = await redis.hGetAll("stats:battles");
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(404).json({ error: "No battle stats found." });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Battle stats error:", err);
+    res.status(500).json({ error: "Failed to load battle stats." });
+  }
 });
 
-// 🎁 Airdrop Stats (Mock)
-router.get("/airdrops", (req, res) => {
-  res.json({
-    totalAirdropped: 5023000,
-    totalWallets: 128,
-    avgPerWallet: 39242.19
-  });
+// 🎁 Airdrop Stats from Redis
+router.get("/airdrops", async (req, res) => {
+  try {
+    const data = await redis.hGetAll("stats:airdrops");
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(404).json({ error: "No airdrop stats found." });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Airdrop stats error:", err);
+    res.status(500).json({ error: "Failed to load airdrop stats." });
+  }
 });
 
 export default router;

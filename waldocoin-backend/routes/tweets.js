@@ -16,48 +16,32 @@ const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
 const twitterClient = new TwitterApi(process.env.TWITTER_BEARER);
-const USE_FAKE_DATA = true;
+
+// 🚫 REMOVE MOCK FLAG FOR PRODUCTION
+const USE_FAKE_DATA = false;
 
 router.get("/", async (req, res) => {
   const wallet = req.query.wallet;
   if (!wallet) return res.status(400).json({ error: "Wallet not provided" });
 
   if (USE_FAKE_DATA) {
-    const tweets = [
+    // 🔧 Local test stub (leave for dev if needed)
+    return res.json([
       {
         wallet,
         tweet_id: "1780011111111111111",
         image_url: "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
         likes: 180,
         retweets: 30,
-        waldo_amount: 4.5,
-        nftMinted: false
-      },
-      {
-        wallet,
-        tweet_id: "1780022222222222222",
-        image_url: "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
-        likes: 320,
-        retweets: 75,
-        waldo_amount: 9.3,
-        nftMinted: true
-      },
-      {
-        wallet,
-        tweet_id: "178001111555511111111",
-        image_url: "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
-        likes: 600,
-        retweets: 120,
-        waldo_amount: 10,
+        xp: 60,
+        waldo_amount: 7.5,
         nftMinted: false
       }
-    ];
-
-    return res.json(tweets);
+    ]);
   }
 
   try {
-    const tweetIds = ["1780011111111111111", "1780022222222222222"];
+    const tweetIds = await redis.sMembers(`wallet:tweets:${wallet}`);
     const tweets = [];
 
     for (const id of tweetIds) {
@@ -70,8 +54,10 @@ router.get("/", async (req, res) => {
       const mediaUrl = tweet?.includes?.media?.[0]?.url;
       const likes = tweet?.data?.public_metrics?.like_count || 0;
       const retweets = tweet?.data?.public_metrics?.retweet_count || 0;
-      const redisKey = `meme:nft_minted:${id}`;
-      const isMinted = await redis.get(redisKey);
+
+      const xp = parseInt(await redis.get(`meme:xp:${id}`)) || 0;
+      const waldo = parseFloat(await redis.get(`meme:waldo:${id}`)) || 0;
+      const isMinted = !!(await redis.get(`meme:nft_minted:${id}`));
 
       tweets.push({
         wallet,
@@ -79,14 +65,15 @@ router.get("/", async (req, res) => {
         image_url: mediaUrl || "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png",
         likes,
         retweets,
-        waldo_amount: 0,
-        nftMinted: !!isMinted
+        xp,
+        waldo_amount: waldo,
+        nftMinted: isMinted
       });
     }
 
     res.json(tweets);
   } catch (err) {
-    console.error("❌ Failed to fetch tweets:", err);
+    console.error("❌ Failed to fetch tweet data:", err);
     res.status(500).json({ error: "Failed to load tweet data." });
   }
 });

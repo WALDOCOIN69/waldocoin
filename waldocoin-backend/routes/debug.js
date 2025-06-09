@@ -1,13 +1,12 @@
+// routes/debug.js
 import express from "express";
-import fs from "fs";
+import { redis } from "../redisClient.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ✅ Fix __dirname for ES modules
+// Patch router for route validation
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// ✅ Patch router for bad route detection
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
@@ -24,92 +23,106 @@ const patchRouter = (router, file) => {
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-const battlesPath = path.join(__dirname, "..", "battles.json");
+const BATTLE_LIST_KEY = "battles:list";
 
-// ✅ Ensure battles.json exists
-if (!fs.existsSync(battlesPath)) {
-  fs.writeFileSync(battlesPath, "[]", "utf8");
-}
+// 🧱 Create Fake Battle
+router.post("/fake-battle", async (req, res) => {
+  const id = "test-" + Date.now();
+  const battle = {
+    battleId: id,
+    meme1: "test-meme-1",
+    meme2: "test-meme-2",
+    startTime: new Date().toISOString(),
+    votes: { meme1: 0, meme2: 0 },
+    ended: false
+  };
 
-// 🧱 Create a Fake Battle
-router.post("/fake-battle", (req, res) => {
   try {
-    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
-    const newBattle = {
-      battleId: "test-" + Date.now(),
-      meme1: "test-meme-1",
-      meme2: "test-meme-2",
-      startTime: new Date().toISOString(),
-      votes: { meme1: 0, meme2: 0 },
-      ended: false,
-    };
-    data.unshift(newBattle);
-    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
-    res.json({ success: true, battleId: newBattle.battleId });
+    await redis.set(`battles:data:${id}`, JSON.stringify(battle));
+    await redis.lPush(BATTLE_LIST_KEY, id);
+    await redis.set("battles:active", id);
+    return res.json({ success: true, battleId: id });
   } catch (err) {
-    res.status(500).json({ error: "Failed to create fake battle", details: err.message });
+    console.error("❌ Failed to create fake battle:", err);
+    return res.status(500).json({ error: "Redis error", detail: err.message });
   }
 });
 
 // 👁️ View All Battles
-router.get("/battles", (req, res) => {
+router.get("/battles", async (req, res) => {
   try {
-    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
-    res.json(data);
+    const ids = await redis.lRange(BATTLE_LIST_KEY, 0, -1);
+    const battles = await Promise.all(ids.map(async id => {
+      const raw = await redis.get(`battles:data:${id}`);
+      return JSON.parse(raw);
+    }));
+    return res.json(battles);
   } catch (err) {
-    res.status(500).json({ error: "Failed to read battles.json", details: err.message });
+    console.error("❌ Failed to fetch battles:", err);
+    return res.status(500).json({ error: "Redis error", detail: err.message });
   }
 });
 
 // ♻️ Reset Active Battle
-router.post("/reset-active", (req, res) => {
+router.post("/reset-active", async (req, res) => {
   try {
-    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
-    if (data.length === 0) return res.json({ success: false, message: "No active battle to reset." });
+    const activeId = await redis.get("battles:active");
+    if (!activeId) return res.json({ success: false, message: "No active battle to reset." });
 
-    data[0].ended = true;
-    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
-    res.json({ success: true, message: "Active battle has been reset." });
+    const data = JSON.parse(await redis.get(`battles:data:${activeId}`));
+    data.ended = true;
+    await redis.set(`battles:data:${activeId}`, JSON.stringify(data));
+    await redis.del("battles:active");
+
+    return res.json({ success: true, message: "Active battle has been reset." });
   } catch (err) {
-    res.status(500).json({ error: "Failed to reset battle", details: err.message });
+    return res.status(500).json({ error: "Failed to reset battle", detail: err.message });
   }
 });
 
 // 🗳️ Cast Vote
-router.post("/vote", (req, res) => {
+router.post("/vote", async (req, res) => {
   const { wallet, choice } = req.body;
-  if (!wallet || !choice) return res.status(400).json({ error: "Missing wallet or choice." });
+  if (!wallet || !choice) return res.status(400).json({ error: "Missing wallet or choice" });
 
   try {
-    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
-    const activeBattle = data.find(b => !b.ended);
-    if (!activeBattle) return res.status(404).json({ error: "No active battle found." });
+    const activeId = await redis.get("battles:active");
+    if (!activeId) return res.status(404).json({ error: "No active battle found" });
 
-    activeBattle.votes[choice] = (activeBattle.votes[choice] || 0) + 1;
-    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
-    res.json({ success: true, votes: activeBattle.votes });
+    const battleKey = `battles:data:${activeId}`;
+    const raw = await redis.get(battleKey);
+    const battle = JSON.parse(raw);
+
+    battle.votes[choice] = (battle.votes[choice] || 0) + 1;
+    await redis.set(battleKey, JSON.stringify(battle));
+
+    return res.json({ success: true, votes: battle.votes });
   } catch (err) {
-    res.status(500).json({ error: "Voting failed", details: err.message });
+    return res.status(500).json({ error: "Voting failed", detail: err.message });
   }
 });
 
 // 💸 Trigger Payout
-router.post("/payout", (req, res) => {
+router.post("/payout", async (req, res) => {
   const { battleId } = req.body;
   if (!battleId) return res.status(400).json({ error: "Missing battleId" });
 
   try {
-    const data = JSON.parse(fs.readFileSync(battlesPath, "utf8"));
-    const battle = data.find(b => b.battleId === battleId);
-    if (!battle || battle.ended) return res.status(400).json({ error: "Invalid or ended battle" });
+    const battleKey = `battles:data:${battleId}`;
+    const raw = await redis.get(battleKey);
+    if (!raw) return res.status(404).json({ error: "Battle not found" });
 
-    battle.ended = true; // Simulated logic — replace with actual payout later
-    fs.writeFileSync(battlesPath, JSON.stringify(data, null, 2));
-    res.json({ success: true, message: `Payout complete for ${battleId}` });
+    const battle = JSON.parse(raw);
+    if (battle.ended) return res.status(400).json({ error: "Battle already ended" });
+
+    battle.ended = true;
+    await redis.set(battleKey, JSON.stringify(battle));
+    await redis.del("battles:active");
+
+    return res.json({ success: true, message: `Payout complete for ${battleId}` });
   } catch (err) {
-    res.status(500).json({ error: "Payout failed", details: err.message });
+    return res.status(500).json({ error: "Payout failed", detail: err.message });
   }
 });
 
 export default router;
-

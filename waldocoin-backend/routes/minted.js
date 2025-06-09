@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { redis } from "../redisClient.js";
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -23,8 +24,23 @@ const patchRouter = (router, file) => {
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-router.get("/minted", (req, res) => {
-  res.json([]);
+// 🔍 GET /minted — Return real NFT mints from Redis
+router.get("/minted", async (req, res) => {
+  try {
+    const keys = await redis.keys("meme:nft_minted:*");
+    const minted = [];
+
+    for (const key of keys) {
+      const tweetId = key.split(":")[2];
+      const txHash = await redis.get(key);
+      minted.push({ tweetId, txHash });
+    }
+
+    res.json(minted);
+  } catch (err) {
+    console.error("❌ Failed to fetch minted memes:", err);
+    res.status(500).json({ error: "Internal error fetching minted memes." });
+  }
 });
 
 export default router;

@@ -1,8 +1,10 @@
 // routes/vote.js
 import express from "express";
+import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from "url";
 import { patchRouter } from "../utils/patchRouter.js";
+import { redis } from "../redisClient.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,13 +12,16 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
+// 🗳 Vote submission route
 router.post("/", async (req, res) => {
   const { proposalId, choice, wallet } = req.body;
-  if (!proposalId || !choice || !wallet)
+
+  if (!proposalId || !choice || !wallet) {
     return res.status(400).json({ success: false, error: "Missing fields" });
+  }
 
   try {
-    // Fetch WALDO balance from XRPL
+    // ✅ Fetch WALDO balance from XRPL
     const response = await fetch("https://s1.ripple.com:51234", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,18 +30,21 @@ router.post("/", async (req, res) => {
         params: [{ account: wallet }]
       })
     });
+
     const data = await response.json();
     const lines = data?.result?.lines || [];
 
-    const waldoLine = lines.find(
-      l => l.currency === "WLO" && l.account === "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
-    );
-
-    const waldoBalance = parseFloat(waldoLine?.balance || "0");
-
+    const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
+    const WALDO_CURRENCY = "WLO";
     const WALDO_PRICE_XRP = 0.01;
     const REQUIRED_XRP = 100;
     const requiredWaldo = REQUIRED_XRP / WALDO_PRICE_XRP;
+
+    const waldoLine = lines.find(
+      l => l.currency === WALDO_CURRENCY && l.account === WALDO_ISSUER
+    );
+
+    const waldoBalance = parseFloat(waldoLine?.balance || "0");
 
     if (waldoBalance < requiredWaldo) {
       return res.status(403).json({
@@ -45,17 +53,26 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Your vote logic (e.g., Redis or DB insert) goes here
+    // ⛔ Prevent duplicate voting
+    const existing = await redis.hGet(`proposalVotes:${proposalId}`, wallet);
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        error: "You already voted on this proposal."
+      });
+    }
+
+    // ✅ Save vote to Redis
+    await redis.hSet(`proposalVotes:${proposalId}`, wallet, choice);
 
     return res.json({ success: true });
   } catch (err) {
-    console.error("Voting error:", err);
+    console.error("❌ Voting error:", err);
     return res.status(500).json({ success: false, error: "Server error" });
   }
 });
 
 export default router;
-
 
 
 
