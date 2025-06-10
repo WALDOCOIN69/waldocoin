@@ -32,7 +32,8 @@ function scanServerForBadSafeRegisters(filePath) {
   const content = fs.readFileSync(filePath, 'utf8')
   let broken = []
 
-  const regex = /safeRegister\(\s*['"`]\/:[^'"`\/]+:[^'"`\/]*['"`]/g
+ const regex = /safeRegister\(\s*['"`][^'"`]*:[^\/'"`]+:[^'"`]*/g;
+
   let match
   while ((match = regex.exec(content)) !== null) {
     broken.push({

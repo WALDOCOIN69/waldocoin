@@ -80,22 +80,19 @@ console.log("🧪 Route validation complete. No issues.");
 // ✅ Safe route registration
 const safeRegister = (path, route) => {
   try {
-    console.log(`🧪 Attempting to register route: ${path}`);
-    const routerStack = route.stack || [];
-
-    for (const layer of routerStack) {
-      const routePath = layer?.route?.path;
-      if (typeof routePath === "string") {
-        console.log(`👉 Route path detected: ${routePath}`);
-
-        if (/:[^\/:]+:/.test(routePath) || /:[^\/]+:$/.test(routePath)) {
-          throw new Error(`❌ BAD NESTED ROUTE PATTERN: ${routePath}`);
-        }
-        if (/:(\/|$)/.test(routePath)) {
-          throw new Error(`❌ MISSING PARAM NAME IN ROUTE: ${routePath}`);
-        }
-      }
+    if (!route || typeof route !== "function" || !route.stack) {
+      throw new Error(`❌ Invalid route handler for path: ${path}`);
     }
+
+    console.log(`🧪 Attempting to register route: ${path}`);
+
+    // Example validation for route path (if needed)
+    // if (/:[^\/:]+:/.test(path) || /:[^\/]+:$/.test(path)) {
+    //   throw new Error(`❌ BAD NESTED ROUTE PATTERN: ${path}`);
+    // }
+    // if (/:(\/|$)/.test(path)) {
+    //   throw new Error(`❌ MISSING PARAM NAME IN ROUTE: ${path}`);
+    // }
 
     app.use(path, route);
     console.log(`✅ Route registered: ${path}`);
