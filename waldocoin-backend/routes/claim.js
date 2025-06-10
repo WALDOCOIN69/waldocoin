@@ -1,31 +1,19 @@
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import { getXummClient } from "../utils/xummClient.js";
 import { redis } from "../redisClient.js";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { patchRouter } from "../utils/patchRouter.js"; // ✅ Use shared validator
 
-// ✅ Patch Router for bad pattern detection
 const __filename = fileURLToPath(import.meta.url);
-const patchRouter = (router, file) => {
-  const methods = ["get", "post", "use"];
-  for (const method of methods) {
-    const original = router[method];
-    router[method] = function (routePath, ...handlers) {
-      if (typeof routePath === "string") {
-        if (/:[^\/]+:/.test(routePath) || /:(\/|$)/.test(routePath)) {
-          console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
-          throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
-        }
-      }
-      return original.call(this, routePath, ...handlers);
-    };
-  }
-};
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
+patchRouter(router, path.basename(__filename)); // ✅ Strict route check
+
+console.log("🧩 Loaded: routes/claim.js");
 
 router.post("/", async (req, res) => {
   const { wallet, stake, tier, memeId } = req.body;
@@ -40,13 +28,13 @@ router.post("/", async (req, res) => {
   const tierKey = `rewards:${wallet}:${monthKey}:tier:${tier}`;
 
   try {
-    // 🚫 Cap check: Max 10 rewards per month
+    // 🚫 Monthly cap: max 10 rewards
     const logs = await redis.lRange(logKey, 0, -1);
     if (logs.length >= 10) {
       return res.status(403).json({ success: false, error: "Monthly reward limit reached" });
     }
 
-    // ✅ Reward logic by tier
+    // ✅ Calculate reward
     const baseReward = [0, 100, 200, 300][tier] || 0;
     if (baseReward === 0) {
       return res.status(400).json({ success: false, error: "Invalid reward tier" });
@@ -62,7 +50,7 @@ router.post("/", async (req, res) => {
     const toXRP = fee - burn;
     const net = gross - fee;
 
-    // 🧾 Store claim log
+    // 💾 Store log
     await redis.rPush(logKey, JSON.stringify({
       claimId,
       memeId,
@@ -75,16 +63,15 @@ router.post("/", async (req, res) => {
       net,
       timestamp: now.toISOString()
     }));
-
     await redis.incr(tierKey);
 
-    // 📝 Create XUMM payout request
+    // 📝 XUMM payout
     const xumm = getXummClient();
     const payload = {
       txjson: {
         TransactionType: "Payment",
         Destination: wallet,
-        Amount: String(net * 1_000_000), // XRP drops (6 decimals)
+        Amount: String(net * 1_000_000), // XRP drops
         DestinationTag: 12345
       },
       options: {
@@ -110,7 +97,7 @@ router.post("/", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Claim processing error:", err);
-    return res.status(500).json({ success: false, error: "XUMM claim failed.", detail: err.message });
+    return res.status(500).json({ success: false, error: "XUMM claim failed", detail: err.message });
   }
 });
 

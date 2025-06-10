@@ -1,7 +1,18 @@
-import express from "express";
-import { redis } from "../redisClient.js"; // adjust path if needed
-const router = express.Router();
+// 📁 routes/userStats.js
 
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { redis } from "../redisClient.js";
+import { patchRouter } from "../utils/patchRouter.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const router = express.Router();
+patchRouter(router, path.basename(__filename)); // ✅ Route validator added
+
+// 📊 GET /user-stats?wallet=rXYZ
 router.get("/", async (req, res) => {
   const wallet = req.query.wallet;
   if (!wallet) return res.status(400).json({ error: "Missing wallet param" });
@@ -15,7 +26,6 @@ router.get("/", async (req, res) => {
     const referralsRaw = await redis.get(`user:${wallet}:referrals`);
     const referrals = referralsRaw ? JSON.parse(referralsRaw) : [];
 
-    // XP → level conversion logic
     const level = xp >= 3000 ? 5 :
                   xp >= 1750 ? 4 :
                   xp >= 850 ? 3 :

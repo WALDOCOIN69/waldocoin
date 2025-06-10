@@ -1,16 +1,17 @@
-// routes/vote.js
+// 📁 routes/vote.js
+
 import express from "express";
 import fetch from "node-fetch";
-import path from "path";
 import { fileURLToPath } from "url";
-import { patchRouter } from "../utils/patchRouter.js";
+import path from "path";
 import { redis } from "../redisClient.js";
+import { patchRouter } from "../utils/patchRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
+patchRouter(router, path.basename(__filename)); // ✅ Route validator added
 
 // 🗳 Vote submission route
 router.post("/", async (req, res) => {
@@ -73,6 +74,5 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
 
 

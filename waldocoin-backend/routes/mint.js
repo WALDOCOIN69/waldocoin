@@ -1,33 +1,17 @@
 // 📁 routes/mint.js
+
 import express from "express";
 import dotenv from "dotenv";
 import { redis } from "../redisClient.js";
-import path from "path";
 import { fileURLToPath } from "url";
+import path from "path";
+import { patchRouter } from "../utils/patchRouter.js";
 
 dotenv.config();
 
-// ✅ Setup __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ✅ Patch router for malformed route patterns
-const patchRouter = (router, file) => {
-  const methods = ["get", "post", "use"];
-  for (const method of methods) {
-    const original = router[method];
-    router[method] = function (routePath, ...handlers) {
-      if (typeof routePath === "string" && /:[^\/]+:/.test(routePath)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
-        throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
-      }
-      return original.call(this, routePath, ...handlers);
-    };
-  }
-};
-
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
+patchRouter(router, path.basename(__filename)); // ✅ Route validation enabled
 
 // 🧠 Start NFT Mint Payment Flow
 router.post("/", async (req, res) => {
@@ -49,8 +33,7 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ success: false, error: "NFT already minted for this meme." });
     }
 
-    const xummPkg = await import("xumm-sdk");
-    const XummSdk = xummPkg.default || xummPkg;
+    const { default: XummSdk } = await import("xumm-sdk");
     const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
     const paymentPayload = {
@@ -73,7 +56,7 @@ router.post("/", async (req, res) => {
       return event.data.signed === true;
     });
 
-    await redis.set(`meme:mint_pending:${tweetId}`, created.uuid, { EX: 900 }); // TTL: 15 min
+    await redis.set(`meme:mint_pending:${tweetId}`, created.uuid, { EX: 900 }); // ⏱️ TTL 15 mins
 
     return res.json({
       success: true,
@@ -89,4 +72,5 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+ter;
 

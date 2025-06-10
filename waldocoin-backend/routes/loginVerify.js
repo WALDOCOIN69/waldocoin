@@ -1,9 +1,15 @@
 // 📁 routes/loginVerify.js
+
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { patchRouter } from "../utils/patchRouter.js";
 
+const __filename = fileURLToPath(import.meta.url);
 const router = express.Router();
+patchRouter(router, path.basename(__filename));
 
-// ✅ Wallet Format Validator (basic)
+// ✅ Wallet Format Validator
 router.post("/", (req, res) => {
   const { wallet } = req.body;
 

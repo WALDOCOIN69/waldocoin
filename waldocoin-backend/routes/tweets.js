@@ -1,11 +1,12 @@
-// routes/tweets.js
+// 📁 routes/tweets.js
+
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { TwitterApi } from "twitter-api-v2";
 import { redis } from "../redisClient.js";
 import { patchRouter } from "../utils/patchRouter.js";
-import { fileURLToPath } from "url";
-import path from "path";
 
 dotenv.config();
 
@@ -13,19 +14,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
-
-const twitterClient = new TwitterApi(process.env.TWITTER_BEARER);
+patchRouter(router, path.basename(__filename)); // ✅ Route validator added
 
 // 🚫 REMOVE MOCK FLAG FOR PRODUCTION
 const USE_FAKE_DATA = false;
 
+const twitterClient = new TwitterApi(process.env.TWITTER_BEARER);
+
+// 🐦 GET /tweets?wallet=...
 router.get("/", async (req, res) => {
   const wallet = req.query.wallet;
   if (!wallet) return res.status(400).json({ error: "Wallet not provided" });
 
   if (USE_FAKE_DATA) {
-    // 🔧 Local test stub (leave for dev if needed)
     return res.json([
       {
         wallet,
@@ -54,7 +55,6 @@ router.get("/", async (req, res) => {
       const mediaUrl = tweet?.includes?.media?.[0]?.url;
       const likes = tweet?.data?.public_metrics?.like_count || 0;
       const retweets = tweet?.data?.public_metrics?.retweet_count || 0;
-
       const xp = parseInt(await redis.get(`meme:xp:${id}`)) || 0;
       const waldo = parseFloat(await redis.get(`meme:waldo:${id}`)) || 0;
       const isMinted = !!(await redis.get(`meme:nft_minted:${id}`));
@@ -79,4 +79,3 @@ router.get("/", async (req, res) => {
 });
 
 export default router;
-

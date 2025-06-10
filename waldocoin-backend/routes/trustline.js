@@ -1,15 +1,16 @@
+// 📁 routes/trustline-check.js
+
 import express from "express";
 import fetch from "node-fetch";
-import { patchRouter } from "../utils/patchRouter.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { patchRouter } from "../utils/patchRouter.js";
 
-// ✅ Fix __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-patchRouter(router, path.basename(__filename)); // ✅ catch malformed routes
+patchRouter(router, path.basename(__filename)); // ✅ Route validator added
 
 // 🌐 XRPL Mainnet endpoint
 const XRPL_NODE = "https://s1.ripple.com:51234";
@@ -49,3 +50,4 @@ router.get("/check", async (req, res) => {
 });
 
 export default router;
+

@@ -1,34 +1,21 @@
 // 📁 routes/mintConfirm.js
+
 import express from "express";
 import dotenv from "dotenv";
-import { redis } from "../redisClient.js";
-import xrpl from "xrpl";
-import { uploadToIPFS } from "../utils/ipfsUploader.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import xrpl from "xrpl";
+import { redis } from "../redisClient.js";
+import { patchRouter } from "../utils/patchRouter.js";
+import { uploadToIPFS } from "../utils/ipfsUploader.js";
 
-// ✅ Fix __dirname in ES modules
+dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Patch router to detect malformed route patterns
-const patchRouter = (router, file) => {
-  const methods = ["get", "post", "use"];
-  for (const method of methods) {
-    const original = router[method];
-    router[method] = function (routePath, ...handlers) {
-      if (typeof routePath === "string" && /:[^\/]+:/.test(routePath)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
-        throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
-      }
-      return original.call(this, routePath, ...handlers);
-    };
-  }
-};
-
-dotenv.config();
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
+patchRouter(router, path.basename(__filename)); // ✅ Route validation enabled
 
 // 🎯 Confirm NFT Mint After WALDO Payment
 router.post("/", async (req, res) => {

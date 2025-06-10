@@ -1,16 +1,16 @@
 // 📁 routes/presale.js
+
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { redis } from "../redisClient.js";
+import { redis } from "../redisClient.js"; // ✅ Redis import added
 import { patchRouter } from "../utils/patchRouter.js";
 
-// ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-patchRouter(router, path.basename(__filename));
+patchRouter(router, path.basename(__filename)); // ✅ Route validator added
 
 // 🔍 GET /end-date — Current presale end date
 router.get("/end-date", async (req, res) => {
@@ -44,7 +44,7 @@ router.post("/end-date", async (req, res) => {
 // 🧾 Optional: Log presale purchase for internal tracking
 export function logPresalePurchase(wallet, xrpAmount, waldoAmount, bonusPercent) {
   console.log(`🧾 PRESALE LOG: ${wallet} sent ${xrpAmount} XRP → received ${waldoAmount} WALDO (Bonus: ${bonusPercent}%)`);
-  // Optional: save to Redis or DB
+  // Optional: Save to Redis or DB if needed
 }
 
 export default router;
