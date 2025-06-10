@@ -46,5 +46,11 @@ router.post("/end-date", async (req, res) => {
   }
 });
 
+// ✅ Log presale purchase from autodistribute
+export function logPresalePurchase(wallet, xrpAmount, waldoAmount, bonusPercent) {
+  console.log(`🧾 PRESALE LOG: ${wallet} sent ${xrpAmount} XRP → received ${waldoAmount} WALDO (Bonus: ${bonusPercent}%)`);
+  // You can optionally log to Redis or DB here too
+}
+
 export default router;
 
