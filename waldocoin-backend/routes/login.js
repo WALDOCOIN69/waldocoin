@@ -1,19 +1,14 @@
-import express from "express";
-import dotenv from "dotenv";
-import pkg from "xumm-sdk";
-const { XummSdk } = pkg;
+// 📁 waldocoin-backend/routes/login.js
+import express from 'express';
+import { logViolation, isAutoBlocked } from '../utils/security.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-import { Client } from "xrpl";
-import path from "path";
-import { fileURLToPath } from "url";
-
-console.log("🧼 Login route confirmed patched");
-
-// ✅ Setup __dirname for ES modules
+// ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Patch router for invalid route patterns
+// ✅ Patch router for malformed route detection
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
@@ -28,89 +23,30 @@ const patchRouter = (router, file) => {
   }
 };
 
-dotenv.config();
-
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+// 🔐 Wallet Login Route
+router.post('/wallet', async (req, res) => {
+  const { wallet } = req.body;
 
-const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-const CURRENCY = "WLO";
-
-// 🔐 Create XUMM Sign-In Payload
-router.get("/", async (req, res) => {
-  try {
-    const payload = await xumm.payload.create({
-      txjson: {
-        TransactionType: "SignIn",
-      },
-    });
-
-    res.json({
-      qr: payload.refs.qr_png,
-      uuid: payload.uuid,
-    });
-  } catch (err) {
-    console.error("❌ Error creating XUMM payload:", err);
-    res.status(500).json({ error: "Failed to create XUMM sign-in." });
-  }
-});
-
-// 🔁 Poll Sign-In Status
-router.get("/status/:uuid", async (req, res) => {
-  const { uuid } = req.params;
-
-  try {
-    const result = await xumm.payload.get(uuid);
-
-    if (result.meta.signed === true && result.response.account) {
-      return res.json({
-        signed: true,
-        wallet: result.response.account,
-      });
-    }
-
-    res.json({ signed: false });
-  } catch (err) {
-    console.error("❌ Error checking login status:", err);
-    res.status(500).json({ error: "Failed to check sign-in status." });
-  }
-});
-
-// ✅ WALDO Trustline Check
-router.get("/trustline-check", async (req, res) => {
-  const { wallet } = req.query;
-
-  if (!wallet) {
-    return res.status(400).json({ hasWaldoTrustline: false, error: "Missing wallet parameter." });
+  // 🧪 Validate wallet format
+  if (!wallet || typeof wallet !== "string" || !wallet.startsWith('r') || wallet.length < 25) {
+    await logViolation(wallet || 'unknown', "invalid_wallet", { reason: "format_invalid" });
+    return res.status(400).json({ error: "Invalid or missing wallet address." });
   }
 
-  const client = new Client("wss://s1.ripple.com");
-
-  try {
-    await client.connect();
-
-    const response = await client.request({
-      command: "account_lines",
-      account: wallet,
-    });
-
-    const hasWaldoTrustline = response.result.lines.some(
-      (line) => line.currency === CURRENCY && line.account === WALDO_ISSUER
-    );
-
-    res.json({ hasWaldoTrustline });
-  } catch (err) {
-    console.error("❌ Trustline check failed:", err);
-    res.status(500).json({
-      hasWaldoTrustline: false,
-      error: "Trustline check failed. Try again later.",
-    });
-  } finally {
-    await client.disconnect();
+  // 🚫 Check for auto-blocked wallet
+  if (await isAutoBlocked(wallet)) {
+    await logViolation(wallet, "login_attempt_blocked", { reason: "auto_blocked" });
+    return res.status(403).json({ error: "🚫 This wallet is blocked due to prior violations." });
   }
+
+  // 📝 Optional logging for all login attempts
+  await logViolation(wallet, "login_attempt", { ip: req.ip });
+
+  // ✅ Respond with success
+  return res.json({ success: true, message: "Wallet verified and accepted." });
 });
 
 export default router;
-
