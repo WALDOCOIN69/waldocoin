@@ -5,10 +5,12 @@ import { patchRouter } from "../utils/patchRouter.js";
 import { logViolation, isAutoBlocked } from "../utils/security.js";
 
 const __filename = fileURLToPath(import.meta.url);
-
+const __dirname = path.dirname(__filename);
 const router = express.Router();
+
 patchRouter(router, path.basename(__filename));
 
+// 🛡️ Loaded log for Render logs
 console.log("🛡️ Loaded: routes/securityLogin.js");
 
 // 🔐 Wallet Login Route
