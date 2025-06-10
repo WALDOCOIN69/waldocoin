@@ -68,6 +68,14 @@ app.use((req, res, next) => {
   }
 });
 
+// ✅ Import routes early
+import loginRoutes from "./routes/login.js";
+
+// ✅ Direct registration test route
+if (!loginRoutes || typeof loginRoutes !== "function" || !loginRoutes.stack) {
+  console.error("❌ loginRoutes is invalid or undefined.");
+  process.exit(1);
+}
 app.use("/api/login", loginRoutes);
 
 // ✅ Health check
@@ -76,82 +84,38 @@ app.get("/api/ping", (req, res) => res.json({ status: "✅ WALDO API is online" 
 app.get("/test", (req, res) => res.send("✅ Minimal route works"));
 
 // ✅ Route validator
-//validateRoutes();
+// validateRoutes();
 console.log("🧪 Route validation complete. No issues.");
 
-// ✅ Safe route registration
+// ✅ Safe route registration (for later routes)
 const safeRegister = (path, route) => {
   try {
     if (!route || typeof route !== "function" || !route.stack) {
       throw new Error(`❌ Invalid route handler for path: ${path}`);
     }
-
-    console.log(`🧪 Attempting to register route: ${path}`);
-
-    // Example validation for route path (if needed)
-    // if (/:[^\/:]+:/.test(path) || /:[^\/]+:$/.test(path)) {
-    //   throw new Error(`❌ BAD NESTED ROUTE PATTERN: ${path}`);
-    // }
-    // if (/:(\/|$)/.test(path)) {
-    //   throw new Error(`❌ MISSING PARAM NAME IN ROUTE: ${path}`);
-    // }
-
+    console.log(`🧪 Registering route: ${path}`);
     app.use(path, route);
-    console.log(`✅ Route registered: ${path}`);
+    console.log(`✅ Registered: ${path}`);
   } catch (err) {
     console.error(`❌ Route FAILED: ${path}`);
-    console.error(err.stack);
+    console.error(err.message);
     process.exit(1);
   }
 };
 
-// ✅ Routes
-import loginRoutes from "./routes/login.js";
-//import claimRoute from "./routes/claim.js";
-//import mintRoute from "./routes/mint.js";
-//import mintConfirmRoute from "./routes/mintConfirm.js";
-//import rewardRoute from "./routes/reward.js";
-//import tweetsRoute from "./routes/tweets.js";
-//import linkTwitterRoute from "./routes/linkTwitter.js";
-//import adminSecurity from "./routes/adminsecurity.js";
-//import debugRoutes from "./routes/debug.js";
-//import presaleRoutes from "./routes/presale.js";
-//import voteRoutes from "./routes/vote.js";
-//import trustlineRoute from "./routes/trustline.js";
-//import userStatsRoute from "./routes/userstats.js";
-//import priceRoute from "./routes/price.js";
-//import analyticsRoutes from "./routes/analytics.js";
-//import adminLogsRoutes from "./routes/adminLogs.js";
-//import proposalRoutes from "./routes/proposals.js";
-
-// ✅ Register all routes
-
-//safeRegister("/api/claim", claimRoute);
-//safeRegister("/api/mint", mintRoute);
-//safeRegister("/api/mint/confirm", mintConfirmRoute);
-//safeRegister("/api/reward", rewardRoute);
-//safeRegister("/api/tweets", tweetsRoute);
-//safeRegister("/api/linkTwitter", linkTwitterRoute);
-//safeRegister("/api/admin/security", adminSecurity);
-//safeRegister("/api/debug", debugRoutes);
-//safeRegister("/api/presale", presaleRoutes);
-//safeRegister("/api/vote", voteRoutes);
-//safeRegister("/api/trustline", trustlineRoute);
-//safeRegister("/api/userStats", userStatsRoute);
-//safeRegister("/api/price", priceRoute);
-//safeRegister("/api/phase9/analytics", analyticsRoutes);
-//safeRegister("/api/phase9/admin", adminLogsRoutes);
-//safeRegister("/api/proposals", proposalRoutes);
+// 🔒 All other routes commented for now (restore one-by-one safely)
+// import claimRoute from "./routes/claim.js";
+// safeRegister("/api/claim", claimRoute);
 
 // 🕒 Cron jobs
 import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
-//scheduleWipeMemeJob();
+// scheduleWipeMemeJob();
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5050;
 const startServer = async () => {
   await connectRedis();
-  //getXummClient(); // preload XUMM
+  // getXummClient(); // preload XUMM
   app.listen(PORT, () => {
     console.log(`✅ WALDO API running at http://localhost:${PORT}`);
   });
