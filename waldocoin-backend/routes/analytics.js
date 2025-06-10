@@ -1,20 +1,23 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { redis } from '../redisClient.js'
+import { redis } from "../redisClient.js";
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Patch router for bad route detection
+// ✅ Patch router for strict route pattern detection
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
     const original = router[method];
     router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+      if (typeof path === "string") {
+        if (/:[^\/]+:/.test(path) || /:(\/|$)/.test(path)) {
+          console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+          throw new Error(`❌ Invalid route pattern in ${file}: ${path}`);
+        }
       }
       return original.call(this, path, ...handlers);
     };
@@ -69,3 +72,4 @@ router.get("/airdrops", async (req, res) => {
 });
 
 export default router;
+
