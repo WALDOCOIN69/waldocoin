@@ -1,4 +1,4 @@
-// routes/mintConfirm.js
+// 📁 routes/mintConfirm.js
 import express from "express";
 import dotenv from "dotenv";
 import { redis } from "../redisClient.js";
@@ -11,16 +11,17 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Patch router to catch malformed routes
+// ✅ Patch router to detect malformed route patterns
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
     const original = router[method];
-    router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+    router[method] = function (routePath, ...handlers) {
+      if (typeof routePath === "string" && /:[^\/]+:/.test(routePath)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
+        throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
       }
-      return original.call(this, path, ...handlers);
+      return original.call(this, routePath, ...handlers);
     };
   }
 };
@@ -29,21 +30,21 @@ dotenv.config();
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
+// 🎯 Confirm NFT Mint After WALDO Payment
 router.post("/", async (req, res) => {
   const { tweetId, wallet } = req.body;
 
-  if (!tweetId || !wallet) {
-    return res.status(400).json({ success: false, error: "Missing tweetId or wallet." });
+  if (typeof tweetId !== "string" || typeof wallet !== "string") {
+    return res.status(400).json({ success: false, error: "Missing or invalid tweetId or wallet." });
   }
 
   try {
-    // ⏳ Check for pending mint UUID
     const mintUuid = await redis.get(`meme:mint_pending:${tweetId}`);
     if (!mintUuid) {
-      return res.status(403).json({ success: false, error: "No pending mint found or expired." });
+      return res.status(403).json({ success: false, error: "No pending mint found or session expired." });
     }
 
-    // 🚀 Upload metadata to IPFS
+    // 🖼 Upload meme metadata to IPFS
     const metadataUrl = await uploadToIPFS({
       tweetId,
       wallet,
@@ -55,13 +56,11 @@ router.post("/", async (req, res) => {
       return res.status(500).json({ success: false, error: "Failed to upload metadata to IPFS." });
     }
 
-    // 🔐 Connect to XRPL
-    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
+    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233"); // XRPL Testnet
     await client.connect();
 
     const walletInstance = xrpl.Wallet.fromSeed(process.env.MINTING_WALLET_SECRET);
 
-    // 🪙 Prepare NFTokenMint transaction
     const tx = {
       TransactionType: "NFTokenMint",
       Account: walletInstance.classicAddress,
@@ -77,21 +76,26 @@ router.post("/", async (req, res) => {
     await client.disconnect();
 
     if (result.result.engine_result !== "tesSUCCESS") {
-      return res.status(500).json({ success: false, error: "XRPL mint failed", detail: result.result });
+      return res.status(500).json({
+        success: false,
+        error: "XRPL mint failed",
+        detail: result.result.engine_result_message || result.result
+      });
     }
 
-    // ✅ Update Redis
+    // ✅ Mark NFT as minted and clean up pending status
     await redis.set(`meme:nft_minted:${tweetId}`, result.result.hash);
     await redis.del(`meme:mint_pending:${tweetId}`);
 
-    res.json({
+    return res.json({
       success: true,
       txHash: result.result.hash,
       metadataUrl
     });
+
   } catch (err) {
-    console.error("❌ NFT mint confirm error:", err);
-    res.status(500).json({ success: false, error: "Internal error during mint confirmation." });
+    console.error("❌ Mint confirm route error:", err);
+    return res.status(500).json({ success: false, error: "Internal error during mint confirmation." });
   }
 });
 
