@@ -68,6 +68,8 @@ app.use((req, res, next) => {
   }
 });
 
+app.use("/api/login", loginRoutes);
+
 // ✅ Health check
 app.get("/", (req, res) => res.json({ status: "🚀 WALDO API is live!" }));
 app.get("/api/ping", (req, res) => res.json({ status: "✅ WALDO API is online" }));
@@ -105,41 +107,41 @@ const safeRegister = (path, route) => {
 
 // ✅ Routes
 import loginRoutes from "./routes/login.js";
-import claimRoute from "./routes/claim.js";
-import mintRoute from "./routes/mint.js";
-import mintConfirmRoute from "./routes/mintConfirm.js";
-import rewardRoute from "./routes/reward.js";
-import tweetsRoute from "./routes/tweets.js";
-import linkTwitterRoute from "./routes/linkTwitter.js";
-import adminSecurity from "./routes/adminsecurity.js";
-import debugRoutes from "./routes/debug.js";
-import presaleRoutes from "./routes/presale.js";
-import voteRoutes from "./routes/vote.js";
-import trustlineRoute from "./routes/trustline.js";
-import userStatsRoute from "./routes/userstats.js";
-import priceRoute from "./routes/price.js";
-import analyticsRoutes from "./routes/analytics.js";
-import adminLogsRoutes from "./routes/adminLogs.js";
-import proposalRoutes from "./routes/proposals.js";
+//import claimRoute from "./routes/claim.js";
+//import mintRoute from "./routes/mint.js";
+//import mintConfirmRoute from "./routes/mintConfirm.js";
+//import rewardRoute from "./routes/reward.js";
+//import tweetsRoute from "./routes/tweets.js";
+//import linkTwitterRoute from "./routes/linkTwitter.js";
+//import adminSecurity from "./routes/adminsecurity.js";
+//import debugRoutes from "./routes/debug.js";
+//import presaleRoutes from "./routes/presale.js";
+//import voteRoutes from "./routes/vote.js";
+//import trustlineRoute from "./routes/trustline.js";
+//import userStatsRoute from "./routes/userstats.js";
+//import priceRoute from "./routes/price.js";
+//import analyticsRoutes from "./routes/analytics.js";
+//import adminLogsRoutes from "./routes/adminLogs.js";
+//import proposalRoutes from "./routes/proposals.js";
 
 // ✅ Register all routes
-app.use("/api/login", loginRoutes);
+
 safeRegister("/api/claim", claimRoute);
-safeRegister("/api/mint", mintRoute);
-safeRegister("/api/mint/confirm", mintConfirmRoute);
-safeRegister("/api/reward", rewardRoute);
-safeRegister("/api/tweets", tweetsRoute);
-safeRegister("/api/linkTwitter", linkTwitterRoute);
-safeRegister("/api/admin/security", adminSecurity);
-safeRegister("/api/debug", debugRoutes);
-safeRegister("/api/presale", presaleRoutes);
-safeRegister("/api/vote", voteRoutes);
-safeRegister("/api/trustline", trustlineRoute);
-safeRegister("/api/userStats", userStatsRoute);
-safeRegister("/api/price", priceRoute);
-safeRegister("/api/phase9/analytics", analyticsRoutes);
-safeRegister("/api/phase9/admin", adminLogsRoutes);
-safeRegister("/api/proposals", proposalRoutes);
+//safeRegister("/api/mint", mintRoute);
+//safeRegister("/api/mint/confirm", mintConfirmRoute);
+//safeRegister("/api/reward", rewardRoute);
+//safeRegister("/api/tweets", tweetsRoute);
+//safeRegister("/api/linkTwitter", linkTwitterRoute);
+//safeRegister("/api/admin/security", adminSecurity);
+//safeRegister("/api/debug", debugRoutes);
+//safeRegister("/api/presale", presaleRoutes);
+//safeRegister("/api/vote", voteRoutes);
+//safeRegister("/api/trustline", trustlineRoute);
+//safeRegister("/api/userStats", userStatsRoute);
+//safeRegister("/api/price", priceRoute);
+//safeRegister("/api/phase9/analytics", analyticsRoutes);
+//safeRegister("/api/phase9/admin", adminLogsRoutes);
+//safeRegister("/api/proposals", proposalRoutes);
 
 // 🕒 Cron jobs
 import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
