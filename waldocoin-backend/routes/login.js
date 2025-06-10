@@ -2,18 +2,15 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { patchRouter } from "../utils/patchRouter.js";
-import { logViolation, isAutoBlocked } from "../utils/security.js";
+import { isAutoBlocked } from "../utils/blocklist.js";
+import { logViolation } from "../utils/logViolation.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
-//patchRouter(router, path.basename(__filename)); // ✅ Route validator
-
-console.log("🛡️ Loaded: routes/login.js");
-
-// 🔐 Wallet Login Route
+// ✅ Only define routes directly
 router.post("/wallet", async (req, res) => {
   const { wallet } = req.body;
 
