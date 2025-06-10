@@ -1,3 +1,4 @@
+// 📁 routes/minted.js
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -12,11 +13,12 @@ const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
     const original = router[method];
-    router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+    router[method] = function (routePath, ...handlers) {
+      if (typeof routePath === "string" && /:[^\/]+:/.test(routePath)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
+        throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
       }
-      return original.call(this, path, ...handlers);
+      return original.call(this, routePath, ...handlers);
     };
   }
 };
@@ -24,22 +26,27 @@ const patchRouter = (router, file) => {
 const router = express.Router();
 patchRouter(router, path.basename(__filename));
 
-// 🔍 GET /minted — Return real NFT mints from Redis
+// 🔍 GET /minted — Return all minted memes from Redis
 router.get("/minted", async (req, res) => {
   try {
     const keys = await redis.keys("meme:nft_minted:*");
+
+    if (!keys || keys.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
     const minted = [];
 
     for (const key of keys) {
       const tweetId = key.split(":")[2];
       const txHash = await redis.get(key);
-      minted.push({ tweetId, txHash });
+      if (txHash) minted.push({ tweetId, txHash });
     }
 
-    res.json(minted);
+    return res.json({ success: true, data: minted });
   } catch (err) {
-    console.error("❌ Failed to fetch minted memes:", err);
-    res.status(500).json({ error: "Internal error fetching minted memes." });
+    console.error("❌ Error fetching minted NFTs:", err);
+    return res.status(500).json({ success: false, error: "Failed to fetch minted NFTs." });
   }
 });
 
