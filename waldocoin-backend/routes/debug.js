@@ -1,21 +1,20 @@
-// routes/debug.js
 import express from "express";
 import { redis } from "../redisClient.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Patch router for route validation
+// ✅ Patch router for route validation
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
     const original = router[method];
-    router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+    router[method] = function (routePath, ...handlers) {
+      if (typeof routePath === "string" && /:[^\/]+:/.test(routePath)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
+        throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
       }
-      return original.call(this, path, ...handlers);
+      return original.call(this, routePath, ...handlers);
     };
   }
 };
@@ -102,7 +101,7 @@ router.post("/vote", async (req, res) => {
   }
 });
 
-// 💸 Trigger Payout
+// 💸 Trigger Manual Payout (Testing Only)
 router.post("/payout", async (req, res) => {
   const { battleId } = req.body;
   if (!battleId) return res.status(400).json({ error: "Missing battleId" });
