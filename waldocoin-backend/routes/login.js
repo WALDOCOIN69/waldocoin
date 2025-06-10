@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import pkg from "xumm-sdk";
-const { XummSdk } = pkg; // ✅ GOOD
+const { XummSdk } = pkg;
 
 import { Client } from "xrpl";
 import path from "path";
@@ -18,11 +18,12 @@ const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
     const original = router[method];
-    router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+    router[method] = function (routePath, ...handlers) {
+      if (typeof routePath === "string" && /:[^\/]+:/.test(routePath)) {
+        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
+        throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
       }
-      return original.call(this, path, ...handlers);
+      return original.call(this, routePath, ...handlers);
     };
   }
 };
@@ -66,7 +67,7 @@ router.get("/status/:uuid", async (req, res) => {
     if (result.meta.signed === true && result.response.account) {
       return res.json({
         signed: true,
-        wallet: result.response.account
+        wallet: result.response.account,
       });
     }
 
@@ -85,18 +86,18 @@ router.get("/trustline-check", async (req, res) => {
     return res.status(400).json({ hasWaldoTrustline: false, error: "Missing wallet parameter." });
   }
 
-  const client = new Client("wss://s1.ripple.com"); // ✅ XRPL MAINNET
+  const client = new Client("wss://s1.ripple.com");
 
   try {
     await client.connect();
 
     const response = await client.request({
       command: "account_lines",
-      account: wallet
+      account: wallet,
     });
 
     const hasWaldoTrustline = response.result.lines.some(
-      line => line.currency === CURRENCY && line.account === WALDO_ISSUER
+      (line) => line.currency === CURRENCY && line.account === WALDO_ISSUER
     );
 
     res.json({ hasWaldoTrustline });
@@ -104,7 +105,7 @@ router.get("/trustline-check", async (req, res) => {
     console.error("❌ Trustline check failed:", err);
     res.status(500).json({
       hasWaldoTrustline: false,
-      error: "Trustline check failed. Try again later."
+      error: "Trustline check failed. Try again later.",
     });
   } finally {
     await client.disconnect();
