@@ -1,3 +1,4 @@
+// routes/login.js
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -8,10 +9,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const router = express.Router();
 
-patchRouter(router, path.basename(__filename));
+patchRouter(router, path.basename(__filename)); // ✅ Route validator
 
-// 🛡️ Loaded log for Render logs
-console.log("🛡️ Loaded: routes/securityLogin.js");
+console.log("🛡️ Loaded: routes/login.js");
 
 // 🔐 Wallet Login Route
 router.post("/wallet", async (req, res) => {
@@ -37,3 +37,4 @@ router.post("/wallet", async (req, res) => {
 });
 
 export default router;
+
