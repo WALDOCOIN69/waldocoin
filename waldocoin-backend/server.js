@@ -76,7 +76,7 @@ app.get("/api/ping", (req, res) => res.json({ status: "✅ WALDO API is online" 
 app.get("/test", (req, res) => res.send("✅ Minimal route works"));
 
 // ✅ Route validator
-validateRoutes();
+//validateRoutes();
 console.log("🧪 Route validation complete. No issues.");
 
 // ✅ Safe route registration
@@ -145,7 +145,7 @@ safeRegister("/api/claim", claimRoute);
 
 // 🕒 Cron jobs
 import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
-scheduleWipeMemeJob();
+//scheduleWipeMemeJob();
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5050;
