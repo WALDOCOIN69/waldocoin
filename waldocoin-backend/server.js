@@ -2,12 +2,11 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import helmet from "helmet";
+
 import { validateRoutes } from "./utils/validateRoutes.js";
 import { connectRedis } from "./redisClient.js";
 import { getXummClient } from "./utils/xummClient.js";
-import helmet from 'helmet'
-
-
 
 // 🌐 Load environment variables
 dotenv.config();
@@ -15,7 +14,7 @@ console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
 // 🛠️ Express app setup
 const app = express();
-app.use(helmet())
+app.use(helmet());
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({ error: 'Invalid JSON payload' });
@@ -23,20 +22,17 @@ app.use((err, req, res, next) => {
   next();
 });
 
+// ✅ Version check
 app.get("/api/version", (req, res) => {
-  res.json({ version: "1.0.0", updated: "2025-06-09", uptime: process.uptime() })
+  res.json({ version: "1.0.0", updated: "2025-06-09", uptime: process.uptime() });
 });
 
-// ✅ Allow only trusted frontend origins
+// ✅ CORS setup
 const allowedOrigins = [
   "https://waldocoin.live",
   "https://www.waldocoin.live",
   "http://localhost:3000"
 ];
-
-validateRoutes();
-console.log("🧪 Route validation complete. No issues.");
-
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -49,25 +45,20 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "x-admin-key"]
 }));
 
-// 🔁 Global CORS headers middleware (REQUIRED for Render)
+// 🔁 Global headers for Render
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-admin-key");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   next();
 });
+app.options("*", (req, res) => res.sendStatus(200));
 
-// ✅ Handle preflight OPTIONS request globally
-app.options("*", (req, res) => {
-  res.sendStatus(200);
-});
-
-// ✅ JSON & rate limiting
+// ✅ JSON + Rate limit
 app.use(express.json());
-const limiter = rateLimit({ windowMs: 60 * 1000, max: 100, message: "Too many requests. Please slow down." });
-app.use(limiter);
+app.use(rateLimit({ windowMs: 60 * 1000, max: 100, message: "Too many requests. Please slow down." }));
 
-// ✅ Strip trailing slashes
+// ✅ Remove trailing slash
 app.use((req, res, next) => {
   if (req.path.endsWith("/") && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
@@ -77,12 +68,16 @@ app.use((req, res, next) => {
   }
 });
 
-// ✅ Health check routes
+// ✅ Health check
 app.get("/", (req, res) => res.json({ status: "🚀 WALDO API is live!" }));
 app.get("/api/ping", (req, res) => res.json({ status: "✅ WALDO API is online" }));
 app.get("/test", (req, res) => res.send("✅ Minimal route works"));
 
-// ✅ Route registration helper with debug
+// ✅ Route validator
+validateRoutes();
+console.log("🧪 Route validation complete. No issues.");
+
+// ✅ Safe route registration
 const safeRegister = (path, route) => {
   try {
     console.log(`🧪 Attempting to register route: ${path}`);
@@ -93,12 +88,9 @@ const safeRegister = (path, route) => {
       if (typeof routePath === "string") {
         console.log(`👉 Route path detected: ${routePath}`);
 
-        // Detect patterns like ":param:" (invalid), or missing param name
         if (/:[^\/:]+:/.test(routePath) || /:[^\/]+:$/.test(routePath)) {
           throw new Error(`❌ BAD NESTED ROUTE PATTERN: ${routePath}`);
         }
-
-        // Optional: catch missing param names entirely
         if (/:(\/|$)/.test(routePath)) {
           throw new Error(`❌ MISSING PARAM NAME IN ROUTE: ${routePath}`);
         }
@@ -113,7 +105,6 @@ const safeRegister = (path, route) => {
     process.exit(1);
   }
 };
-
 
 // ✅ Routes
 import loginRoutes from "./routes/login.js";
@@ -134,7 +125,7 @@ import analyticsRoutes from "./routes/analytics.js";
 import adminLogsRoutes from "./routes/adminLogs.js";
 import proposalRoutes from "./routes/proposals.js";
 
-// ✅ Register routes
+// ✅ Register all routes
 app.use("/api/login", loginRoutes);
 safeRegister("/api/claim", claimRoute);
 safeRegister("/api/mint", mintRoute);
@@ -153,12 +144,12 @@ safeRegister("/api/phase9/analytics", analyticsRoutes);
 safeRegister("/api/phase9/admin", adminLogsRoutes);
 safeRegister("/api/proposals", proposalRoutes);
 
+// 🕒 Cron jobs
 import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
-scheduleWipeMemeJob(); // ⏰ Start daily wipe job
+scheduleWipeMemeJob();
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5050;
-
 const startServer = async () => {
   await connectRedis();
   getXummClient(); // preload XUMM
