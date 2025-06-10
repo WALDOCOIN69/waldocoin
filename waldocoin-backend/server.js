@@ -151,7 +151,7 @@ scheduleWipeMemeJob();
 const PORT = process.env.PORT || 5050;
 const startServer = async () => {
   await connectRedis();
-  getXummClient(); // preload XUMM
+  //getXummClient(); // preload XUMM
   app.listen(PORT, () => {
     console.log(`✅ WALDO API running at http://localhost:${PORT}`);
   });
