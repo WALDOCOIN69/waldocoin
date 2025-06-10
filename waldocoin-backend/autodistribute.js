@@ -2,7 +2,7 @@ import * as xrpl from 'xrpl'
 import { logPresalePurchase } from './routes/presale.js'
 import dotenv from 'dotenv'
 import fs from 'fs'
-import { redisClient } from './redisClient.js'
+import { redis, connectRedis } from './redisClient.js'
 
 dotenv.config()
 
@@ -10,10 +10,8 @@ const requiredVars = ['DISTRIBUTOR_WALLET', 'DISTRIBUTOR_SECRET', 'WALDO_ISSUER'
 for (const v of requiredVars) {
   if (!process.env[v]) throw new Error(`❌ Missing required env variable: ${v}`)
 }
-await redisClient.connect().catch(err => {
-  console.error('🚨 Failed to connect to Redis:', err.message)
-  process.exit(1)
-})
+
+await connectRedis()
 
 const client = new xrpl.Client(process.env.XRPL_NODE)
 await client.connect()
@@ -23,7 +21,7 @@ const DISTRIBUTOR_SECRET = process.env.DISTRIBUTOR_SECRET
 const WALDO_ISSUER = process.env.WALDO_ISSUER
 const WALDO_CURRENCY = 'WLO'
 
-redisClient.on('error', (err) => {
+redis.on('error', (err) => {
   console.error('🚨 Redis error:', err)
 })
 
@@ -95,7 +93,7 @@ async function monitorTransactions() {
       ) {
         const txHash = tx.hash
 
-        const alreadyProcessed = await redisClient.get(`processed:${txHash}`)
+        const alreadyProcessed = await redis.get(`processed:${txHash}`)
         if (alreadyProcessed) {
           console.log(`⚡ Already processed TX: ${txHash}`)
           return
@@ -110,7 +108,7 @@ async function monitorTransactions() {
           try {
             const sendHash = await sendWaldo(senderWallet, totalWaldo)
 
-            await redisClient.set(`processed:${txHash}`, '1')
+            await redis.set(`processed:${txHash}`, '1')
             fs.appendFileSync('processed-log.txt', `${txHash}\n`)
             logPresalePurchase(senderWallet, xrpAmount, totalWaldo, bonusPercent)
 
@@ -134,12 +132,11 @@ process.on("SIGINT", async () => {
   console.log("\n👋 Shutting down WALDO distributor gracefully...")
   try {
     await client.disconnect()
-    await redisClient.quit()
+    await redis.quit()
     console.log("🔌 XRPL and Redis clients disconnected cleanly.")
   } catch (err) {
     console.error("❌ Disconnect failed:", err.message)
   }
   process.exit()
 })
-
 
