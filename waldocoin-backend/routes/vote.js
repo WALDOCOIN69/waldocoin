@@ -1,14 +1,16 @@
 // 📁 routes/vote.js
-import { wrapRouter } from "../utils/wrapRouter.js";
+
+import express from "express";
 import fetch from "node-fetch";
 import { fileURLToPath } from "url";
 import path from "path";
 import { redis } from "../redisClient.js";
 import { patchRouter } from "../utils/patchRouter.js";
-const router = wrapRouter("login.js");
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const router = express.Router();
 patchRouter(router, path.basename(__filename)); // ✅ Route validator added
 
 // 🗳 Vote submission route
