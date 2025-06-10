@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { redis } from "../../redisClient.js";
+import { redis } from '../redisClient.js'
 
 // ✅ Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
