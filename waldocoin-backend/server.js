@@ -1,3 +1,4 @@
+import "./utils/patchExpress.js";
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
@@ -11,6 +12,9 @@ import { getXummClient } from "./utils/xummClient.js";
 // 🌐 Load environment variables
 dotenv.config();
 console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION 🚨:", err);
+});
 
 // 🛠️ Express app setup
 const app = express();
