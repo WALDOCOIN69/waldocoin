@@ -6,14 +6,19 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Patch router for bad route detection
+console.log("🧩 Loaded: routes/adminLogs.js");
+
+// ✅ Patch router for route validation
 const patchRouter = (router, file) => {
   const methods = ["get", "post", "use"];
   for (const method of methods) {
     const original = router[method];
     router[method] = function (path, ...handlers) {
-      if (typeof path === "string" && /:[^\/]+:/.test(path)) {
-        console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+      if (typeof path === "string") {
+        if (/:[^\/]+:/.test(path) || /:(\/|$)/.test(path)) {
+          console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${path}`);
+          throw new Error(`❌ Invalid route pattern in ${file}: ${path}`);
+        }
       }
       return original.call(this, path, ...handlers);
     };
