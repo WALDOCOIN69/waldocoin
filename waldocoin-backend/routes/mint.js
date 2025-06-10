@@ -11,7 +11,7 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const router = express.Router();
-patchRouter(router, path.basename(__filename)); // ✅ Route validation enabled
+// patchRouter(router, path.basename(__filename)); // ✅ Route validation enabled
 
 // 🧠 Start NFT Mint Payment Flow
 router.post("/", async (req, res) => {

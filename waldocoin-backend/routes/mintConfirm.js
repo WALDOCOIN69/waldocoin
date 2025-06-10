@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-patchRouter(router, path.basename(__filename)); // ✅ Route validation enabled
+// patchRouter(router, path.basename(__filename)); // ✅ Route validation enabled
 
 // 🎯 Confirm NFT Mint After WALDO Payment
 router.post("/", async (req, res) => {

@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-patchRouter(router, path.basename(__filename)); // ✅ Route validator added
+// patchRouter(router, path.basename(__filename)); // ✅ Route validator added
 
 // 🔍 GET /minted — Return all minted memes from Redis
 router.get("/minted", async (req, res) => {
