@@ -1,10 +1,14 @@
-import "./utils/patchExpress.js";
+// server.js
+
+// ✅ Core imports first
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import helmet from "helmet";
 
+// ✅ Utility imports (after express is available)
+import "./utils/patchExpress.js";
 import { validateRoutes } from "./utils/validateRoutes.js";
 import { connectRedis } from "./redisClient.js";
 import { getXummClient } from "./utils/xummClient.js";
@@ -12,6 +16,7 @@ import { getXummClient } from "./utils/xummClient.js";
 // 🌐 Load environment variables
 dotenv.config();
 console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION 🚨:", err);
 });
@@ -19,17 +24,8 @@ process.on("uncaughtException", (err) => {
 // 🛠️ Express app setup
 const app = express();
 app.use(helmet());
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ error: 'Invalid JSON payload' });
-  }
-  next();
-});
-
-// ✅ Version check
-app.get("/api/version", (req, res) => {
-  res.json({ version: "1.0.0", updated: "2025-06-09", uptime: process.uptime() });
-});
+app.use(express.json());
+app.use(rateLimit({ windowMs: 60 * 1000, max: 100, message: "Too many requests. Please slow down." }));
 
 // ✅ CORS setup
 const allowedOrigins = [
@@ -37,7 +33,6 @@ const allowedOrigins = [
   "https://www.waldocoin.live",
   "http://localhost:3000"
 ];
-
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -58,11 +53,7 @@ app.use((req, res, next) => {
 });
 app.options("*", (req, res) => res.sendStatus(200));
 
-// ✅ JSON + Rate limit
-app.use(express.json());
-app.use(rateLimit({ windowMs: 60 * 1000, max: 100, message: "Too many requests. Please slow down." }));
-
-// ✅ Remove trailing slash
+// ✅ Remove trailing slashes
 app.use((req, res, next) => {
   if (req.path.endsWith("/") && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
@@ -72,10 +63,18 @@ app.use((req, res, next) => {
   }
 });
 
-// ✅ Import routes early
+// ✅ Error handler for bad JSON
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next();
+});
+
+// ✅ Import and register routes
 import loginRoutes from "./routes/login.js";
 
-// ✅ Direct registration test route
+// Validate and use login route
 if (!loginRoutes || typeof loginRoutes !== "function" || !loginRoutes.stack) {
   console.error("❌ loginRoutes is invalid or undefined.");
   process.exit(1);
@@ -87,11 +86,11 @@ app.get("/", (req, res) => res.json({ status: "🚀 WALDO API is live!" }));
 app.get("/api/ping", (req, res) => res.json({ status: "✅ WALDO API is online" }));
 app.get("/test", (req, res) => res.send("✅ Minimal route works"));
 
-// ✅ Route validator
+// ✅ Route validator (optional)
 // validateRoutes();
-console.log("🧪 Route validation complete. No issues.");
+// console.log("🧪 Route validation complete. No issues.");
 
-// ✅ Safe route registration (for later routes)
+// ✅ Safe dynamic route registration helper (if needed)
 const safeRegister = (path, route) => {
   try {
     if (!route || typeof route !== "function" || !route.stack) {
@@ -107,7 +106,7 @@ const safeRegister = (path, route) => {
   }
 };
 
-// 🔒 All other routes commented for now (restore one-by-one safely)
+// 🔒 Commented routes – restore one at a time
 // import claimRoute from "./routes/claim.js";
 // safeRegister("/api/claim", claimRoute);
 
@@ -129,5 +128,6 @@ startServer().catch(err => {
   console.error("❌ WALDO API startup failed:", err);
   process.exit(1);
 });
+
 
 
