@@ -106,7 +106,7 @@ const safeRegister = (path, route) => {
 };
 
 // ✅ Routes
-import loginRoutes from "./routes/login.js";
+//import loginRoutes from "./routes/login.js";
 //import claimRoute from "./routes/claim.js";
 //import mintRoute from "./routes/mint.js";
 //import mintConfirmRoute from "./routes/mintConfirm.js";
