@@ -5,7 +5,9 @@ export const patchRouter = (router, file = 'unknown') => {
     const original = router[method];
     router[method] = function (path, ...handlers) {
       if (typeof path === 'string') {
-        if (/:[^\/]+:/.test(path) || /:(\/|$)/.test(path)) {
+        // Detect malformed parameter like :param: or empty colon pair :/
+        const badSyntax = /:[^\/\s]+:|:\/|^:$/;
+        if (badSyntax.test(path)) {
           console.error(`❌ BAD ROUTE DETECTED in ${file}: ${method.toUpperCase()} ${path}`);
           throw new Error(`❌ Invalid route pattern in ${file}: ${path}`);
         }
@@ -14,6 +16,7 @@ export const patchRouter = (router, file = 'unknown') => {
     };
   }
 };
+
 
 
 
