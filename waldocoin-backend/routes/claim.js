@@ -3,8 +3,29 @@ import { getXummClient } from "../utils/xummClient.js";
 import { redis } from "../redisClient.js";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// ✅ Patch Router for bad pattern detection
+const __filename = fileURLToPath(import.meta.url);
+const patchRouter = (router, file) => {
+  const methods = ["get", "post", "use"];
+  for (const method of methods) {
+    const original = router[method];
+    router[method] = function (routePath, ...handlers) {
+      if (typeof routePath === "string") {
+        if (/:[^\/]+:/.test(routePath) || /:(\/|$)/.test(routePath)) {
+          console.error(`❌ BAD ROUTE in ${file}: ${method.toUpperCase()} ${routePath}`);
+          throw new Error(`❌ Invalid route pattern in ${file}: ${routePath}`);
+        }
+      }
+      return original.call(this, routePath, ...handlers);
+    };
+  }
+};
 
 const router = express.Router();
+patchRouter(router, path.basename(__filename));
 
 router.post("/", async (req, res) => {
   const { wallet, stake, tier, memeId } = req.body;
@@ -25,7 +46,7 @@ router.post("/", async (req, res) => {
       return res.status(403).json({ success: false, error: "Monthly reward limit reached" });
     }
 
-    // ✅ Reward logic
+    // ✅ Reward logic by tier
     const baseReward = [0, 100, 200, 300][tier] || 0;
     if (baseReward === 0) {
       return res.status(400).json({ success: false, error: "Invalid reward tier" });
@@ -57,18 +78,18 @@ router.post("/", async (req, res) => {
 
     await redis.incr(tierKey);
 
-    // 📝 Create XUMM payload
+    // 📝 Create XUMM payout request
     const xumm = getXummClient();
     const payload = {
       txjson: {
         TransactionType: "Payment",
         Destination: wallet,
-        Amount: `${net * 1000000}`, // assuming WALDO is 1:1 XRP drops
-        DestinationTag: 12345, // optional for filtering
+        Amount: String(net * 1_000_000), // XRP drops (6 decimals)
+        DestinationTag: 12345
       },
       options: {
         submit: true,
-        expire: 300,
+        expire: 300
       }
     };
 
@@ -84,7 +105,7 @@ router.post("/", async (req, res) => {
       fee,
       burn,
       toXRP,
-      next,
+      next
     });
 
   } catch (err) {
