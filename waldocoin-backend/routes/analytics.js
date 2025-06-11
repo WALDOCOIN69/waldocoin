@@ -8,7 +8,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const router = express.Router();
 
-// patchRouter(router, path.basename(__filename)); // ✅ Strict route validation
+// ✅ Enable strict route validation
+patchRouter(router, path.basename(__filename));
 
 console.log("🧩 Loaded: routes/analytics.js");
 
