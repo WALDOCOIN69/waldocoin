@@ -1,6 +1,5 @@
 import { pathToRegexp } from "path-to-regexp";
 
-// PATCH: Remove or comment out pathToRegexp(path) call!
 export function patchRouter(router, name = "unknown") {
   const originalGet = router.get.bind(router);
   const originalPost = router.post.bind(router);
@@ -13,9 +12,9 @@ export function patchRouter(router, name = "unknown") {
       console.warn(`⚠️ POSSIBLY INVALID PARAM: ${method.toUpperCase()} ${path}`);
       return;
     }
-    // ===> REMOVE OR COMMENT OUT THIS:
+    // Completely REMOVE the pathToRegexp call below! No try/catch!
     // try {
-    //   pathToRegexp(path); // <-- THIS IS THE LINE CAUSING YOUR DEPLOY TO CRASH
+    //   pathToRegexp(path);
     // } catch (err) {
     //   console.error(`❌ Invalid route in ${name}: ${method.toUpperCase()} ${path}`);
     //   console.error(err.message);
