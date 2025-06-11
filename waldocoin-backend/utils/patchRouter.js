@@ -1,10 +1,6 @@
-// utils/patchRouter.js
-// import { pathToRegexp } from "path-to-regexp"; // ⛔️ No need for this!
+import { pathToRegexp } from "path-to-regexp";
 
-/**
- * Wraps a router to validate all registered paths for syntax errors.
- * ONLY logs suspicious routes, does not try to parse or validate Express params.
- */
+// PATCH: Remove or comment out pathToRegexp(path) call!
 export function patchRouter(router, name = "unknown") {
   const originalGet = router.get.bind(router);
   const originalPost = router.post.bind(router);
@@ -17,8 +13,14 @@ export function patchRouter(router, name = "unknown") {
       console.warn(`⚠️ POSSIBLY INVALID PARAM: ${method.toUpperCase()} ${path}`);
       return;
     }
-    // Don't call pathToRegexp or any further validation!
-    // You could add more logging here if you want.
+    // ===> REMOVE OR COMMENT OUT THIS:
+    // try {
+    //   pathToRegexp(path); // <-- THIS IS THE LINE CAUSING YOUR DEPLOY TO CRASH
+    // } catch (err) {
+    //   console.error(`❌ Invalid route in ${name}: ${method.toUpperCase()} ${path}`);
+    //   console.error(err.message);
+    //   process.exit(1);
+    // }
   };
 
   router.get = (path, ...args) => {
