@@ -88,7 +88,7 @@ import adminRoutes from "./routes/adminsecurity.js";
 import proposalsRoutes from "./routes/proposals.js";
 import voteRoutes from "./routes/vote.js";
 import tweetsRoutes from "./routes/tweets.js";
-import userStatsRoutes from "./routes/userStats.js";
+import userStatsRoutes from "./routes/userstats.js";
 import analyticsRoutes from "./routes/analytics.js";
 import debugRoutes from "./routes/debug.js";
 import mintedRoutes from "./routes/minted.js";
