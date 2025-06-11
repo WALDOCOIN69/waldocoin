@@ -1,4 +1,4 @@
-import pathToRegexp from "path-to-regexp";
+import { pathToRegexp } from "path-to-regexp";
 
 /**
  * Wraps a router to validate all registered paths for syntax errors.
@@ -11,14 +11,13 @@ export function patchRouter(router, name = "unknown") {
 
   const validate = (method, path) => {
     try {
-      pathToRegexp(path);
+      pathToRegexp(path); // ✅ Valid now
     } catch (err) {
       console.error(`❌ Invalid route in ${name}: ${method.toUpperCase()} ${path}`);
       console.error(err.message);
-      process.exit(1); // Optional: exit on failure
+      process.exit(1);
     }
 
-    // Warn on suspicious route patterns
     if (path.includes("/:")) {
       console.warn(`⚠️ Suspicious route detected: ${method.toUpperCase()} ${path}`);
     }
@@ -41,6 +40,7 @@ export function patchRouter(router, name = "unknown") {
     return originalUse(path, ...args);
   };
 }
+
 
 
 
