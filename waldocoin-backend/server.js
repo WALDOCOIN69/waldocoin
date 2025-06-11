@@ -1,19 +1,15 @@
 // server.js
 
-// ✅ Core imports first
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import helmet from "helmet";
 
-// ✅ Utility imports (after express is available)
 import "./utils/patchExpress.js";
-import { validateRoutes } from "./utils/validateRoutes.js";
 import { connectRedis } from "./redisClient.js";
 import { getXummClient } from "./utils/xummClient.js";
 
-// 🌐 Load environment variables
 dotenv.config();
 console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
@@ -21,80 +17,53 @@ process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION 🚨:", err);
 });
 
-// 🛠️ Express app setup
 const app = express();
 app.use(helmet());
 app.use(express.json());
-app.use(rateLimit({ windowMs: 60 * 1000, max: 100, message: "Too many requests. Please slow down." }));
+app.use(rateLimit({ windowMs: 60 * 1000, max: 100 }));
 
-// ✅ CORS setup
 const allowedOrigins = [
   "https://waldocoin.live",
   "https://www.waldocoin.live",
   "http://localhost:3000"
 ];
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("❌ CORS policy does not allow this origin."));
   },
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-admin-key"]
 }));
 
-// 🔁 Global headers for Render
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-admin-key");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   next();
 });
-app.options("*", (req, res) => res.sendStatus(200));
+app.options("*", (_, res) => res.sendStatus(200));
 
-// ✅ Remove trailing slashes
 app.use((req, res, next) => {
   if (req.path.endsWith("/") && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
-    res.redirect(301, req.path.slice(0, -1) + query);
-  } else {
-    next();
-  }
-});
-
-// ✅ Error handler for bad JSON
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ error: 'Invalid JSON payload' });
+    return res.redirect(301, req.path.slice(0, -1) + query);
   }
   next();
 });
 
-// ✅ Import and register routes
-import loginRoutes from "./routes/login.js";
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err)
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  next();
+});
 
-// Validate and use login route
-if (!loginRoutes || typeof loginRoutes !== "function" || !loginRoutes.stack) {
-  console.error("❌ loginRoutes is invalid or undefined.");
-  process.exit(1);
-}
-app.use("/api/login", loginRoutes);
-
-// ✅ Health check
-app.get("/", (req, res) => res.json({ status: "🚀 WALDO API is live!" }));
-app.get("/api/ping", (req, res) => res.json({ status: "✅ WALDO API is online" }));
-app.get("/test", (req, res) => res.send("✅ Minimal route works"));
-
-// ✅ Route validator (optional)
-// validateRoutes();
-// console.log("🧪 Route validation complete. No issues.");
-
-// ✅ Safe dynamic route registration helper (if needed)
+// ✅ Safe register helper
 const safeRegister = (path, route) => {
   try {
     if (!route || typeof route !== "function" || !route.stack) {
-      throw new Error(`❌ Invalid route handler for path: ${path}`);
+      throw new Error(`❌ Invalid route handler for ${path}`);
     }
     console.log(`🧪 Registering route: ${path}`);
     app.use(path, route);
@@ -106,19 +75,56 @@ const safeRegister = (path, route) => {
   }
 };
 
-// 🔒 Commented routes – restore one at a time
-// import claimRoute from "./routes/claim.js";
-// safeRegister("/api/claim", claimRoute);
+// ✅ Core Routes (Restore gradually)
+import loginRoutes from "./routes/login.js";
+import claimRoutes from "./routes/claim.js";
+import rewardRoutes from "./routes/reward.js";
+import mintRoutes from "./routes/mint.js";
+import mintConfirmRoutes from "./routes/mintConfirm.js";
+import priceRoutes from "./routes/price.js";
+import trustlineRoutes from "./routes/trustline.js";
+import presaleRoutes from "./routes/presale.js";
+import adminRoutes from "./routes/adminsecurity.js";
+import proposalsRoutes from "./routes/proposals.js";
+import voteRoutes from "./routes/vote.js";
+import tweetsRoutes from "./routes/tweets.js";
+import userStatsRoutes from "./routes/userStats.js";
+import analyticsRoutes from "./routes/analytics.js";
+import debugRoutes from "./routes/debug.js";
+import mintedRoutes from "./routes/minted.js";
+import adminLogsRoutes from "./routes/adminLogs.js";
+import linkTwitterRoutes from "./routes/linkTwitter.js";
+
+safeRegister("/api/login", loginRoutes);
+safeRegister("/api/claim", claimRoutes);
+safeRegister("/api/reward", rewardRoutes);
+safeRegister("/api/mint", mintRoutes);
+safeRegister("/api/mint/confirm", mintConfirmRoutes);
+safeRegister("/api/price", priceRoutes);
+safeRegister("/api/trustline", trustlineRoutes);
+safeRegister("/api/presale", presaleRoutes);
+safeRegister("/api/admin", adminRoutes);
+safeRegister("/api/proposals", proposalsRoutes);
+safeRegister("/api/vote", voteRoutes);
+safeRegister("/api/tweets", tweetsRoutes);
+safeRegister("/api/userstats", userStatsRoutes);
+safeRegister("/api/analytics", analyticsRoutes);
+safeRegister("/api/debug", debugRoutes);
+safeRegister("/api/minted", mintedRoutes);
+safeRegister("/api/adminlogs", adminLogsRoutes);
+safeRegister("/api/linktwitter", linkTwitterRoutes);
+
+// ✅ Health check
+app.get("/", (_, res) => res.json({ status: "🚀 WALDO API is live!" }));
+app.get("/api/ping", (_, res) => res.json({ status: "✅ WALDO API is online" }));
 
 // 🕒 Cron jobs
 import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
 // scheduleWipeMemeJob();
 
-// 🚀 Start server
 const PORT = process.env.PORT || 5050;
 const startServer = async () => {
   await connectRedis();
-  // getXummClient(); // preload XUMM
   app.listen(PORT, () => {
     console.log(`✅ WALDO API running at http://localhost:${PORT}`);
   });
@@ -128,6 +134,5 @@ startServer().catch(err => {
   console.error("❌ WALDO API startup failed:", err);
   process.exit(1);
 });
-
 
 
