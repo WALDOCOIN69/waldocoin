@@ -1,4 +1,5 @@
-import { pathToRegexp } from "path-to-regexp";
+// utils/patchRouter.js
+// No pathToRegexp call!
 
 export function patchRouter(router, name = "unknown") {
   const originalGet = router.get.bind(router);
@@ -8,18 +9,11 @@ export function patchRouter(router, name = "unknown") {
 
   const validate = (method, path) => {
     if (typeof path !== "string") return;
+    // Only warn on possibly broken patterns, DO NOT CALL pathToRegexp
     if (/\/:($|[^a-zA-Z0-9_])/.test(path)) {
       console.warn(`⚠️ POSSIBLY INVALID PARAM: ${method.toUpperCase()} ${path}`);
       return;
     }
-    // Completely REMOVE the pathToRegexp call below! No try/catch!
-    // try {
-    //   pathToRegexp(path);
-    // } catch (err) {
-    //   console.error(`❌ Invalid route in ${name}: ${method.toUpperCase()} ${path}`);
-    //   console.error(err.message);
-    //   process.exit(1);
-    // }
   };
 
   router.get = (path, ...args) => {
