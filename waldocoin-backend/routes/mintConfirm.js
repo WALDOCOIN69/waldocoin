@@ -6,7 +6,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import xrpl from "xrpl";
 import { redis } from "../redisClient.js";
-import { patchRouter } from "../utils/patchRouter.js";
 import { uploadToIPFS } from "../utils/ipfsUploader.js";
 
 dotenv.config();
