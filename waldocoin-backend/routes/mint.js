@@ -5,13 +5,11 @@ import dotenv from "dotenv";
 import { redis } from "../redisClient.js";
 import { fileURLToPath } from "url";
 import path from "path";
-import { patchRouter } from "../utils/patchRouter.js";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const router = express.Router();
-// patchRouter(router, path.basename(__filename)); // ✅ Route validation enabled
 
 // 🧠 Start NFT Mint Payment Flow
 router.post("/", async (req, res) => {
