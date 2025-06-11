@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { patchRouter } from "../utils/patchRouter.js";
 import { redis } from "../redisClient.js"; // ✅ Import Redis client
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,9 +8,8 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // ✅ Enable strict route validation
-patchRouter(router, path.basename(__filename));
 
-console.log("🧩 Loaded: routes/analytics.js");
+console.log("🧩 Loaded:routes/analytics.js");
 
 // 📌 Wallet Analytics from Redis
 router.get("/wallet/:address", async (req, res) => {

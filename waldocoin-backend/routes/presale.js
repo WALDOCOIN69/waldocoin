@@ -4,13 +4,11 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { redis } from "../redisClient.js"; // ✅ Redis import added
-import { patchRouter } from "../utils/patchRouter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-// patchRouter(router, path.basename(__filename)); // ✅ Route validator added
 
 // 🔍 GET /end-date — Current presale end date
 router.get("/end-date", async (req, res) => {
