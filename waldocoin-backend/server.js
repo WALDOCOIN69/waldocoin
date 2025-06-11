@@ -6,7 +6,6 @@ import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import helmet from "helmet";
 
-import "./utils/patchExpress.js";
 import { connectRedis } from "./redisClient.js";
 import { getXummClient } from "./utils/xummClient.js";
 
