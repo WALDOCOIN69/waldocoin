@@ -5,13 +5,15 @@ import { getXummClient } from "../utils/xummClient.js";
 import { redis } from "../redisClient.js";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
-import { patchRouter } from "../utils/patchRouter.js"; // ✅ Use shared validator
+
+// REMOVE patchRouter import
+// import { patchRouter } from "../utils/patchRouter.js"; // <-- deleted
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-// patchRouter(router, path.basename(__filename)); // ✅ Strict route check
+// patchRouter(router, path.basename(__filename)); // <-- deleted
 
 console.log("🧩 Loaded: routes/claim.js");
 
@@ -102,4 +104,3 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
