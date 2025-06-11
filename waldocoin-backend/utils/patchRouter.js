@@ -10,17 +10,16 @@ export function patchRouter(router, name = "unknown") {
   const originalUse = router.use.bind(router);
 
   const validate = (method, path) => {
-    // Defensive: only validate normal route paths
+    // Only validate Express-style string paths with named params
     if (typeof path !== "string") return;
-    // Skip validation for suspicious/invalid param syntax
     if (/\/:($|[^a-zA-Z0-9_])/.test(path)) {
-      console.warn(`⚠️ Skipping validation for suspicious path in ${name}: ${method.toUpperCase()} ${path}`);
+      console.warn(`⚠️ POSSIBLY INVALID PARAM: ${method.toUpperCase()} ${path}`);
+      // Don't call pathToRegexp here, just warn
       return;
     }
-    // Debug log every route being validated
-    console.log(`Validating [${method.toUpperCase()}]:`, path);
+    // Try to validate normal paths
     try {
-      pathToRegexp(path);
+      pathToRegexp(path); // Should not throw for /wallet/:address
     } catch (err) {
       console.error(`❌ Invalid route in ${name}: ${method.toUpperCase()} ${path}`);
       console.error(err.message);
@@ -29,19 +28,19 @@ export function patchRouter(router, name = "unknown") {
   };
 
   router.get = (path, ...args) => {
-    if (typeof path === "string") validate("get", path);
+    validate("get", path);
     return originalGet(path, ...args);
   };
   router.post = (path, ...args) => {
-    if (typeof path === "string") validate("post", path);
+    validate("post", path);
     return originalPost(path, ...args);
   };
   router.delete = (path, ...args) => {
-    if (typeof path === "string") validate("delete", path);
+    validate("delete", path);
     return originalDelete(path, ...args);
   };
   router.use = (path, ...args) => {
-    if (typeof path === "string") validate("use", path);
+    validate("use", path);
     return originalUse(path, ...args);
   };
 }
