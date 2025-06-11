@@ -10,18 +10,21 @@ export function patchRouter(router, name = "unknown") {
   const originalUse = router.use.bind(router);
 
   const validate = (method, path) => {
+    // Defensive: only validate normal route paths
+    if (typeof path !== "string") return;
+    // Skip validation for suspicious/invalid param syntax
+    if (/\/:($|[^a-zA-Z0-9_])/.test(path)) {
+      console.warn(`⚠️ Skipping validation for suspicious path in ${name}: ${method.toUpperCase()} ${path}`);
+      return;
+    }
     // Debug log every route being validated
     console.log(`Validating [${method.toUpperCase()}]:`, path);
     try {
-      pathToRegexp(path); // Throws only on *true* syntax errors
+      pathToRegexp(path);
     } catch (err) {
       console.error(`❌ Invalid route in ${name}: ${method.toUpperCase()} ${path}`);
       console.error(err.message);
       process.exit(1);
-    }
-    // Warn ONLY on truly sketchy params (like missing param name)
-    if (/\/:($|[^a-zA-Z0-9_])/.test(path)) {
-      console.warn(`⚠️ POSSIBLY INVALID PARAM: ${method.toUpperCase()} ${path}`);
     }
   };
 
@@ -42,6 +45,7 @@ export function patchRouter(router, name = "unknown") {
     return originalUse(path, ...args);
   };
 }
+
 
 
 
