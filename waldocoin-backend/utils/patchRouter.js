@@ -10,6 +10,8 @@ export function patchRouter(router, name = "unknown") {
   const originalUse = router.use.bind(router);
 
   const validate = (method, path) => {
+    // Debug log every route being validated
+    console.log(`Validating [${method.toUpperCase()}]:`, path);
     try {
       pathToRegexp(path); // Throws only on *true* syntax errors
     } catch (err) {
@@ -17,7 +19,6 @@ export function patchRouter(router, name = "unknown") {
       console.error(err.message);
       process.exit(1);
     }
-
     // Warn ONLY on truly sketchy params (like missing param name)
     if (/\/:($|[^a-zA-Z0-9_])/.test(path)) {
       console.warn(`⚠️ POSSIBLY INVALID PARAM: ${method.toUpperCase()} ${path}`);
