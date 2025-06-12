@@ -95,7 +95,7 @@ import adminLogsRoutes from "./routes/adminLogs.js";
 import linkTwitterRoutes from "./routes/linkTwitter.js";
 
 safeRegister("/api/login", loginRoutes);
-safeRegister("/api/claim", claimRoutes);
+//safeRegister("/api/claim", claimRoutes);
 //safeRegister("/api/reward", rewardRoutes);
 //safeRegister("/api/mint", mintRoutes);
 //safeRegister("/api/mintConfirm", mintConfirmRoutes);
