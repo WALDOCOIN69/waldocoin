@@ -26,6 +26,22 @@ const allowedOrigins = [
   "https://www.waldocoin.live",
   "http://localhost:3000"
 ];
+const safeRegister = (path, route) => {
+  try {
+    if (!route || typeof route !== "function" || !route.stack) {
+      console.error(`❌ Invalid route handler for ${path}:`, route);
+      throw new Error(`❌ Invalid route handler for ${path}`);
+    }
+    console.log(`🧪 Registering route: ${path}`);
+    app.use(path, route);
+    console.log(`✅ Registered: ${path}`);
+  } catch (err) {
+    console.error(`❌ Route FAILED: ${path}`);
+    console.error(err.stack || err.message);
+    process.exit(1);
+  }
+};
+
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -58,23 +74,6 @@ app.use((err, req, res, next) => {
   next();
 });
 
-const safeRegister = (path, route) => {
-  try {
-    if (!route || typeof route !== "function" || !route.stack) {
-      console.error(`❌ Invalid route handler for ${path}:`, route);
-      throw new Error(`❌ Invalid route handler for ${path}`);
-    }
-    console.log(`🧪 Registering route: ${path}`);
-    app.use(path, route);
-    console.log(`✅ Registered: ${path}`);
-  } catch (err) {
-    console.error(`❌ Route FAILED: ${path}`);
-    console.error(err.stack || err.message);
-    process.exit(1);
-  }
-};
-
-
 // ✅ Core Routes (Restore gradually)
 import loginRoutes from "./routes/login.js";
 import claimRoutes from "./routes/claim.js";
@@ -103,15 +102,15 @@ safeRegister("/api/mintConfirm", mintConfirmRoutes);
 safeRegister("/api/price", priceRoutes);
 safeRegister("/api/trustline", trustlineRoutes);
 safeRegister("/api/presale", presaleRoutes);
-safeRegister("/api/admin", adminRoutes);
+//safeRegister("/api/admin", adminRoutes);
 safeRegister("/api/proposals", proposalsRoutes);
 safeRegister("/api/vote", voteRoutes);
 safeRegister("/api/tweets", tweetsRoutes);
 safeRegister("/api/userstats", userstatsRoutes);
 safeRegister("/api/analytics", analyticsRoutes);
-safeRegister("/api/debug", debugRoutes);
+//safeRegister("/api/debug", debugRoutes);
 safeRegister("/api/minted", mintedRoutes);
-safeRegister("/api/adminLogs", adminLogsRoutes);
+//safeRegister("/api/adminLogs", adminLogsRoutes);
 safeRegister("/api/linktwitter", linkTwitterRoutes);
 
 // ✅ Health check
