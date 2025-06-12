@@ -77,23 +77,23 @@ app.use((err, req, res, next) => {
 
 // ✅ Core Routes (Restore gradually)
 import loginRoutes from "./routes/login.js";
-import claimRoutes from "./routes/claim.js";
-import rewardRoutes from "./routes/reward.js";
-import mintRoutes from "./routes/mint.js";
-import mintConfirmRoutes from "./routes/mintConfirm.js";
-import priceRoutes from "./routes/price.js";
-import trustlineRoutes from "./routes/trustline.js";
-import presaleRoutes from "./routes/presale.js";
-import adminRoutes from "./routes/adminsecurity.js";
-import proposalsRoutes from "./routes/proposals.js";
-import voteRoutes from "./routes/vote.js";
-import tweetsRoutes from "./routes/tweets.js";
-import userstatsRoutes from "./routes/userstats.js";
-import analyticsRoutes from "./routes/analytics.js";
-import debugRoutes from "./routes/debug.js";
-import mintedRoutes from "./routes/minted.js";
-import adminLogsRoutes from "./routes/adminLogs.js";
-import linkTwitterRoutes from "./routes/linkTwitter.js";
+//import claimRoutes from "./routes/claim.js";
+//import rewardRoutes from "./routes/reward.js";
+//import mintRoutes from "./routes/mint.js";
+//import mintConfirmRoutes from "./routes/mintConfirm.js";
+//import priceRoutes from "./routes/price.js";
+//import trustlineRoutes from "./routes/trustline.js";
+//import presaleRoutes from "./routes/presale.js";
+//import adminRoutes from "./routes/adminsecurity.js";
+//import proposalsRoutes from "./routes/proposals.js";
+//import voteRoutes from "./routes/vote.js";
+//import tweetsRoutes from "./routes/tweets.js";
+//import userstatsRoutes from "./routes/userstats.js";
+//import analyticsRoutes from "./routes/analytics.js";
+//import debugRoutes from "./routes/debug.js";
+//import mintedRoutes from "./routes/minted.js";
+//import adminLogsRoutes from "./routes/adminLogs.js";
+//import linkTwitterRoutes from "./routes/linkTwitter.js";
 
 // Only login is active, restore others when ready!
 safeRegister("/api/login", loginRoutes);
