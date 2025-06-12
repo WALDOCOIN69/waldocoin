@@ -96,7 +96,7 @@ import loginRoutes from "./routes/login.js";
 //import linkTwitterRoutes from "./routes/linkTwitter.js";
 
 // Only login is active, restore others when ready!
-safeRegister("/api/login", loginRoutes);
+//safeRegister("/api/login", loginRoutes);
 // safeRegister("/api/claim", claimRoutes);
 // safeRegister("/api/reward", rewardRoutes);
 // safeRegister("/api/mint", mintRoutes);
