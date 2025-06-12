@@ -96,22 +96,22 @@ import linkTwitterRoutes from "./routes/linkTwitter.js";
 
 safeRegister("/api/login", loginRoutes);
 safeRegister("/api/claim", claimRoutes);
-safeRegister("/api/reward", rewardRoutes);
-safeRegister("/api/mint", mintRoutes);
-safeRegister("/api/mintConfirm", mintConfirmRoutes);
-safeRegister("/api/price", priceRoutes);
-safeRegister("/api/trustline", trustlineRoutes);
-safeRegister("/api/presale", presaleRoutes);
+//safeRegister("/api/reward", rewardRoutes);
+//safeRegister("/api/mint", mintRoutes);
+//safeRegister("/api/mintConfirm", mintConfirmRoutes);
+//safeRegister("/api/price", priceRoutes);
+//safeRegister("/api/trustline", trustlineRoutes);
+//safeRegister("/api/presale", presaleRoutes);
 //safeRegister("/api/admin", adminRoutes);
-safeRegister("/api/proposals", proposalsRoutes);
-safeRegister("/api/vote", voteRoutes);
-safeRegister("/api/tweets", tweetsRoutes);
-safeRegister("/api/userstats", userstatsRoutes);
-safeRegister("/api/analytics", analyticsRoutes);
+//safeRegister("/api/proposals", proposalsRoutes);
+//safeRegister("/api/vote", voteRoutes);
+//safeRegister("/api/tweets", tweetsRoutes);
+//safeRegister("/api/userstats", userstatsRoutes);
+//safeRegister("/api/analytics", analyticsRoutes);
 //safeRegister("/api/debug", debugRoutes);
-safeRegister("/api/minted", mintedRoutes);
+//safeRegister("/api/minted", mintedRoutes);
 //safeRegister("/api/adminLogs", adminLogsRoutes);
-safeRegister("/api/linktwitter", linkTwitterRoutes);
+//safeRegister("/api/linktwitter", linkTwitterRoutes);
 
 // ✅ Health check
 app.get("/", (_, res) => res.json({ status: "🚀 WALDO API is live!" }));
