@@ -118,7 +118,7 @@ app.get("/", (_, res) => res.json({ status: "🚀 WALDO API is live!" }));
 app.get("/api/ping", (_, res) => res.json({ status: "✅ WALDO API is online" }));
 
 // 🕒 Cron jobs
-import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
+import { scheduleWipeMemeJob } from "./cron/wipeMemeKeys.js";
 // scheduleWipeMemeJob();
 
 const PORT = process.env.PORT || 5050;
