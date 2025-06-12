@@ -99,7 +99,7 @@ safeRegister("/api/login", loginRoutes);
 safeRegister("/api/claim", claimRoutes);
 safeRegister("/api/reward", rewardRoutes);
 safeRegister("/api/mint", mintRoutes);
-safeRegister("/api/mint/confirm", mintConfirmRoutes);
+safeRegister("/api/mintConfirm", mintConfirmRoutes);
 safeRegister("/api/price", priceRoutes);
 safeRegister("/api/trustline", trustlineRoutes);
 safeRegister("/api/presale", presaleRoutes);
