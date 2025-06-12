@@ -58,10 +58,10 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// ✅ Safe register helper
 const safeRegister = (path, route) => {
   try {
     if (!route || typeof route !== "function" || !route.stack) {
+      console.error(`❌ Invalid route handler for ${path}:`, route);
       throw new Error(`❌ Invalid route handler for ${path}`);
     }
     console.log(`🧪 Registering route: ${path}`);
@@ -69,10 +69,11 @@ const safeRegister = (path, route) => {
     console.log(`✅ Registered: ${path}`);
   } catch (err) {
     console.error(`❌ Route FAILED: ${path}`);
-    console.error(err.message);
+    console.error(err.stack || err.message);
     process.exit(1);
   }
 };
+
 
 // ✅ Core Routes (Restore gradually)
 import loginRoutes from "./routes/login.js";
