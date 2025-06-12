@@ -88,7 +88,7 @@ import adminRoutes from "./routes/adminsecurity.js";
 import proposalsRoutes from "./routes/proposals.js";
 import voteRoutes from "./routes/vote.js";
 import tweetsRoutes from "./routes/tweets.js";
-import userStatsRoutes from "./routes/userstats.js";
+import userstatsRoutes from "./routes/userstats.js";
 import analyticsRoutes from "./routes/analytics.js";
 import debugRoutes from "./routes/debug.js";
 import mintedRoutes from "./routes/minted.js";
@@ -107,11 +107,11 @@ safeRegister("/api/admin", adminRoutes);
 safeRegister("/api/proposals", proposalsRoutes);
 safeRegister("/api/vote", voteRoutes);
 safeRegister("/api/tweets", tweetsRoutes);
-safeRegister("/api/userstats", userStatsRoutes);
+safeRegister("/api/userstats", userstatsRoutes);
 safeRegister("/api/analytics", analyticsRoutes);
 safeRegister("/api/debug", debugRoutes);
 safeRegister("/api/minted", mintedRoutes);
-safeRegister("/api/adminlogs", adminLogsRoutes);
+safeRegister("/api/adminLogs", adminLogsRoutes);
 safeRegister("/api/linktwitter", linkTwitterRoutes);
 
 // ✅ Health check
