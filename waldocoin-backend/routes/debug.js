@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-console.log("🧩 Loaded: routes/debugBattle.js");
+console.log("🧩 Loaded: routes/debug.js");
 
 const BATTLE_LIST_KEY = "battles:list";
 
