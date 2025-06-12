@@ -8,6 +8,7 @@ import helmet from "helmet";
 
 import { connectRedis } from "./redisClient.js";
 import { getXummClient } from "./utils/xummClient.js";
+import { scheduleWipeMemeJob } from "./cron/wipeMemeJob.js";
 
 dotenv.config();
 console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -26,6 +27,7 @@ const allowedOrigins = [
   "https://www.waldocoin.live",
   "http://localhost:3000"
 ];
+
 const safeRegister = (path, route) => {
   try {
     if (!route || typeof route !== "function" || !route.stack) {
@@ -41,7 +43,6 @@ const safeRegister = (path, route) => {
     process.exit(1);
   }
 };
-
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -94,32 +95,32 @@ import mintedRoutes from "./routes/minted.js";
 import adminLogsRoutes from "./routes/adminLogs.js";
 import linkTwitterRoutes from "./routes/linkTwitter.js";
 
+// Only login is active, restore others when ready!
 safeRegister("/api/login", loginRoutes);
-//safeRegister("/api/claim", claimRoutes);
-//safeRegister("/api/reward", rewardRoutes);
-//safeRegister("/api/mint", mintRoutes);
-//safeRegister("/api/mintConfirm", mintConfirmRoutes);
-//safeRegister("/api/price", priceRoutes);
-//safeRegister("/api/trustline", trustlineRoutes);
-//safeRegister("/api/presale", presaleRoutes);
-//safeRegister("/api/admin", adminRoutes);
-//safeRegister("/api/proposals", proposalsRoutes);
-//safeRegister("/api/vote", voteRoutes);
-//safeRegister("/api/tweets", tweetsRoutes);
-//safeRegister("/api/userstats", userstatsRoutes);
-//safeRegister("/api/analytics", analyticsRoutes);
-//safeRegister("/api/debug", debugRoutes);
-//safeRegister("/api/minted", mintedRoutes);
-//safeRegister("/api/adminLogs", adminLogsRoutes);
-//safeRegister("/api/linktwitter", linkTwitterRoutes);
+// safeRegister("/api/claim", claimRoutes);
+// safeRegister("/api/reward", rewardRoutes);
+// safeRegister("/api/mint", mintRoutes);
+// safeRegister("/api/mintConfirm", mintConfirmRoutes);
+// safeRegister("/api/price", priceRoutes);
+// safeRegister("/api/trustline", trustlineRoutes);
+// safeRegister("/api/presale", presaleRoutes);
+// safeRegister("/api/admin", adminRoutes);
+// safeRegister("/api/proposals", proposalsRoutes);
+// safeRegister("/api/vote", voteRoutes);
+// safeRegister("/api/tweets", tweetsRoutes);
+// safeRegister("/api/userstats", userstatsRoutes);
+// safeRegister("/api/analytics", analyticsRoutes);
+// safeRegister("/api/debug", debugRoutes);
+// safeRegister("/api/minted", mintedRoutes);
+// safeRegister("/api/adminLogs", adminLogsRoutes);
+// safeRegister("/api/linktwitter", linkTwitterRoutes);
 
 // ✅ Health check
 app.get("/", (_, res) => res.json({ status: "🚀 WALDO API is live!" }));
 app.get("/api/ping", (_, res) => res.json({ status: "✅ WALDO API is online" }));
 
-// 🕒 Cron jobs
-import { scheduleWipeMemeJob } from "./cron/wipeMemeKeys.js";
-// scheduleWipeMemeJob();
+// 🕒 Cron jobs (uncomment to enable in prod)
+ // scheduleWipeMemeJob();
 
 const PORT = process.env.PORT || 5050;
 const startServer = async () => {
