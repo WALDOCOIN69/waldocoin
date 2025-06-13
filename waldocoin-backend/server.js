@@ -1,6 +1,8 @@
 // server.js
 
 import express from "express";
+console.log("🦄 WALDO SANITY TEST: If you see this, you are running the REAL latest code.");
+
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
