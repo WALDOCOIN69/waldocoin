@@ -1,37 +1,10 @@
-// routes/login.js
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-// import { isAutoBlocked } from "../utils/blocklist.js"; // Removed or optional
-import { logViolation } from "../utils/logViolation.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const router = express.Router();
 
-// ✅ Only define routes directly
-router.post("/wallet", async (req, res) => {
-  const { wallet } = req.body;
-
-  // 🧪 Validate wallet format
-  if (!wallet || typeof wallet !== "string" || !wallet.startsWith("r") || wallet.length < 25) {
-    await logViolation(wallet || "unknown", "invalid_wallet", { reason: "format_invalid" });
-    return res.status(400).json({ error: "Invalid or missing wallet address." });
-  }
-
-  // 🚫 If blocklist logic is restored, it should look like this:
-  // if (await isAutoBlocked(wallet)) {
-  //   await logViolation(wallet, "login_attempt_blocked", { reason: "auto_blocked" });
-  //   return res.status(403).json({ error: "🚫 This wallet is blocked due to prior violations." });
-  // }
-
-  // 📝 Log all login attempts
-  await logViolation(wallet, "login_attempt", { ip: req.ip });
-
-  // ✅ Success response
-  return res.json({ success: true, message: "Wallet verified and accepted." });
+router.get("/ping", (_, res) => {
+  res.json({ status: "✅ Login route is alive" });
 });
 
 export default router;
+
 
