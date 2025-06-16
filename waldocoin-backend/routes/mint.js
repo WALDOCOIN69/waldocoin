@@ -39,7 +39,7 @@ router.post("/", async (req, res) => {
         TransactionType: "Payment",
         Destination: process.env.DISTRIBUTOR_WALLET,
         Amount: {
-          currency: "WALDO",
+          currency: "WLO",
           issuer: process.env.WALDO_ISSUER,
           value: "50"
         }

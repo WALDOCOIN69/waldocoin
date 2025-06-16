@@ -1,24 +1,13 @@
-import { XummSdk } from 'xumm-sdk'
-import dotenv from 'dotenv'
+import dotenv from "dotenv";
+dotenv.config();
 
-dotenv.config()
+import { XummSdk } from "xumm-sdk";
 
-let xummClient = null
-
-export function getXummClient() {
-  if (!xummClient) {
-    const { XUMM_API_KEY, XUMM_API_SECRET } = process.env
-
-    if (!XUMM_API_KEY || !XUMM_API_SECRET) {
-      throw new Error('❌ Missing XUMM_API_KEY or XUMM_API_SECRET in environment variables')
-    }
-
-    console.log('🧪 Instantiating XUMM SDK...')
-    xummClient = new XummSdk(XUMM_API_KEY, XUMM_API_SECRET)
-    console.log('✅ XUMM Client loaded')
-  }
-
-  return xummClient
+if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
+  throw new Error("❌ Missing XUMM_API_KEY or XUMM_API_SECRET");
 }
 
-console.log('🧩 xummClient.js initialized 🔍')
+console.log("🧪 Instantiating XUMM SDK...");
+export const xummClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+console.log("✅ xummClient.js initialized 🔍");
+

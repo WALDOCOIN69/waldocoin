@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "url";
 import path from "path";
+import mintConfirmRoute from "./routes/mint/confirm.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -26,10 +27,12 @@ app.use(helmet());
 app.use(limiter);
 app.use(express.json());
 
+
 // 🧩 Load WALDO routes
 app.use("/api/login", loginRoute);
 app.use("/api/claim", claimRoute); // ✅ claim enabled
 // app.use("/api/mint", mintRoute); // ❌ keep off if needed
+app.use("/api/mint/confirm", mintConfirmRoute);
 
 app.get("/", (req, res) => {
   res.send("✅ WALDO login + claim test server running at http://localhost:5050");
