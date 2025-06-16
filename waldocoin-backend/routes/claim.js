@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { XummClient } from "../utils/xummClient.js";
+import { getXummClient } from "../utils/xummClient.js";
 import { redis } from "../redisClient.js";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
@@ -65,7 +65,7 @@ router.post("/", async (req, res) => {
     await redis.incr(tierKey);
 
     // 📝 XUMM payout
-    const xumm = XummClient();
+    const xumm = getXummClient();
     const payload = {
       txjson: {
         TransactionType: "Payment",
