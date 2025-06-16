@@ -1,10 +1,11 @@
 import express from "express";
+import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getXummClient } from "../utils/xummClient.js";
-import { redis } from "../redisClient.js";
-import { v4 as uuidv4 } from "uuid";
-import dayjs from "dayjs";
+import xrpl from "xrpl";
+import { redis } from "../../redisClient.js";
+import { uploadToIPFS } from "../../utils/ipfsUploader.js";
+import { xummClient } from "../../utils/xummClient.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,7 +66,7 @@ router.post("/", async (req, res) => {
     await redis.incr(tierKey);
 
     // 📝 XUMM payout
-    const xumm = getXummClient();
+    const xumm = XummClient();
     const payload = {
       txjson: {
         TransactionType: "Payment",
