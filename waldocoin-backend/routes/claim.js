@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import xrpl from "xrpl";
 import { redis } from "../redisClient.js";
-import { uploadToIPFS } from "../../utils/ipfsUploader.js";
+import { uploadToIPFS } from "../utils/ipfsUploader.js";
 import { xummClient } from "../../utils/xummClient.js";
 
 
