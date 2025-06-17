@@ -1,7 +1,7 @@
 // utils/xpManager.js
-import redis from "./redisClient.js";
+import { redis } from "../redisClient.js";
 
-// 🔢 XP thresholds for meme levels (can expand later)
+// 🔢 XP thresholds for meme levels (editable config)
 const XP_THRESHOLDS = {
   common: 0,
   rare: 60,
@@ -9,25 +9,24 @@ const XP_THRESHOLDS = {
   legendary: 200,
 };
 
-// 🧠 Get Redis key for wallet XP
+// 🧠 Redis key helper
 const getXPKey = (wallet) => `xp:${wallet}`;
 
-// ➕ Add XP to a wallet
+// ➕ Add XP to wallet and return total
 export const addXP = async (wallet, amount) => {
   const key = getXPKey(wallet);
-  await redis.incrby(key, amount);
-  const totalXP = await redis.get(key);
-  return parseInt(totalXP, 10) || 0;
+  await redis.incrBy(key, amount);
+  const total = await redis.get(key);
+  return parseInt(total, 10) || 0;
 };
 
-// 📊 Get XP for a wallet
+// 📊 Get current XP
 export const getXP = async (wallet) => {
-  const key = getXPKey(wallet);
-  const value = await redis.get(key);
-  return parseInt(value, 10) || 0;
+  const val = await redis.get(getXPKey(wallet));
+  return parseInt(val, 10) || 0;
 };
 
-// 🏆 Get tier name based on XP value
+// 🏆 Get tier based on XP
 export const getXPTier = (xp) => {
   if (xp >= XP_THRESHOLDS.legendary) return "Legendary";
   if (xp >= XP_THRESHOLDS.epic) return "Epic";
@@ -35,7 +34,7 @@ export const getXPTier = (xp) => {
   return "Common";
 };
 
-// 🧠 Get current tier for a wallet
+// 🎖 Get tier for wallet
 export const getWalletTier = async (wallet) => {
   const xp = await getXP(wallet);
   return getXPTier(xp);
