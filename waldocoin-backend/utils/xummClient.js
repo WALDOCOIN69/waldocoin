@@ -2,7 +2,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import Xumm from "xumm-sdk"; // ✅ Import default, NOT destructured!
+import pkg from "xumm-sdk";
+const Xumm = pkg.default || pkg; // ✅ Ensures compatibility with CommonJS default
 
 if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
   console.error("❌ Missing XUMM API credentials");
