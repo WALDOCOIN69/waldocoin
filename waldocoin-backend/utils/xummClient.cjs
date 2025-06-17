@@ -1,5 +1,4 @@
-// utils/xummClient.cjs
-const Xumm = require("xumm-sdk"); // ✅ DO NOT destructure
+const { XummSdk } = require("xumm-sdk"); // ✅ CORRECT constructor
 require("dotenv").config();
 
 if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
@@ -7,5 +6,5 @@ if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
   process.exit(1);
 }
 
-const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const xummClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 module.exports = xummClient;
