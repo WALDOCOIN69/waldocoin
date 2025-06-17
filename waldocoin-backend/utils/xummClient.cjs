@@ -1,5 +1,6 @@
 // utils/xummClient.cjs
-const { Xumm } = require("xumm-sdk");
+const Xumm = require("xumm-sdk"); // ✅ DO NOT destructure
+require("dotenv").config();
 
 if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
   console.error("❌ Missing XUMM credentials");
