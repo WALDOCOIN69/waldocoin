@@ -2,11 +2,12 @@ import express from "express";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import xrpl from "xrpl";
-import { redis } from "../redisClient.js";
-import { uploadToIPFS } from "../utils/ipfsUploader.js";
-import { xummClient } from "../../utils/xummClient.js";
+import { v4 as uuidv4 } from "uuid";
+import dayjs from "dayjs";
+import { redis } from "../utils/redisClient.js"; // 🔄 Correct path
+import { xummClient } from "../utils/xummClient.js"; // 🔄 Correct path
 
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,12 +67,11 @@ router.post("/", async (req, res) => {
     await redis.incr(tierKey);
 
     // 📝 XUMM payout
-    const xumm = XummClient();
     const payload = {
       txjson: {
         TransactionType: "Payment",
         Destination: wallet,
-        Amount: String(net * 1_000_000), // XRP drops
+        Amount: String(net * 1_000_000), // drops
         DestinationTag: 12345
       },
       options: {
@@ -80,7 +80,7 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const { uuid, next } = await xumm.payload.createAndSubscribe(payload, event => {
+    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, event => {
       if (event.data.signed === true) return true;
       if (event.data.signed === false) throw new Error("❌ User rejected the sign request");
     });
@@ -102,3 +102,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
