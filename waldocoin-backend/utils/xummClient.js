@@ -2,8 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import pkg from "xumm-sdk"; // ✅ Compatible with ESM
-const { Xumm } = pkg;
+import Xumm from "xumm-sdk"; // ✅ Import default, NOT destructured!
 
 if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
   console.error("❌ Missing XUMM API credentials");
