@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import { fileURLToPath } from "url";
 import path from "path";
 import { redis } from "../redisClient.js";
+import { addXP } from "../../utils/xpManager.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,6 +61,7 @@ router.post("/", async (req, res) => {
         error: "You already voted on this proposal."
       });
     }
+      await addXP(wallet, 1);
 
     // ✅ Save vote to Redis
     await redis.hSet(`proposalVotes:${proposalId}`, wallet, choice);
