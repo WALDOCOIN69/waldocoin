@@ -16,7 +16,7 @@ import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import tweetsRoute from "./routes/tweets.js";
-import statsRoute from "./routes/userStats.js";
+import statsRoute from "./routes/userstats.js";
 
 // 🔗 Meme Battle system
 import battleStartRoute from "./routes/battle/start.js";
