@@ -23,11 +23,12 @@ router.post("/", async (req, res) => {
     const now = dayjs();
     const feeWaldo = 100;
 
+    // 🔐 WALDO payment payload for starting a battle
     const payload = {
       txjson: {
         TransactionType: "Payment",
         Destination: process.env.ISSUER_WALLET,
-        Amount: String(feeWaldo * 1_000_000), // WALDO drops
+        Amount: String(feeWaldo * 1_000_000), // WALDO in drops
         DestinationTag: 777
       },
       options: {
@@ -36,12 +37,12 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, event => {
+    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, (event) => {
       if (event.data.signed === true) return true;
-      if (event.data.signed === false) throw new Error("❌ User rejected battle start payment");
+      if (event.data.signed === false) throw new Error("User rejected battle start payment");
     });
 
-    // Store battle metadata
+    // 📦 Save battle metadata to Redis
     const battleData = {
       battleId,
       challenger: wallet,
@@ -49,10 +50,11 @@ router.post("/", async (req, res) => {
       status: "pending",
       createdAt: now.toISOString(),
       acceptedAt: null,
-      expiresAt: now.add(10, "hour").toISOString()
+      expiresAt: now.add(10, "hour").toISOString(),
+      votes: 0
     };
 
-    await redis.set(`battle:${battleId}`, JSON.stringify(battleData), { EX: 60 * 60 * 12 }); // 12h backup
+    await redis.set(`battle:${battleId}`, JSON.stringify(battleData), { EX: 60 * 60 * 12 }); // TTL: 12 hours
 
     return res.json({
       success: true,
@@ -64,8 +66,13 @@ router.post("/", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Battle start error:", err);
-    return res.status(500).json({ success: false, error: "Battle start failed", detail: err.message });
+    return res.status(500).json({
+      success: false,
+      error: "Battle start failed",
+      detail: err.message
+    });
   }
 });
 
 export default router;
+

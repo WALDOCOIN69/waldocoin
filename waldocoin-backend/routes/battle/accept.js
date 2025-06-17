@@ -20,18 +20,19 @@ router.post("/", async (req, res) => {
 
   try {
     const battleKey = `battle:${battleId}`;
-    const battleDataRaw = await redis.get(battleKey);
-    if (!battleDataRaw) {
+    const raw = await redis.get(battleKey);
+
+    if (!raw) {
       return res.status(404).json({ success: false, error: "Battle not found" });
     }
 
-    const battleData = JSON.parse(battleDataRaw);
+    const battle = JSON.parse(raw);
 
-    if (battleData.status !== "pending") {
-      return res.status(400).json({ success: false, error: "Battle is not in a pending state" });
+    if (battle.status !== "pending") {
+      return res.status(400).json({ success: false, error: "Battle is not pending" });
     }
 
-    if (battleData.acceptedAt) {
+    if (battle.acceptedAt) {
       return res.status(400).json({ success: false, error: "Battle already accepted" });
     }
 
@@ -51,18 +52,19 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, event => {
+    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, (event) => {
       if (event.data.signed === true) return true;
-      if (event.data.signed === false) throw new Error("❌ User rejected battle accept payment");
+      if (event.data.signed === false) throw new Error("User rejected battle accept payment");
     });
 
-    battleData.acceptedAt = now.toISOString();
-    battleData.acceptor = wallet;
-    battleData.acceptorTweetId = tweetId;
-    battleData.status = "accepted";
-    battleData.endsAt = now.add(24, "hour").toISOString();
+    battle.acceptor = wallet;
+    battle.acceptorTweetId = tweetId;
+    battle.acceptedAt = now.toISOString();
+    battle.endsAt = now.add(24, "hour").toISOString();
+    battle.status = "accepted";
+    battle.votes = 0;
 
-    await redis.set(battleKey, JSON.stringify(battleData), { EX: 60 * 60 * 30 }); // 30h battle window
+    await redis.set(battleKey, JSON.stringify(battle), { EX: 60 * 60 * 30 }); // 30h TTL
 
     return res.json({
       success: true,
@@ -74,7 +76,11 @@ router.post("/", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Accept battle error:", err);
-    return res.status(500).json({ success: false, error: "Accept battle failed", detail: err.message });
+    return res.status(500).json({
+      success: false,
+      error: "Accept battle failed",
+      detail: err.message
+    });
   }
 });
 

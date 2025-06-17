@@ -2,6 +2,7 @@
 import express from "express";
 import { xummClient } from "../../utils/xummClient.js";
 import { redis } from "../../redisClient.js";
+import { addXP } from "../../utils/xpManager.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -55,12 +56,18 @@ router.post("/", async (req, res) => {
       if (event.data.signed === false) throw new Error("❌ Vote payment rejected");
     });
 
-    // Mark vote in Redis (valid for 7 days)
-    await redis.set(voteKey, vote, { EX: 60 * 60 * 24 * 7 });
+    // ⏱️ Save vote with timestamp
+    await redis.set(voteKey, JSON.stringify({ vote, timestamp: Date.now() }), { EX: 60 * 60 * 24 * 7 });
 
-    // Also increment count
+    // 📊 Increment vote count
     const countKey = `battle:${battleId}:count:${vote}`;
     await redis.incr(countKey);
+
+    // 📋 Add to set of voters by side
+    await redis.sAdd(`battle:${battleId}:voters:${vote}`, wallet);
+
+    // ⭐ XP bonus for voter
+    await addXP(wallet, 1);
 
     return res.json({
       success: true,

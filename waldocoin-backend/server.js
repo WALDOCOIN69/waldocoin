@@ -17,12 +17,13 @@ import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import tweetsRoute from "./routes/tweets.js";
 import statsRoute from "./routes/userstats.js";
+import daoVoteRoute from "./routes/dao/vote.js"; // 🗳 DAO voting route
 
 // 🔗 Meme Battle system
 import battleStartRoute from "./routes/battle/start.js";
 import battleAcceptRoute from "./routes/battle/accept.js";
-import voteRoute from "./routes/battle/vote.js";
-import payoutRoute from "./routes/battle/payout.js";
+import battleVoteRoute from "./routes/battle/vote.js";
+import battlePayoutRoute from "./routes/battle/payout.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,12 +50,13 @@ const startServer = async () => {
   app.use("/api/mint/confirm", mintConfirmRoute);
   app.use("/api/tweets", tweetsRoute);
   app.use("/api/user-stats", statsRoute);
+  app.use("/api/dao/vote", daoVoteRoute); // 🗳 DAO vote route
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
   app.use("/api/battle/accept", battleAcceptRoute);
-  app.use("/api/battle/vote", voteRoute);
-  app.use("/api/battle/payout", payoutRoute);
+  app.use("/api/battle/vote", battleVoteRoute);
+  app.use("/api/battle/payout", battlePayoutRoute);
 
   // 🧪 Render health check
   app.get("/", (req, res) => {
