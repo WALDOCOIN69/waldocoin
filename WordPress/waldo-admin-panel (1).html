@@ -1,0 +1,282 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WALDO Admin Panel</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      color: #ff3b3b;
+    }
+    .section {
+      border: 2px solid #555;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 25px;
+      background-color: #111;
+    }
+    label, input, textarea, select, button {
+      display: block;
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: none;
+    }
+    button {
+      background-color: #ff3b3b;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ff5e5e;
+    }
+    #presale-timer {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+      color: #00ffcc;
+    }
+.presale-countdown-box {
+  background: #111;
+  color: #fff;
+  padding: 20px;
+  border: 2px dashed #ff0033;
+  border-radius: 16px;
+  font-family: 'Press Start 2P', monospace;
+  max-width: 600px;
+  margin: 20px auto;
+  box-shadow: 0 0 18px rgba(255,0,0,0.5);
+}
+.presale-countdown-title {
+  font-size: 12px;
+  color: #ff0033;
+  margin-bottom: 12px;
+}
+.presale-countdown-label {
+  font-size: 10px;
+  color: #ccc;
+}
+.presale-countdown-input {
+  margin-top: 4px;
+  padding: 8px;
+  width: 100%;
+  font-size: 12px;
+  background: #000;
+  color: #ff0033;
+  border: 1px solid #ff0033;
+  border-radius: 8px;
+}
+.presale-countdown-button {
+  background: #ff0033;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.presale-countdown-status {
+  margin-top: 12px;
+  font-size: 10px;
+  color: #0f0;
+}
+  </style>
+</head>
+<body>
+<div id="presale-timer">
+  Countdown: <span id="presale-countdown">Loading...</span>
+</div>
+
+<div class="presale-countdown-box">
+  <h3 class="presale-countdown-title">⏱️ Set WALDOcoin Presale Countdown</h3>
+  <label class="presale-countdown-label">New End Date (UTC):</label><br>
+  <input type="datetime-local" id="countdownInput" class="presale-countdown-input"><br><br>
+  <button type="button" onclick="submitCountdown()" class="presale-countdown-button">
+    🚀 Update Countdown
+  </button>
+  <div id="countdownStatus" class="presale-countdown-status"></div>
+</div>
+
+  <div class="section">
+    <h2>🗳 DAO: Create Proposal</h2>
+    <input id="proposalTitle" type="text" placeholder="Proposal Title">
+    <textarea id="proposalDescription" placeholder="Proposal Description"></textarea>
+    <input id="proposalDeadline" type="datetime-local">
+    <button type="button" onclick="createProposal()">Create Proposal</button>
+  </div>
+
+  <div class="section">
+    <h2>🧠 DAO: Override Proposal</h2>
+    <input id="overrideId" type="text" placeholder="Proposal ID">
+    <select id="newStatus">
+      <option value="active">Active</option>
+      <option value="expired">Expired</option>
+      <option value="closed">Closed</option>
+    </select>
+    <button type="button" onclick="overrideProposal()">Override Status</button>
+  </div>
+
+  <div class="section">
+    <h2>💀 DAO: Expire / Delete</h2>
+    <input id="expireId" type="text" placeholder="Proposal ID">
+    <button type="button" onclick="expireProposal()">Expire</button>
+    <button type="button" onclick="deleteProposal()">Delete</button>
+  </div>
+
+  <div class="section">
+    <h2>📚 DAO: Voter History &amp; Config</h2>
+    <input id="voterWallet" type="text" placeholder="Wallet address">
+    <button type="button" onclick="lookupVoter()">Lookup Voter History</button>
+    <label>Minimum WALDO to Vote</label>
+    <input id="daoMinWaldo" type="number" value="10000">
+    <button type="button" onclick="updateDaoConfig()">Update Config</button>
+  </div>
+
+  <div class="section">
+    <h2>⚔️ Battle Debug &amp; Backup</h2>
+    <input id="payoutBattleId" type="text" placeholder="Battle ID">
+    <button type="button" onclick="triggerPayout()">Force Payout</button>
+    <button type="button" onclick="createFakeBattle()">Create Fake Battle</button>
+    <button type="button" onclick="viewBattles()">View All Battles</button>
+  </div>
+<script>
+function fetchPresaleCountdown() {
+  fetch("https://waldocoin-backend-api.onrender.com/api/presale/countdown")
+    .then(res => res.json())
+    .then(data => {
+      const span = document.getElementById("presale-countdown");
+      if (data.endDate) {
+        const date = new Date(data.endDate);
+        span.textContent = date.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC";
+      } else {
+        span.textContent = "Not Set";
+      }
+    })
+    .catch(err => {
+      console.error("Failed to load countdown:", err);
+      document.getElementById("presale-countdown").textContent = "Error loading";
+    });
+}
+
+function submitCountdown() {
+  const newDate = document.getElementById("countdownInput").value;
+  const status = document.getElementById("countdownStatus");
+
+  if (!newDate) {
+    status.textContent = "⚠️ Please enter a valid date.";
+    return;
+  }
+
+fetch("https://waldocoin-backend-api.onrender.com/api/presale/set-end-date", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-admin-key": ADMIN_KEY
+  },
+  body: JSON.stringify({ newDate: newDate + ":00Z" })
+})
+
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      status.textContent = "✅ Countdown updated!";
+      fetchPresaleCountdown(); // refresh displayed countdown
+    } else {
+      status.textContent = "❌ Error: " + (data.error || "Unknown error");
+    }
+  })
+  .catch(err => {
+    console.error("Countdown update failed:", err);
+    status.textContent = "❌ Update failed. Check console.";
+  });
+}
+async function postData(url = "", data = {}) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-key": "waldogod2025"
+    },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  console.log(json);
+  alert(JSON.stringify(json, null, 2));
+}
+
+document.addEventListener("DOMContentLoaded", fetchPresaleCountdown);
+      const json = await res.json();
+      console.log(json);
+      alert(JSON.stringify(json, null, 2));
+
+    function createProposal() {
+      postData("/api/dao/create", {
+        title: document.getElementById("proposalTitle").value,
+        description: document.getElementById("proposalDescription").value,
+        deadline: document.getElementById("proposalDeadline").value
+      });
+    }
+
+    function overrideProposal() {
+      postData("/api/dao/override", {
+        proposalId: document.getElementById("overrideId").value,
+        newStatus: document.getElementById("newStatus").value
+      });
+    }
+
+    function expireProposal() {
+      postData("/api/dao/expire", {
+        proposalId: document.getElementById("expireId").value
+      });
+    }
+
+    function deleteProposal() {
+      postData("/api/dao/delete", {
+        proposalId: document.getElementById("expireId").value
+      });
+    }
+
+    function lookupVoter() {
+      postData("/api/dao/voter-history", {
+        wallet: document.getElementById("voterWallet").value
+      });
+    }
+
+    function updateDaoConfig() {
+      postData("/api/dao/config", {
+        minWaldo: parseInt(document.getElementById("daoMinWaldo").value)
+      });
+    }
+
+    function triggerPayout() {
+      postData("/api/battle/payout", {
+        battleId: document.getElementById("payoutBattleId").value
+      });
+    }
+
+    function createFakeBattle() {
+      postData("/api/debug/fake-battle");
+    }
+
+    function viewBattles() {
+      window.open("/api/debug/battles", "_blank");
+
+  const ADMIN_KEY = "<?php echo esc_js(getenv('WALDO_ADMIN_KEY')); ?>";
+
+    }
+  </script>
+</body>
+</html>
