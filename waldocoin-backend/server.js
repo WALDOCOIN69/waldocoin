@@ -34,6 +34,7 @@ import battlePayoutRoute from "./routes/battle/payout.js";
 
 import presaleEndDateRoute from "./routes/presale/end-date.js";
 import presaleSetDateRoute from "./routes/presale/set-end-date.js";
+import presaleCountdownRoute from "./routes/presale/countdown.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,6 +72,7 @@ const startServer = async () => {
   app.use("/api/dao/archive", daoArchiveRoute);
   app.use("/api/presale/end-date", presaleEndDateRoute);
   app.use("/api/presale/set-end-date", presaleSetDateRoute);
+  app.use("/api/presale/countdown", presaleCountdownRoute);
 
 
   // ⚔️ Meme Battle Routes
