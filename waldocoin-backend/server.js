@@ -32,6 +32,10 @@ import battleAcceptRoute from "./routes/battle/accept.js";
 import battleVoteRoute from "./routes/battle/vote.js";
 import battlePayoutRoute from "./routes/battle/payout.js";
 
+import presaleEndDateRoute from "./routes/presale/end-date.js";
+import presaleSetDateRoute from "./routes/presale/set-end-date.js";
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -65,6 +69,9 @@ const startServer = async () => {
   app.use("/api/dao/voter-history", daoVoterHistoryRoute);
   app.use("/api/dao/config", daoConfigRoute);
   app.use("/api/dao/archive", daoArchiveRoute);
+  app.use("/api/presale/end-date", presaleEndDateRoute);
+  app.use("/api/presale/set-end-date", presaleSetDateRoute);
+
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
