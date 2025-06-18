@@ -1,6 +1,6 @@
 // routes/dao/expire.js
 import express from "express";
-import { readData, writeData } from "../../utils/dataStore.js";
+import { readData, writeData } from "../../utils/datastore.js";
 const router = express.Router();
 
 router.post("/", async (req, res) => {

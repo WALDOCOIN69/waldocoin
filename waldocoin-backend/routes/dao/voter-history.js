@@ -1,6 +1,6 @@
 // routes/dao/voter-history.js
 import express from "express";
-import { readData } from "../../utils/dataStore.js";
+import { readData } from "../../utils/datastore.js";
 
 const router = express.Router();
 
