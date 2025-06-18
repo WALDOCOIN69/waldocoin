@@ -17,7 +17,14 @@ import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import tweetsRoute from "./routes/tweets.js";
 import statsRoute from "./routes/userstats.js";
-import daoVoteRoute from "./routes/dao/vote.js"; // 🗳 DAO voting route
+import daoCreateRoute from "./routes/dao/create.js";
+import daoVoteRoute from "./routes/dao/vote.js";
+import daoExpireRoute from "./routes/dao/expire.js";
+import daoDeleteRoute from "./routes/dao/delete.js";
+import daoOverrideRoute from "./routes/dao/override.js";
+import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
+import daoConfigRoute from "./routes/dao/config.js";
+import daoArchiveRoute from "./routes/dao/archive.js";
 
 // 🔗 Meme Battle system
 import battleStartRoute from "./routes/battle/start.js";
@@ -50,7 +57,14 @@ const startServer = async () => {
   app.use("/api/mint/confirm", mintConfirmRoute);
   app.use("/api/tweets", tweetsRoute);
   app.use("/api/user-stats", statsRoute);
-  app.use("/api/dao/vote", daoVoteRoute); // 🗳 DAO vote route
+  app.use("/api/dao/create", daoCreateRoute);
+  app.use("/api/dao/vote", daoVoteRoute);
+  app.use("/api/dao/expire", daoExpireRoute);
+  app.use("/api/dao/delete", daoDeleteRoute);
+  app.use("/api/dao/override", daoOverrideRoute);
+  app.use("/api/dao/voter-history", daoVoterHistoryRoute);
+  app.use("/api/dao/config", daoConfigRoute);
+  app.use("/api/dao/archive", daoArchiveRoute);
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
