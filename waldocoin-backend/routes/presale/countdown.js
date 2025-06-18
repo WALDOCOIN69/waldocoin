@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const endDate = await redis.get("presale:end");
+    const endDate = await redis.get("presale:endDate");
     if (!endDate) {
       return res.status(404).json({ error: "Presale end date not set." });
     }
@@ -18,3 +18,4 @@ router.get("/", async (req, res) => {
 });
 
 export default router;
+

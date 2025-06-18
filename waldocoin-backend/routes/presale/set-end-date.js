@@ -5,6 +5,11 @@ import { redis } from "../../redisClient.js";
 const router = express.Router();
 
 router.post("/", async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.ADMIN_KEY) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
   try {
     const { newDate } = req.body;
     if (!newDate) {
