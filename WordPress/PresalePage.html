@@ -90,6 +90,51 @@
       font-size: 14px;
       color: #666;
     }
+    .telegram-link {
+      color: #e63e3e;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .telegram-link:hover {
+      text-decoration: underline;
+    }
+    .lookup-result {
+      margin-top: 20px;
+    }
+    .wallet-search-btn {
+      padding: 10px 20px;
+      background: #e63e3e;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .wallet-search-btn:hover {
+      background: #45a049;
+    }
+    #walletSearch {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    #lookupResult2 {
+      margin-top: 20px;
+    }
+    #presaleFeed {
+      list-style: none;
+      padding-left: 0;
+      font-weight: bold;
+      color: #333;
+    }
+    #presaleFeedActivity {
+      list-style: none;
+      padding-left: 0;
+      font-weight: bold;
+      color: #333;
+    }
     .meter-wrapper {
         margin-top: 30px;
         text-align: center;
@@ -118,23 +163,6 @@
   </style>
 </head>
 <body>
-  <!-- ⏳ WALDO Presale Countdown Timer -->
-<div style="text-align: center; margin-top: 40px;">
-  <h2 style="color: #e63e3e; font-size: 2em; margin-bottom: 20px;">Presale Ends In</h2>
-  <div id="countdown" style="
-    font-family: 'Courier New', monospace;
-    font-size: 48px;
-    color: red;
-    background: black;
-    padding: 20px 40px;
-    border: 3px solid red;
-    border-radius: 10px;
-    display: inline-block;
-    box-shadow: 0 0 15px red;
-  ">
-    00:00:00:00
-  </div>
-</div>
   <div class="container">
     <header>
       <h1>🚀 Welcome to the WaldoCoin Presale!</h1>
@@ -147,11 +175,10 @@
           <div id="progressBar" class="progress-bar"></div>
         </div>
       </section>
-      
     <section>
       <label for="xrpAmount">Enter XRP amount:</label>
       <input id="xrpAmount" type="number" name="xrpAmount" min="10" max="100" step="10" value="10">
-      <button onclick="calculateWaldo()">Calculate WALDO</button>
+      <button type="button" onclick="calculateWaldo()">Calculate WALDO</button>
       <p id="waldoAmount" class="output">You will receive 1,000,000 WaldoCoins.</p>
 
       <p>Please send your XRP to:</p>
@@ -163,7 +190,7 @@
       <label for="userEmail">Optional Email (for confirmation):</label>
       <input id="userEmail" type="email" name="userEmail" placeholder="you@example.com">
 
-      <button id="confirmPurchaseBtn">Confirm Purchase</button>
+      <button id="confirmPurchaseBtn" type="button">Confirm Purchase</button>
     </section>
 
     <section>
@@ -171,15 +198,14 @@
       <h2>(How many WALDO you get)</h2>
       <table>
         <thead>
-          <tr><th>XRP</th><th>WaldoCoins</th></tr>
+          <tr><th scope="col">XRP</th><th scope="col">WaldoCoins</th></tr>
         </thead>
         <tbody>
           <tr><td>10 XRP</td><td>1,000,000 WALDO</td></tr>
           <tr><td>20 XRP</td><td>2,000,000 WALDO</td></tr>
-          <tr><td>30 XRP</td><td>3,000,000 WALDO</td></tr>
-          <tr><td>40 XRP</td><td>4,000,000 WALDO</td></tr>
-          <tr><td>50 XRP</td><td>5,000,000 WALDO</td></tr>
-          <tr><td>60 XRP</td><td>6,000,000 WALDO</td></tr>
+      <tr><td>30 XRP</td><td>3,000,000 WALDO</td></tr>
+      <tr><td>40 XRP</td><td>4,000,000 WALDO</td></tr>
+      <tr><td>60 XRP</td><td>6,000,000 WALDO</td></tr>
           <tr><td>70 XRP</td><td>7,000,000 WALDO</td></tr>
           <tr><td>80 XRP</td><td>8,000,000 WALDO + <span class="bonus">2,000,000 Bonus = 10,000,000 Total</span></td></tr>
           <tr><td>90 XRP</td><td>9,000,000 WALDO + <span class="bonus">3,000,000 Bonus = 12,000,000 Total</span></td></tr>
@@ -187,23 +213,19 @@
         </tbody>
       </table>
     </section>
+<section>
+  <h2>🔍 Wallet Lookup</h2>
+  <div id="lookupResult2"></div>
+  <input type="text" id="walletSearch" placeholder="Paste your wallet address...">
+  <button type="button" class="wallet-search-btn" onclick="lookupWallet()">Search Wallet</button>
+  <ul id="presaleFeedActivity"></ul>
+  <div id="lookupResult"></div>
+</section>
 
-    <section>
-      <h2>🔍 Wallet Lookup</h2>
-      <p>Enter your XRP wallet address to check your WALDOcoin presale status:</p>
-      <input type="text" id="walletSearch" placeholder="Paste your wallet address..." style="width: 100%; padding: 10px; margin-bottom: 10px;" />
-      <button onclick="lookupWallet()" style="padding: 10px 20px; background: red; color: white; border: none; border-radius: 5px;">Search</button>
-      <div id="lookupResult" style="margin-top: 20px;"></div>
-    </section>
-
-    <section>
-      <h2>🎉 Live WALDOcoin Presale Activity</h2>
-      <ul id="presaleFeed" style="list-style: none; padding-left: 0; font-weight: bold; color: #333;"></ul>
-    </section>
 
     <footer>
-      <p>Need help? Email <strong>waldocoin@support.live</strong> or hop in our 
-        <a href="https://t.me/WALDOmeme" target="_blank" style="color:#e63e3e; font-weight:bold;">Telegram</a>
+      <p>Need help? Email <strong>waldocoin@support.live</strong>
+        <a href="https://t.me/WALDOmeme" target="_blank" class="telegram-link">Telegram</a>
       </p>
     </footer>
   </div>

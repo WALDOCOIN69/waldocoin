@@ -1,0 +1,58 @@
+<!-- 🧨 WALDOcoin Presale countdown -->
+<style>
+.digital-clock-box {
+  background-color: #000;
+  border: 3px solid #ff0033;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  margin: 20px auto;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
+  max-width: 600px;
+  font-family: 'Courier New', monospace;
+}
+
+.digital-label {
+  font-size: 16px;
+  color: #ff0033;
+  margin-bottom: 10px;
+}
+
+.digital-display {
+  font-size: 32px;
+  color: #00ffcc;
+  background-color: #111;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 2px solid #00ffcc;
+  display: inline-block;
+  letter-spacing: 2px;
+}
+</style>
+
+<div id="presale-timer" class="digital-clock-box">
+  <div class="digital-label">⏱ WALDO Presale Ends In:</div>
+  <div id="presale-countdown" class="digital-display">Loading...</div>
+</div>
+
+<script>
+  function updateCountdown() {
+    fetch("https://waldocoin-backend-api.onrender.com/api/presale/countdown")
+      .then(res => res.json())
+      .then(data => {
+        if (data.endDate) {
+          const date = new Date(data.endDate);
+          const display = document.getElementById("presale-countdown");
+          display.textContent = date.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC";
+        } else {
+          document.getElementById("presale-countdown").textContent = "Not Set";
+        }
+      })
+      .catch(err => {
+        console.error("Countdown fetch error:", err);
+        document.getElementById("presale-countdown").textContent = "Error loading";
+      });
+  }
+
+  document.addEventListener("DOMContentLoaded", updateCountdown);
+</script>

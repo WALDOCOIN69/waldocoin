@@ -1,8 +1,23 @@
-<!--presale button-->
+<!-- 🚀 WALDO Presale Button -->
 <div style="text-align: center; margin-top: 40px;">
   <button 
+    id="presaleJoinBtn"
     onclick="window.location.href='/presale'"
-    style="background: #25c2a0; color: black; font-weight: bold; font-size: 20px; padding: 16px 36px; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 0 15px #25c2a0; transition: transform 0.2s ease;">
+    style="background: #45a049; color: black; font-weight: bold; font-size: 20px; padding: 16px 36px; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 0 15px #25c2a0; transition: all 0.3s ease;">
     🚀 Join the WALDO Presale Now!
   </button>
 </div>
+
+<script>
+  const btn = document.getElementById("presaleJoinBtn");
+
+  btn.addEventListener("mouseover", function () {
+    this.style.background = "#e63e3e"; // 🔴 Red on hover
+    this.style.boxShadow = "0 0 15px #e63e3e";
+  });
+
+  btn.addEventListener("mouseout", function () {
+    this.style.background = "#45a049"; // 🟢 Green default
+    this.style.boxShadow = "0 0 15px #45a049";
+  });
+</script>

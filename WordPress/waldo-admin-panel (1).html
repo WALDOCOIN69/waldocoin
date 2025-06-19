@@ -1,101 +1,258 @@
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WALDO Admin Panel</title>
   <style>
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    h2 {
-      color: #ff3b3b;
-    }
-    .section {
-      border: 2px solid #555;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 25px;
-      background-color: #111;
-    }
-    label, input, textarea, select, button {
-      display: block;
-      margin: 5px 0;
-      font-size: 14px;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      border: none;
-    }
-    button {
-      background-color: #ff3b3b;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #ff5e5e;
-    }
-    #presale-timer {
-      font-size: 1.5em;
-      margin-bottom: 10px;
-      color: #00ffcc;
-    }
-.presale-countdown-box {
-  background: #111;
-  color: #fff;
-  padding: 20px;
-  border: 2px dashed #ff0033;
-  border-radius: 16px;
-  font-family: 'Press Start 2P', monospace;
-  max-width: 600px;
-  margin: 20px auto;
-  box-shadow: 0 0 18px rgba(255,0,0,0.5);
+  body {
+    background-color: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+
+  /* 🔒 Force solid black cards + blocks */
+  .card, .section, .wp-block, .wp-block-group, .wp-block-cover, .wp-block-column, .wp-block-html {
+    background-color: #000 !important;
+    color: #fff !important;
+    border: none !important;
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.15) !important;
+    backdrop-filter: none !important;
+    opacity: 1 !important;
+  }
+
+  .card * {
+    background-color: inherit !important;
+  }
+
+  .wp-block-cover__inner-container,
+  .wp-block-group__inner-container {
+    background: #000 !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+  }
+
+  h2 {
+    color: #ff3b3b;
+  }
+
+  .section {
+    border: 2px solid #555;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 25px;
+    background-color: #000 !important;
+  }
+
+  label, input, textarea, select, button {
+    display: block;
+    margin: 5px 0;
+    font-size: 14px;
+  }
+
+  /* 🧼 General Input Defaults (Dark Theme) */
+  input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+    background-color: #111;
+    color: #ccc;
+  }
+
+  /* ✅ Force white background for filter/search inputs */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="text"].airdrop-filter,
+  input.airdrop-filter {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #ff3b3b !important;
+    border-radius: 6px !important;
+    padding: 10px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    box-shadow: none !important;
+  }
+
+  button {
+    background-color: #ff3b3b;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #ff5e5e;
+  }
+
+  #presale-timer {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    color: #00ffcc;
+  }
+
+  .presale-countdown-box {
+    background: #000 !important;
+    color: #fff;
+    padding: 20px;
+    border: 2px dashed #ff0033;
+    border-radius: 16px;
+    font-family: 'Press Start 2P', monospace;
+    max-width: 600px;
+    margin: 20px auto;
+    box-shadow: 0 0 18px rgba(255,0,0,0.5);
+  }
+
+  .presale-countdown-title {
+    font-size: 12px;
+    color: #ff0033;
+    margin-bottom: 12px;
+  }
+
+  .presale-countdown-label {
+    font-size: 10px;
+    color: #ccc;
+  }
+
+  .presale-countdown-input {
+    margin-top: 4px;
+    padding: 8px;
+    width: 100%;
+    font-size: 12px;
+    background: #000;
+    color: #ff0033;
+    border: 1px solid #ff0033;
+    border-radius: 8px;
+  }
+
+  .presale-countdown-button {
+    background: #ff0033;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .presale-countdown-status {
+    margin-top: 12px;
+    font-size: 10px;
+    color: #0f0;
+  }
+
+  table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+    white-space: nowrap;
+  }
+
+  table, th, td {
+    background-color: #000 !important;
+    color: #fff;
+    border: 1px solid #333;
+  }
+
+  .buyer-search-container {
+    margin: 10px 0;
+  }
+
+  .buyer-search-input {
+    width: 100%;
+    padding: 8px;
+    background: #111;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 5px;
+  }
+  /* 🛑 Reset All Inputs to Match Visible Theme */
+input,
+textarea,
+select {
+  background-color: #000 !important;
+  color: #fff !important;
+  border: 1px solid #ff3b3b !important;
+  border-radius: 6px !important;
+  padding: 10px !important;
+  box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
 }
-.presale-countdown-title {
-  font-size: 12px;
-  color: #ff0033;
-  margin-bottom: 12px;
+
+/* ✅ Bonus: Add red border on focus for visual cue */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  border-color: #ff5e5e !important;
+  box-shadow: 0 0 6px #ff5e5e;
 }
-.presale-countdown-label {
-  font-size: 10px;
-  color: #ccc;
-}
-.presale-countdown-input {
-  margin-top: 4px;
-  padding: 8px;
-  width: 100%;
-  font-size: 12px;
-  background: #000;
-  color: #ff0033;
-  border: 1px solid #ff0033;
-  border-radius: 8px;
-}
-.presale-countdown-button {
-  background: #ff0033;
-  color: #fff;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 12px;
-}
-.presale-countdown-status {
-  margin-top: 12px;
-  font-size: 10px;
-  color: #0f0;
-}
-  </style>
-</head>
-<body>
+
+</style>
+
+
+<body style="background:#000 !important; color:#fff !important;">
+<div style="background:#000; padding:30px; border-radius:20px;"></div>
+
+<!-- 📊 WALDO Presale Summary -->
+<div class="card">
+  <h2>📊 Presale Summary</h2>
+  <button type="button" onclick="downloadCSV()">⬇️ Download Presale CSV</button>
+  <button type="button" onclick="loadBuyers()">🔄 Refresh Buyer List</button>
+  <p>
+    <strong>WALDO Sold:</strong> <span id="totalWaldo">...</span><br>
+  <input type="text" id="buyerSearchTop" placeholder="Start typing..." oninput="filterBuyers()" class="buyer-search-input">
+  </p>
+  <div class="margin-10">
+    <label for="startDate">Filter by Date:</label><br>
+    <input type="date" id="startDate" class="date-input">
+    <input type="date" id="endDate" class="date-input">
+  <div class="buyer-search-container">
+  <label for="buyerSearch">🔍 Search Wallet / Email / Amount:</label>
+  <input type="text" id="buyerSearch" placeholder="Start typing..." oninput="filterBuyers()" class="buyer-search-input">
+</div>
+</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Wallet</th>
+        <th scope="col">XRP</th>
+        <th scope="col">WALDO</th>
+        <th scope="col">Email</th>
+        <th scope="col">Timestamp</th>
+        <th scope="col">WALDO Balance</th>
+      </tr>
+    </thead>
+    <tbody id="buyerRows">
+      <tr><td colspan="6">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 🎁 WALDO Airdrop History -->
+<div class="card">
+  <h2>🎁 Airdrop History</h2>
+  <input type="date" id="historyStart" class="date-input">
+  <input type="date" id="historyEnd" class="date-input">
+  <button type="button" onclick="downloadAirdropHistoryCSV()" class="export-history-btn">Export History CSV</button>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Wallet</th>
+        <th scope="col">Amount</th>
+        <th scope="col">Date</th>
+      </tr>
+    </thead>
+    <tbody id="airdropHistoryRows">
+      <tr><td colspan="3">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
 <div id="presale-timer">
   Countdown: <span id="presale-countdown">Loading...</span>
 </div>
@@ -152,131 +309,339 @@
     <button type="button" onclick="createFakeBattle()">Create Fake Battle</button>
     <button type="button" onclick="viewBattles()">View All Battles</button>
   </div>
+
 <script>
-function fetchPresaleCountdown() {
-  fetch("https://waldocoin-backend-api.onrender.com/api/presale/countdown")
-    .then(res => res.json())
-    .then(data => {
-      const span = document.getElementById("presale-countdown");
-      if (data.endDate) {
-        const date = new Date(data.endDate);
-        span.textContent = date.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC";
-      } else {
-        span.textContent = "Not Set";
-      }
-    })
-    .catch(err => {
-      console.error("Failed to load countdown:", err);
-      document.getElementById("presale-countdown").textContent = "Error loading";
-    });
+const base = "https://waldocoin-backend-api.onrender.com";
+let allBuyers = [];
+let allHistory = [];
+function renderBuyers(list) {
+  const tbody = document.getElementById("buyerRows");
+  tbody.innerHTML = list.length
+    ? list.map((b, i) => `
+      <tr>
+        <td>${b.wallet}</td>
+        <td>${b.amountXRP}</td>
+        <td>${b.tokens}</td>
+        <td>${b.email || "-"}</td>
+        <td>${new Date(b.timestamp).toLocaleString()}</td>
+        <td id="bal-${i}">Loading...</td>
+      </tr>
+    `).join("")
+    : "<tr><td colspan='6'>No buyers found.</td></tr>";
+
+  list.forEach(async (b, i) => {
+    const balance = await fetchWaldoBalance(b.wallet);
+    document.getElementById(`bal-${i}`).innerText = balance;
+  });
 }
 
-function submitCountdown() {
-  const newDate = document.getElementById("countdownInput").value;
-  const status = document.getElementById("countdownStatus");
+// ✅ Move this outside renderBuyers
+function filterBuyers() {
+  const term = document.getElementById("buyerSearch").value.trim().toLowerCase();
+  const filtered = allBuyers.filter(b =>
+    b.wallet.toLowerCase().includes(term) ||
+    (b.email || "").toLowerCase().includes(term) ||
+    (b.amountXRP + "").includes(term) ||
+    (b.tokens + "").includes(term)
+  );
+  renderBuyers(filtered);
+}
 
-  if (!newDate) {
-    status.textContent = "⚠️ Please enter a valid date.";
-    return;
+  list.forEach(async (b, i) => {
+    const balance = await fetchWaldoBalance(b.wallet);
+    document.getElementById(`bal-${i}`).innerText = balance;
+  });
+
+async function fetchWaldoBalance(wallet) {
+  try {
+    const res = await fetch("https://s1.ripple.com:51234", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method: "account_lines", params: [{ account: wallet }] })
+    });
+    const data = await res.json();
+    const waldo = data.result.lines.find(l => l.currency === "WALDO" && l.account === "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F");
+    return waldo ? parseFloat(waldo.balance).toLocaleString() : "0";
+  } catch (err) {
+    console.error("Balance fetch failed:", err);
+    return "—";
   }
+}
+
+function downloadCSV() {
+  window.open(`${base}/admin/export/presale`, "_blank");
+}
+
+function downloadCSVByDate() {
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  if (!start || !end) return alert("Select both start and end dates.");
+
+  fetch(`${base}/admin/export/presale?start=${start}&end=${end}`)
+    .then(res => res.blob())
+    .then(blob => {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `waldo_presale_${start}_to_${end}.csv`;
+      link.click();
+    })
+    .catch(err => alert("CSV download failed: " + err.message));
+}
+
+// Totals
+function getTotals() {
+  const totalWaldo = allBuyers.reduce((sum, b) => sum + (b.tokens || 0), 0);
+  const totalXrp = allBuyers.reduce((sum, b) => sum + (b.amountXRP || 0), 0);
+  document.getElementById("totalWaldo").textContent = totalWaldo.toLocaleString();
+  document.getElementById("totalXrp").textContent = totalXrp.toLocaleString();
+}
+
+// Airdrop History
+async function loadAirdropHistory() {
+  try {
+    const res = await fetch(`${base}/admin/airdrops`);
+    allHistory = await res.json();
+    renderHistory(allHistory);
+  } catch (err) {
+    console.error("Airdrop history load failed", err);
+  }
+}
+
+function renderHistory(list) {
+  const tbody = document.getElementById("airdropHistoryRows");
+  tbody.innerHTML = list.length
+    ? list.map(e => `
+      <tr>
+        <td>${e.wallet}</td>
+        <td>${e.amount}</td>
+        <td>${new Date(e.timestamp).toLocaleString()}</td>
+      </tr>
+    `).join("")
+    : "<tr><td colspan='3'>No airdrops yet.</td></tr>";
+}
+
+function downloadAirdropHistoryCSV() {
+  const start = document.getElementById("historyStart").value;
+  const end = document.getElementById("historyEnd").value;
+
+  const filtered = allHistory.filter(entry => {
+    const ts = new Date(entry.timestamp);
+    if (start && new Date(start) > ts) return false;
+    if (end && new Date(end) < ts) return false;
+    return true;
+  });
+
+  const csv = "Wallet,Amount,Timestamp\n" + filtered.map(e => `${e.wallet},${e.amount},${e.timestamp}`).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `waldo_airdrop_history_${Date.now()}.csv`;
+  link.click();
+}
+
+  // Initialize countdown when DOM loads
+document.addEventListener("DOMContentLoaded", () => {
+  loadBuyers();
+  loadAirdropHistory();
+  fetchPresaleCountdown();
+});
+
+console.log("🔑 ADMIN_KEY:", typeof ADMIN_KEY !== 'undefined' ? ADMIN_KEY : 'Not found');
 
 fetch("https://waldocoin-backend-api.onrender.com/api/presale/set-end-date", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "x-admin-key": ADMIN_KEY
+    "x-admin-key": ADMIN_KEY,
   },
-  body: JSON.stringify({ newDate: newDate + ":00Z" })
+  body: JSON.stringify({ endDate: "2025-07-01T23:59:59Z" }),
 })
+.then(res => res.json())
+.then(console.log)
+.catch(console.error);
 
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      status.textContent = "✅ Countdown updated!";
-      fetchPresaleCountdown(); // refresh displayed countdown
-    } else {
-      status.textContent = "❌ Error: " + (data.error || "Unknown error");
+  function fetchPresaleCountdown() {
+    fetch("https://waldocoin-backend-api.onrender.com/api/presale/countdown")
+      .then(res => res.json())
+      .then(data => {
+        const span = document.getElementById("presale-countdown");
+        if (data.endDate) {
+          const date = new Date(data.endDate);
+          span.textContent = date.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC";
+        } else {
+          span.textContent = "Not Set";
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load countdown:", err);
+        document.getElementById("presale-countdown").textContent = "Error loading";
+      });
+  }
+
+  function submitCountdown() {
+    const newDate = document.getElementById("countdownInput").value;
+    const status = document.getElementById("countdownStatus");
+
+    if (!newDate) {
+      status.textContent = "⚠️ Please enter a valid date.";
+      return;
     }
-  })
-  .catch(err => {
-    console.error("Countdown update failed:", err);
-    status.textContent = "❌ Update failed. Check console.";
-  });
-}
-async function postData(url = "", data = {}) {
-  const res = await fetch(url, {
+
+    fetch("https://waldocoin-backend-api.onrender.com/api/presale/set-end-date", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": ADMIN_KEY
+      },
+      body: JSON.stringify({ newDate: newDate + ":00Z" })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          status.textContent = "✅ Countdown updated!";
+          fetchPresaleCountdown();
+        } else {
+          status.textContent = "❌ Error: " + (data.error || "Unknown error");
+        }
+      })
+      .catch(err => {
+        console.error("Countdown update failed:", err);
+        status.textContent = "❌ Update failed. Check console.";
+      });
+  }
+
+  async function postData(url = "", data = {}) {
+  const fullUrl = url.startsWith("/api/")
+    ? base + url
+    : url;
+
+  const res = await fetch(fullUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-admin-key": "waldogod2025"
+      "x-admin-key": ADMIN_KEY
     },
     body: JSON.stringify(data)
   });
+
   const json = await res.json();
   console.log(json);
   alert(JSON.stringify(json, null, 2));
 }
 
-document.addEventListener("DOMContentLoaded", fetchPresaleCountdown);
-      const json = await res.json();
-      console.log(json);
-      alert(JSON.stringify(json, null, 2));
+  function createProposal() {
+    postData("/api/dao/create", {
+      title: document.getElementById("proposalTitle").value,
+      description: document.getElementById("proposalDescription").value,
+      deadline: document.getElementById("proposalDeadline").value
+    });
+  }
 
-    function createProposal() {
-      postData("/api/dao/create", {
-        title: document.getElementById("proposalTitle").value,
-        description: document.getElementById("proposalDescription").value,
-        deadline: document.getElementById("proposalDeadline").value
-      });
-    }
+  function overrideProposal() {
+    postData("/api/dao/override", {
+      proposalId: document.getElementById("overrideId").value,
+      newStatus: document.getElementById("newStatus").value
+    });
+  }
 
-    function overrideProposal() {
-      postData("/api/dao/override", {
-        proposalId: document.getElementById("overrideId").value,
-        newStatus: document.getElementById("newStatus").value
-      });
-    }
+  function expireProposal() {
+    postData("/api/dao/expire", {
+      proposalId: document.getElementById("expireId").value
+    });
+  }
 
-    function expireProposal() {
-      postData("/api/dao/expire", {
-        proposalId: document.getElementById("expireId").value
-      });
-    }
+  function deleteProposal() {
+    postData("/api/dao/delete", {
+      proposalId: document.getElementById("expireId").value
+    });
+  }
 
-    function deleteProposal() {
-      postData("/api/dao/delete", {
-        proposalId: document.getElementById("expireId").value
-      });
-    }
+  function lookupVoter() {
+    postData("/api/dao/voter-history", {
+      wallet: document.getElementById("voterWallet").value
+    });
+  }
 
-    function lookupVoter() {
-      postData("/api/dao/voter-history", {
-        wallet: document.getElementById("voterWallet").value
-      });
-    }
+  function updateDaoConfig() {
+    postData("/api/dao/config", {
+      minWaldo: parseInt(document.getElementById("daoMinWaldo").value)
+    });
+  }
 
-    function updateDaoConfig() {
-      postData("/api/dao/config", {
-        minWaldo: parseInt(document.getElementById("daoMinWaldo").value)
-      });
-    }
+  function triggerPayout() {
+    postData("/api/battle/payout", {
+      battleId: document.getElementById("payoutBattleId").value
+    });
+  }
 
-    function triggerPayout() {
-      postData("/api/battle/payout", {
-        battleId: document.getElementById("payoutBattleId").value
-      });
-    }
+  function createFakeBattle() {
+    postData("/api/debug/fake-battle");
+  }
 
-    function createFakeBattle() {
-      postData("/api/debug/fake-battle");
-    }
+  function viewBattles() {
+    window.open("/api/debug/battles", "_blank");
+  }
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Your existing init logic:
+  loadBuyers();
+  loadAirdropHistory();
+  fetchPresaleCountdown();
 
-    function viewBattles() {
-      window.open("/api/debug/battles", "_blank");
+  // ✅ Wrap button handlers here:
+  window.triggerPayout = function () {
+    postData("/api/battle/payout", {
+      battleId: document.getElementById("payoutBattleId").value
+    });
+  };
 
-  const ADMIN_KEY = "<?php echo esc_js(getenv('WALDO_ADMIN_KEY')); ?>";
+  window.createFakeBattle = function () {
+    postData("/api/debug/fake-battle");
+  };
 
-    }
-  </script>
-</body>
-</html>
+  window.viewBattles = function () {
+    window.open("/api/debug/battles", "_blank");
+  };
+
+  window.createProposal = function () {
+    postData("/api/dao/create", {
+      title: document.getElementById("proposalTitle").value,
+      description: document.getElementById("proposalDescription").value,
+      deadline: document.getElementById("proposalDeadline").value
+    });
+  };
+
+  window.overrideProposal = function () {
+    postData("/api/dao/override", {
+      proposalId: document.getElementById("overrideId").value,
+      newStatus: document.getElementById("newStatus").value
+    });
+  };
+
+  window.expireProposal = function () {
+    postData("/api/dao/expire", {
+      proposalId: document.getElementById("expireId").value
+    });
+  };
+
+  window.deleteProposal = function () {
+    postData("/api/dao/delete", {
+      proposalId: document.getElementById("expireId").value
+    });
+  };
+
+  window.lookupVoter = function () {
+    postData("/api/dao/voter-history", {
+      wallet: document.getElementById("voterWallet").value
+    });
+  };
+
+  window.updateDaoConfig = function () {
+    postData("/api/dao/config", {
+      minWaldo: parseInt(document.getElementById("daoMinWaldo").value)
+    });
+  };
+});
+</script>
+
