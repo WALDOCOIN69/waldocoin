@@ -1,10 +1,12 @@
 import express from "express";
-import { Xumm } from "xumm-sdk";
+import pkg from "xumm-sdk";
+const { Xumm } = pkg;
 
 const router = express.Router();
 
 // ✅ Initialize XUMM
 const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+
 
 // ✅ Health check
 router.get("/ping", (_, res) => {
