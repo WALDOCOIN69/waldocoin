@@ -1,17 +1,15 @@
+// routes/login.js
 import express from "express";
-import Xumm from "xumm-sdk";
+import pkg from "xumm-sdk";
+const { Xumm } = pkg;
 
 const router = express.Router();
-
-// ✅ Initialize XUMM properly for CommonJS default export
 const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-// ✅ Health check
 router.get("/ping", (_, res) => {
   res.json({ status: "✅ Login route is alive" });
 });
 
-// ✅ Login payload with QR + UUID
 router.get("/", async (req, res) => {
   try {
     const payload = await xumm.payload.create({
