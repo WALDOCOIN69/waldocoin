@@ -1,7 +1,7 @@
 // routes/admin/trustline.js
 import express from "express";
 import dotenv from "dotenv";
-import { xummClient } from "../../utils/xummClient.js"; // ✅ Named import
+import { xummClient } from "../../utils/xummClient.js";
 
 dotenv.config();
 
@@ -25,10 +25,8 @@ router.post("/", async (req, res) => {
           currency: "WLO",
           issuer: process.env.WALDO_ISSUER,
           value: "1000000000"
-        },
-        Destination: wallet
-      },
-      user_token: true
+        }
+      }
     });
 
     res.json({ success: true, uuid: payload.uuid, next: payload.next });
