@@ -1,7 +1,7 @@
 // routes/battle/payout.js
 import express from "express";
 import { redis } from "../../redisClient.js";
-import { xummClient } from "../../utils/xummClient.js"; // ✅ fixed import
+import xummClient from "../../utils/xummClient.js"; // ✅ fixed import
 import { calculateXpReward } from "../../utils/xp.js";
 import { addXP } from "../../utils/xpManager.js";
 import dayjs from "dayjs";
