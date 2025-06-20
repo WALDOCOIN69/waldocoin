@@ -16,7 +16,7 @@ import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import loginStatusRoute from "./routes/login/status.js";
 import tweetsRoute from "./routes/tweets.js";
-import userStatsRoute from "./routes/userStats.js"; // ✅ Correct one import
+import userStatsRoute from "./routes/userstats.js"; // ✅ Correct one import
 import daoCreateRoute from "./routes/dao/create.js";
 import daoVoteRoute from "./routes/dao/vote.js";
 import daoExpireRoute from "./routes/dao/expire.js";
@@ -62,7 +62,7 @@ const startServer = async () => {
   app.use("/api/mint", mintRoute);
   app.use("/api/mint/confirm", mintConfirmRoute);
   app.use("/api/tweets", tweetsRoute);
-  app.use("/api/user-stats", userStatsRoute); // ✅ fixed path and variable
+  app.use("/api/userstats", userStatsRoute); // ✅ fixed path and variable
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);
   app.use("/api/dao/expire", daoExpireRoute);
