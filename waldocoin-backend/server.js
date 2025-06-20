@@ -17,7 +17,7 @@ import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import loginStatusRoute from "./routes/login/status.js";
 import tweetsRoute from "./routes/tweets.js";
-import statsRoute from "./routes/userstats.js";
+import userStatsRoute from "./routes/userStats.js";
 import daoCreateRoute from "./routes/dao/create.js";
 import daoVoteRoute from "./routes/dao/vote.js";
 import daoExpireRoute from "./routes/dao/expire.js";
@@ -84,6 +84,7 @@ const startServer = async () => {
   app.use("/api/battle/accept", battleAcceptRoute);
   app.use("/api/battle/vote", battleVoteRoute);
   app.use("/api/battle/payout", battlePayoutRoute);
+  app.use("/api/userStats", userStatsRoute);
 
   // 🧪 Render health check
   app.get("/", (req, res) => {
