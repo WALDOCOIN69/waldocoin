@@ -26,6 +26,8 @@ import daoOverrideRoute from "./routes/dao/override.js";
 import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
 import daoConfigRoute from "./routes/dao/config.js";
 import daoArchiveRoute from "./routes/dao/archive.js";
+import trustlineCheckRoute from "./routes/login/trustline-check.js";
+
 
 // 🔗 Meme Battle system
 import battleStartRoute from "./routes/battle/start.js";
@@ -75,6 +77,7 @@ const startServer = async () => {
   app.use("/api/presale/set-end-date", presaleSetDateRoute);
   app.use("/api/presale/countdown", presaleCountdownRoute);
   app.use("/api/login/status", loginStatusRoute);
+  app.use("/api/login/trustline-check", trustlineCheckRoute);
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
