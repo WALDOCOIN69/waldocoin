@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WaldoCoin Presale</title>
   <style>
     body {
@@ -230,195 +230,166 @@
     </footer>
   </div>
   <script>
-    const baseURL = "https://waldocoin-backend.onrender.com";
-    let countdownTarget = null;
-    let countdownInterval = null;
-    let presaleEnded = false;
-    const hardCap = 75000000; // 75M WALDO
-    const endDate = new Date("2025-06-01T00:00:00Z");
-  
-    async function fetchCountdownTarget() {
-      const res = await fetch(`${baseURL}/api/presale/end-date`);
-      const data = await res.json();
-      if (data.endDate) {
-        countdownTarget = new Date(data.endDate).getTime();
-        startCountdownLoop();
-      } else {
-        document.getElementById("countdown").textContent = "⏳ Countdown not started.";
+  const baseURL = "https://waldocoin-backend.onrender.com";
+  const hardCap = 75000000;
+  const endDate = new Date("2025-06-01T00:00:00Z");
+  let countdownTarget = endDate.getTime();
+  let countdownInterval = null;
+  let presaleEnded = false;
+
+  function startCountdownLoop() {
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+      const now = new Date().getTime();
+      const diff = countdownTarget - now;
+      if (diff <= 0) {
+        clearInterval(countdownInterval);
+        document.getElementById("countdown").textContent = "PRESALE ENDED";
+        disablePresaleForm();
+        return;
       }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      document.getElementById("countdown").textContent =
+        `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  function calculateWaldo() {
+    const xrp = parseInt(document.getElementById("xrpAmount").value, 10);
+    const baseWaldo = xrp * 100000;
+    let bonus = 0;
+    if (xrp === 80) bonus = 2000000;
+    else if (xrp === 90) bonus = 3000000;
+    else if (xrp === 100) bonus = 5000000;
+    const totalWaldo = baseWaldo + bonus;
+    document.getElementById("waldoAmount").innerText =
+      `You will receive ${totalWaldo.toLocaleString()} WaldoCoins.`;
+  }
+
+  document.getElementById("confirmPurchaseBtn").addEventListener("click", async () => {
+    const txId = document.getElementById("txId").value.trim();
+    const email = document.getElementById("userEmail").value.trim();
+    const btn = document.getElementById("confirmPurchaseBtn");
+    if (!txId) {
+      alert("Please enter a transaction ID.");
+      return;
     }
-  
-    function startCountdownLoop() {
-      clearInterval(countdownInterval);
-      countdownInterval = setInterval(() => {
-        const now = new Date().getTime();
-        const diff = countdownTarget - now;
-        if (diff <= 0) {
-          clearInterval(countdownInterval);
-          document.getElementById("countdown").textContent = "PRESALE ENDED";
-          document.getElementById("countdown").style.color = "gray";
-          document.getElementById("countdown").style.borderColor = "gray";
-          document.getElementById("countdown").style.boxShadow = "none";
-          disablePresaleForm();
-          return;
-        }
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        document.getElementById("countdown").textContent = `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-      }, 1000);
+    if (presaleEnded) {
+      alert("Presale has ended. Cannot confirm purchase.");
+      return;
     }
-  
-    document.addEventListener("DOMContentLoaded", fetchCountdownTarget);
-    document.addEventListener("DOMContentLoaded", () => {
+    btn.disabled = true;
+    btn.innerText = "Verifying...";
+    try {
+      const res = await fetch(`${baseURL}/api/presale/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ txId, email })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ Purchase Verified! You bought ${data.tokens.toLocaleString()} WALDO`);
+        document.getElementById("waldoAmount").innerText = "✅ Waiting for WALDO to arrive in your wallet...";
+      } else {
+        alert(`❌ ${data.error || "Verification failed."}`);
+      }
+    } catch (err) {
+      alert("❌ Network error while verifying.");
+    }
+    btn.disabled = false;
+    btn.innerText = "Confirm Purchase";
+  });
+
+  async function lookupWallet() {
+    const address = document.getElementById("walletSearch").value.trim();
+    const resultDiv = document.getElementById("lookupResult");
+    if (!address || !address.startsWith("r")) {
+      resultDiv.innerHTML = "<p style='color:red;'>Please enter a valid XRP wallet address.</p>";
+      return;
+    }
+    resultDiv.innerHTML = "🔎 Searching WALDO ledger...";
+    try {
+      const response = await fetch(`${baseURL}/api/presale/lookup?wallet=${address}`);
+      const data = await response.json();
+      if (data && data.amount) {
+        resultDiv.innerHTML = `
+          <p><strong>Wallet:</strong> ${address}</p>
+          <p><strong>Total Contributed:</strong> ${data.amount} XRP</p>
+          <p><strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+          ${data.email ? `<p><strong>Email:</strong> ${data.email}</p>` : ""}
+          <p><strong>🎁 Bonus Tier:</strong> ${data.bonusTier || "N/A"}</p>
+        `;
+      } else {
+        resultDiv.innerHTML = "<p>No presale record found for this wallet.</p>";
+      }
+    } catch (err) {
+      console.error(err);
+      resultDiv.innerHTML = "<p style='color:red;'>Error retrieving data. Try again later.</p>";
+    }
+  }
+
+  async function loadPresaleFeed() {
+    try {
+      const res = await fetch(`${baseURL}/api/presale/feed`);
+      const data = await res.json();
+      const feed = document.getElementById("presaleFeed");
+      feed.innerHTML = "";
+      data.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `🕒 ${new Date(item.timestamp).toLocaleTimeString()} — Wallet ${item.wallet.slice(0, 4)}...${item.wallet.slice(-4)} bought ${item.tokens.toLocaleString()} WALDO`;
+        feed.appendChild(li);
+      });
+    } catch (err) {
+      console.error("Failed to load presale feed", err);
+    }
+  }
+
+  function updateMeter(sold, max) {
+    const percent = (sold / max) * 100;
+    document.getElementById("waldoSold").textContent = sold.toLocaleString();
+    document.getElementById("progressBar").style.width = percent + "%";
+    checkPresaleEnd(sold);
+  }
+
+  function checkPresaleEnd(soldAmount) {
+    const now = new Date();
+    if (now >= endDate || soldAmount >= hardCap) {
+      presaleEnded = true;
+      disablePresaleForm();
+    }
+  }
+
+  function disablePresaleForm() {
+    document.getElementById("confirmPurchaseBtn").disabled = true;
+    document.getElementById("confirmPurchaseBtn").innerText = "Presale Ended";
+    document.getElementById("confirmPurchaseBtn").style.background = "#555";
+    document.getElementById("confirmPurchaseBtn").style.cursor = "not-allowed";
+    ["xrpAmount", "txId", "userEmail"].forEach(id => {
+      document.getElementById(id).disabled = true;
+    });
+    const countdown = document.getElementById("countdown");
+    countdown.textContent = "PRESALE CLOSED";
+    countdown.style.color = "#aaa";
+    countdown.style.borderColor = "#aaa";
+    countdown.style.boxShadow = "none";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    startCountdownLoop();
+    loadPresaleFeed();
+    fetch(`${baseURL}/api/presale/total-sold`)
+      .then(res => res.json())
+      .then(data => updateMeter(data.sold, hardCap));
+    setInterval(() => {
       fetch(`${baseURL}/api/presale/total-sold`)
         .then(res => res.json())
         .then(data => updateMeter(data.sold, hardCap));
-  
-      setInterval(() => {
-        fetch(`${baseURL}/api/presale/total-sold`)
-          .then(res => res.json())
-          .then(data => updateMeter(data.sold, hardCap));
-      }, 60000);
-    });
-  
-    function calculateWaldo() {
-      const xrp = parseInt(document.getElementById("xrpAmount").value, 10);
-      const baseWaldo = xrp * 100000;
-      let bonus = 0;
-  
-      if (xrp === 80) bonus = 2000000;
-      else if (xrp === 90) bonus = 3000000;
-      else if (xrp === 100) bonus = 5000000;
-  
-      const totalWaldo = baseWaldo + bonus;
-      document.getElementById("waldoAmount").innerText = `You will receive ${totalWaldo.toLocaleString()} WaldoCoins.`;
-    }
-  
-    document.getElementById("confirmPurchaseBtn").addEventListener("click", async () => {
-      const txId = document.getElementById("txId").value.trim();
-      const email = document.getElementById("userEmail").value.trim();
-      const btn = document.getElementById("confirmPurchaseBtn");
-  
-      if (!txId) {
-        alert("Please enter a transaction ID.");
-        return;
-      }
-  
-      if (presaleEnded) {
-        alert("Presale has ended. Cannot confirm purchase.");
-        return;
-      }
-  
-      btn.disabled = true;
-      btn.innerText = "Verifying...";
-  
-      try {
-        const res = await fetch(`${baseURL}/api/presale/verify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txId, email })
-        });
-  
-        const data = await res.json();
-  
-        if (data.success) {
-          alert(`✅ Purchase Verified! You bought ${data.tokens.toLocaleString()} WALDO`);
-          document.getElementById("waldoAmount").innerText = "✅ Waiting for WALDO to arrive in your wallet...";
-        } else {
-          alert(`❌ ${data.error || "Verification failed."}`);
-        }
-      } catch (err) {
-        alert("❌ Network error while verifying.");
-      }
-  
-      btn.disabled = false;
-      btn.innerText = "Confirm Purchase";
-    });
-  
-    async function lookupWallet() {
-      const address = document.getElementById("walletSearch").value.trim();
-      const resultDiv = document.getElementById("lookupResult");
-  
-      if (!address || !address.startsWith("r")) {
-        resultDiv.innerHTML = "<p style='color:red;'>Please enter a valid XRP wallet address.</p>";
-        return;
-      }
-  
-      resultDiv.innerHTML = "🔎 Searching WALDO ledger...";
-  
-      try {
-        const response = await fetch(`${baseURL}/api/presale/lookup?wallet=${address}`);
-        const data = await response.json();
-  
-        if (data && data.amount) {
-          resultDiv.innerHTML = `
-            <p><strong>Wallet:</strong> ${address}</p>
-            <p><strong>Total Contributed:</strong> ${data.amount} XRP</p>
-            <p><strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
-            ${data.email ? `<p><strong>Email:</strong> ${data.email}</p>` : ""}
-            <p><strong>🎁 Bonus Tier:</strong> ${data.bonusTier || "N/A"}</p>
-          `;
-        } else {
-          resultDiv.innerHTML = "<p>No presale record found for this wallet.</p>";
-        }
-      } catch (err) {
-        console.error(err);
-        resultDiv.innerHTML = "<p style='color:red;'>Error retrieving data. Try again later.</p>";
-      }
-    }
-  
-    async function loadPresaleFeed() {
-      try {
-        const res = await fetch(`${baseURL}/api/presale/feed`);
-        const data = await res.json();
-        const feed = document.getElementById("presaleFeed");
-  
-        feed.innerHTML = "";
-        data.forEach(item => {
-          const li = document.createElement("li");
-          li.textContent = `🕒 ${new Date(item.timestamp).toLocaleTimeString()} — Wallet ${item.wallet.slice(0, 4)}...${item.wallet.slice(-4)} bought ${item.tokens.toLocaleString()} WALDO`;
-          feed.appendChild(li);
-        });
-      } catch (err) {
-        console.error("Failed to load presale feed", err);
-      }
-    }
-  
+    }, 60000);
     setInterval(loadPresaleFeed, 60000);
-    loadPresaleFeed();
-  
-    function checkPresaleEnd(soldAmount) {
-      const now = new Date();
-      if (now >= endDate || soldAmount >= hardCap) {
-        presaleEnded = true;
-        disablePresaleForm();
-      }
-    }
-  
-    function disablePresaleForm() {
-      document.getElementById("confirmPurchaseBtn").disabled = true;
-      document.getElementById("confirmPurchaseBtn").innerText = "Presale Ended";
-      document.getElementById("confirmPurchaseBtn").style.background = "#555";
-      document.getElementById("confirmPurchaseBtn").style.cursor = "not-allowed";
-      document.getElementById("xrpAmount").disabled = true;
-      document.getElementById("txId").disabled = true;
-      document.getElementById("userEmail").disabled = true;
-  
-      const countdown = document.getElementById("countdown");
-      countdown.textContent = "PRESALE CLOSED";
-      countdown.style.color = "#aaa";
-      countdown.style.borderColor = "#aaa";
-      countdown.style.boxShadow = "none";
-    }
-  
-    function updateMeter(sold, max) {
-      const percent = (sold / max) * 100;
-      document.getElementById("waldoSold").textContent = sold.toLocaleString();
-      document.getElementById("progressBar").style.width = percent + "%";
-      checkPresaleEnd(sold);
-    }
-  </script>
+  });
+</script>
 </body>
 </html>
