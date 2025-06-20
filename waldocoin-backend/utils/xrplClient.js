@@ -1,18 +1,11 @@
-// utils/xummClient.js
-import dotenv from "dotenv";
-dotenv.config();
+import { Client } from "xrpl";
 
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
+let client;
 
-// ✅ Proper CommonJS import
-const XummSdk = require("xumm-sdk").default;
-
-// ✅ Create an instance
-const xummClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-// ✅ Export properly for ESM usage
-export { xummClient };
-
-// ✅ Optional: log confirmation
-console.log("✅ xummClient.js initialized 🔐");
+export async function getXrplClient() {
+  if (!client || !client.isConnected()) {
+    client = new Client("wss://xrplcluster.com"); // 🌐 MAINNET
+    await client.connect();
+  }
+  return client;
+}
