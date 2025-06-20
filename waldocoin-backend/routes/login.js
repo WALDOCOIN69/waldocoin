@@ -1,10 +1,7 @@
 import express from "express";
-import pkg from "xumm-sdk";
-const Xumm = pkg.default;
+import xummClient from "../utils/xummClient.js";
 
 const router = express.Router();
-
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 router.get("/ping", (_, res) => {
   res.json({ status: "✅ Login route is alive" });
@@ -12,7 +9,7 @@ router.get("/ping", (_, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const payload = await xumm.payload.create({
+    const payload = await xummClient.payload.create({
       txjson: { TransactionType: "SignIn" }
     });
 

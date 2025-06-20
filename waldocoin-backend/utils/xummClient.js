@@ -1,11 +1,11 @@
 // utils/xummClient.js
-import dotenv from "dotenv";
-dotenv.config();
+import pkg from "xumm-sdk";
+const XummSdk = pkg.default;
 
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
+if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
+  console.error("❌ Missing XUMM credentials");
+  process.exit(1);
+}
 
-// ✅ Load CJS wrapper
-export const xummClient = require("./xummClient.cjs");
-
-console.log("✅ xummClient.js initialized 🔍");
+const xummClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+export default xummClient;
