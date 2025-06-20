@@ -6,6 +6,7 @@ import { redis } from "../redisClient.js";
 import { fileURLToPath } from "url";
 import path from "path";
 
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);

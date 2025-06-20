@@ -1,5 +1,5 @@
 import express from "express";
-import xummClient from "../utils/xummClient.js";
+import { xummClient } from "../utils/xummClient.js"; // ✅ Correct
 
 const router = express.Router();
 
