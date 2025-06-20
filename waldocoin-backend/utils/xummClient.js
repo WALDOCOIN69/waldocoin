@@ -1,6 +1,5 @@
-// utils/xummClient.js
-import { XummSdk } from 'xumm-sdk'; // ✅ named import with correct constructor name
+import pkg from 'xumm-sdk';
+const { Xumm } = pkg;
 
-const xummClient = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
+const xummClient = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 export default xummClient;
