@@ -1,5 +1,6 @@
 import express from "express";
-import Xumm from "xumm-sdk";
+import pkg from "xumm-sdk";
+const Xumm = pkg.default;
 
 const router = express.Router();
 
