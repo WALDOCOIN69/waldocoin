@@ -15,6 +15,7 @@ import loginRoute from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
+import loginStatusRoute from "./routes/login/status.js";
 import tweetsRoute from "./routes/tweets.js";
 import statsRoute from "./routes/userstats.js";
 import daoCreateRoute from "./routes/dao/create.js";
@@ -73,7 +74,7 @@ const startServer = async () => {
   app.use("/api/presale/end-date", presaleEndDateRoute);
   app.use("/api/presale/set-end-date", presaleSetDateRoute);
   app.use("/api/presale/countdown", presaleCountdownRoute);
-
+  app.use("/api/login/status", loginStatusRoute);
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
