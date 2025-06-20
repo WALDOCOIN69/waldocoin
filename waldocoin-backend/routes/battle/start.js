@@ -1,9 +1,8 @@
-// routes/battle/start.js
 import express from "express";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import { redis } from "../../redisClient.js";
-import xummClient from "../../utils/xummClient.js"; // ✅ correct
+import { xummClient } from "../../utils/xummClient.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -28,7 +27,7 @@ router.post("/", async (req, res) => {
       txjson: {
         TransactionType: "Payment",
         Destination: process.env.ISSUER_WALLET,
-        Amount: String(feeWaldo * 1_000_000), // WALDO in drops
+        Amount: String(feeWaldo * 1_000_000),
         DestinationTag: 777
       },
       options: {
@@ -42,7 +41,6 @@ router.post("/", async (req, res) => {
       if (event.data.signed === false) throw new Error("User rejected battle start payment");
     });
 
-    // 📦 Save battle metadata to Redis
     const battleData = {
       battleId,
       challenger: wallet,
@@ -54,7 +52,7 @@ router.post("/", async (req, res) => {
       votes: 0
     };
 
-    await redis.set(`battle:${battleId}`, JSON.stringify(battleData), { EX: 60 * 60 * 12 }); // TTL: 12 hours
+    await redis.set(`battle:${battleId}`, JSON.stringify(battleData), { EX: 60 * 60 * 12 });
 
     return res.json({
       success: true,

@@ -1,11 +1,9 @@
-// 📁 routes/mint.js
-
 import express from "express";
 import dotenv from "dotenv";
 import { redis } from "../redisClient.js";
 import { fileURLToPath } from "url";
 import path from "path";
-
+import { xummClient } from "../utils/xummClient.js"; // ✅ Fixed import
 
 dotenv.config();
 
@@ -32,9 +30,6 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ success: false, error: "NFT already minted for this meme." });
     }
 
-    const { default: XummSdk } = await import("xumm-sdk");
-    const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
     const paymentPayload = {
       txjson: {
         TransactionType: "Payment",
@@ -51,7 +46,7 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const { created } = await xumm.payload.createAndSubscribe(paymentPayload, (event) => {
+    const { created } = await xummClient.payload.createAndSubscribe(paymentPayload, (event) => {
       return event.data.signed === true;
     });
 
@@ -71,4 +66,5 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
 

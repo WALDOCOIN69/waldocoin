@@ -1,14 +1,11 @@
-// 📁 routes/mint/confirm.js
-
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import xrpl from "xrpl";
-import { redis } from '../../redisClient.js'; 
+import { redis } from "../../redisClient.js"; 
 import { uploadToIPFS } from "../../utils/ipfsUploader.js";
-import xummClient from "../../utils/xummClient.js"; // ✅ Correct
-
+import { getXrplClient } from "../../utils/xrplClient.js"; // Optional: If you’re centralizing XRPL connections
 
 dotenv.config();
 
@@ -43,7 +40,7 @@ router.post("/", async (req, res) => {
       return res.status(500).json({ success: false, error: "Failed to upload metadata to IPFS." });
     }
 
-    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233"); // XRPL Testnet
+    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233"); // ⛓ XRPL Testnet
     await client.connect();
 
     const walletInstance = xrpl.Wallet.fromSeed(process.env.MINTING_WALLET_SECRET);

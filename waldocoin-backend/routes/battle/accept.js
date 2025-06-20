@@ -1,9 +1,8 @@
-// routes/battle/accept.js
 import express from "express";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import { redis } from "../../redisClient.js";
-import xummClient from "../../utils/xummClient.js"; // ✅ default import (correct)
+import { xummClient } from "../../utils/xummClient.js"; // ✅ fixed to named import
 import dotenv from "dotenv";
 dotenv.config();
 
