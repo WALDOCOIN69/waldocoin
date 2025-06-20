@@ -76,7 +76,7 @@ const startServer = async () => {
   app.use("/api/presale/countdown", presaleCountdownRoute);
   app.use("/api/login/status", loginStatusRoute);
   app.use("/api/login/trustline-check", trustlineCheckRoute);
-  app.use("/api/userStats", userStatsRoute); // ✅ Only once
+  app.use("/api/user-stats", userStatsRoute); // ✅ Only once
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
