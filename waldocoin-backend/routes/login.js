@@ -1,9 +1,8 @@
-// routes/login.js
 import express from "express";
-import pkg from "xumm-sdk";
-const { Xumm } = pkg;
+import Xumm from "xumm-sdk";
 
 const router = express.Router();
+
 const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 router.get("/ping", (_, res) => {
