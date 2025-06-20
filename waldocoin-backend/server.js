@@ -1,4 +1,3 @@
-// server.js
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -17,7 +16,7 @@ import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import loginStatusRoute from "./routes/login/status.js";
 import tweetsRoute from "./routes/tweets.js";
-import userStatsRoute from "./routes/userStats.js";
+import userStatsRoute from "./routes/userStats.js"; // ✅ Correct one import
 import daoCreateRoute from "./routes/dao/create.js";
 import daoVoteRoute from "./routes/dao/vote.js";
 import daoExpireRoute from "./routes/dao/expire.js";
@@ -27,9 +26,6 @@ import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
 import daoConfigRoute from "./routes/dao/config.js";
 import daoArchiveRoute from "./routes/dao/archive.js";
 import trustlineCheckRoute from "./routes/login/trustline-check.js";
-import userStatsRoute from "./routes/userStats.js";
-
-
 
 // 🔗 Meme Battle system
 import battleStartRoute from "./routes/battle/start.js";
@@ -37,10 +33,10 @@ import battleAcceptRoute from "./routes/battle/accept.js";
 import battleVoteRoute from "./routes/battle/vote.js";
 import battlePayoutRoute from "./routes/battle/payout.js";
 
+// 🔗 Presale
 import presaleEndDateRoute from "./routes/presale/end-date.js";
 import presaleSetDateRoute from "./routes/presale/set-end-date.js";
 import presaleCountdownRoute from "./routes/presale/countdown.js";
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,7 +62,7 @@ const startServer = async () => {
   app.use("/api/mint", mintRoute);
   app.use("/api/mint/confirm", mintConfirmRoute);
   app.use("/api/tweets", tweetsRoute);
-  app.use("/api/user-stats", statsRoute);
+  app.use("/api/user-stats", userStatsRoute); // ✅ fixed path and variable
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);
   app.use("/api/dao/expire", daoExpireRoute);
@@ -80,14 +76,13 @@ const startServer = async () => {
   app.use("/api/presale/countdown", presaleCountdownRoute);
   app.use("/api/login/status", loginStatusRoute);
   app.use("/api/login/trustline-check", trustlineCheckRoute);
-  app.use("/api/userStats", userStatsRoute);
+  app.use("/api/userStats", userStatsRoute); // ✅ Only once
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
   app.use("/api/battle/accept", battleAcceptRoute);
   app.use("/api/battle/vote", battleVoteRoute);
   app.use("/api/battle/payout", battlePayoutRoute);
-  app.use("/api/userStats", userStatsRoute);
 
   // 🧪 Render health check
   app.get("/", (req, res) => {
