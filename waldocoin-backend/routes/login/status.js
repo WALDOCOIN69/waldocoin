@@ -1,6 +1,6 @@
 // routes/login/status.js
 import express from "express";
-import { xummClient } from "../../utils/xummClient.js"; // ✅ named import
+import xummClient from "../../utils/xummClient.js"; // ✅ Correct
 
 const router = express.Router();
 
