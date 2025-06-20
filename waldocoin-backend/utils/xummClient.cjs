@@ -1,4 +1,5 @@
-const { XummSdk } = require("xumm-sdk"); // ✅ CORRECT constructor
+// utils/xummClient.cjs
+const { XummSdk } = require("xumm-sdk");
 require("dotenv").config();
 
 if (!process.env.XUMM_API_KEY || !process.env.XUMM_API_SECRET) {
