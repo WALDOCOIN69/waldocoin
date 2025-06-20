@@ -1,11 +1,11 @@
 // routes/admin/trustline.js
 import express from "express";
-import { Xumm } from "xumm-sdk";
 import dotenv from "dotenv";
+import { xummClient } from "../../utils/xummClient.js"; // ✅ Named import
+
 dotenv.config();
 
 const router = express.Router();
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 console.log("🧩 Loaded: routes/admin/trustline.js");
 
@@ -18,14 +18,15 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const payload = await xumm.payload.create({
+    const payload = await xummClient.payload.create({
       txjson: {
         TransactionType: "TrustSet",
         LimitAmount: {
           currency: "WLO",
           issuer: process.env.WALDO_ISSUER,
           value: "1000000000"
-        }
+        },
+        Destination: wallet
       },
       user_token: true
     });

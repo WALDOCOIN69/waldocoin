@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import { redis } from "../redisClient.js";
-import xummClient from "../utils/xummClient.js"; // ✅ CORRECT NAMED IMPORT
+import { xummClient } from "../utils/xummClient.js";
 
 dotenv.config();
 

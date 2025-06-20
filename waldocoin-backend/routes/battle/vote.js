@@ -1,6 +1,6 @@
 // routes/battle/vote.js
 import express from "express";
-import xummClient from "../../utils/xummClient.js"; // ✅ fixed to named import
+import { xummClient } from "../../utils/xummClient.js";
 import { redis } from "../../redisClient.js";
 import { addXP } from "../../utils/xpManager.js";
 import dotenv from "dotenv";

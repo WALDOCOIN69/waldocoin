@@ -1,11 +1,11 @@
 // routes/admin/sendWaldo.js
 import express from "express";
-import { Xumm } from "xumm-sdk";
 import dotenv from "dotenv";
+import { xummClient } from "../../utils/xummClient.js"; // ✅ Correct named import
+
 dotenv.config();
 
 const router = express.Router();
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 console.log("🧩 Loaded: routes/admin/sendWaldo.js");
 
@@ -18,7 +18,7 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const payload = await xumm.payload.createAndSubscribe({
+    const payload = await xummClient.payload.createAndSubscribe({
       txjson: {
         TransactionType: "Payment",
         Destination: wallet,
