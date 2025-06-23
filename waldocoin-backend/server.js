@@ -44,17 +44,19 @@ const __dirname = path.dirname(__filename);
 const startServer = async () => {
   await connectRedis(); // 🔌 Ensure Redis is connected before anything else
 
-  const app = express();
+const app = express();
 
-  // 🛡️ Middleware
-  const limiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 100,
-  });
-  app.use(cors());
-  app.use(helmet());
-  app.use(limiter);
-  app.use(express.json());
+app.set('trust proxy', true); // ✅ Add this line
+
+// 🛡️ Middleware
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+});
+app.use(cors());
+app.use(helmet());
+app.use(limiter);
+app.use(express.json());
 
   // 🧩 WALDO API Routes
   app.use("/api/login", loginRoute);
