@@ -16,7 +16,7 @@ import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import loginStatusRoute from "./routes/login/status.js";
 import tweetsRoute from "./routes/tweets.js";
-import userStatsRoute from "./routes/userstats.js"; // ✅ Correct one import
+import userStatsRoute from "./routes/userstats.js";
 import daoCreateRoute from "./routes/dao/create.js";
 import daoVoteRoute from "./routes/dao/vote.js";
 import daoExpireRoute from "./routes/dao/expire.js";
@@ -33,7 +33,7 @@ import battleAcceptRoute from "./routes/battle/accept.js";
 import battleVoteRoute from "./routes/battle/vote.js";
 import battlePayoutRoute from "./routes/battle/payout.js";
 
-// 🔗 Presale
+// 🔗 Presale routes
 import presaleEndDateRoute from "./routes/presale/end-date.js";
 import presaleSetDateRoute from "./routes/presale/set-end-date.js";
 import presaleCountdownRoute from "./routes/presale/countdown.js";
@@ -42,7 +42,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const startServer = async () => {
-  await connectRedis();
+  await connectRedis(); // 🔌 Ensure Redis is connected before anything else
 
   const app = express();
 
@@ -62,7 +62,7 @@ const startServer = async () => {
   app.use("/api/mint", mintRoute);
   app.use("/api/mint/confirm", mintConfirmRoute);
   app.use("/api/tweets", tweetsRoute);
-  app.use("/api/userstats", userStatsRoute); // ✅ fixed path and variable
+  app.use("/api/userstats", userStatsRoute);
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);
   app.use("/api/dao/expire", daoExpireRoute);
@@ -76,7 +76,6 @@ const startServer = async () => {
   app.use("/api/presale/countdown", presaleCountdownRoute);
   app.use("/api/login/status", loginStatusRoute);
   app.use("/api/login/trustline-check", trustlineCheckRoute);
-  app.use("/api/user-stats", userStatsRoute); // ✅ Only once
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
@@ -84,12 +83,12 @@ const startServer = async () => {
   app.use("/api/battle/vote", battleVoteRoute);
   app.use("/api/battle/payout", battlePayoutRoute);
 
-  // 🧪 Render health check
+  // 🧪 Health Check
   app.get("/", (req, res) => {
     res.send("✅ WALDO backend is live at /api/*");
   });
 
-  // 🚀 Start server
+  // 🚀 Start Express
   const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => {
     console.log(`🧩 WALDO backend running on http://localhost:${PORT}`);
@@ -100,3 +99,4 @@ startServer().catch(err => {
   console.error("❌ Startup error:", err);
   process.exit(1);
 });
+
