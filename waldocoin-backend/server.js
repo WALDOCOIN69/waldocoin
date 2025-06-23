@@ -26,6 +26,7 @@ import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
 import daoConfigRoute from "./routes/dao/config.js";
 import daoArchiveRoute from "./routes/dao/archive.js";
 import trustlineCheckRoute from "./routes/login/trustline-check.js";
+import proposalsRoute from "./routes/proposals.js";
 
 // 🔗 Meme Battle system
 import battleStartRoute from "./routes/battle/start.js";
@@ -78,6 +79,7 @@ app.use(express.json());
   app.use("/api/presale/countdown", presaleCountdownRoute);
   app.use("/api/login/status", loginStatusRoute);
   app.use("/api/login/trustline-check", trustlineCheckRoute);
+  app.use("/api/proposals", proposalsRoute);
 
   // ⚔️ Meme Battle Routes
   app.use("/api/battle/start", battleStartRoute);
