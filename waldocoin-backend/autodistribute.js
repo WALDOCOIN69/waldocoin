@@ -86,6 +86,11 @@ async function monitorTransactions() {
     try {
       const tx = event.transaction
 
+      if (!tx || !tx.TransactionType) {
+        console.warn("⚠️ Ignored: Event without valid transaction")
+        return
+      }
+
       if (
         tx.TransactionType === 'Payment' &&
         tx.Destination === DISTRIBUTOR_WALLET &&
@@ -139,4 +144,5 @@ process.on("SIGINT", async () => {
   }
   process.exit()
 })
+
 
