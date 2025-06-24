@@ -6,14 +6,13 @@ import { redis, connectRedis } from './redisClient.js'
 
 dotenv.config()
 
-// 🔒 Check required ENV vars
 const requiredVars = ['DISTRIBUTOR_WALLET', 'DISTRIBUTOR_SECRET', 'WALDO_ISSUER', 'XRPL_NODE']
 for (const v of requiredVars) {
   if (!process.env[v]) throw new Error(`❌ Missing required env variable: ${v}`)
 }
 
-// 🔌 Connect to Redis and XRPL
 await connectRedis()
+
 const client = new xrpl.Client(process.env.XRPL_NODE)
 await client.connect()
 
@@ -26,10 +25,10 @@ redis.on('error', (err) => {
   console.error('🚨 Redis error:', err)
 })
 
-// 🧮 Bonus logic
 function calculateWaldoAmount(xrpAmount) {
   const baseWaldo = xrpAmount * 100000
   let bonus = 0
+
   if (xrpAmount >= 100) bonus = 5000000
   else if (xrpAmount >= 90) bonus = 3000000
   else if (xrpAmount >= 80) bonus = 2000000
@@ -41,9 +40,9 @@ function calculateWaldoAmount(xrpAmount) {
   }
 }
 
-// 💸 WALDO payment logic
 async function sendWaldo(destination, waldoAmount, retries = 3) {
   const wallet = xrpl.Wallet.fromSeed(DISTRIBUTOR_SECRET)
+
   const payment = {
     TransactionType: 'Payment',
     Account: wallet.classicAddress,
@@ -75,7 +74,6 @@ async function sendWaldo(destination, waldoAmount, retries = 3) {
   }
 }
 
-// 👂 Listen for XRP payments
 async function monitorTransactions() {
   await client.request({
     command: 'subscribe',
@@ -85,13 +83,20 @@ async function monitorTransactions() {
   console.log(`📡 Listening for XRP sent to: ${DISTRIBUTOR_WALLET}`)
 
   client.on('transaction', async (event) => {
-    try {
-      const tx = event.transaction
-      if (!tx || tx.TransactionType !== 'Payment') return
-      if (tx.Destination !== DISTRIBUTOR_WALLET) return
-      if (typeof tx.Amount !== 'string') return
+    if (!event.transaction) {
+      console.log("⚠️ Ignored: Event without valid transaction")
+      return
+    }
 
+    const tx = event.transaction
+
+    if (
+      tx.TransactionType === 'Payment' &&
+      tx.Destination === DISTRIBUTOR_WALLET &&
+      typeof tx.Amount === 'string'
+    ) {
       const txHash = tx.hash
+
       const alreadyProcessed = await redis.get(`processed:${txHash}`)
       if (alreadyProcessed) {
         console.log(`⚡ Already processed TX: ${txHash}`)
@@ -118,16 +123,12 @@ async function monitorTransactions() {
       } else {
         console.log(`⚠️ Ignored: ${xrpAmount} XRP from ${senderWallet} < 10 XRP threshold`)
       }
-    } catch (error) {
-      console.error(`🚨 Listener Error: ${error.message}`)
     }
   })
 }
 
-// 🚀 Start listener
 await monitorTransactions().catch(console.error)
 
-// 🧹 Graceful shutdown
 process.on("SIGINT", async () => {
   console.log("\n👋 Shutting down WALDO distributor gracefully...")
   try {
@@ -139,4 +140,5 @@ process.on("SIGINT", async () => {
   }
   process.exit()
 })
+
 
