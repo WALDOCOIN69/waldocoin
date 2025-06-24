@@ -1,8 +1,7 @@
 // autodistribute.js ✅ WALDOCOIN XRPL Auto Distributor
 import xrpl from "xrpl";
 import dotenv from "dotenv";
-import pkg from "xumm-sdk";
-const { Xumm } = pkg;
+import { Xumm } from "xumm-sdk"; // ✅ THE FIX
 
 dotenv.config();
 
@@ -21,7 +20,7 @@ const isNativeXRP = (tx) =>
     console.log("✅ XRPL connected");
     console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
 
-    client.request({
+    await client.request({
       command: "subscribe",
       accounts: [distributorWallet],
     });
