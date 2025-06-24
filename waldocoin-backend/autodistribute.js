@@ -1,13 +1,13 @@
 // autodistribute.js ✅ WALDOCOIN XRPL Auto Distributor
 import xrpl from "xrpl";
 import dotenv from "dotenv";
-import XummSdk from "xumm-sdk";
+import { Xumm } from "xumm-sdk";
 
 dotenv.config();
 
-const client = new xrpl.Client("wss://xrplcluster.com");
+const client = new xrpl.Client("wss://xrplcluster.com"); // ✅ Mainnet
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
 const isNativeXRP = (tx) =>
   tx.TransactionType === "Payment" &&
