@@ -1,15 +1,16 @@
-// autodistribute.js ✅ WALDOCOIN XRPL Auto Distributor
+// autodistribute.js
 import xrpl from "xrpl";
 import dotenv from "dotenv";
-import pkg from "xumm-sdk";
-
-const { Xumm } = pkg;
+import xummSdk from "xumm-sdk";
 
 dotenv.config();
 
-const client = new xrpl.Client("wss://xrplcluster.com"); // ✅ Mainnet
+const { XummSdk } = xummSdk;
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const client = new xrpl.Client("wss://xrplcluster.com");
+
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const issuerWallet = process.env.ISSUER_WALLET;
 
 const isNativeXRP = (tx) =>
   tx.TransactionType === "Payment" &&
@@ -46,9 +47,7 @@ const isNativeXRP = (tx) =>
       });
 
       const trustsWaldo = trustlines.result.lines.some(
-        (line) =>
-          line.currency === "WLO" &&
-          line.account === process.env.ISSUER_WALLET
+        (line) => line.currency === "WLO" && line.account === issuerWallet
       );
 
       if (!trustsWaldo) {
@@ -63,7 +62,7 @@ const isNativeXRP = (tx) =>
           Destination: sender,
           Amount: {
             currency: "WLO",
-            issuer: process.env.ISSUER_WALLET,
+            issuer: issuerWallet,
             value: waldoAmount.toString(),
           },
         },
@@ -82,3 +81,4 @@ const isNativeXRP = (tx) =>
     console.error("❌ Error:", err.message);
   }
 })();
+
