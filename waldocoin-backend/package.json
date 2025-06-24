@@ -30,6 +30,7 @@
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
+    "ioredis": "^5.6.1",
     "mime": "^4.0.7",
     "nft.storage": "^3.4.0",
     "node-cron": "^4.1.0",
@@ -39,6 +40,5 @@
     "uuid": "^11.1.0",
     "xrpl": "^4.2.5",
     "xumm-sdk": "^1.11.0"
-
   }
 }
