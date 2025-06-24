@@ -1,9 +1,9 @@
 // autodistribute.js ✅ WALDOCOIN XRPL Auto Distributor
 import xrpl from "xrpl";
 import dotenv from "dotenv";
-import { Xumm } from "xumm-sdk"; // ✅ THE FIX
+import pkg from "xumm-sdk";
+const { Xumm } = pkg;
 
-dotenv.config();
 
 const client = new xrpl.Client("wss://xrplcluster.com"); // ✅ Mainnet
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
