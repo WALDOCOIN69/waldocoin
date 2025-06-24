@@ -1,7 +1,9 @@
 // autodistribute.js ✅ WALDOCOIN XRPL Auto Distributor
 import xrpl from "xrpl";
 import dotenv from "dotenv";
-import { Xumm } from "xumm-sdk";
+import pkg from "xumm-sdk";
+
+const { Xumm } = pkg;
 
 dotenv.config();
 
@@ -36,14 +38,14 @@ const isNativeXRP = (tx) =>
       const txHash = tx.hash;
       const xrpAmount = parseFloat(xrpl.dropsToXrp(tx.Amount));
       const bonus = xrpAmount >= 100 ? 0.2 : xrpAmount >= 50 ? 0.1 : 0;
-      const waldoAmount = Math.floor((xrpAmount * 1000) * (1 + bonus));
+      const waldoAmount = Math.floor(xrpAmount * 1000 * (1 + bonus));
 
-      const hasTrust = await client.request({
+      const trustlines = await client.request({
         command: "account_lines",
         account: sender,
       });
 
-      const trustsWaldo = hasTrust.result.lines.some(
+      const trustsWaldo = trustlines.result.lines.some(
         (line) =>
           line.currency === "WLO" &&
           line.account === process.env.ISSUER_WALLET
@@ -80,4 +82,3 @@ const isNativeXRP = (tx) =>
     console.error("❌ Error:", err.message);
   }
 })();
-
