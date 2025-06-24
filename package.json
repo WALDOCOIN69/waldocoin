@@ -5,23 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node waldocoin-backend/autodistribute.js",
-    "check:routes": "node checkRoutes.js",
-    "validate:api": "node utils/validateRoutes.js",
-    "lint": "echo \"(Optional) Add ESLint here later\""
+    "dev": "node index.js",
+    "start": "node index.js"
   },
-  "keywords": [
-    "crypto",
-    "xrpl",
-    "xumm",
-    "nft",
-    "waldo",
-    "meme",
-    "backend"
-  ],
-  "author": "Christian A. Tomicic",
-  "license": "MIT",
   "dependencies": {
     "axios": "^1.9.0",
     "cors": "^2.8.5",
