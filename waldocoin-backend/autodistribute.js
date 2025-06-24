@@ -1,143 +1,84 @@
-// ✅ Proper CommonJS-to-ESM compatibility fixes
-import pkgXumm from 'xumm-sdk';
-const { Xumm } = pkgXumm;
-
-import { Client } from 'xrpl';
-import pkgRedis from 'ioredis';
-const Redis = pkgRedis.default;
-
-import dotenv from 'dotenv';
-import { v4 as uuidv4 } from 'uuid';
+// autodistribute.js ✅ WALDOCOIN XRPL Auto Distributor
+import xrpl from "xrpl";
+import dotenv from "dotenv";
+import pkg from "xumm-sdk";
+const { Xumm } = pkg;
 
 dotenv.config();
 
-// XRPL setup
-const XRPL_NODE = 'wss://xrplcluster.com';
-const client = new Client(XRPL_NODE);
-
-// Redis setup
-const redis = new Redis(process.env.REDIS_URL);
-
-// WALDO config
+const client = new xrpl.Client("wss://xrplcluster.com"); // ✅ Mainnet
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
-const issuerWallet = process.env.ISSUER_WALLET;
-const waldoCurrencyCode = 'WLO';
+const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 
-const bonusTiers = [
-  { min: 2000, bonus: 0.25 },
-  { min: 1000, bonus: 0.20 },
-  { min: 500, bonus: 0.15 },
-  { min: 250, bonus: 0.10 },
-  { min: 100, bonus: 0.05 }
-];
+const isNativeXRP = (tx) =>
+  tx.TransactionType === "Payment" &&
+  tx.Destination === distributorWallet &&
+  typeof tx.Amount === "string";
 
-// Main logic
-async function start() {
-  await client.connect();
-  console.log('✅ XRPL connected');
+(async () => {
+  try {
+    await client.connect();
+    console.log("✅ XRPL connected");
+    console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
 
-  await client.request({
-    command: 'subscribe',
-    accounts: [distributorWallet]
-  });
+    client.request({
+      command: "subscribe",
+      accounts: [distributorWallet],
+    });
 
-  console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
-
-  client.on('transaction', async (event) => {
-    try {
+    client.on("transaction", async (event) => {
       const tx = event.transaction;
-      if (
-        tx &&
-        tx.TransactionType === 'Payment' &&
-        tx.Destination === distributorWallet &&
-        tx.Amount &&
-        typeof tx.Amount === 'string' &&
-        tx.hash
-      ) {
-        const sender = tx.Account;
-        const amountXRP = parseFloat(tx.Amount) / 1_000_000;
-        const txHash = tx.hash;
+      if (!isNativeXRP(tx)) {
+        console.warn("⚠️ Ignored event - not a valid XRP Payment TX");
+        return;
+      }
 
-        const alreadyProcessed = await redis.get(`tx:${txHash}`);
-        if (alreadyProcessed) {
-          console.log(`⚠️ Duplicate tx ignored: ${txHash}`);
-          return;
-        }
+      const sender = tx.Account;
+      const txHash = tx.hash;
+      const xrpAmount = parseFloat(xrpl.dropsToXrp(tx.Amount));
+      const bonus = xrpAmount >= 100 ? 0.2 : xrpAmount >= 50 ? 0.1 : 0;
+      const waldoAmount = Math.floor((xrpAmount * 1000) * (1 + bonus));
 
-        await redis.set(`tx:${txHash}`, '1', 'EX', 86400);
+      const hasTrust = await client.request({
+        command: "account_lines",
+        account: sender,
+      });
 
-        let bonus = 0;
-        for (const tier of bonusTiers) {
-          if (amountXRP >= tier.min) {
-            bonus = tier.bonus;
-            break;
-          }
-        }
+      const trustsWaldo = hasTrust.result.lines.some(
+        (line) =>
+          line.currency === "WLO" &&
+          line.account === process.env.ISSUER_WALLET
+      );
 
-        const baseWaldo = amountXRP * 1000;
-        const totalWaldo = Math.floor(baseWaldo * (1 + bonus));
+      if (!trustsWaldo) {
+        console.warn(`🚫 No WALDO trustline for ${sender}`);
+        return;
+      }
 
-        const trustlines = await client.request({
-          command: 'account_lines',
-          account: sender
-        });
-
-        const hasTrustline = trustlines.result.lines.some(
-          (line) => line.currency === waldoCurrencyCode && line.account === issuerWallet
-        );
-
-        if (!hasTrustline) {
-          console.log(`❌ ${sender} has no WLO trustline. Skipping...`);
-          return;
-        }
-
-        const txPayload = {
-          TransactionType: 'Payment',
+      const payload = {
+        txjson: {
+          TransactionType: "Payment",
           Account: distributorWallet,
           Destination: sender,
           Amount: {
-            currency: waldoCurrencyCode,
-            issuer: issuerWallet,
-            value: totalWaldo.toString()
-          }
-        };
-
-        const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
-
-        const submit = await xumm.payload.createAndSubscribe(
-          {
-            txjson: txPayload,
-            options: { submit: true }
+            currency: "WLO",
+            issuer: process.env.ISSUER_WALLET,
+            value: waldoAmount.toString(),
           },
-          (event) => {
-            if (event.data.signed === true) {
-              console.log(`✅ WALDO sent to ${sender}: ${totalWaldo}`);
-              return true;
-            } else {
-              console.log(`❌ WALDO not signed by ${sender}`);
-              return false;
-            }
-          }
-        );
+        },
+      };
 
-        await redis.lpush('presale:log', JSON.stringify({
-          wallet: sender,
-          amountXRP,
-          waldo: totalWaldo,
-          txHash,
-          timestamp: Date.now(),
-          id: uuidv4()
-        }));
-      } else {
-        console.log('⚠️ Ignored event - not a valid XRP Payment TX');
-      }
-    } catch (err) {
-      console.error('🔥 Error processing transaction:', err.message);
-    }
-  });
-}
+      const created = await xumm.payload.createAndSubscribe(payload, (event) => {
+        if (event.data.signed === true) {
+          console.log(`✅ WALDO sent: ${waldoAmount} to ${sender}`);
+          return true;
+        }
+      });
 
-// 🚀 Start process
-start().catch((err) => {
-  console.error('🔥 Fatal startup error:', err);
-});
+      console.log(`🔄 Sent WALDO ${waldoAmount} to ${sender} | TX: ${txHash}`);
+    });
+  } catch (err) {
+    console.error("❌ Error:", err.message);
+  }
+})();
+
