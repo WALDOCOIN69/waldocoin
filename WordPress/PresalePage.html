@@ -159,6 +159,13 @@
         background: linear-gradient(90deg, #ff003c, #ff8c00, #ffff00);
         transition: width 1.5s ease-in-out;
       }
+  .waldo-standout {
+    color: #e63e3e;               /* WALDO red */
+    font-weight: bold;
+    font-size: 2rem;
+    text-shadow: 0 0 10px #e63e3e, 0 0 20px #ff4d4d;
+    margin-top: 10px;
+  }
       
   </style>
 </head>
@@ -176,10 +183,12 @@
         </div>
       </section>
     <section>
-      <label for="xrpAmount">Enter XRP amount:</label>
+      <label for="xrpAmount">Enter XRP amount (WLO is sold in blocks of 10 XRP):</label>
       <input id="xrpAmount" type="number" name="xrpAmount" min="10" max="100" step="10" value="10">
       <button type="button" onclick="calculateWaldo()">Calculate WALDO</button>
-      <p id="waldoAmount" class="output">You will receive 1,000,000 WaldoCoins.</p>
+      <p id="waldoAmount" class="output waldo-standout">
+  You will receive 1,000,000 WaldoCoins.
+</p>
 
       <p>Please send your XRP to:</p>
       <p><strong>XRP Wallet:</strong> <span id="fixedWalletAddress">rnWfL48YCknW6PYewFLKfMKUymHCfj3aww</span></p>

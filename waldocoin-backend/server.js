@@ -9,7 +9,7 @@ dotenv.config();
 
 import { connectRedis } from "./redisClient.js";
 
-// 🔗 Core WALDO routes
+// 🔗 WALDO routes
 import loginRoute from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
@@ -28,44 +28,52 @@ import daoArchiveRoute from "./routes/dao/archive.js";
 import trustlineCheckRoute from "./routes/login/trustline-check.js";
 import proposalsRoute from "./routes/proposals.js";
 
-// 🔗 Meme Battle system
+// 🔗 Unified Presale route
+import presaleRoute from "./routes/presale.js";
+
+// ⚔️ Meme Battle routes
 import battleStartRoute from "./routes/battle/start.js";
 import battleAcceptRoute from "./routes/battle/accept.js";
 import battleVoteRoute from "./routes/battle/vote.js";
 import battlePayoutRoute from "./routes/battle/payout.js";
 
-// 🔗 Presale routes
-import presaleEndDateRoute from "./routes/presale/end-date.js";
-import presaleSetDateRoute from "./routes/presale/set-end-date.js";
-import presaleCountdownRoute from "./routes/presale/countdown.js";
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const startServer = async () => {
-  await connectRedis(); // 🔌 Ensure Redis is connected before anything else
+  await connectRedis(); // Ensure Redis is ready before launching server
 
-const app = express();
+  const app = express();
+  app.set("trust proxy", 1);
 
-app.set('trust proxy', 1) // ✅ Safe: trust first proxy (like Render, Heroku, etc.)
+  // 🛡️ Middleware
+  const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+  });
+  app.use(cors());
+  app.use(helmet());
+  app.use(limiter);
+  app.use(express.json());
 
-// 🛡️ Middleware
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
-});
-app.use(cors());
-app.use(helmet());
-app.use(limiter);
-app.use(express.json());
-
-  // 🧩 WALDO API Routes
+  // 🚀 WALDO API Routes
   app.use("/api/login", loginRoute);
   app.use("/api/claim", claimRoute);
   app.use("/api/mint", mintRoute);
   app.use("/api/mint/confirm", mintConfirmRoute);
+  app.use("/api/login/status", loginStatusRoute);
+  app.use("/api/login/trustline-check", trustlineCheckRoute);
   app.use("/api/tweets", tweetsRoute);
   app.use("/api/userstats", userStatsRoute);
+  app.use("/api/proposals", proposalsRoute);
+
+  // ⚔️ Meme Battles
+  app.use("/api/battle/start", battleStartRoute);
+  app.use("/api/battle/accept", battleAcceptRoute);
+  app.use("/api/battle/vote", battleVoteRoute);
+  app.use("/api/battle/payout", battlePayoutRoute);
+
+  // 🧠 DAO Governance
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);
   app.use("/api/dao/expire", daoExpireRoute);
@@ -74,33 +82,22 @@ app.use(express.json());
   app.use("/api/dao/voter-history", daoVoterHistoryRoute);
   app.use("/api/dao/config", daoConfigRoute);
   app.use("/api/dao/archive", daoArchiveRoute);
-  app.use("/api/presale/end-date", presaleEndDateRoute);
-  app.use("/api/presale/set-end-date", presaleSetDateRoute);
-  app.use("/api/presale/countdown", presaleCountdownRoute);
-  app.use("/api/login/status", loginStatusRoute);
-  app.use("/api/login/trustline-check", trustlineCheckRoute);
-  app.use("/api/proposals", proposalsRoute);
 
-  // ⚔️ Meme Battle Routes
-  app.use("/api/battle/start", battleStartRoute);
-  app.use("/api/battle/accept", battleAcceptRoute);
-  app.use("/api/battle/vote", battleVoteRoute);
-  app.use("/api/battle/payout", battlePayoutRoute);
+  // 💰 Presale
+  app.use("/api/presale", presaleRoute);
 
-  // 🧪 Health Check
+  // 🧪 Health check
   app.get("/", (req, res) => {
     res.send("✅ WALDO backend is live at /api/*");
   });
 
-  // 🚀 Start Express
   const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => {
     console.log(`🧩 WALDO backend running on http://localhost:${PORT}`);
   });
 };
 
-startServer().catch(err => {
+startServer().catch((err) => {
   console.error("❌ Startup error:", err);
   process.exit(1);
 });
-

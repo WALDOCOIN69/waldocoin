@@ -16,6 +16,12 @@ const router = express.Router();
 
 console.log("🧩 Loaded: routes/claim.js");
 
+// 🧠 XP-based reward system
+const baseRewards = [0, 100, 200, 300]; // By tier
+const maxClaimsPerMonth = 10;
+const stakingWindowHours = 8;
+const memeCooldownDays = 30;
+
 router.post("/", async (req, res) => {
   const { wallet, stake, tier, memeId } = req.body;
 
@@ -27,22 +33,47 @@ router.post("/", async (req, res) => {
   const monthKey = now.format("YYYY-MM");
   const logKey = `rewards:${wallet}:${monthKey}:log`;
   const tierKey = `rewards:${wallet}:${monthKey}:tier:${tier}`;
+  const memeClaimKey = `meme:${memeId}:claimed`;
+  const memePostedKey = `meme:${memeId}:timestamp`;
 
   try {
-    // 🚫 Monthly cap: max 10 rewards
-    const logs = await redis.lRange(logKey, 0, -1);
-    if (logs.length >= 10) {
-      return res.status(403).json({ success: false, error: "Monthly reward limit reached" });
+    // ⏱️ Check if meme is already claimed
+    const claimed = await redis.get(memeClaimKey);
+    if (claimed) {
+      return res.status(409).json({ success: false, error: "Reward already claimed for this meme." });
     }
 
-    // ✅ Calculate reward
-    const baseReward = [0, 100, 200, 300][tier] || 0;
+    // 📅 Check monthly claim cap
+    const logs = await redis.lRange(logKey, 0, -1);
+    if (logs.length >= maxClaimsPerMonth) {
+      return res.status(403).json({ success: false, error: "Monthly reward limit reached." });
+    }
+
+    // ⌛ Check meme age and staking window
+    const postedAtRaw = await redis.get(memePostedKey);
+    if (!postedAtRaw) {
+      return res.status(400).json({ success: false, error: "Meme not tracked or missing timestamp." });
+    }
+
+    const postedAt = dayjs(postedAtRaw);
+    const stakingDeadline = postedAt.add(stakingWindowHours, "hour");
+    const memeExpiry = postedAt.add(memeCooldownDays, "day");
+
+    if (now.isAfter(memeExpiry)) {
+      return res.status(410).json({ success: false, error: "Meme is too old to claim." });
+    }
+
+    // 🔁 If expired and no claim action taken, default to instant
+    const finalStake = now.isAfter(stakingDeadline) ? false : stake;
+
+    // 🎯 Validate reward tier
+    const baseReward = baseRewards[tier] || 0;
     if (baseReward === 0) {
-      return res.status(400).json({ success: false, error: "Invalid reward tier" });
+      return res.status(400).json({ success: false, error: "Invalid reward tier." });
     }
 
     const claimId = uuidv4();
-    const feeRate = stake ? 0.05 : 0.10;
+    const feeRate = finalStake ? 0.05 : 0.10;
     const burnRate = 0.02;
 
     const gross = baseReward;
@@ -51,12 +82,12 @@ router.post("/", async (req, res) => {
     const toXRP = fee - burn;
     const net = gross - fee;
 
-    // 💾 Store log
+    // 🧠 Log claim metadata
     await redis.rPush(logKey, JSON.stringify({
       claimId,
       memeId,
       tier,
-      stake,
+      stake: finalStake,
       gross,
       fee,
       burn,
@@ -64,14 +95,16 @@ router.post("/", async (req, res) => {
       net,
       timestamp: now.toISOString()
     }));
-    await redis.incr(tierKey);
 
-    // 📝 XUMM payout
+    await redis.incr(tierKey);
+    await redis.set(memeClaimKey, "true"); // Prevent double claim
+
+    // 📝 Trigger payout via XUMM
     const payload = {
       txjson: {
         TransactionType: "Payment",
         Destination: wallet,
-        Amount: String(net * 1_000_000), // drops
+        Amount: String(net * 1_000_000), // XRP drops
         DestinationTag: 12345
       },
       options: {
@@ -80,26 +113,31 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, event => {
+    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, (event) => {
       if (event.data.signed === true) return true;
-      if (event.data.signed === false) throw new Error("❌ User rejected the sign request");
+      if (event.data.signed === false) throw new Error("User rejected the sign request");
     });
 
     return res.json({
       success: true,
-      uuid,
+      claimId,
       net,
       fee,
       burn,
       toXRP,
-      next
+      stake: finalStake,
+      next,
+      uuid
     });
 
   } catch (err) {
     console.error("❌ Claim processing error:", err);
-    return res.status(500).json({ success: false, error: "XUMM claim failed", detail: err.message });
+    return res.status(500).json({
+      success: false,
+      error: "XUMM claim failed",
+      detail: err.message
+    });
   }
 });
 
 export default router;
-
