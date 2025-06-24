@@ -47,7 +47,7 @@ const startServer = async () => {
 
 const app = express();
 
-app.set('trust proxy', true); // ✅ Add this line
+app.set('trust proxy', 1) // ✅ Safe: trust first proxy (like Render, Heroku, etc.)
 
 // 🛡️ Middleware
 const limiter = rateLimit({
