@@ -83,15 +83,12 @@ async function monitorTransactions() {
   console.log(`📡 Listening for XRP sent to: ${DISTRIBUTOR_WALLET}`)
 
   client.on('transaction', async (event) => {
-    if (!event.transaction) {
-      console.log("⚠️ Ignored: Event without valid transaction")
-      return
-    }
+    console.log('📦 XRPL Event:', JSON.stringify(event, null, 2)) // <-- DEBUG: see full event structure
 
     const tx = event.transaction
 
     if (
-      tx.TransactionType === 'Payment' &&
+      tx?.TransactionType === 'Payment' &&
       tx.Destination === DISTRIBUTOR_WALLET &&
       typeof tx.Amount === 'string'
     ) {
@@ -123,6 +120,8 @@ async function monitorTransactions() {
       } else {
         console.log(`⚠️ Ignored: ${xrpAmount} XRP from ${senderWallet} < 10 XRP threshold`)
       }
+    } else {
+      console.log(`⚠️ Ignored non-payment or invalid tx`)
     }
   })
 }
@@ -140,5 +139,6 @@ process.on("SIGINT", async () => {
   }
   process.exit()
 })
+
 
 
