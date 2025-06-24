@@ -1,87 +1,151 @@
-// autodistribute.js
+import 'dotenv/config';
+import { Client, xrpToDrops } from 'xrpl';
+import { createClient } from 'redis';
+import { v4 as uuidv4 } from 'uuid';
 
-import xrpl from "xrpl"
-import Redis from "ioredis"
-import { WALDO_ISSUER, WALDO_DISTRIBUTOR } from "./config/waldo.js"
-import { sendWaldo } from "./utils/sendWaldo.js"
+const requiredEnv = [
+  'DISTRIBUTOR_WALLET',
+  'DISTRIBUTOR_SECRET',
+  'WALDO_ISSUER',
+  'REDIS_URL',
+  'XRPL_NODE'
+];
 
-// 🔐 Load and validate required environment variables
-const REQUIRED_ENVS = [
-  "DISTRIBUTOR_SECRET",
-  "DISTRIBUTOR_WALLET",
-  "WALDO_ISSUER",
-  "XRPL_NODE",
-  "REDIS_URL"
-]
-for (const v of REQUIRED_ENVS) {
-  if (!process.env[v]) throw new Error(`❌ Missing required env variable: ${v}`)
+for (const v of requiredEnv) {
+  if (!process.env[v]) throw new Error(`❌ Missing required env variable: ${v}`);
 }
 
-const DISTRIBUTOR_WALLET = process.env.DISTRIBUTOR_WALLET
-const REDIS_URL = process.env.REDIS_URL
+const XRPL_NODE = process.env.XRPL_NODE;
+const WALLET_ADDRESS = process.env.DISTRIBUTOR_WALLET;
+const WALLET_SECRET = process.env.DISTRIBUTOR_SECRET;
+const WALDO_ISSUER = process.env.WALDO_ISSUER;
+const REDIS_URL = process.env.REDIS_URL;
 
-// 🌐 Connect to XRPL and Redis
-const client = new xrpl.Client(process.env.XRPL_NODE)
-await client.connect()
-console.log("✅ XRPL connected")
+const redis = createClient({ url: REDIS_URL });
+await redis.connect();
 
-const redis = new Redis(REDIS_URL)
-console.log("✅ Redis connected")
+console.log('✅ Redis connected');
 
-console.log(`📡 Listening for XRP sent to: ${DISTRIBUTOR_WALLET}`)
+const client = new Client(XRPL_NODE);
+await client.connect();
+console.log('✅ XRPL connected');
 
-// 🛰️ Subscribe to XRPL ledger events
-client.request({
-  command: "subscribe",
-  accounts: [DISTRIBUTOR_WALLET]
-})
+const wallet = {
+  address: WALLET_ADDRESS,
+  secret: WALLET_SECRET
+};
 
-// 🔁 Handle incoming transactions
-client.on("transaction", async (event) => {
-  const tx = event.transaction
+const MIN_XRP = 5;
+const BASE_RATE = 10000; // 1 XRP = 10,000 WALDO
+const BONUS_TIERS = [
+  { threshold: 1000, bonus: 0.20 },
+  { threshold: 500, bonus: 0.10 },
+  { threshold: 100, bonus: 0.05 }
+];
 
-  if (
-    tx?.TransactionType === "Payment" &&
-    tx.Destination === DISTRIBUTOR_WALLET &&
-    (
-      typeof tx.Amount === "string" ||
-      typeof tx.delivered_amount === "string" ||
-      typeof event.meta?.delivered_amount === "string"
-    )
-  ) {
-    const txHash = event.hash || tx.hash
-    const alreadyProcessed = await redis.get(`processed:${txHash}`)
-    if (alreadyProcessed) {
-      console.log(`⚡ Already processed TX: ${txHash}`)
-      return
-    }
+let lastTxHash = '';
 
-    const amountStr = tx.Amount || tx.delivered_amount || event.meta?.delivered_amount
-    const xrpAmount = parseFloat(amountStr) / 1_000_000
-    const senderWallet = tx.Account
+async function listenForPayments() {
+  console.log(`📡 Listening for XRP sent to: ${wallet.address}`);
 
-    console.log(`💸 Received ${xrpAmount} XRP from ${senderWallet}`)
+  client.request({
+    command: 'subscribe',
+    accounts: [wallet.address]
+  });
 
-    const bonusMultiplier =
-      xrpAmount >= 1000 ? 1.2 :
-      xrpAmount >= 500  ? 1.15 :
-      xrpAmount >= 250  ? 1.1 :
-      xrpAmount >= 100  ? 1.05 : 1
+  client.on('transaction', async (event) => {
+    const tx = event.transaction;
+    const meta = event.meta;
 
-    const waldoAmount = Math.floor(xrpAmount * 1000 * bonusMultiplier)
+    if (
+      tx.TransactionType === 'Payment' &&
+      tx.Destination === wallet.address &&
+      tx.Account !== wallet.address &&
+      !tx.Amount.includes('currency') &&
+      meta.TransactionResult === 'tesSUCCESS'
+    ) {
+      const txHash = tx.hash;
+      const from = tx.Account;
+      const amountXRP = parseFloat(tx.Amount) / 1_000_000;
 
-    try {
-      const result = await sendWaldo(senderWallet, waldoAmount)
-      if (result.success) {
-        await redis.set(`processed:${txHash}`, "1")
-        console.log(`✅ Sent ${waldoAmount} WALDO to ${senderWallet}`)
-      } else {
-        console.error("❌ WALDO send failed:", result)
+      const exists = await redis.get(`seen:${txHash}`);
+      if (exists) return;
+
+      await redis.set(`seen:${txHash}`, '1');
+      await redis.expire(`seen:${txHash}`, 60 * 60 * 24 * 7);
+
+      if (amountXRP < MIN_XRP) {
+        console.log(`⚠️ Ignored payment from ${from}: too small (${amountXRP} XRP)`);
+        return;
       }
-    } catch (err) {
-      console.error("❌ Error in WALDO payout:", err.message)
+
+      let waldoAmount = amountXRP * BASE_RATE;
+      for (const tier of BONUS_TIERS) {
+        if (amountXRP >= tier.threshold) {
+          waldoAmount += waldoAmount * tier.bonus;
+          break;
+        }
+      }
+
+      const hasTrustline = await checkTrustline(from);
+      if (!hasTrustline) {
+        console.log(`🚫 ${from} has no WALDO trustline — skipping`);
+        return;
+      }
+
+      const sent = await sendWaldo(from, Math.floor(waldoAmount), txHash);
+      if (sent) {
+        console.log(`✅ Sent ${waldoAmount} WALDO to ${from}`);
+      }
     }
-  } else {
-    console.log("⚠️ Ignored non-payment or invalid tx")
+  });
+}
+
+async function checkTrustline(account) {
+  try {
+    const lines = await client.request({
+      command: 'account_lines',
+      account
+    });
+    return lines.result.lines.some(
+      (line) => line.currency === 'WLO' && line.account === WALDO_ISSUER
+    );
+  } catch (err) {
+    console.error(`❌ Trustline check error for ${account}:`, err);
+    return false;
   }
-})
+}
+
+async function sendWaldo(destination, amount, ref) {
+  try {
+    const payment = {
+      TransactionType: 'Payment',
+      Account: wallet.address,
+      Destination: destination,
+      Amount: {
+        currency: 'WLO',
+        issuer: WALDO_ISSUER,
+        value: amount.toString()
+      },
+      Memos: [
+        {
+          Memo: {
+            MemoType: Buffer.from('WALDO_AIRDROP').toString('hex'),
+            MemoData: Buffer.from(ref).toString('hex')
+          }
+        }
+      ]
+    };
+
+    const prepared = await client.autofill(payment);
+    const { tx_blob } = await client.sign(prepared, wallet.secret);
+    const result = await client.submit(tx_blob);
+
+    return result.result.engine_result === 'tesSUCCESS';
+  } catch (err) {
+    console.error(`❌ WALDO send failed to ${destination}:`, err);
+    return false;
+  }
+}
+
+await listenForPayments();
