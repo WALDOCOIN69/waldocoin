@@ -1,10 +1,10 @@
 // 📁 autodistribute.js
 import xrpl from "xrpl";
 import dotenv from "dotenv";
-import { Xumm } from "xumm-sdk";
+import pkg from 'xumm-sdk';
 dotenv.config();
-
-const xumm = new Xumm(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
+const { XummSdk } = pkg;
+const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const client = new xrpl.Client("wss://xrplcluster.com");
 
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
