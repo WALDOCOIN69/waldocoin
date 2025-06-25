@@ -1,56 +1,24 @@
+// routes/presale.js
 import express from "express";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { redis } from "../redisClient.js";
 import dotenv from "dotenv";
 dotenv.config();
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, "..", "db.json");
 
-// 🔧 Utility: Load and save DB file
-const loadDB = () => JSON.parse(fs.readFileSync(dbPath, "utf8"));
-const saveDB = (data) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-
-// ✅ GET /api/presale — list of presale buyers
-router.get("/", (req, res) => {
+// ✅ GET /api/presale/countdown — Return presale end date
+router.get("/countdown", async (req, res) => {
   try {
-    const db = loadDB();
-    const buyers = db.presale?.buyers || [];
-    res.json(buyers);
-  } catch (err) {
-    console.error("❌ Failed to load presale buyers:", err);
-    res.status(500).json({ error: "Failed to load presale buyers" });
-  }
-});
-
-// ✅ GET /api/presale/airdrops — airdrop history
-router.get("/airdrops", (req, res) => {
-  try {
-    const db = loadDB();
-    const airdrops = db.presale?.airdrops || [];
-    res.json(airdrops);
-  } catch (err) {
-    console.error("❌ Failed to load airdrop history:", err);
-    res.status(500).json({ error: "Failed to load airdrop history" });
-  }
-});
-
-// ✅ GET /api/presale/countdown — return current presale end date
-router.get("/countdown", (req, res) => {
-  try {
-    const db = loadDB();
-    res.json({ endDate: db.presale?.endDate || null });
+    const endDate = await redis.get("presale:endDate");
+    res.json({ endDate: endDate || null });
   } catch (err) {
     console.error("❌ Failed to load countdown:", err);
     res.status(500).json({ error: "Failed to load countdown" });
   }
 });
 
-// ✅ POST /api/presale/set-end-date — update countdown (admin key required)
-router.post("/set-end-date", (req, res) => {
+// ✅ POST /api/presale/set-end-date — Admin sets end date
+router.post("/set-end-date", async (req, res) => {
   const adminKey = req.headers["x-admin-key"];
   if (adminKey !== process.env.ADMIN_KEY) {
     return res.status(403).json({ error: "Forbidden: Invalid admin key" });
@@ -62,16 +30,85 @@ router.post("/set-end-date", (req, res) => {
   }
 
   try {
-    const db = loadDB();
-    db.presale = db.presale || {};
-    db.presale.endDate = newDate;
-    saveDB(db);
+    await redis.set("presale:endDate", newDate);
     res.json({ success: true, endDate: newDate });
   } catch (err) {
-    console.error("❌ Failed to update countdown:", err);
-    res.status(500).json({ error: "Failed to save countdown" });
+    console.error("❌ Failed to set countdown:", err);
+    res.status(500).json({ error: "Failed to set countdown" });
+  }
+});
+
+// ✅ GET /api/presale — List all buyers (from Redis hash)
+router.get("/", async (req, res) => {
+  try {
+    const buyers = await redis.hGetAll("presale:buyers");
+    const parsed = Object.entries(buyers).map(([wallet, data]) => ({
+      wallet,
+      ...JSON.parse(data),
+    }));
+    res.json(parsed);
+  } catch (err) {
+    console.error("❌ Failed to load buyers:", err);
+    res.status(500).json({ error: "Failed to load buyers" });
+  }
+});
+
+// ✅ GET /api/presale/airdrops — Get airdrop history
+router.get("/airdrops", async (req, res) => {
+  try {
+    const logs = await redis.lRange("presale:airdrops", 0, -1);
+    const parsed = logs.map((item) => JSON.parse(item));
+    res.json(parsed);
+  } catch (err) {
+    console.error("❌ Failed to load airdrops:", err);
+    res.status(500).json({ error: "Failed to load airdrop history" });
+  }
+});
+
+// ✅ POST /api/presale/log — Log successful airdrop (from autodistribute.js)
+router.post("/log", async (req, res) => {
+  const { wallet, amount, txHash, bonus, timestamp } = req.body;
+  const txKey = `presale:tx:${txHash}`;
+
+  if (!wallet || !amount || !txHash) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const alreadyProcessed = await redis.exists(txKey);
+    if (alreadyProcessed) {
+      return res.status(409).json({ error: "Duplicate transaction" });
+    }
+
+    // Save TX as processed (TTL 60 days)
+    await redis.set(txKey, "true", { EX: 86400 * 60 });
+
+    // Save buyer info
+    const buyerData = {
+      total: parseFloat(amount),
+      bonus: parseFloat(bonus || 0),
+      updated: timestamp || Date.now(),
+    };
+
+    // Merge if buyer exists
+    const existing = await redis.hGet("presale:buyers", wallet);
+    if (existing) {
+      const parsed = JSON.parse(existing);
+      buyerData.total += parsed.total || 0;
+      buyerData.bonus += parsed.bonus || 0;
+    }
+
+    await redis.hSet("presale:buyers", wallet, JSON.stringify(buyerData));
+
+    // Log in airdrop history list
+    const logEntry = { wallet, amount, bonus, txHash, timestamp: Date.now() };
+    await redis.lPush("presale:airdrops", JSON.stringify(logEntry));
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Presale log failed:", err);
+    res.status(500).json({ error: "Presale log failed" });
   }
 });
 
 export default router;
-
