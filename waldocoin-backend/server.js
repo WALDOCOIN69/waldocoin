@@ -29,8 +29,10 @@ import daoArchiveRoute from "./routes/dao/archive.js";
 import trustlineCheckRoute from "./routes/login/trustline-check.js";
 import proposalsRoute from "./routes/proposals.js";
 import battleResultsRoute from "./routes/battle/results.js";
+import topMemeRoute from "./routes/topmeme.js";
 
-
+// in server.js
+import conversionRoute from "./routes/conversion.js";
 
 // 🔗 Unified Presale route
 import presaleRoute from "./routes/presale.js";
@@ -71,6 +73,10 @@ const startServer = async () => {
   app.use("/api/tweets", tweetsRoute);
   app.use("/api/userstats", userStatsRoute);
   app.use("/api/proposals", proposalsRoute);
+  app.use("/api/conversion", conversionRoute);
+  app.use("/api/topMeme", topMemeRoute);
+
+
 
   // ⚔️ Meme Battles
   app.use("/api/battle/start", battleStartRoute);
