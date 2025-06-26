@@ -1,0 +1,29 @@
+<section style="text-align:center; margin-top:30px;">
+  <h3 style="color:#333;">Scan or Copy WALDO Wallet</h3>
+  <p style="color:#555;">Send XRP to:</p>
+
+  <code id="waldoWallet" style="display:inline-block; background:#f9f9f9; padding:10px 20px; font-size:16px; font-weight:bold; border:2px solid #e63e3e; border-radius:6px;">
+    rnWfL48YCknW6PYewFLKfMKUymHCfj3aww
+  </code>
+
+  <br><br>
+  <button onclick="copyWaldoWallet()" style="padding:10px 20px; background:#e63e3e; color:white; font-weight:bold; border:none; border-radius:5px; cursor:pointer;">
+    📋 Copy to Clipboard
+  </button>
+
+  <br><br>
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=rnWfL48YCknW6PYewFLKfMKUymHCfj3aww"
+       alt="QR Code for XRP Wallet"
+       style="width:160px; height:160px; border:4px solid #e63e3e; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.2);" />
+</section>
+
+<script>
+  function copyWaldoWallet() {
+    const text = document.getElementById("waldoWallet").innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      alert("✅ WALDO Wallet Address Copied!");
+    }).catch(err => {
+      alert("❌ Copy failed. Try again.");
+    });
+  }
+</script>
