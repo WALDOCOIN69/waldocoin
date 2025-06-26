@@ -27,6 +27,8 @@ import daoConfigRoute from "./routes/dao/config.js";
 import daoArchiveRoute from "./routes/dao/archive.js";
 import trustlineCheckRoute from "./routes/login/trustline-check.js";
 import proposalsRoute from "./routes/proposals.js";
+import battleResultsRoute from "./routes/battle/results.js";
+
 
 // 🔗 Unified Presale route
 import presaleRoute from "./routes/presale.js";
@@ -72,7 +74,7 @@ const startServer = async () => {
   app.use("/api/battle/accept", battleAcceptRoute);
   app.use("/api/battle/vote", battleVoteRoute);
   app.use("/api/battle/payout", battlePayoutRoute);
-
+  app.use("/api/battle/results", battleResultsRoute);
   // 🧠 DAO Governance
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);

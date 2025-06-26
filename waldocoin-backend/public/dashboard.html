@@ -715,23 +715,25 @@ function getWallet() {
     document.getElementById("waldoNotification").style.display = "none";
   }
   
-  function generateRewardTable() {
-    const table = document.getElementById("rewardTierBody");
-    table.innerHTML = "";
-    rewardTiers.forEach(t => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>Tier ${t.tier}</td>
-        <td>${t.likes}+</td>
-        <td>${t.retweets}+</td>
-        <td>${t.base.toFixed(2)} WALDO</td>
-        <td>${(t.base * 0.9).toFixed(2)} WALDO</td>
-        <td>${(t.base * 1.15 * 0.95).toFixed(2)} WALDO</td>
-        <td>${(t.base * 0.9 * 40).toFixed(2)}</td>
-        <td>${(t.base * 1.15 * 0.95 * 40).toFixed(2)}</td>`;
-      table.appendChild(row);
-    });
-  }
+function generateRewardTable() {
+  const table = document.getElementById("rewardTierBody");
+  if (!table || !Array.isArray(rewardTiers)) return;
+  table.innerHTML = "";
+  rewardTiers.forEach(t => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>Tier ${t.tier}</td>
+      <td>${t.likes}+</td>
+      <td>${t.retweets}+</td>
+      <td>${t.base.toFixed(2)} WALDO</td>
+      <td>${(t.base * 0.9).toFixed(2)} WALDO</td>
+      <td>${(t.base * 1.15 * 0.95).toFixed(2)} WALDO</td>
+      <td>${(t.base * 0.9 * 40).toFixed(2)}</td>
+      <td>${(t.base * 1.15 * 0.95 * 40).toFixed(2)}</td>`;
+    table.appendChild(row);
+  });
+}
+
   
   function copyReferral() {
     const input = document.getElementById("referralLink");

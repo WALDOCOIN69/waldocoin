@@ -14,26 +14,26 @@ router.post("/", async (req, res) => {
   const { wallet, battleId, vote } = req.body;
 
   if (!wallet || !battleId || !vote || !["A", "B"].includes(vote)) {
-    return res.status(400).json({ success: false, error: "Invalid vote payload" });
+    return res.status(400).json({ success: false, error: "Invalid vote payload." });
   }
 
   try {
     const battleKey = `battle:${battleId}`;
     const battleDataRaw = await redis.get(battleKey);
     if (!battleDataRaw) {
-      return res.status(404).json({ success: false, error: "Battle not found" });
+      return res.status(404).json({ success: false, error: "Battle not found." });
     }
 
     const battleData = JSON.parse(battleDataRaw);
 
     if (battleData.status !== "accepted") {
-      return res.status(400).json({ success: false, error: "Battle not active" });
+      return res.status(400).json({ success: false, error: "No active battle to vote in." });
     }
 
     const voteKey = `battle:${battleId}:vote:${wallet}`;
     const alreadyVoted = await redis.get(voteKey);
     if (alreadyVoted) {
-      return res.status(403).json({ success: false, error: "You already voted in this battle" });
+      return res.status(403).json({ success: false, error: "You have already voted." });
     }
 
     const feeWaldo = 5;
@@ -51,22 +51,19 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, event => {
-      if (event.data.signed === true) return true;
-      if (event.data.signed === false) throw new Error("❌ Vote payment rejected");
-    });
+    const { uuid, next } = await xummClient.payload.create(payload);
 
-    // ⏱️ Save vote with timestamp
+    // ⏱️ Save vote to prevent double voting (7-day expiry)
     await redis.set(voteKey, JSON.stringify({ vote, timestamp: Date.now() }), { EX: 60 * 60 * 24 * 7 });
 
-    // 📊 Increment vote count
+    // 📊 Increment meme vote count
     const countKey = `battle:${battleId}:count:${vote}`;
     await redis.incr(countKey);
 
-    // 📋 Add to set of voters by side
+    // 📋 Track voter by vote choice
     await redis.sAdd(`battle:${battleId}:voters:${vote}`, wallet);
 
-    // ⭐ XP bonus for voter
+    // ⭐ Award XP for voting
     await addXP(wallet, 1);
 
     return res.json({
@@ -79,8 +76,9 @@ router.post("/", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Vote error:", err);
-    return res.status(500).json({ success: false, error: "Vote failed", detail: err.message });
+    return res.status(500).json({ success: false, error: "Vote failed.", detail: err.message });
   }
 });
 
 export default router;
+
