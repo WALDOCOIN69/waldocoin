@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "url";
 import path from "path";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 import { connectRedis } from "./redisClient.js";
@@ -30,6 +31,7 @@ import proposalsRoute from "./routes/proposals.js";
 import battleResultsRoute from "./routes/battle/results.js";
 
 
+
 // 🔗 Unified Presale route
 import presaleRoute from "./routes/presale.js";
 
@@ -38,6 +40,7 @@ import battleStartRoute from "./routes/battle/start.js";
 import battleAcceptRoute from "./routes/battle/accept.js";
 import battleVoteRoute from "./routes/battle/vote.js";
 import battlePayoutRoute from "./routes/battle/payout.js";
+import battleCurrentRoute from "./routes/battle/current.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,6 +78,8 @@ const startServer = async () => {
   app.use("/api/battle/vote", battleVoteRoute);
   app.use("/api/battle/payout", battlePayoutRoute);
   app.use("/api/battle/results", battleResultsRoute);
+  app.use("/api/battle", battleCurrentRoute);
+
   // 🧠 DAO Governance
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);
