@@ -1,4 +1,3 @@
-// routes/battle/results.js
 import express from "express";
 import { redis } from "../../redisClient.js";
 
@@ -18,7 +17,29 @@ router.get("/:battleId", async (req, res) => {
 
     const winner = votesA > votesB ? "A" : votesB > votesA ? "B" : "tie";
 
-    return res.json({ success: true, votesA, votesB, winner });
+    // Default reward logic
+    let xpGained = 0;
+    let waldoEarned = 0;
+    let votersXp = 0;
+    let votersWaldo = 0;
+
+    if (winner !== "tie") {
+      xpGained = 50;
+      waldoEarned = 100;
+      votersXp = 5;
+      votersWaldo = 10;
+    }
+
+    return res.json({
+      success: true,
+      votesA,
+      votesB,
+      winner,
+      xpGained,
+      waldoEarned,
+      votersXp,
+      votersWaldo
+    });
   } catch (err) {
     console.error("❌ Failed to fetch battle results:", err);
     return res.status(500).json({ success: false, error: "Error fetching results" });
@@ -26,3 +47,4 @@ router.get("/:battleId", async (req, res) => {
 });
 
 export default router;
+
