@@ -586,16 +586,28 @@ html, body {
 .battle-leaderboard-table th {
   background: #e63e3e;
 }
-.instruction-banner {
-  background: linear-gradient(to right, #e63e3e, #000);
-  color: white;
-  text-align: center;
+.info-banner-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.info-banner {
+  background: #222;
   padding: 12px;
-  font-weight: bold;
-  font-size: 1rem;
+  border: 1px solid red;
   border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
+  color: #fff;
+  font-size: 0.95rem;
+  text-align: center;
+  max-width: 100%;
+  margin: 0 auto 16px auto;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+
+
 }
 .toast {
   position: fixed;
@@ -617,7 +629,47 @@ html, body {
   display: none;
 }
 
+    .link-response {
+      margin-top: 10px;
+      font-weight: bold;
     }
+    #linkResponse {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    @media (max-width: 600px) {
+  .card, .big-card {
+    padding: 12px;
+    margin: 10px auto;
+    width: 100%;
+  }
+
+  .center-text, .level-title {
+    font-size: 1rem;
+  }
+.meme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+
+  .wallet-address {
+    font-size: 0.9rem;
+    word-break: break-word;
+  }
+
+  button, input {
+    font-size: 1rem;
+    padding: 12px 16px;
+  }
+
+  .info-banner {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+}
+
     </style>
     </head>
     <body>
@@ -625,23 +677,25 @@ html, body {
     <span id="waldoMessage"></span>
     <button type="button" onclick="dismissWaldoNotification()" class="dismiss-btn">Dismiss</button>
   </div>
-  <div class="container">
-    <!-- Welcome Card -->
-    <div class="card big-card">
-      <h2>👋 Welcome to the WALDOcoin Organization</h2>
-      <button type="button" onclick="logoutWallet()" class="disconnect-btn">🔌 Disconnect</button>
-      <p id="walletAddress" class="wallet-address">Wallet: Loading...</p>
-      <h3 class="center-text">🔗 Link Twitter Account</h3>
-  <h2>🎮 Member Level</h2>
-  <img
-    id="userLevelIcon"
-    alt="Level Icon"
-    src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png">
-  <p id="userLevelTitle" class="center-text level-title">Loading...</p>
-  <progress id="levelProgress" max="100" value="0"></progress>
-  <p id="xpToNextLevel" class="center-text">...</p>
-</div>
+    <div id="linkResponse" class="link-response"></div>
+  <!-- Welcome Card -->
+  <div class="card big-card">
+    <!-- ✅ Only one response box -->
+    <button type="button" onclick="logoutWallet()" class="disconnect-btn">🔌 Disconnect</button>
+    <p id="walletAddress" class="wallet-address">Wallet: Loading...</p>
+    <h3 class="center-text">🔗 Link Twitter Account</h3>
+    <input type="text" id="twitterHandleInput" placeholder="Enter Twitter handle">
+    <button id="linkButton" type="button">Link Twitter</button>
 
+    <h2>🎮 Member Level</h2>
+    <img
+      id="userLevelIcon"
+      alt="Level Icon"
+      src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png">
+    <p id="userLevelTitle" class="center-text level-title">Loading...</p>
+    <progress id="levelProgress" max="100" value="0"></progress>
+    <p id="xpToNextLevel" class="center-text">...</p>
+  </div>
     <!-- Meme XP Trends Card -->
     <div class="card">
       <h2>📊 Meme XP Trends</h2>
@@ -785,7 +839,7 @@ html, body {
       </div>
     </div>
     <!-- WALDOcoin Battle Arena -->
-     <div class="instruction-banner" id="battleInstructions">
+     <div class="info-banner">
   📢 Welcome to the Meme Battle Arena! Paste a meme tweet link, start a battle, or accept one to begin voting.
 </div>
 
@@ -837,7 +891,6 @@ html, body {
         </div>
       </div>
     </div>
-  </div>
 <!-- 📜 Past Meme Battles -->
 <div class="card battle-history-card">
   <h2>📜 Past Meme Battles</h2>
@@ -1591,7 +1644,30 @@ async function loadBattleLeaderboard() {
     document.getElementById("battleLeaderboardStatus").textContent = "Error loading leaderboard.";
   }
 }
+async function linkTwitterHandle(wallet, handle) {
+  const responseBox = document.getElementById("linkResponse"); // Add this element to show messages
 
+  try {
+    const res = await fetch("https://waldocoin-backend-api.onrender.com/api/linkTwitter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet, handle })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      responseBox.innerHTML = `✅ Twitter handle linked and scanned. <br> 🔍 ${data.memesStored} memes found.`;
+      responseBox.style.color = "lime";
+    } else {
+      responseBox.innerHTML = `❌ Error: ${data.error || "Something went wrong."}`;
+      responseBox.style.color = "red";
+    }
+  } catch (err) {
+    responseBox.innerHTML = `❌ Request failed: ${err.message}`;
+    responseBox.style.color = "red";
+  }
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </body>

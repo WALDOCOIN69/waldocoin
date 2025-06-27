@@ -107,6 +107,9 @@ def store_meme_tweet(tweet):
     xp = calculate_xp(metrics["like_count"], metrics["retweet_count"])
     tier, waldo = calculate_rewards(metrics["like_count"], metrics["retweet_count"], DEFAULT_REWARD_TYPE)
 
+    key = f"meme:{tweet['id']}"
+    tweet_id = tweet["id"]
+
     r.hset(key, mapping={
         "author_id": author_id,
         "handle": handle,
@@ -123,6 +126,12 @@ def store_meme_tweet(tweet):
         "stake_selected": 0,
         "stake_release": ""
     })
+
+    # 👇 Additional tweet-based indexes for frontend dashboard
+    r.sadd(f"wallet:tweets:{wallet}", tweet_id)
+    r.set(f"meme:xp:{tweet_id}", xp)
+    r.set(f"meme:waldo:{tweet_id}", waldo)
+    r.set(f"meme:nft_minted:{tweet_id}", "false")
 
     # XP tracking + NFT flag
     r.set(f"meme:xp:{tweet['id']}", xp)
