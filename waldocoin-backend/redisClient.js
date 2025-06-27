@@ -23,12 +23,9 @@ export async function connectRedis() {
     await redis.connect();
     console.log('✅ Redis connected');
 
-    // 🔄 Keep-alive to prevent idle timeout
-    setInterval(() => {
-      redis.ping().catch(err => {
-        console.warn('⚠️ Redis ping failed:', err.message);
-      });
-    }, 60 * 1000);
+    // 🧹 REMOVED PING INTERVAL — not needed for Upstash (serverless)
+    // It was causing ETIMEDOUT errors because Upstash sleeps idle connections
+
   } catch (err) {
     console.error('❌ Redis connection failed:', err);
     process.exit(1);
