@@ -33,6 +33,7 @@ import battleVoteRoute from "./routes/battle/vote.js";
 import battlePayoutRoute from "./routes/battle/payout.js";
 import battleResultsRoute from "./routes/battle/results.js";
 import battleCurrentRoute from "./routes/battle/current.js";
+import { processRefunds } from "./cron/battleRefunder.js";
 
 // 🧠 DAO Governance Routes
 import daoCreateRoute from "./routes/dao/create.js";
@@ -53,7 +54,21 @@ const __dirname = path.dirname(__filename);
 const startServer = async () => {
   await connectRedis();
 
-  const app = express();
+
+// inside startServer()
+const app = express();
+
+// 🧪 Refund Debug Routes
+app.get("/api/debug/test-refund", async (req, res) => {
+  try {
+    await processRefunds();
+    res.json({ success: true, message: "Refund process executed" });
+  } catch (err) {
+    console.error("❌ Refund Test Error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
   app.set("trust proxy", 1);
 
   // 🛡️ Security Middleware
