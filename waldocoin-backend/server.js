@@ -97,6 +97,11 @@ const startServer = async () => {
 
   app.use("/api/presale", presaleRoute);
 
+app.get("/api/debug/refund", async (req, res) => {
+  await refundExpiredBattles();
+  res.send("✅ Refund logic manually triggered");
+});
+
   // 🧪 Health Check
   app.get("/", (req, res) => {
     res.send("✅ WALDO backend is live at /api/*");
