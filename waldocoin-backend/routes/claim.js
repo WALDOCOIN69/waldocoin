@@ -65,7 +65,8 @@ if (!postedAtRaw) {
   console.log("❌ Timestamp missing in memeData");
   return res.status(400).json({ success: false, error: "Meme not tracked or missing timestamp." });
 }
-    const postedAt = dayjs(postedAtRaw);
+    const postedAt = dayjs.unix(parseInt(postedAtRaw));
+
     const stakingDeadline = postedAt.add(stakingWindowHours, "hour");
     const memeExpiry = postedAt.add(memeCooldownDays, "day");
 
