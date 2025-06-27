@@ -1,11 +1,10 @@
 // cron/battleRefunder.js
 import { getXummClient } from "../utils/xummClient.js";
-// cron/battleRefunder.js
-import battles from "../data/battles.json" assert { type: "json" };
 import fs from "fs";
+const battles = JSON.parse(fs.readFileSync(new URL("../data/battles.json", import.meta.url)));
 
 const xumm = getXummClient();
-const REFUND_FEE = 0; // Set to 5 if you want to deduct a fee from refund
+const REFUND_FEE = 0; // Change to 5 for fee
 
 export async function refundExpiredBattles() {
   const now = Date.now();
@@ -59,3 +58,4 @@ export async function refundExpiredBattles() {
     console.log("💾 battles.json updated with refund info.");
   }
 }
+
