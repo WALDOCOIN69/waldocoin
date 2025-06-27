@@ -6,9 +6,11 @@ export const redis = createClient({
   socket: {
     reconnectStrategy: retries => {
       console.warn(`🔁 Redis reconnect attempt #${retries}`);
-      return Math.min(retries * 100, 3000); // max 3s backoff
+      return Math.min(retries * 100, 3000);
     },
-    tls: process.env.REDIS_URL?.startsWith('rediss://') ? {} : undefined
+    ...(process.env.REDIS_URL?.startsWith('rediss://')
+      ? { tls: true, rejectUnauthorized: false }
+      : {})
   }
 });
 
