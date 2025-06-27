@@ -56,18 +56,6 @@ const startServer = async () => {
 
 // inside startServer()
 const app = express();
-
-// 🧪 Refund Debug Routes
-app.get("/api/debug/test-refund", async (req, res) => {
-  try {
-    await processRefunds();
-    res.json({ success: true, message: "Refund process executed" });
-  } catch (err) {
-    console.error("❌ Refund Test Error:", err.message);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
   app.set("trust proxy", 1);
 
   // 🛡️ Security Middleware
@@ -114,6 +102,11 @@ app.get("/api/debug/test-refund", async (req, res) => {
 app.get("/api/debug/refund", async (req, res) => {
   await refundExpiredBattles();
   res.send("✅ Refund logic manually triggered");
+    refundExpiredBattles()
+    .then(() => res.json({ success: true, message: "Manual refund triggered" }))
+    .catch((err) =>
+      res.status(500).json({ success: false, error: err.message })
+    );
 });
 
   // 🧪 Health Check

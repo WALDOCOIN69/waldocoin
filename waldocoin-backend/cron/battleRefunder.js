@@ -29,6 +29,12 @@ function saveBattles(battles) {
 // 🚨 Refund unaccepted expired battles (10hr window)
 async function refundExpiredBattles() {
   const battles = loadBattles();
+  if (!Array.isArray(battles)) {
+  console.warn("⚠️ battles.json invalid, resetting to []");
+  saveBattles([]);
+  return;
+}
+
   const now = Date.now();
   let changed = false;
 
