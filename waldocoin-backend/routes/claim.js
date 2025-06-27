@@ -49,6 +49,16 @@ router.post("/", async (req, res) => {
       return res.status(403).json({ success: false, error: "Monthly reward limit reached." });
     }
 
+    // 🔍 Debug block to check if meme is stored correctly
+    const redisKey = `memes:${wallet}:${memeId}`;
+    const memeData = await redis.hGetAll(redisKey);
+    console.log("🔍 Redis data for meme:", redisKey, memeData);
+
+    if (!memeData || !memeData.timestamp) {
+      console.log("❌ Meme not found or missing timestamp in Redis");
+      return res.status(400).json({ success: false, error: "Meme not tracked or missing timestamp." });
+    }
+
     // ⌛ Check meme age and staking window
     const postedAtRaw = await redis.get(memePostedKey);
     if (!postedAtRaw) {
@@ -63,7 +73,6 @@ router.post("/", async (req, res) => {
       return res.status(410).json({ success: false, error: "Meme is too old to claim." });
     }
 
-    // 🔁 If expired and no claim action taken, default to instant
     const finalStake = now.isAfter(stakingDeadline) ? false : stake;
 
     // 🎯 Validate reward tier
@@ -104,7 +113,7 @@ router.post("/", async (req, res) => {
       txjson: {
         TransactionType: "Payment",
         Destination: wallet,
-        Amount: String(net * 1_000_000), // XRP drops
+        Amount: String(net * 1_000_000), // drops
         DestinationTag: 12345
       },
       options: {
@@ -141,3 +150,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
