@@ -1,6 +1,7 @@
 // cron/battleRefunder.js
 import { getXummClient } from "../utils/xummClient.js";
-import battles from "../data/battles.json";
+// cron/battleRefunder.js
+import battles from "../data/battles.json" assert { type: "json" };
 import fs from "fs";
 
 const xumm = getXummClient();
