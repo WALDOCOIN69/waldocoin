@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { xummClient } from "../utils/xummClient.js";
-import { WALDO_ISSUER, WALDOCION_TOKEN, WALDO_DISTRIBUTOR_SECRET } from "../config.js";
+import { WALDO_ISSUER, WALDOCOIN_TOKEN, WALDO_DISTRIBUTOR_SECRET } from "../config.js";
 import { Client, Wallet, convertStringToHex } from "xrpl";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -61,7 +61,7 @@ async function processRefunds() {
 
       // If WALDO is an issued token, use IssuedCurrencyAmount
       tx.Amount = {
-        currency: WALDOCION_TOKEN,
+        currency: WALDOCOIN_TOKEN,
         issuer: WALDO_ISSUER,
         value: "100"
       };
