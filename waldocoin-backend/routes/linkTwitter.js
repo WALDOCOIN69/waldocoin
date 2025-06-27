@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { redis } from "../redisClient.js";
+import { scan_user } from "../utils/scan_user.js"; // adjust path if needed
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +28,17 @@ router.post("/", async (req, res) => {
     }
 
     await redis.hSet(key, "twitterHandle", handle);
-    return res.json({ success: true, message: "Twitter handle linked successfully." });
+    await redis.set(`twitter:${handle.toLowerCase()}`, wallet);
+    await redis.set(`wallet:handle:${wallet}`, handle.toLowerCase());
+
+    // 🔍 Scan for #WaldoMeme tweets right after linking
+    const memesFound = await scan_user(handle.toLowerCase());
+
+    return res.json({
+      success: true,
+      message: `Twitter handle linked successfully and scanned.`,
+      memesStored: memesFound
+    });
 
   } catch (err) {
     console.error("❌ Redis error in linkTwitter:", err);
@@ -36,4 +47,3 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
