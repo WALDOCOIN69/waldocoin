@@ -10,8 +10,20 @@ const router = express.Router();
 
 console.log("🧩 Loaded: routes/battle/start.js");
 
+async function getWalletFromHandle(handle) {
+  const key = `twitter:${handle.toLowerCase()}`;
+  const wallet = await redis.get(key);
+  return wallet;
+}
+
+async function getHandleFromWallet(wallet) {
+  const key = `handle:${wallet}`;
+  const handle = await redis.get(key);
+  return handle;
+}
+
 router.post("/", async (req, res) => {
-  const { wallet, tweetId } = req.body;
+  const { wallet, tweetId, twitterHandle } = req.body;
 
   if (!wallet || !tweetId) {
     return res.status(400).json({ success: false, error: "Missing wallet or tweetId" });
@@ -22,7 +34,20 @@ router.post("/", async (req, res) => {
     const now = dayjs();
     const feeWaldo = 100;
 
-    // 🔐 WALDO payment payload for starting a battle
+    let challengedWallet = null;
+    let challengedHandle = null;
+
+    if (twitterHandle) {
+      challengedWallet = await getWalletFromHandle(twitterHandle);
+      if (!challengedWallet) {
+        return res.status(404).json({ success: false, error: `No wallet found for @${twitterHandle}` });
+      }
+      challengedHandle = twitterHandle;
+    }
+
+    const challengerHandle = await getHandleFromWallet(wallet);
+
+    // 🔐 WALDO payment payload
     const payload = {
       txjson: {
         TransactionType: "Payment",
@@ -44,7 +69,11 @@ router.post("/", async (req, res) => {
     const battleData = {
       battleId,
       challenger: wallet,
+      challengerHandle: challengerHandle || null,
       challengerTweetId: tweetId,
+      challenged: challengedWallet,
+      challengedHandle: challengedHandle,
+      challengedTweetId: null,
       status: "pending",
       createdAt: now.toISOString(),
       acceptedAt: null,
@@ -73,4 +102,5 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
 

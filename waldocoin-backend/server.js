@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -5,19 +6,35 @@ import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "url";
 import path from "path";
 import dotenv from "dotenv";
+import cron from "node-cron";
 
 dotenv.config();
 
 import { connectRedis } from "./redisClient.js";
+import { refundExpiredBattles } from "./cron/battleRefunder.js";
 
-// 🔗 WALDO routes
+// 🔗 WALDO Routes
 import loginRoute from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
 import mintRoute from "./routes/mint.js";
 import mintConfirmRoute from "./routes/mint/confirm.js";
 import loginStatusRoute from "./routes/login/status.js";
+import trustlineCheckRoute from "./routes/login/trustline-check.js";
 import tweetsRoute from "./routes/tweets.js";
 import userStatsRoute from "./routes/userstats.js";
+import proposalsRoute from "./routes/proposals.js";
+import conversionRoute from "./routes/conversion.js";
+import topMemeRoute from "./routes/topmeme.js";
+
+// ⚔️ Meme Battle Routes
+import battleStartRoute from "./routes/battle/start.js";
+import battleAcceptRoute from "./routes/battle/accept.js";
+import battleVoteRoute from "./routes/battle/vote.js";
+import battlePayoutRoute from "./routes/battle/payout.js";
+import battleResultsRoute from "./routes/battle/results.js";
+import battleCurrentRoute from "./routes/battle/current.js";
+
+// 🧠 DAO Governance Routes
 import daoCreateRoute from "./routes/dao/create.js";
 import daoVoteRoute from "./routes/dao/vote.js";
 import daoExpireRoute from "./routes/dao/expire.js";
@@ -26,34 +43,20 @@ import daoOverrideRoute from "./routes/dao/override.js";
 import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
 import daoConfigRoute from "./routes/dao/config.js";
 import daoArchiveRoute from "./routes/dao/archive.js";
-import trustlineCheckRoute from "./routes/login/trustline-check.js";
-import proposalsRoute from "./routes/proposals.js";
-import battleResultsRoute from "./routes/battle/results.js";
-import topMemeRoute from "./routes/topmeme.js";
 
-// in server.js
-import conversionRoute from "./routes/conversion.js";
-
-// 🔗 Unified Presale route
+// 💰 Presale Route
 import presaleRoute from "./routes/presale.js";
-
-// ⚔️ Meme Battle routes
-import battleStartRoute from "./routes/battle/start.js";
-import battleAcceptRoute from "./routes/battle/accept.js";
-import battleVoteRoute from "./routes/battle/vote.js";
-import battlePayoutRoute from "./routes/battle/payout.js";
-import battleCurrentRoute from "./routes/battle/current.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const startServer = async () => {
-  await connectRedis(); // Ensure Redis is ready before launching server
+  await connectRedis();
 
   const app = express();
   app.set("trust proxy", 1);
 
-  // 🛡️ Middleware
+  // 🛡️ Security Middleware
   const limiter = rateLimit({
     windowMs: 60 * 1000,
     max: 100,
@@ -63,7 +66,7 @@ const startServer = async () => {
   app.use(limiter);
   app.use(express.json());
 
-  // 🚀 WALDO API Routes
+  // 🚀 API Endpoints
   app.use("/api/login", loginRoute);
   app.use("/api/claim", claimRoute);
   app.use("/api/mint", mintRoute);
@@ -76,9 +79,6 @@ const startServer = async () => {
   app.use("/api/conversion", conversionRoute);
   app.use("/api/topMeme", topMemeRoute);
 
-
-
-  // ⚔️ Meme Battles
   app.use("/api/battle/start", battleStartRoute);
   app.use("/api/battle/accept", battleAcceptRoute);
   app.use("/api/battle/vote", battleVoteRoute);
@@ -86,7 +86,6 @@ const startServer = async () => {
   app.use("/api/battle/results", battleResultsRoute);
   app.use("/api/battle", battleCurrentRoute);
 
-  // 🧠 DAO Governance
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);
   app.use("/api/dao/expire", daoExpireRoute);
@@ -96,12 +95,17 @@ const startServer = async () => {
   app.use("/api/dao/config", daoConfigRoute);
   app.use("/api/dao/archive", daoArchiveRoute);
 
-  // 💰 Presale
   app.use("/api/presale", presaleRoute);
 
-  // 🧪 Health check
+  // 🧪 Health Check
   app.get("/", (req, res) => {
     res.send("✅ WALDO backend is live at /api/*");
+  });
+
+  // ⏱️ Cron Job — Check every 5 min for expired battles
+  cron.schedule("*/5 * * * *", async () => {
+    console.log("🕒 Checking for expired battles...");
+    await refundExpiredBattles();
   });
 
   const PORT = process.env.PORT || 5050;
@@ -110,7 +114,9 @@ const startServer = async () => {
   });
 };
 
+// 🚀 Boot the server
 startServer().catch((err) => {
   console.error("❌ Startup error:", err);
   process.exit(1);
 });
+
