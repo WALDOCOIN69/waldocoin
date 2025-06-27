@@ -60,11 +60,11 @@ router.post("/", async (req, res) => {
     }
 
     // ⌛ Check meme age and staking window
-    const postedAtRaw = await redis.get(memePostedKey);
-    if (!postedAtRaw) {
-      return res.status(400).json({ success: false, error: "Meme not tracked or missing timestamp." });
-    }
-
+ const postedAtRaw = memeData.timestamp;
+if (!postedAtRaw) {
+  console.log("❌ Timestamp missing in memeData");
+  return res.status(400).json({ success: false, error: "Meme not tracked or missing timestamp." });
+}
     const postedAt = dayjs(postedAtRaw);
     const stakingDeadline = postedAt.add(stakingWindowHours, "hour");
     const memeExpiry = postedAt.add(memeCooldownDays, "day");
