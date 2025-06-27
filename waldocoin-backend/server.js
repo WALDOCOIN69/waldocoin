@@ -33,7 +33,6 @@ import battleVoteRoute from "./routes/battle/vote.js";
 import battlePayoutRoute from "./routes/battle/payout.js";
 import battleResultsRoute from "./routes/battle/results.js";
 import battleCurrentRoute from "./routes/battle/current.js";
-import { processRefunds } from "./cron/battleRefunder.js";
 
 // 🧠 DAO Governance Routes
 import daoCreateRoute from "./routes/dao/create.js";
