@@ -1,6 +1,7 @@
 // cron/battleRefunder.js
-import { getXummClient } from "../utils/xummClient.js";
+import { xummClient } from "../utils/xummClient.js";
 import fs from "fs";
+
 const battles = JSON.parse(fs.readFileSync(new URL("../data/battles.json", import.meta.url)));
 
 const xumm = getXummClient();
