@@ -26,8 +26,8 @@ function saveBattles(battles) {
   fs.writeFileSync(battlesPath, JSON.stringify(battles, null, 2));
 }
 
-// 🚨 Process refunds for expired unaccepted battles
-async function processRefunds() {
+// 🚨 Refund unaccepted expired battles (10hr window)
+async function refundExpiredBattles() {
   const battles = loadBattles();
   const now = Date.now();
   let changed = false;
@@ -39,8 +39,7 @@ async function processRefunds() {
     ) {
       console.log(`🔄 Refunding unaccepted battle: ${battle.id}`);
 
-      // Send refund using XRPL client
-      const client = new Client("wss://s.altnet.rippletest.net:51233"); // Testnet
+      const client = new Client("wss://s.altnet.rippletest.net:51233"); // XRPL testnet
       const wallet = Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
       await client.connect();
 
@@ -48,7 +47,11 @@ async function processRefunds() {
         TransactionType: "Payment",
         Account: wallet.address,
         Destination: battle.challenger,
-        Amount: "100000000", // 100 WALDO (in drops if issued token)
+        Amount: {
+          currency: WALDOCOIN_TOKEN,
+          issuer: WALDO_ISSUER,
+          value: "100"
+        },
         Memos: [
           {
             Memo: {
@@ -57,13 +60,6 @@ async function processRefunds() {
             }
           }
         ]
-      };
-
-      // If WALDO is an issued token, use IssuedCurrencyAmount
-      tx.Amount = {
-        currency: WALDOCOIN_TOKEN,
-        issuer: WALDO_ISSUER,
-        value: "100"
       };
 
       const prepared = await client.autofill(tx);
@@ -85,12 +81,11 @@ async function processRefunds() {
   if (changed) saveBattles(battles);
 }
 
-// 🔁 Run once if called directly
+// 🔁 CLI mode
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  processRefunds().catch((err) => {
+  refundExpiredBattles().catch((err) => {
     console.error("❌ Refund error:", err.message);
   });
 }
 
-export { processRefunds };
-
+export { refundExpiredBattles };
