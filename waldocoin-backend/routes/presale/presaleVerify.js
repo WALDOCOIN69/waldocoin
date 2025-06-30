@@ -2,7 +2,7 @@
 import express from "express";
 import { getXummClient } from "../utils/xummClient.js";
 import { Client } from "xrpl";
-import { redis } from "../utils/redisClient.js";
+import { redis } from "../../redisClient.js"; // <-- FIXED
 import { WALDO_ISSUER, WALDO_TOKEN, WALDO_DISTRIBUTOR } from "../config.js";
 
 const router = express.Router();
