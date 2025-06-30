@@ -99,6 +99,16 @@ const app = express();
 
   app.use("/api/presale", presaleRoute);
 
+  app.get("/api/routes", (req, res) => {
+  res.json(app._router.stack
+    .filter(r => r.route && r.route.path)
+    .map(r => ({
+      method: Object.keys(r.route.methods)[0].toUpperCase(),
+      path: r.route.path
+    }))
+  );
+});
+
 app.get("/api/debug/refund", async (req, res) => {
   await refundExpiredBattles();
   res.send("✅ Refund logic manually triggered");
