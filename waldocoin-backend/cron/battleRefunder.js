@@ -1,58 +1,33 @@
 // cron/battleRefunder.js
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { redis } from "../redisClient.js";
 import { xummClient } from "../utils/xummClient.js";
 import { WALDO_ISSUER, WALDOCOIN_TOKEN, WALDO_DISTRIBUTOR_SECRET } from "../config.js";
 import { Client, Wallet, convertStringToHex } from "xrpl";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const battlesPath = path.join(__dirname, "../data/battles.json");
+// 10 hours in ms
+const BATTLE_REFUND_WINDOW = 10 * 60 * 60 * 1000;
 
-// 🔁 Load and parse battles
-function loadBattles() {
-  try {
-    const data = fs.readFileSync(battlesPath, "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("❌ Failed to load battles.json:", err.message);
-    return [];
-  }
-}
-
-// 💾 Save updated battle list
-function saveBattles(battles) {
-  fs.writeFileSync(battlesPath, JSON.stringify(battles, null, 2));
-}
-
-// 🚨 Refund unaccepted expired battles (10hr window)
 async function refundExpiredBattles() {
-  const battles = loadBattles();
-  if (!Array.isArray(battles)) {
-  console.warn("⚠️ battles.json invalid, resetting to []");
-  saveBattles([]);
-  return;
-}
-
+  // Scan for all keys matching pattern (could be improved for large sets)
+  const keys = await redis.keys("battle:*:data");
   const now = Date.now();
-  let changed = false;
 
-  for (const battle of battles) {
-    if (
-      battle.status === "pending" &&
-      now - new Date(battle.createdAt).getTime() > 10 * 60 * 60 * 1000 // 10 hours
-    ) {
-      console.log(`🔄 Refunding unaccepted battle: ${battle.id}`);
+  for (const key of keys) {
+    const data = await redis.hgetall(key);
+    if (!data || data.status !== "pending" || !data.createdAt) continue;
 
-      const client = new Client("wss://s.altnet.rippletest.net:51233"); // XRPL testnet
+    const createdAt = Number(data.createdAt);
+    if (now - createdAt > BATTLE_REFUND_WINDOW) {
+      console.log(`🔄 Refunding unaccepted battle: ${key}`);
+      // Send refund to challenger
+      const client = new Client("wss://s.altnet.rippletest.net:51233");
       const wallet = Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
       await client.connect();
 
       const tx = {
         TransactionType: "Payment",
         Account: wallet.address,
-        Destination: battle.challenger,
+        Destination: data.challenger,
         Amount: {
           currency: WALDOCOIN_TOKEN,
           issuer: WALDO_ISSUER,
@@ -62,7 +37,7 @@ async function refundExpiredBattles() {
           {
             Memo: {
               MemoType: convertStringToHex("WALDO Refund"),
-              MemoData: convertStringToHex(`Refund for unaccepted battle: ${battle.id}`)
+              MemoData: convertStringToHex(`Refund for unaccepted battle: ${key}`)
             }
           }
         ]
@@ -74,21 +49,20 @@ async function refundExpiredBattles() {
       await client.disconnect();
 
       if (result.result.meta.TransactionResult === "tesSUCCESS") {
-        console.log(`✅ Refund sent to ${battle.challenger}`);
-        battle.status = "refunded";
-        battle.refundedAt = new Date().toISOString();
-        changed = true;
+        console.log(`✅ Refund sent to ${data.challenger}`);
+        await redis.hset(key, {
+          status: "refunded",
+          refundedAt: Date.now()
+        });
       } else {
         console.error(`❌ Refund failed:`, result.result.meta.TransactionResult);
       }
     }
   }
-
-  if (changed) saveBattles(battles);
 }
 
-// 🔁 CLI mode
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Standalone run (CLI/cron mode)
+if (process.argv[1] === (new URL(import.meta.url)).pathname) {
   refundExpiredBattles().catch((err) => {
     console.error("❌ Refund error:", err.message);
   });

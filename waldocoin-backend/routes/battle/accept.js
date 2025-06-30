@@ -1,5 +1,4 @@
 import express from "express";
-import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
@@ -18,14 +17,12 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const battleKey = `battle:${battleId}`;
-    const raw = await redis.get(battleKey);
+    const battleKey = `battle:${battleId}:data`; // <- Consistent hash key!
+    const battle = await redis.hgetall(battleKey);
 
-    if (!raw) {
+    if (!battle || !battle.status) {
       return res.status(404).json({ success: false, error: "Battle not found" });
     }
-
-    const battle = JSON.parse(raw);
 
     if (battle.status !== "pending") {
       return res.status(400).json({ success: false, error: "Battle is not pending" });
@@ -56,14 +53,18 @@ router.post("/", async (req, res) => {
       if (event.data.signed === false) throw new Error("User rejected battle accept payment");
     });
 
-    battle.acceptor = wallet;
-    battle.acceptorTweetId = tweetId;
-    battle.acceptedAt = now.toISOString();
-    battle.endsAt = now.add(24, "hour").toISOString();
-    battle.status = "accepted";
-    battle.votes = 0;
+    // Update only the necessary fields (Redis hash)
+    await redis.hset(battleKey, {
+      acceptor: wallet,
+      acceptorTweetId: tweetId,
+      acceptedAt: now.valueOf(), // store as timestamp ms
+      endsAt: now.add(24, "hour").valueOf(),
+      status: "accepted",
+      votes: 0
+    });
 
-    await redis.set(battleKey, JSON.stringify(battle), { EX: 60 * 60 * 30 }); // 30h TTL
+    // Optionally set a TTL (30 hours)
+    await redis.expire(battleKey, 60 * 60 * 30);
 
     return res.json({
       success: true,
@@ -84,3 +85,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+

@@ -10,18 +10,21 @@ router.get("/ping", (_, res) => {
 
 router.get("/", async (req, res) => {
   try {
-   const payload = {
-  txjson: { TransactionType: "SignIn" },
-  options: {
-    return_url: {
-      app: "https://stats-page.waldocoin.live/",
-      web: "https://stats-page.waldocoin.live/"
-    }
-  }
-};
+    const payload = {
+      txjson: { TransactionType: "SignIn" },
+      options: {
+        return_url: {
+          app: "https://stats-page.waldocoin.live/",
+          web: "https://stats-page.waldocoin.live/"
+        }
+      }
+    };
+    // CALL the SDK to create the actual payload:
+    const created = await xummClient.payload.create(payload);
+
     res.json({
-      qr: payload.refs.qr_png,
-      uuid: payload.uuid
+      qr: created.refs.qr_png,
+      uuid: created.uuid
     });
   } catch (err) {
     console.error("❌ Error in /api/login:", err.message);

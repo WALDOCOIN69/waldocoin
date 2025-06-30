@@ -4,58 +4,79 @@ import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
 import { calculateXpReward } from "../../utils/xp.js";
 import { addXP } from "../../utils/xpManager.js";
-import dayjs from "dayjs";
 
 const router = express.Router();
 
 console.log("🧩 Loaded: routes/battle/payout.js");
+
+const BATTLE_DURATION = 60 * 60 * 24; // 24 hours (in seconds)
 
 router.post("/", async (req, res) => {
   const { battleId } = req.body;
   if (!battleId) return res.status(400).json({ success: false, error: "Missing battleId" });
 
   try {
-    const battleKey = `battle:${battleId}`;
-    const battleData = await redis.get(battleKey);
-    if (!battleData) return res.status(404).json({ success: false, error: "Battle not found" });
+    // ALWAYS use a hash for battle data
+    const battleKey = `battle:${battleId}:data`;
+    const data = await redis.hgetall(battleKey);
 
-    const battle = JSON.parse(battleData);
+    if (!data || !data.status) return res.status(404).json({ success: false, error: "Battle not found" });
 
-    if (battle.status !== "accepted") {
+    // Only allow payout for active/accepted battles not already ended or paid
+    if (["paid", "ended", "draw"].includes(data.status)) {
       return res.status(400).json({ success: false, error: "Battle not active or already paid" });
     }
+    if (data.status !== "accepted") {
+      return res.status(400).json({ success: false, error: "Battle not accepted/active" });
+    }
 
-    const now = dayjs();
-    const acceptedAt = dayjs(battle.acceptedAt);
-    if (now.diff(acceptedAt, "hour") < 24) {
+    // Timer logic: Only allow payout if enough time has passed
+    const acceptedAt = data.acceptedAt ? Number(data.acceptedAt) : null;
+    if (!acceptedAt) return res.status(400).json({ success: false, error: "Missing acceptedAt" });
+
+    const now = Date.now();
+    if (now < acceptedAt + BATTLE_DURATION * 1000) {
       return res.status(403).json({ success: false, error: "Battle not over yet" });
     }
 
-    const countA = parseInt(await redis.get(`battle:${battleId}:count:A`) || "0");
-    const countB = parseInt(await redis.get(`battle:${battleId}:count:B`) || "0");
+    // Parse all needed data
+    const challenger = data.challenger;
+    const acceptor = data.acceptor;
+    const meme1 = data.meme1 ? JSON.parse(data.meme1) : {};
+    const meme2 = data.meme2 ? JSON.parse(data.meme2) : {};
 
-    const winner = countA > countB ? "A" : countB > countA ? "B" : null;
+    // Tally votes (assume "A" is challenger, "B" is acceptor)
+    const countA = parseInt(await redis.get(`battle:${battleId}:count:A`) || "0", 10);
+    const countB = parseInt(await redis.get(`battle:${battleId}:count:B`) || "0", 10);
+
+    let winner = null;
+    if (countA > countB) winner = "A";
+    if (countB > countA) winner = "B";
+
+    // Draw
     if (!winner) {
-      battle.status = "draw";
-      await redis.set(battleKey, JSON.stringify(battle));
+      await redis.hset(battleKey, { status: "draw" });
       return res.json({ success: true, result: "draw" });
     }
 
-    const loser = winner === "A" ? "B" : "A";
-    const winnerWallet = winner === "A" ? battle.challenger : battle.acceptor;
+    const winnerWallet = winner === "A" ? challenger : acceptor;
+    const loserWallet = winner === "A" ? acceptor : challenger;
 
+    // Voters
     const winningVoters = await redis.sMembers(`battle:${battleId}:voters:${winner}`);
     const totalVoters =
       (await redis.sCard(`battle:${battleId}:voters:A`)) +
       (await redis.sCard(`battle:${battleId}:voters:B`));
 
-    const pot = 100 + 50 + (totalVoters * 5);
+    // WALDO Distribution
+    const pot = 100 + 50 + (totalVoters * 5); // challenger + acceptor + voters
     const burnAmount = Math.floor(pot * 0.05);
     const net = pot - burnAmount;
     const posterAmount = Math.floor(net * 0.5);
     const voterAmount = Math.floor(net * 0.45);
     const voterSplit = winningVoters.length ? Math.floor(voterAmount / winningVoters.length) : 0;
 
+    // Payout to meme poster
     await xummClient.payload.create({
       txjson: {
         TransactionType: "Payment",
@@ -66,6 +87,7 @@ router.post("/", async (req, res) => {
       options: { submit: true }
     });
 
+    // Payout to voters
     for (const voter of winningVoters) {
       await xummClient.payload.create({
         txjson: {
@@ -80,6 +102,7 @@ router.post("/", async (req, res) => {
       await addXP(voter, 1);
     }
 
+    // Burn fee to issuer
     await xummClient.payload.create({
       txjson: {
         TransactionType: "Payment",
@@ -90,15 +113,17 @@ router.post("/", async (req, res) => {
       options: { submit: true }
     });
 
+    // XP to winner
     await calculateXpReward(winnerWallet, 30);
 
-    battle.status = "paid";
-    battle.winner = winner;
-    battle.payoutAt = now.toISOString();
-    battle.voterCount = winningVoters.length;
-    battle.totalPot = pot;
-
-    await redis.set(battleKey, JSON.stringify(battle));
+    // Mark battle as paid/ended and store results
+    await redis.hset(battleKey, {
+      status: "paid",
+      winner,
+      payoutAt: now,
+      voterCount: winningVoters.length,
+      totalPot: pot
+    });
 
     return res.json({
       success: true,
