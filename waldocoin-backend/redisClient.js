@@ -1,5 +1,5 @@
-// routes/battle/current.js
 import express from "express";
+import { redis } from "../../redisClient.js"; // <-- THIS LINE IS REQUIRED
 
 const router = express.Router();
 
@@ -19,7 +19,6 @@ router.get("/current", async (req, res) => {
     }
 
     // Parse necessary values
-    // Required: meme1, meme2, acceptedAt (timestamp), ... etc.
     const meme1 = data.meme1 ? JSON.parse(data.meme1) : {};
     const meme2 = data.meme2 ? JSON.parse(data.meme2) : {};
     const acceptedAt = data.acceptedAt ? Number(data.acceptedAt) : null; // Unix ms
