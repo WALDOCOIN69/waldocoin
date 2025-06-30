@@ -10,10 +10,15 @@ router.get("/ping", (_, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const payload = await xummClient.payload.create({
-      txjson: { TransactionType: "SignIn" }
-    });
-
+   const payload = {
+  txjson: { TransactionType: "SignIn" },
+  options: {
+    return_url: {
+      app: "https://stats-page.waldocoin.live/",
+      web: "https://stats-page.waldocoin.live/"
+    }
+  }
+};
     res.json({
       qr: payload.refs.qr_png,
       uuid: payload.uuid
