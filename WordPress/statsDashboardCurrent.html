@@ -34,18 +34,6 @@ html, body {
   padding: 40px 10px;
   box-sizing: border-box;
 }
-
-  iframe {
-  display: block;
-  margin: 0 auto;
-  width: 100%;
-  max-width: 100%;
-}
-@media (min-width: 768px) {
-  .container {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  }
-    }
     .card {
       background: #111;
       color: white;
@@ -59,12 +47,6 @@ html, body {
       grid-column: 1 / -1;
       padding: 30px;
       font-size: 1.1rem;
-    }
-    @media (max-width: 768px) {
-      .big-card {
-        font-size: 1rem;
-        padding: 20px;
-      }
     }
     
     .card h1, .card h2, .card h3 {
@@ -394,10 +376,6 @@ html, body {
       margin-top: 10px;
     }
     
-    .reward-logic-table {
-      grid-column: span 2;
-    }
-    
     .margin-top-0 {
       margin-top: 0;
     }
@@ -405,12 +383,6 @@ html, body {
     .margin-top-20 {
       margin-top: 20px;
     }
-    
-    .battle-arena {
-      text-align: center;
-      background-color: #181818;
-    }
-    
     .battle-notification {
       display: none;
       position: fixed;
@@ -426,12 +398,36 @@ html, body {
       cursor: pointer;
     }
     
-    .battle-memes-container {
-      display: flex;
-      justify-content: space-around;
-      gap: 30px;
-      flex-wrap: wrap;
-    }
+   .battle-memes-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 36px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.battle-memes-container .flex-item {
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+  background: #191919;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0 12px;
+  box-shadow: 0 0 12px #222;
+  text-align: center;
+}
+@media (max-width: 850px) {
+  .battle-memes-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .battle-memes-container .flex-item {
+    max-width: 95vw;
+    margin: 10px 0;
+  }
+}
+
     
     .battle-timer {
       margin-top: 20px;
@@ -445,22 +441,6 @@ html, body {
       color: gold;
       margin-top: 10px;
     }
-    .winner-glow {
-  animation: glow 1s ease-in-out infinite alternate;
-  border: 4px solid gold !important;
-  border-radius: 12px;
-  box-shadow: 0 0 12px gold;
-}
-
-@keyframes glow {
-  from {
-    box-shadow: 0 0 8px gold;
-  }
-  to {
-    box-shadow: 0 0 20px gold;
-  }
-}
-
     
     .centered-column {
       display: flex;
@@ -526,11 +506,7 @@ html, body {
     .dao-voting-card {
   box-shadow: 0 0 12px #ffcc00;
 }
-    
-    @media (min-width: 768px) {
-      .container {
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      }
+
       .nft-modal {
   opacity: 0;
   pointer-events: none;
@@ -550,159 +526,242 @@ html, body {
 .nft-modal.show .nft-modal-image {
   transform: scale(1);
 }
-.battle-history-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  font-size: 14px;
-}
-.battle-history-table th,
-.battle-history-table td {
-  padding: 10px;
-  border: 1px solid #444;
-}
-.battle-history-table th {
-  background-color: #e63e3e;
-}
-.battle-history-table td a {
-  color: #00acee;
-  text-decoration: none;
-}
-.winner-badge {
-  font-weight: bold;
-  color: gold;
-}
-.battle-leaderboard-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #111;
-  color: white;
-}
-.battle-leaderboard-table th,
-.battle-leaderboard-table td {
-  padding: 10px;
-  border: 1px solid #333;
-}
-.battle-leaderboard-table th {
-  background: #e63e3e;
-}
-.info-banner-wrapper {
+.twitter-link-container {
   display: flex;
+  flex-direction: column;   /* stack vertically */
   justify-content: center;
-  margin-bottom: 20px;
+  align-items: center;
+  gap: 12px;                /* space between input and button */
+  margin-bottom: 18px;
+  margin-top: 8px;
   width: 100%;
 }
 
-.info-banner {
-  background: #222;
-  padding: 12px;
-  border: 1px solid red;
-  border-radius: 8px;
-  color: #fff;
-  font-size: 0.95rem;
-  text-align: center;
+
+.input-style {
+  width: 220px;
   max-width: 100%;
-  margin: 0 auto 16px auto;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #222;
+  color: white;
+  border: 1px solid #444;
+  font-size: 16px;
+}
+
+.button-style, .start-battle-btn, .accept-battle-btn {
+  width: 100%;
+  max-width: 370px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: #25c2a0;
+  color: #191919;
+  font-weight: bold;
+  font-size: 17px;
+  border: none;
+  margin: 8px 0;
+  cursor: pointer;
+  box-shadow: 0 0 8px #25c2a0aa;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.button-style:hover, .start-battle-btn:hover, .accept-battle-btn:hover {
+  background: #23ad91;
+  color: #fff;
+  box-shadow: 0 0 16px #25c2a0;
+}
+.card h2, .battle-arena h2 {
+  color: #25c2a0;
+  font-size: 2.1rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.instruction-card {
+  background: #111 !important;   /* Solid black background */
+  color: #fff;
+  padding: 24px 18px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+  margin-bottom: 24px;
+  font-size: 1.1rem;
+  animation: fadeInUp 0.7s ease;
+}
+.instruction-card h2 {
+  color: #25c2a0;
+  margin-top: 0;
+}
+.instruction-card ul {
+  padding-left: 18px;
+}
+.instruction-card li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+.dashboard-title-card {
+  background: #000;
+  border-radius: 18px;
+  box-shadow: 0 0 18px rgba(0,0,0,0.8);
+  max-width: 520px;
+  margin: 32px auto 24px auto;
+  padding: 24px 0 18px 0;
+  text-align: center;
+}
+
+.dashboard-title {
+  font-size: 2.5rem;
+  color: #25c2a0;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.battle-arena {
+  grid-column: 1 / -1;
+  width: 100vw;
+  max-width: 100vw;
+  margin: 0 -10vw 36px -10vw;
+  background: #111;
+  border-radius: 18px;
+  box-shadow: 0 0 18px #25c2a0;
+  padding: 40px 24px 30px 24px;
+}
+
+.battle-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  justify-content: center;
+  align-items: stretch;
+  margin: 36px -10vw 0 -10vw;
   box-sizing: border-box;
-  line-height: 1.4;
 }
 
-
+.battle-bottom-row .card {
+  background: #111;
+  color: #25c2a0;
+  border-radius: 18px;
+  box-shadow: 0 0 18px #25c2a0;
+  font-size: 2rem;
+  padding: 38px 28px;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;      /* <--- THIS CENTERS CARD CONTENT */
+  justify-content: flex-start;
+  box-sizing: border-box;
+  margin: 0;
 }
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+
+.battle-bottom-row .card h2 {
+  font-size: 2.1rem;
+  color: #25c2a0;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+@media (max-width: 1000px) {
+  .battle-bottom-row {
+    grid-template-columns: 1fr;
+    margin: 36px 0 0 0;
+  }
+  .battle-bottom-row .card {
+    font-size: 1.3rem;
+    padding: 28px 12px;
+  }
+}
+.dashboard-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  width: 100%;
+  margin-bottom: 36px;
+}
+.big-stats-card {
   background: #111;
   color: #fff;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: bold;
-  z-index: 9999;
-  opacity: 0.95;
-  box-shadow: 0 0 12px #e63e3e;
-  transition: all 0.3s ease;
+  border-radius: 18px;
+  box-shadow: 0 0 18px #25c2a0;
+  padding: 42px 36px 38px 36px;
+  min-width: 0;
+  min-height: 340px;
+  font-size: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
-
-.toast.hidden {
-  display: none;
+.big-stats-card h2 {
+  width: 100%;
+  text-align: left;
+  font-size: 2.1rem;
+  color: #25c2a0;
+  margin-bottom: 14px;
 }
-
-    .link-response {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    #linkResponse {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    @media (max-width: 600px) {
-  .card, .big-card {
-    padding: 12px;
-    margin: 10px auto;
-    width: 100%;
+@media (max-width: 900px) {
+  .dashboard-stats-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
-
-  .center-text, .level-title {
+  .big-stats-card {
     font-size: 1rem;
-  }
-.meme-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-
-  .wallet-address {
-    font-size: 0.9rem;
-    word-break: break-word;
-  }
-
-  button, input {
-    font-size: 1rem;
-    padding: 12px 16px;
-  }
-
-  .info-banner {
-    font-size: 0.95rem;
-    line-height: 1.4;
+    padding: 28px 10px;
+    min-height: 0;
   }
 }
 
-    </style>
+
+</style>
     </head>
-    <body>
+<body>
+<div class="dashboard-title-card">
+  <h1 class="dashboard-title">WALDOcoin Dashboard</h1>
+</div>
+  <!-- Notification bar OUTSIDE grid container -->
   <div id="waldoNotification">
-    <span id="waldoMessage"></span>
+    <span id="waldoMessage">👋 Welcome back! Ready to earn some WALDO?</span>
     <button type="button" onclick="dismissWaldoNotification()" class="dismiss-btn">Dismiss</button>
   </div>
-    <div id="linkResponse" class="link-response"></div>
-  <!-- Welcome Card -->
-  <div class="card big-card">
-    <!-- ✅ Only one response box -->
-    <button type="button" onclick="logoutWallet()" class="disconnect-btn">🔌 Disconnect</button>
-    <p id="walletAddress" class="wallet-address">Wallet: Loading...</p>
-    <h3 class="center-text">🔗 Link Twitter Account</h3>
-    <input type="text" id="twitterHandleInput" placeholder="Enter Twitter handle">
-    <button id="linkButton" type="button">Link Twitter</button>
-
-    <h2>🎮 Member Level</h2>
-    <img
-      id="userLevelIcon"
-      alt="Level Icon"
-      src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png">
-    <p id="userLevelTitle" class="center-text level-title">Loading...</p>
-    <progress id="levelProgress" max="100" value="0"></progress>
-    <p id="xpToNextLevel" class="center-text">...</p>
-  </div>
-    <!-- Meme XP Trends Card -->
-    <div class="card">
-      <h2>📊 Meme XP Trends</h2>
-      <canvas height="200" id="xpChart"></canvas>
+  <div class="container">
     </div>
-<!-- Social Stats Card -->
-<div class="card">
+    <div id="linkResponse" class="link-response"></div>
+    <div class="instruction-card">
+      <h2>🚀 How to Earn WALDO</h2>
+      <ul>
+        <li>🖼 Post a meme on Twitter with the hashtag <strong>#WaldoMeme</strong></li>
+        <li>🔗 Link your Twitter handle to your WALDO wallet</li>
+        <li>📊 Watch your meme earn XP and rewards</li>
+        <li>🏆 Claim or stake your rewards on the dashboard</li>
+        <li>🔥 Mint your meme as an NFT when it hits 60 XP</li>
+      </ul>
+    </div>
+<!-- WELCOME CARD -->
+<div class="card big-card">
+  <button type="button" onclick="logoutWallet()" class="disconnect-btn">🔌 Disconnect</button>
+  <p id="walletAddress" class="wallet-address">Wallet: Loading...</p>
+  <h3 class="center-text">🔗 Link Twitter Account</h3>
+<div class="twitter-link-container">
+  <input type="text" id="twitterHandleInput" class="input-style" placeholder="Enter Twitter handle">
+  <button id="linkButton" type="button" class="button-style">Link Twitter</button>
+</div>
+  <h2>🎮 Member Level</h2>
+  <img id="userLevelIcon" alt="Level Icon" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png">
+  <p id="userLevelTitle" class="center-text level-title">Loading...</p>
+  <progress id="levelProgress" max="100" value="0"></progress>
+  <p id="xpToNextLevel" class="center-text">...</p>
+</div>
+<!-- XP Trends -->
+<div class="dashboard-stats-row">
+  <div class="card big-stats-card">
+    <h2>📊 Meme XP Trends</h2>
+    <canvas height="200" id="xpChart"></canvas>
+  </div>
+</div>
+<!-- Social Stats -->
+<div class="card big-stats-card">
   <h2>📱 Social Stats</h2>
   <p><strong>🔥 Top Meme:</strong> <span id="socialHandle">Loading...</span></p>
   <p><strong>👥 Followers:</strong> <span id="socialFollowers">—</span></p>
@@ -710,72 +769,71 @@ html, body {
   <p><strong>🏆 Top Meme Likes:</strong> <span id="topMemeLikes">Loading...</span></p>
   <p><strong>🖼️ Top Meme Preview:</strong></p>
   <img id="topMemeImage" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png" alt="Top Meme" class="meme-thumb">
-  <p><a id="topMemeLink" href="#" target="_blank" class="xrpl-link-green">🔗 View Meme</a></p>
+    <p><a id="topMemeLink" href="#" target="_blank" class="xrpl-link-green">🔗 View Meme</a></p>
+  </div>
+<!-- XP Stats -->
+<div class="card xp-stats-card">
+  <h3>🧠 WALDO XP Stats</h3>
+  <p><strong>Level:</strong> <span id="waldoLevel">Loading...</span></p>
+  <p><strong>Title:</strong> <span id="waldoTitle">Loading...</span></p>
+  <p><strong>XP:</strong> <span id="waldoXP">Loading...</span></p>
+  <p><strong>Likes:</strong> <span id="waldoLikes">Loading...</span></p>
+  <p><strong>Retweets:</strong> <span id="waldoRetweets">Loading...</span></p>
+  <p><strong>Minted Memes:</strong> <span id="waldoMemes">Loading...</span></p>
+  <p><strong>Battles Won:</strong> <span id="waldoBattles">Loading...</span></p>
+  <p><strong>Referrals:</strong> <span id="waldoReferrals">Loading...</span></p>
+  <p><strong>Next Level In:</strong> <span id="xpToNextLevelStats">Loading...</span></p>
 </div>
-
-    <!-- WALDO XP Stats Card -->
-    <div class="card xp-stats-card">
-      <h3>🧠 WALDO XP Stats</h3>
-      <p><strong>Level:</strong> <span id="waldoLevel">Loading...</span></p>
-      <p><strong>Title:</strong> <span id="waldoTitle">Loading...</span></p>
-      <p><strong>XP:</strong> <span id="waldoXP">Loading...</span></p>
-      <p><strong>Likes:</strong> <span id="waldoLikes">Loading...</span></p>
-      <p><strong>Retweets:</strong> <span id="waldoRetweets">Loading...</span></p>
-      <p><strong>Minted Memes:</strong> <span id="waldoMemes">Loading...</span></p>
-      <p><strong>Battles Won:</strong> <span id="waldoBattles">Loading...</span></p>
-      <p><strong>Referrals:</strong> <span id="waldoReferrals">Loading...</span></p>
-      <p><strong>Next Level In:</strong> <span id="xpToNextLevelStats">Loading...</span></p>
-    </div>
-    <!-- Total WALDO Earned Card -->
-    <div class="card">
-      <h2>💰 Total WALDO Earned</h2>
-      <p id="waldoTotalEarnedDisplay" class="waldo-total-earned-display">Loading...</p>
-    </div>
-    <!-- Media card -->
-    <div class="card">
-      <img alt="WALDO Promo" src="https://waldocoin.live/wp-content/uploads/2025/03/1737843965515-1.webp" class="waldo-promo-img">
-      <h1>Use #WaldoMeme on Tweets for Rewards.</h1>
-    </div>
-    <!-- Meme XP Score Card -->
-    <div class="card full-width-card center-text">
-      <h2>🎯 Your Meme XP Score</h2>
-      <p id="memeScoreDisplay" class="meme-score">0</p>
-    </div>
-    <!-- WALDO Conversion Rate Card -->
-    <div class="card">
-      <h2>💸 WALDO Conversion Rate</h2>
- <p id="waldoConversion" class="waldoConversionRate text-center">Loading...</p>
-<p id="waldoEarnings" class="text-center">Loading...</p>
-<img id="topMemeImg" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png" alt="Top Meme">
-
-    </div>
-    <!-- Referral Program Card -->
-    <div class="card">
-      <h2>🤝 Referral Program</h2>
-      <p class="center-text">Share your referral link to earn rewards when friends use #WaldoMeme.</p>
-      <div class="flex-column-center">
-        <input id="referralLink" readonly type="text" class="input-style">
-        <button type="button" onclick="copyReferral()" class="button-style">Copy Referral Link</button>
-        <p id="copyStatus" class="twitter-link-status"></p>
-        <p class="centered-text">👥 Referrals: <strong id="refCount">0</strong></p>
-      </div>
-    </div>
-    <!-- Recent Activity Card -->
-    <div class="card">
-      <h2>📰 Recent Activity</h2>
-      <ul id="activityFeed" class="activity-feed"></ul>
-    </div>
-    <!-- WALDO/USD Trend Card -->
-    <div class="card">
-      <h2>📈 WALDO/USD Trend (7 Days)</h2>
-      <canvas height="200" id="waldoPriceChart"></canvas>
-    </div>
-        <!-- Media card -->
-    <div class="card">
-      <img alt="WALDO Promo" src="https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg" class="waldo-promo-img">
-      <h1>Use #WaldoMeme on Tweets for Rewards.</h1>
-    </div>
-    <div class="card">
+<!-- Total WALDO Earned -->
+<div class="card">
+  <h2>💰 Total WALDO Earned</h2>
+  <p id="waldoTotalEarnedDisplay" class="waldo-total-earned-display">Loading...</p>
+</div>
+<!-- WALDO Promo Media -->
+<div class="card">
+  <img alt="WALDO Promo" src="https://waldocoin.live/wp-content/uploads/2025/03/1737843965515-1.webp" class="waldo-promo-img">
+  <h1>Use #WaldoMeme on Tweets for Rewards.</h1>
+</div>
+<!-- Meme XP Score -->
+<div class="card full-width-card center-text">
+  <h2>🎯 Your Meme XP Score</h2>
+  <p id="memeScoreDisplay" class="meme-score">0</p>
+</div>
+<!-- WALDO Conversion Rate -->
+<div class="card">
+  <h2>💸 WALDO Conversion Rate</h2>
+  <p id="waldoConversion" class="waldoConversionRate text-center">Loading...</p>
+  <p id="waldoEarnings" class="text-center">Loading...</p>
+  <img id="topMemeImg" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png" alt="Top Meme">
+</div>
+<!-- Referral Program -->
+<div class="card">
+  <h2>🤝 Referral Program</h2>
+  <p class="center-text">Share your referral link to earn rewards when friends use #WaldoMeme.</p>
+  <div class="flex-column-center">
+    <input id="referralLink" readonly type="text" class="input-style">
+    <button type="button" onclick="copyReferral()" class="button-style">Copy Referral Link</button>
+    <p id="copyStatus" class="twitter-link-status"></p>
+    <p class="centered-text">👥 Referrals: <strong id="refCount">0</strong></p>
+  </div>
+</div>
+<!-- Recent Activity -->
+<div class="card">
+  <h2>📰 Recent Activity</h2>
+  <ul id="activityFeed" class="activity-feed"></ul>
+</div>
+<!-- WALDO/USD Trend -->
+<div class="card">
+  <h2>📈 WALDO/USD Trend (7 Days)</h2>
+  <canvas height="200" id="waldoPriceChart"></canvas>
+</div>
+<!-- WALDO Promo Media 2 -->
+<div class="card">
+  <img alt="WALDO Promo" src="https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg" class="waldo-promo-img">
+  <h1>Use #WaldoMeme on Tweets for Rewards.</h1>
+</div>
+<!-- XP Gain Breakdown -->
+<div class="card">
   <h2>🧠 XP Gain Breakdown</h2>
   <table>
     <tbody id="xpBreakdownTable">
@@ -788,114 +846,109 @@ html, body {
     </tbody>
   </table>
 </div>
-
-    <!-- Reward Tiers Card -->
-    <div class="card reward-logic-table">
-      <h2>💎 Reward Tiers</h2>
-      <div class="overflow-auto">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Tier</th>
-              <th scope="col">Likes</th>
-              <th scope="col">Retweets</th>
-              <th scope="col">Base</th>
-              <th scope="col">Instant Payout</th>
-              <th scope="col">Stake Payout</th>
-              <th scope="col">Max No-Stake (x40)</th>
-              <th scope="col">Max Stake (x40)</th>
-            </tr>
-          </thead>
-          <tbody id="rewardTierBody"></tbody>
-        </table>
-      </div>
+<!-- Reward Tiers Card -->
+<div class="card reward-logic-table">
+  <h2>💎 Reward Tiers</h2>
+  <div class="overflow-auto">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Tier</th>
+          <th scope="col">Likes</th>
+          <th scope="col">Retweets</th>
+          <th scope="col">Base</th>
+          <th scope="col">Instant Payout</th>
+          <th scope="col">Stake Payout</th>
+          <th scope="col">Max No-Stake (x40)</th>
+          <th scope="col">Max Stake (x40)</th>
+        </tr>
+      </thead>
+      <tbody id="rewardTierBody"></tbody>
+    </table>
+  </div>
+</div>
+<!-- Meme Table with Pagination, XP, Claim/Stake/Mint -->
+<div class="card big-card">
+  <div class="centered-flex-container">
+    <h2 class="margin-top-0">📸 My Memes</h2>
+    <div class="tooltip-wrapper">
+      <span class="tooltip-icon">i</span>
+      <span class="tooltip-text">Each meme must reach 60 XP to be eligible for minting as an NFT.</span>
     </div>
-    <!-- Meme Table with Pagination, XP, Claim/Stake/Mint -->
-    <div class="card big-card">
-      <div class="centered-flex-container">
-        <h2 class="margin-top-0">📸 My Memes</h2>
-        <div class="tooltip-wrapper">
-          <span class="tooltip-icon">i</span>
-          <span class="tooltip-text">Each meme must reach 60 XP to be eligible for minting as an NFT.</span>
-        </div>
-      </div>
-      <div class="overflow-auto">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Thumbnail</th>
-              <th scope="col">Retweets</th>
-              <th scope="col">Likes</th>
-              <th scope="col">XP</th>
-              <th scope="col">Tier</th>
-              <th scope="col">Claim</th>
-              <th scope="col">Stake</th>
-              <th scope="col">Mint</th>
-            </tr>
-          </thead>
-          <tbody id="memeTableBody"></tbody>
-        </table>
-        <div class="pagination" id="pagination"></div>
-      </div>
-    </div>
-    <!-- WALDOcoin Battle Arena -->
-     <div class="info-banner">
+  </div>
+  <div class="overflow-auto">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Thumbnail</th>
+          <th scope="col">Retweets</th>
+          <th scope="col">Likes</th>
+          <th scope="col">XP</th>
+          <th scope="col">Tier</th>
+          <th scope="col">Claim</th>
+          <th scope="col">Stake</th>
+          <th scope="col">Mint</th>
+        </tr>
+      </thead>
+      <tbody id="memeTableBody"></tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+<!-- WALDOcoin Battle Arena Notification -->
+<div class="notification-banner">
   📢 Welcome to the Meme Battle Arena! Paste a meme tweet link, start a battle, or accept one to begin voting.
 </div>
-
-    <div id="battleNotification" class="battle-notification">
-      ⚔️ Battle has started! Join now and vote for your favorite meme!
-    </div>
-    <div class="card big-card battle-arena">
-      <h2>🔥 Meme Battle Arena</h2>
-      <div id="battleStatus">Loading current battle...</div>
-      <div id="battleContent" style="display: none;">
-        <div class="battle-memes-container">
-          <div class="flex-item">
-            <h3>Meme 1</h3>
-            <a id="meme1Link" href="#" target="_blank">
-              <img alt="Meme 1" class="meme-thumb" id="meme1Img" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/300x300?text=Meme+1">
-            </a>
-            <button type="button" onclick="voteBattle('meme1')">Vote for Meme 1</button>
-          </div>
-          <div class="battle-controls" 
-     data-tweetid="178123456" 
-     data-status="open" 
-     data-canaccept="false"
-     id="battle-wrapper-178123456">
-  <button id="start-btn-178123456" class="start-battle-btn" type="button">Start Battle</button>
-  <button id="accept-btn-178123456" class="accept-battle-btn" type="button">Accept Battle</button>
+<div id="battleNotification" class="battle-notification">
+  ⚔️ Battle has started! Join now and vote for your favorite meme!
 </div>
-
-          <div class="flex-item">
-            <h3>Meme 2</h3>
-            <a id="meme2Link" href="#" target="_blank">
-              <img alt="Meme 2" class="meme-thumb" id="meme2Img" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/300x300?text=Meme+2">
-            </a>
-            <button type="button" onclick="voteBattle('meme2')">Vote for Meme 2</button>
-          </div>
-        </div>
-        <p id="battleTimer" class="battle-timer"></p>
-        <p id="battleVoteStatus" class="twitter-link-status"></p>
-        <div class="margin-top-20">
-          <p id="battleFinalResult" class="battle-result"></p>
-        </div>
-        <div class="margin-top-20">
-          <h3 class="centered-text">🚀 Launch or Accept a Battle</h3>
-          <div class="centered-column">
-            <input id="memeTweetId" onblur="extractTweetId(this.value)" placeholder="Paste Meme Tweet Link(e.g.https://x.com/user/status/1234567890)" class="input-style" type="text">
-            <button type="button" onclick="startBattle()" class="button-style">🧠 Start New Battle (100 WALDO)</button>
-            <button type="button" onclick="acceptBattle()" class="button-style">🤜 Accept Current Battle (50 WALDO)</button>
-          </div>
-          <div id="toast" class="toast hidden"></div>
-        </div>
+<!-- WALDOcoin Battle Arena -->
+<div class="card big-card battle-arena">
+  <h2>🔥 Meme Battle Arena</h2>
+  <div id="battleStatus">Loading current battle...</div>
+  <div id="battleContent" style="display: none;">
+    <div class="battle-memes-container">
+      <div class="flex-item">
+        <h3>Meme 1</h3>
+        <a id="meme1Link" href="#" target="_blank">
+          <img alt="Meme 1" class="meme-thumb" id="meme1Img" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/300x300?text=Meme+1">
+        </a>
+        <button type="button" onclick="voteBattle('meme1')">Vote for Meme 1</button>
+      </div>
+      <div class="battle-controls" data-tweetid="" data-status="open" data-canaccept="false" id="battle-wrapper">
+        <button id="start-btn" class="start-battle-btn" type="button">Start Battle</button>
+        <button id="accept-btn" class="accept-battle-btn" type="button">Accept Battle</button>
+      </div>
+      <div class="flex-item">
+        <h3>Meme 2</h3>
+        <a id="meme2Link" href="#" target="_blank">
+          <img alt="Meme 2" class="meme-thumb" id="meme2Img" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/300x300?text=Meme+2">
+        </a>
+        <button type="button" onclick="voteBattle('meme2')">Vote for Meme 2</button>
       </div>
     </div>
-<!-- 📜 Past Meme Battles -->
-<div class="card battle-history-card">
-  <h2>📜 Past Meme Battles</h2>
-  <div id="battleHistoryStatus">Loading battle history...</div>
-  <div id="battleHistoryTableContainer" style="display: none;">
+    <p id="battleTimer" class="battle-timer"></p>
+    <p id="battleVoteStatus" class="twitter-link-status"></p>
+    <div class="margin-top-20">
+      <p id="battleFinalResult" class="battle-result"></p>
+    </div>
+    <div class="margin-top-20">
+      <h3 class="centered-text">🚀 Launch or Accept a Battle</h3>
+      <div class="centered-column">
+        <input id="memeTweetId" onblur="extractTweetId(this.value)" placeholder="Paste Meme Tweet Link (e.g. https://x.com/user/status/1234567890)" class="input-style" type="text">
+        <button id="start-battle-btn" type="button" class="button-style">🧠 Start New Battle (100 WALDO)</button>
+        <button id="accept-battle-btn" type="button" class="button-style">🤜 Accept Current Battle (50 WALDO)</button>
+      </div>
+      <div id="toast" class="toast hidden"></div>
+    </div>
+  </div>
+</div>
+<!-- Past Meme Battles -->
+<div class="battle-bottom-row">
+  <div class="card battle-history-card">
+    <h2>📜 Past Meme Battles</h2>
+    <div id="battleHistoryStatus">Loading battle history...</div>
+    <div id="battleHistoryTableContainer" style="display: none;">
     <table class="battle-history-table">
       <thead>
         <tr>
@@ -911,11 +964,11 @@ html, body {
     </table>
   </div>
 </div>
-<!-- 🏆 Meme Battle Leaderboard -->
-<div class="card battle-leaderboard-card">
-  <h2>🏆 Meme Battle Leaderboard</h2>
-  <div id="battleLeaderboardStatus">Loading leaderboard...</div>
-  <div id="battleLeaderboardContainer" style="display: none;">
+<!-- Meme Battle Leaderboard -->
+  <div class="card battle-leaderboard-card">
+    <h2>🏆 Meme Battle Leaderboard</h2>
+    <div id="battleLeaderboardStatus">Loading leaderboard...</div>
+    <div id="battleLeaderboardContainer" style="display: none;">
     <table class="battle-leaderboard-table">
       <thead>
         <tr>
@@ -929,29 +982,36 @@ html, body {
     </table>
   </div>
 </div>
-
-  <!-- NFT Modal -->
-  <div id="nftModal" class="nft-modal">
-    <span onclick="closeNFTModal()" class="close-nft-modal">&times;</span>
-    <img id="nftModalImg" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/600x400.png?text=NFT+Preview" alt="NFT Preview" class="nft-modal-image">
-  </div>
-  <!-- WALDO DAO Voting Card -->
-<div class="card big-card dao-voting-card" id="daoVotingCard">  <h2>🗳 WALDOcoin DAO Voting</h2>
+<!-- NFT Modal -->
+<div id="nftModal" class="nft-modal">
+  <span onclick="closeNFTModal()" class="close-nft-modal">&times;</span>
+  <img id="nftModalImg" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/600x400.png?text=NFT+Preview" alt="NFT Preview" class="nft-modal-image">
+</div>
+<!-- WALDO DAO Voting Card -->
+<div class="card big-card dao-voting-card" id="daoVotingCard">
+  <h2>🗳 WALDOcoin DAO Voting</h2>
   <div id="proposalContainer">COMMING SOON...</div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</div>
 <script>
+/** === CONFIG === **/
 const baseURL = "https://waldocoin-backend-api.onrender.com";
+const statsPage = "/your-waldocoin-stats/";
+const loginPage = "/connect-waldo-wallet/";
 
+/** === UTILS === **/
+function $(id) { return document.getElementById(id); }
+function getWallet() { return localStorage.getItem("xummWallet") || null; }
+function logoutWallet() {
+  localStorage.removeItem("xummWallet");
+  window.location.replace(loginPage);
+}
+
+/** === LEVELS === **/
 const levelTitles = {
-  1: "Fresh Poster",
-  2: "Shitposter",
-  3: "Meme Dealer",
-  4: "OG Degen",
-  5: "WALDO Master"
+  1: "Fresh Poster", 2: "Shitposter", 3: "Meme Dealer", 4: "OG Degen", 5: "WALDO Master"
 };
-
+const levelThresholds = [0, 250, 850, 1750, 3000];
 const levelImages = {
   1: "https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg",
   2: "https://waldocoin.live/wp-content/uploads/2025/03/1737843965414.jpeg",
@@ -959,9 +1019,6 @@ const levelImages = {
   4: "https://waldocoin.live/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-03-at-22.52.10.jpeg",
   5: "https://waldocoin.live/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-03-at-22.53.38.jpeg"
 };
-
-const levelThresholds = [0, 250, 850, 1750, 3000];
-
 const rewardTiers = [
   { tier: 1, likes: 25, retweets: 0, base: 1 },
   { tier: 2, likes: 50, retweets: 5, base: 2 },
@@ -970,36 +1027,44 @@ const rewardTiers = [
   { tier: 5, likes: 1000, retweets: 100, base: 50 }
 ];
 
-function calculateXPToNextLevel(xp) {
-  for (let i = 0; i < levelThresholds.length; i++) {
-    if (xp < levelThresholds[i]) return levelThresholds[i] - xp;
-  }
-  return 0;
+/** === NOTIFICATIONS === **/
+function showWaldoNotification(msg, timeout = 5000) {
+  const n = $("waldoNotification"), m = $("waldoMessage");
+  if (!n || !m) return;
+  m.textContent = msg;
+  n.style.display = "flex";
+  if (timeout) setTimeout(() => { n.style.display = "none"; }, timeout);
+}
+function dismissWaldoNotification() { $("waldoNotification")?.style && ($("waldoNotification").style.display = "none"); }
+
+/** === TOASTS === **/
+function showToast(message, type = "info", duration = 3500) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed; bottom:30px; left:50%; transform:translateX(-50%);
+    background: ${type === "error" ? "#e63e3e" : type === "success" ? "#2ecc71" : "#222"};
+    color:white; padding:12px 20px; border-radius:8px; font-weight:600;
+    z-index:99999; box-shadow:0 0 12px rgba(0,0,0,0.28);
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), duration);
 }
 
-function getWallet() {
-  return localStorage.getItem("xummWallet") || null;
+/** === COPY REFERRAL === **/
+function copyReferral() {
+  const input = $("referralLink");
+  if (!input) return;
+  input.select();
+navigator.clipboard.writeText(input.value)
+  .then(() => $("copyStatus").textContent = "📋 Copied!")
+  .catch(() => $("copyStatus").textContent = "Copy failed.");
 }
 
-function logoutWallet() {
-  localStorage.removeItem("xummWallet");
-  window.parent.postMessage({ logout: true }, "https://waldocoin.live");
-}
-
-function showWaldoNotification(message) {
-  const banner = document.getElementById("waldoNotification");
-  const msg = document.getElementById("waldoMessage");
-  if (banner && msg) {
-    msg.textContent = message;
-    banner.style.display = "block";
-    setTimeout(() => (banner.style.display = "none"), 5000);
-  } else {
-    console.log("🔔", message);
-  }
-}
-
+/** === REWARD TIERS === **/
 function generateRewardTable() {
-  const table = document.getElementById("rewardTierBody");
+  const table = $("rewardTierBody");
   if (!table) return;
   table.innerHTML = "";
   rewardTiers.forEach(t => {
@@ -1012,663 +1077,495 @@ function generateRewardTable() {
       <td>${(t.base * 0.9).toFixed(2)} WALDO</td>
       <td>${(t.base * 1.15 * 0.95).toFixed(2)} WALDO</td>
       <td>${(t.base * 0.9 * 40).toFixed(2)}</td>
-      <td>${(t.base * 1.15 * 0.95 * 40).toFixed(2)}</td>`;
+      <td>${(t.base * 1.15 * 0.95 * 40).toFixed(2)}</td>
+    `;
     table.appendChild(row);
   });
 }
 
-function copyReferral() {
-  const input = document.getElementById("referralLink");
-  input.select();
-  document.execCommand("copy");
-  document.getElementById("copyStatus").textContent = "📋 Copied!";
+/** === XP CALC === **/
+function calculateXPToNextLevel(xp) {
+  for (let i = 0; i < levelThresholds.length; i++)
+    if (xp < levelThresholds[i]) return levelThresholds[i] - xp;
+  return 0;
 }
-let xpChartInstance; // declare globally
 
-function renderXPTrendChart(data) {
-  const ctx = document.getElementById("xpChart").getContext("2d");
-
-  // 💥 Fix: destroy existing chart if it exists
-  if (xpChartInstance) {
-    xpChartInstance.destroy();
-  }
-
+/** === CHARTS === **/
+function renderXPTrendChart(xpTrend) {
+  const el = $("xpChart");
+  if (!el || !window.Chart) return;
+  const ctx = el.getContext("2d");
+  if (xpChartInstance) xpChartInstance.destroy();
   xpChartInstance = new Chart(ctx, {
     type: "line",
-    data,
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
+    data: xpTrend || { labels:[], datasets:[] },
+    options: { responsive: true, scales: { y: { beginAtZero:true } } }
   });
 }
 
-async function fetchConversionRate() {
-  try {
-    const res = await fetch(`${baseURL}/api/conversion`);
-    const data = await res.json();
-    document.getElementById("waldoConversion").textContent = `${data.waldoToUSD} USD / ${data.waldoToXRP} XRP`;
-    document.getElementById("waldoEarnings").textContent = `${data.totalWaldo} WALDO = ${data.totalUSD} USD`;
-  } catch (err) {
-    console.error("❌ Conversion rate error:", err);
-  }
-}
-
+/** === DASHBOARD POPULATION === **/
 async function fetchUserStats(wallet) {
   try {
     const res = await fetch(`${baseURL}/api/userStats?wallet=${wallet}`);
     const stats = await res.json();
-
-    document.getElementById("waldoXP").textContent = stats.xp;
-    document.getElementById("waldoLevel").textContent = `Level ${stats.level}`;
-    document.getElementById("waldoTitle").textContent = levelTitles[stats.level] || `Level ${stats.level}`;
-    document.getElementById("waldoLikes").textContent = stats.likes;
-    document.getElementById("waldoRetweets").textContent = stats.retweets;
-    document.getElementById("waldoMemes").textContent = stats.memes;
-    document.getElementById("waldoBattles").textContent = stats.battles;
-    document.getElementById("waldoReferrals").textContent = stats.referrals.length;
-    document.getElementById("refCount").textContent = stats.referrals.length;
-    document.getElementById("referralLink").value = `https://waldocoin.live/?ref=${wallet}`;
-    document.getElementById("walletAddress").textContent = `Wallet: ${wallet}`;
-
-    const breakdown = stats.xpBreakdown || {
-      likes: 0,
-      retweets: 0,
-      battles: 0,
-      referrals: 0,
-      voting: 0,
-      stakingBonus: 0
-    };
-    document.getElementById("xpLikes").textContent = `${breakdown.likes} XP`;
-    document.getElementById("xpRetweets").textContent = `${breakdown.retweets} XP`;
-    document.getElementById("xpBattles").textContent = `${breakdown.battles} XP`;
-    document.getElementById("xpReferrals").textContent = `${breakdown.referrals} XP`;
-    document.getElementById("xpVoting").textContent = `${breakdown.voting} XP`;
-    document.getElementById("xpStakingBonus").textContent = `${breakdown.stakingBonus}%`;
-
-    const level = stats.level || 1;
-    const xp = stats.xp || 0;
-    const xpFloor = levelThresholds[level - 1] || 0;
-    const xpCeil = levelThresholds[level] || (xpFloor + 1000);
+    $("walletAddress") && ($("walletAddress").textContent = `Wallet: ${wallet}`);
+    $("waldoXP") && ($("waldoXP").textContent = stats.xp ?? "0");
+    $("waldoLevel") && ($("waldoLevel").textContent = `Level ${stats.level ?? 1}`);
+    $("waldoTitle") && ($("waldoTitle").textContent = (levelTitles[stats.level] || `Level ${stats.level}`));
+    $("waldoLikes") && ($("waldoLikes").textContent = stats.likes ?? "0");
+    $("waldoRetweets") && ($("waldoRetweets").textContent = stats.retweets ?? "0");
+    $("waldoMemes") && ($("waldoMemes").textContent = stats.memes ?? "0");
+    $("waldoBattles") && ($("waldoBattles").textContent = stats.battles ?? "0");
+    $("waldoReferrals") && ($("waldoReferrals").textContent = stats.referrals?.length ?? 0);
+    $("refCount") && ($("refCount").textContent = stats.referrals?.length ?? 0);
+    $("referralLink") && ($("referralLink").value = `https://waldocoin.live/?ref=${wallet}`);
+    // XP breakdown
+    const breakdown = stats.xpBreakdown || {};
+    $("xpLikes") && ($("xpLikes").textContent = `${breakdown.likes ?? 0} XP`);
+    $("xpRetweets") && ($("xpRetweets").textContent = `${breakdown.retweets ?? 0} XP`);
+    $("xpBattles") && ($("xpBattles").textContent = `${breakdown.battles ?? 0} XP`);
+    $("xpReferrals") && ($("xpReferrals").textContent = `${breakdown.referrals ?? 0} XP`);
+    $("xpVoting") && ($("xpVoting").textContent = `${breakdown.voting ?? 0} XP`);
+    $("xpStakingBonus") && ($("xpStakingBonus").textContent = `${breakdown.stakingBonus ?? 0}%`);
+    // Level logic
+    const level = stats.level || 1, xp = stats.xp || 0;
+    const xpFloor = levelThresholds[level - 1] || 0, xpCeil = levelThresholds[level] || (xpFloor + 1000);
     const xpProgress = Math.min(100, Math.floor(((xp - xpFloor) / (xpCeil - xpFloor)) * 100));
-
-    const icon = document.getElementById("userLevelIcon");
-    const title = document.getElementById("userLevelTitle");
-    const bar = document.getElementById("levelProgress");
-    const xpToNext = document.getElementById("xpToNextLevel");
-    if (title) title.textContent = levelTitles[level] || `Level ${level}`;
-    if (bar) bar.value = xpProgress;
-    if (xpToNext) xpToNext.textContent = `${calculateXPToNextLevel(xp)} XP to next level`;
-
-    if (icon) {
-      icon.src = levelImages[level] || "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png";
-      icon.onerror = () => {
-        icon.src = "https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png";
-      };
-    }
-
+    $("userLevelIcon") && ($("userLevelIcon").src = levelImages[level] || levelImages[1]);
+    $("userLevelTitle") && ($("userLevelTitle").textContent = levelTitles[level] || `Level ${level}`);
+    $("levelProgress") && ($("levelProgress").value = xpProgress);
+    $("xpToNextLevel") && ($("xpToNextLevel").textContent = `${calculateXPToNextLevel(xp)} XP to next level`);
+    $("xpToNextLevelStats") && ($("xpToNextLevelStats").textContent = `${calculateXPToNextLevel(xp)} XP`);
     renderXPTrendChart(stats.memeXPTrend || []);
   } catch (err) {
-    console.error("❌ User Stats Error:", err);
+    showToast("Error loading user stats", "error");
   }
 }
-
+async function fetchConversionRate() {
+  try {
+    const res = await fetch(`${baseURL}/api/conversion`);
+    const data = await res.json();
+    $("waldoConversion") && ($("waldoConversion").textContent = `${data.waldoToUSD} USD / ${data.waldoToXRP} XRP`);
+    $("waldoEarnings") && ($("waldoEarnings").textContent = `${data.totalWaldo} WALDO = ${data.totalUSD} USD`);
+  } catch (err) { showToast("Could not load rates", "error"); }
+}
 async function loadTopMeme() {
   try {
     const res = await fetch(`${baseURL}/api/topMeme`);
     const data = await res.json();
-
-    document.getElementById("topMemeLikes").textContent = data.likes;
-    document.getElementById("topMemeImg").src = data.image;
-    document.getElementById("topMemeLink").href = `https://x.com/${data.author}/status/${data.id}`;
-  } catch (err) {
-    console.error("❌ Error loading top meme:", err);
-  }
+    $("topMemeLikes") && ($("topMemeLikes").textContent = data.likes);
+    $("topMemeImage") && ($("topMemeImage").src = data.image);
+    $("topMemeImg") && ($("topMemeImg").src = data.image);
+    $("topMemeLink") && ($("topMemeLink").href = `https://x.com/${data.author}/status/${data.id}`);
+  } catch (err) {}
 }
 
+/** === INIT EVERYTHING === **/
 async function initWaldoDashboard() {
   const wallet = getWallet();
   if (!wallet) return;
-  document.getElementById("walletAddress").textContent = `Wallet: ${wallet}`;
-  document.getElementById("referralLink").value = `https://waldocoin.live/?ref=${wallet}`;
   generateRewardTable();
   await fetchUserStats(wallet);
   await fetchConversionRate();
   await loadTopMeme();
-  await loadCurrentBattle();
-
+  // More dashboard sections can go here (meme table, activity feed, battles, leaderboard etc)
 }
 
-function postHeight() {
-  const height = document.body.scrollHeight;
-  window.parent.postMessage({ height }, "https://waldocoin.live");
-}
-window.addEventListener("load", postHeight);
-window.addEventListener("resize", postHeight);
+/** === ON PAGE LOAD === **/
+document.addEventListener("DOMContentLoaded", () => {
+  const wallet = getWallet();
+  if (!wallet) {
+    if (window.location.pathname === statsPage) {
+      window.location.replace(loginPage); return;
+    }
+    showWaldoNotification("🔌 No WALDO wallet connected yet. Please connect!");
+    return;
+  }
+  $("walletAddress") && ($("walletAddress").innerText = `Wallet: ${wallet}`);
+  showWaldoNotification("✅ WALDO wallet connected");
+  initWaldoDashboard();
+});
 
+/** === POSTMESSAGE LOGIN SUPPORT === **/
 window.addEventListener("message", (event) => {
   if (event.origin !== "https://waldocoin.live") return;
   if (event.data.wallet) {
     localStorage.setItem("xummWallet", event.data.wallet);
-    console.log("✅ Wallet received via postMessage:", event.data.wallet);
-    initWaldoDashboard();
+    window.location.replace(statsPage);
   }
 });
-async function startBattle(tweetId) {
-  const wallet = getWallet();
-  if (!wallet || !tweetId) return alert("Missing wallet or tweet ID");
 
-  const res = await fetch(`${baseURL}/api/battle/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ wallet, tweetId })
+/** === BUTTON HOOKS FOR HTML === **/
+window.dismissWaldoNotification = dismissWaldoNotification;
+window.logoutWallet = logoutWallet;
+window.copyReferral = copyReferral;
+function $(id) { return document.getElementById(id); }
+function getWallet() { return localStorage.getItem("xummWallet") || null; }
+function logoutWallet() { localStorage.removeItem("xummWallet"); window.location.replace(loginPage); }
+function copyReferral() { const input = $("referralLink"); if (!input) return; input.select(); document.execCommand("copy"); $("copyStatus").textContent = "📋 Copied!"; }
+function showWaldoNotification(msg, timeout = 5000) { const n = $("waldoNotification"), m = $("waldoMessage"); if (!n || !m) return; m.textContent = msg; n.style.display = "flex"; if (timeout) setTimeout(() => { n.style.display = "none"; }, timeout);}
+function dismissWaldoNotification() { $("waldoNotification")?.style && ($("waldoNotification").style.display = "none"); }
+function showToast(message, type = "info", duration = 3500) { const toast = document.createElement("div"); toast.className = "toast"; toast.textContent = message; toast.style.cssText = `position: fixed; bottom:30px; left:50%; transform:translateX(-50%);background: ${type === "error" ? "#e63e3e" : type === "success" ? "#2ecc71" : "#222"};color:white; padding:12px 20px; border-radius:8px; font-weight:600;z-index:99999; box-shadow:0 0 12px rgba(0,0,0,0.28);`;document.body.appendChild(toast); setTimeout(() => toast.remove(), duration);}
+window.dismissWaldoNotification = dismissWaldoNotification;
+window.logoutWallet = logoutWallet;
+window.copyReferral = copyReferral;
+
+
+function calculateXPToNextLevel(xp) {
+  for (let i = 0; i < levelThresholds.length; i++) if (xp < levelThresholds[i]) return levelThresholds[i] - xp;
+  return 0;
+}
+function generateRewardTable() {
+  const table = $("rewardTierBody");
+  if (!table) return;
+  table.innerHTML = "";
+  rewardTiers.forEach(t => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>Tier ${t.tier}</td>
+      <td>${t.likes}+</td>
+      <td>${t.retweets}+</td>
+      <td>${t.base.toFixed(2)} WALDO</td>
+      <td>${(t.base * 0.9).toFixed(2)} WALDO</td>
+      <td>${(t.base * 1.15 * 0.95).toFixed(2)} WALDO</td>
+      <td>${(t.base * 0.9 * 40).toFixed(2)}</td>
+      <td>${(t.base * 1.15 * 0.95 * 40).toFixed(2)}</td>
+    `;
+    table.appendChild(row);
   });
+}
 
-  const data = await res.json();
+// Chart (XP Trends)
+let xpChartInstance;
+function renderXPTrendChart(xpTrend) {
+  const el = $("xpChart");
+  if (!el || !window.Chart) return;
+  const ctx = el.getContext("2d");
+  if (xpChartInstance) xpChartInstance.destroy();
+  xpChartInstance = new Chart(ctx, {
+    type: "line",
+    data: xpTrend || { labels:[], datasets:[] },
+    options: { responsive: true, scales: { y: { beginAtZero:true } } }
+  });
+}
 
-  if (data.success && data.next) {
-    window.open(data.next.always, "_blank"); // Open XUMM sign request
-    alert(`Battle started! ID: ${data.battleId}`);
-  } else {
-    console.error("❌ Failed to start battle:", data.error || data.detail);
-    alert(`Error: ${data.error}`);
+// User Stats/Conversion/Top Meme
+async function fetchUserStats(wallet) {
+  try {
+    const res = await fetch(`${baseURL}/api/userStats?wallet=${wallet}`);
+    const stats = await res.json();
+    $("walletAddress") && ($("walletAddress").textContent = `Wallet: ${wallet}`);
+    $("waldoXP") && ($("waldoXP").textContent = stats.xp ?? "0");
+    $("waldoLevel") && ($("waldoLevel").textContent = `Level ${stats.level ?? 1}`);
+    $("waldoTitle") && ($("waldoTitle").textContent = (levelTitles[stats.level] || `Level ${stats.level}`));
+    $("waldoLikes") && ($("waldoLikes").textContent = stats.likes ?? "0");
+    $("waldoRetweets") && ($("waldoRetweets").textContent = stats.retweets ?? "0");
+    $("waldoMemes") && ($("waldoMemes").textContent = stats.memes ?? "0");
+    $("waldoBattles") && ($("waldoBattles").textContent = stats.battles ?? "0");
+    $("waldoReferrals") && ($("waldoReferrals").textContent = stats.referrals?.length ?? 0);
+    $("refCount") && ($("refCount").textContent = stats.referrals?.length ?? 0);
+    $("referralLink") && ($("referralLink").value = `https://waldocoin.live/?ref=${wallet}`);
+    // XP breakdown
+    const breakdown = stats.xpBreakdown || {};
+    $("xpLikes") && ($("xpLikes").textContent = `${breakdown.likes ?? 0} XP`);
+    $("xpRetweets") && ($("xpRetweets").textContent = `${breakdown.retweets ?? 0} XP`);
+    $("xpBattles") && ($("xpBattles").textContent = `${breakdown.battles ?? 0} XP`);
+    $("xpReferrals") && ($("xpReferrals").textContent = `${breakdown.referrals ?? 0} XP`);
+    $("xpVoting") && ($("xpVoting").textContent = `${breakdown.voting ?? 0} XP`);
+    $("xpStakingBonus") && ($("xpStakingBonus").textContent = `${breakdown.stakingBonus ?? 0}%`);
+    // Level logic
+    const level = stats.level || 1, xp = stats.xp || 0;
+    const xpFloor = levelThresholds[level - 1] || 0, xpCeil = levelThresholds[level] || (xpFloor + 1000);
+    const xpProgress = Math.min(100, Math.floor(((xp - xpFloor) / (xpCeil - xpFloor)) * 100));
+    $("userLevelIcon") && ($("userLevelIcon").src = levelImages[level] || levelImages[1]);
+    $("userLevelTitle") && ($("userLevelTitle").textContent = levelTitles[level] || `Level ${level}`);
+    $("levelProgress") && ($("levelProgress").value = xpProgress);
+    $("xpToNextLevel") && ($("xpToNextLevel").textContent = `${calculateXPToNextLevel(xp)} XP to next level`);
+    $("xpToNextLevelStats") && ($("xpToNextLevelStats").textContent = `${calculateXPToNextLevel(xp)} XP`);
+    renderXPTrendChart(stats.memeXPTrend || []);
+  } catch (err) { showToast("Error loading user stats", "error"); }
+}
+async function fetchConversionRate() {
+  try {
+    const res = await fetch(`${baseURL}/api/conversion`);
+    const data = await res.json();
+    $("waldoConversion") && ($("waldoConversion").textContent = `${data.waldoToUSD} USD / ${data.waldoToXRP} XRP`);
+    $("waldoEarnings") && ($("waldoEarnings").textContent = `${data.totalWaldo} WALDO = ${data.totalUSD} USD`);
+  } catch (err) { showToast("Could not load rates", "error"); }
+}
+async function loadTopMeme() {
+  try {
+    const res = await fetch(`${baseURL}/api/topMeme`);
+    const data = await res.json();
+    $("topMemeLikes") && ($("topMemeLikes").textContent = data.likes);
+    $("topMemeImage") && ($("topMemeImage").src = data.image);
+    $("topMemeImg") && ($("topMemeImg").src = data.image);
+    $("topMemeLink") && ($("topMemeLink").href = `https://x.com/${data.author}/status/${data.id}`);
+  } catch (err) {}
+}
+
+// ========== MEME TABLE (Claim/Stake/Mint Logic, Pagination) ==========
+let memes = [], memePage = 1, memesPerPage = 8;
+async function loadMemes(wallet) {
+  try {
+    const res = await fetch(`${baseURL}/api/tweets?wallet=${wallet}`);
+    const data = await res.json();
+    memes = Array.isArray(data) ? data : [];
+    renderMemeTable();
+  } catch (err) {
+    showToast("Error loading memes", "error");
+    memes = [];
+    renderMemeTable();
   }
 }
-async function acceptBattle(battleId, tweetId) {
-  const wallet = getWallet();
-  if (!wallet || !battleId || !tweetId) return alert("Missing info");
-
-  const res = await fetch(`${baseURL}/api/battle/accept`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ wallet, tweetId, battleId })
+function renderMemeTable() {
+  const tbody = $("memeTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  let pageMemes = memes.slice((memePage-1)*memesPerPage, memePage*memesPerPage);
+  pageMemes.forEach(meme => {
+    const row = document.createElement("tr");
+    // NFT eligibility
+    const canMint = (meme.xp >= 60 && !meme.minted);
+    row.innerHTML = `
+      <td><img src="${meme.image || 'https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png'}" class="meme-thumb" style="width:64px; height:64px; border-radius:12px;${canMint ? 'border:2px solid #e63e3e;' : ''}" onclick="showNFTModal('${meme.image}')"></td>
+      <td>${meme.retweets ?? 0}</td>
+      <td>${meme.likes ?? 0}</td>
+      <td>${meme.xp ?? 0}</td>
+      <td>${meme.tier ?? 1}</td>
+      <td><button class="button-style" ${meme.claimed ? 'disabled' : ''} onclick="claimMeme('${meme.id}',${meme.tier})">Claim</button></td>
+      <td><button class="button-style" ${meme.staked ? 'disabled' : ''} onclick="stakeMeme('${meme.id}',${meme.tier})">Stake</button></td>
+      <td><button class="button-style" ${canMint ? '' : 'disabled'} onclick="mintMeme('${meme.id}')">Mint</button></td>
+    `;
+    tbody.appendChild(row);
   });
-
-  const data = await res.json();
-
-  if (data.success && data.next) {
-    window.open(data.next.always, "_blank"); // Open XUMM sign request
-    alert(`You accepted the battle! Ends in 24h.`);
-  } else {
-    console.error("❌ Failed to accept battle:", data.error || data.detail);
-    alert(`Error: ${data.error}`);
+  renderMemePagination();
+}
+function renderMemePagination() {
+  const totalPages = Math.ceil(memes.length / memesPerPage);
+  const pDiv = $("pagination"); if (!pDiv) return;
+  pDiv.innerHTML = "";
+  for(let i=1;i<=totalPages;i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.className = i===memePage ? "active" : "";
+    btn.onclick = ()=>{ memePage=i; renderMemeTable(); };
+    pDiv.appendChild(btn);
   }
 }
+window.showNFTModal = function(img) {
+  $("nftModalImg").src = img;
+  $("nftModal").style.display = "block";
+};
+window.closeNFTModal = function() {
+  $("nftModal").style.display = "none";
+};
 
+// ========== CLAIM / STAKE / MINT BUTTON LOGIC ==========
+window.claimMeme = async function(memeId, tier) {
+  const wallet = getWallet();
+  if (!wallet) { showToast("Not logged in", "error"); return; }
+  try {
+    const res = await fetch(`${baseURL}/api/claim`, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ wallet, tier, memeId, stake:false })
+    });
+    const data = await res.json();
+    if (data.success) { showToast("Claim started – check XUMM wallet", "success"); await loadMemes(wallet);}
+    else { showToast(data.error || "Claim failed", "error"); }
+  } catch (err) { showToast("Claim failed", "error"); }
+};
+window.stakeMeme = async function(memeId, tier) {
+  const wallet = getWallet();
+  if (!wallet) { showToast("Not logged in", "error"); return; }
+  try {
+    const res = await fetch(`${baseURL}/api/claim`, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ wallet, tier, memeId, stake:true })
+    });
+    const data = await res.json();
+    if (data.success) { showToast("Staking started – check XUMM wallet", "success"); await loadMemes(wallet);}
+    else { showToast(data.error || "Stake failed", "error"); }
+  } catch (err) { showToast("Stake failed", "error"); }
+};
+window.mintMeme = async function(memeId) {
+  const wallet = getWallet();
+  if (!wallet) { showToast("Not logged in", "error"); return; }
+  try {
+    // Step 1: Pay mint fee
+    const feeRes = await fetch(`${baseURL}/api/mint`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({wallet, memeId})
+    });
+    const feeData = await feeRes.json();
+    if (!feeData.success) { showToast(feeData.error||"Mint fee failed","error"); return; }
+    showToast("Sign mint fee in XUMM…", "info", 4000);
+    // Step 2: Poll backend for mint confirmation
+    setTimeout(async()=>{
+      const mintRes = await fetch(`${baseURL}/api/mint/confirm`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({wallet, memeId})
+      });
+      const mintData = await mintRes.json();
+      if (mintData.success) { showToast("NFT Minted!", "success"); await loadMemes(wallet);}
+      else { showToast(mintData.error||"Mint failed", "error"); }
+    }, 5000);
+  } catch (err) { showToast("Mint failed", "error"); }
+};
 
+// ========== BATTLE ARENA (Current, History, Leaderboard) ==========
 async function loadCurrentBattle() {
   try {
     const res = await fetch(`${baseURL}/api/battle/current`);
     const data = await res.json();
-
-    const status = document.getElementById("battleStatus");
-    const content = document.getElementById("battleContent");
-    const notification = document.getElementById("battleNotification");
-
-    if (!data || !data.active) {
-      status.textContent = "No active battles right now.";
-      content.style.display = "none";
-      notification.style.display = "none";
+    if (!data || !data.open) {
+      $("battleStatus").textContent = "No battle running. Start one below!";
+      $("battleContent").style.display = "block";
       return;
     }
-
-    // Show battle content and notification
-    content.style.display = "block";
-    notification.style.display = "block";
-    status.textContent = `Battle ends in ${data.timeLeft}`;
-
-    // Fill in meme info
-    document.getElementById("meme1Img").src = data.meme1.image;
-    document.getElementById("meme1Link").href = `https://x.com/${data.meme1.author}/status/${data.meme1.id}`;
-    
-    document.getElementById("meme2Img").src = data.meme2.image;
-    document.getElementById("meme2Link").href = `https://x.com/${data.meme2.author}/status/${data.meme2.id}`;
-
-    // Optional timer
-    document.getElementById("battleTimer").textContent = `⏳ Ends in: ${data.timeLeft}`;
-
-    await showBattleResults(data.battleId);
-
+    $("battleStatus").textContent = "Battle is live!";
+    $("battleContent").style.display = "block";
+    $("meme1Img").src = data.meme1.image;
+    $("meme2Img").src = data.meme2.image;
+    $("meme1Link").href = `https://x.com/${data.meme1.author}/status/${data.meme1.id}`;
+    $("meme2Link").href = `https://x.com/${data.meme2.author}/status/${data.meme2.id}`;
+    // Set up vote buttons
+    $("meme1Img").onclick = ()=>showNFTModal(data.meme1.image);
+    $("meme2Img").onclick = ()=>showNFTModal(data.meme2.image);
+    $("battle-wrapper").setAttribute("data-tweetid", data.id);
+    $("battle-wrapper").setAttribute("data-status", data.status);
+    $("battle-wrapper").setAttribute("data-canaccept", data.canAccept ? "true" : "false");
+    $("battleTimer").textContent = data.timeLeft ? `⏰ ${data.timeLeft} left` : "";
   } catch (err) {
-    console.error("❌ Error loading battle:", err);
-    const status = document.getElementById("battleStatus");
-    if (status) status.textContent = "Failed to load battle.";
-  }
-  // Payout + archive status UI update
-const resultText = document.getElementById("battleFinalResult");
-
-if (battle.paid) {
-  const type = battle.paidType === "auto" ? "Auto" : "Manual";
-  resultText.innerText += `\n💸 Payout: ${type} ✅`;
-} else if (new Date() > endTime) {
-  resultText.innerText += `\n📦 Archived – Awaiting payout...`;
-}
-
-  function loadVoteCounts(battleId) {
-  const statusEl = document.getElementById("battleVoteStatus");
-  const resultEl = document.getElementById("battleFinalResult");
-
-  const updateVotes = async () => {
-    try {
-      const res = await fetch(`${baseURL}/api/battle/votes/${battleId}`);
-      const data = await res.json();
-
-      if (!data.success) {
-        statusEl.innerText = "⚠️ Unable to fetch votes.";
-        return;
-      }
-
-      const { meme1Votes, meme2Votes, winner } = data;
-
-      // Live vote count
-      statusEl.innerText = `📊 Votes — Meme 1: ${meme1Votes} | Meme 2: ${meme2Votes}`;
-
-      // If winner is already decided, show result
-      if (winner) {
-        resultEl.innerText = `🏆 Winner: Meme ${winner === "meme1" ? "1" : "2"} 🎉`;
-      }
-  
-    } catch (err) {
-      console.error("❌ Vote fetch error:", err);
-      statusEl.innerText = "Error loading votes.";
-    }
-      loadVoteCounts(battle.battleId);
-  };
-
-  updateVotes(); // First load
-  const interval = setInterval(updateVotes, 10000); // Poll every 10s
-
-  // Optional: auto-stop after 1 hour
-  setTimeout(() => clearInterval(interval), 1000 * 3600);
-}
-
-}
-
-// Move showBattleResults outside of loadCurrentBattle
-async function showBattleResults(battleId) {
-  try {
-    const res = await fetch(`${baseURL}/api/battle/results/${battleId}`);
-    const data = await res.json();
-
-    if (!data.success) {
-      document.getElementById("battleFinalResult").textContent = "❌ Couldn't load battle results.";
-      return;
-    }
-
-    const { votesA, votesB, winner } = data;
-
-    let resultText = `🅰️ Meme A: ${votesA} votes | 🅱️ Meme B: ${votesB} votes`;
-    resultText += winner === "tie"
-      ? " — It's a tie! 🤝"
-      : ` — Winner: Meme ${winner} 🏆`;
-
-    document.getElementById("battleFinalResult").textContent = resultText;
-
-    // Animate winner
-    const meme1 = document.getElementById("meme1Img");
-    const meme2 = document.getElementById("meme2Img");
-
-    meme1.classList.remove("winner-glow");
-    meme2.classList.remove("winner-glow");
-
-   if (winner === "A") {
-  meme1.classList.add("winner-glow");
-  launchConfetti();
-} else if (winner === "B") {
-  meme2.classList.add("winner-glow");
-  launchConfetti();
-}
-
-  } catch (err) {
-    console.error("❌ Error showing battle results:", err);
-    document.getElementById("battleFinalResult").textContent = "❌ Couldn't load results.";
+    $("battleStatus").textContent = "Could not load battle.";
   }
 }
-async function voteBattle(memeChoice) {
+window.voteBattle = async function(which) {
   const wallet = getWallet();
-  if (!wallet) {
-    showWaldoNotification("🔌 Connect your wallet first.");
-    return;
-  }
-
-  const battleId = window.currentBattleId;
-  if (!battleId) {
-    showWaldoNotification("⚠️ There's no active battle to vote in.");
-    return;
-  }
-
-  // Map button choice to battle vote option
-  const vote = memeChoice === 'meme1' ? 'A' : 'B';
-
+  const battleId = $("battle-wrapper").getAttribute("data-tweetid");
+  if (!wallet || !battleId) { showToast("Wallet or battle missing", "error"); return; }
   try {
     const res = await fetch(`${baseURL}/api/battle/vote`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wallet, battleId, vote })
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ wallet, battleId, vote: which })
     });
-
     const data = await res.json();
-
-    if (data.success) {
-      window.open(data.next, '_blank');  // XUMM signing URL
-      showWaldoNotification("✅ Vote initiated—please sign via XUMM.");
-    } else {
-      showWaldoNotification(`❌ Voting failed: ${data.error}`);
-    }
-  } catch (err) {
-    console.error("❌ Vote error:", err);
-    showWaldoNotification("❌ A technical issue occurred during voting.");
-  }
-}
-
-
-window.addEventListener("DOMContentLoaded", () => {
+    if (data.success) showToast("Vote submitted!", "success");
+    else showToast(data.error || "Vote failed", "error");
+  } catch (err) { showToast("Vote failed", "error"); }
+};
+// Start/accept battle UI
+$("start-battle-btn")?.addEventListener("click", async () => {
+  const input = $("memeTweetId");
+  let tweetId = input.value.match(/status\/(\d{10,25})/)?.[1] || input.value.match(/(\d{10,25})/)?.[1];
+  if (!tweetId) { showToast("Paste valid tweet link.", "error"); return; }
+  $("battle-wrapper").setAttribute("data-tweetid", tweetId);
+  // start battle
   const wallet = getWallet();
-  if (wallet) {
-    console.log("🧠 Found wallet in localStorage:", wallet);
-    initWaldoDashboard();
-  } else {
-    console.log("⏳ Waiting for wallet from parent...");
-  }
-  async function loadBattleHistory() {
+  try {
+    const res = await fetch(`${baseURL}/api/battle/start`, {
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ wallet, tweetId })
+    });
+    const data = await res.json();
+    if (data.success) showToast("Battle started!", "success");
+    else showToast(data.error || "Could not start battle", "error");
+  } catch (err) { showToast("Error starting battle", "error"); }
+});
+$("accept-battle-btn")?.addEventListener("click", async () => {
+  const tweetId = $("battle-wrapper")?.getAttribute("data-tweetid");
+  const wallet = getWallet();
+  if (!wallet || !tweetId) { showToast("No battle selected.", "error"); return;}
+  try {
+    const res = await fetch(`${baseURL}/api/battle/accept`, {
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ wallet, tweetId })
+    });
+    const data = await res.json();
+    if (data.success) showToast("Battle accepted!", "success");
+    else showToast(data.error || "Could not accept", "error");
+  } catch (err) { showToast("Error accepting battle", "error"); }
+});
+
+// Load battle history
+async function loadBattleHistory() {
   try {
     const res = await fetch(`${baseURL}/api/battle/history`);
     const data = await res.json();
-
-    if (!data.success || !data.history || data.history.length === 0) {
-      document.getElementById("battleHistoryStatus").innerText = "No past battles found.";
-      return;
-    }
-
-    const tbody = document.getElementById("battleHistoryTable");
-    document.getElementById("battleHistoryTableContainer").style.display = "block";
-    document.getElementById("battleHistoryStatus").style.display = "none";
-
-    data.history.forEach(battle => {
+    const tbody = $("battleHistoryTable");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    data.forEach((b,i) => {
       const row = document.createElement("tr");
-
-      const meme1Link = `https://x.com/i/web/status/${battle.meme1.id}`;
-      const meme2Link = `https://x.com/i/web/status/${battle.meme2.id}`;
-
       row.innerHTML = `
-        <td>${battle.battleId}</td>
-        <td><a href="${meme1Link}" target="_blank">Meme 1</a></td>
-        <td><a href="${meme2Link}" target="_blank">Meme 2</a></td>
-        <td>${battle.votesA} - ${battle.votesB}</td>
-        <td><span class="winner-badge">Meme ${battle.winner === "A" ? "1" : "2"}</span></td>
-        <td>${new Date(battle.endedAt).toLocaleString()}</td>
-      `;
-
+        <td>${b.id}</td>
+        <td>${b.meme1?.id || ""}</td>
+        <td>${b.meme2?.id || ""}</td>
+        <td>${b.votes ?? 0}</td>
+        <td>${b.winner ?? ""}</td>
+        <td>${b.ended ? "Yes" : "No"}</td>`;
       tbody.appendChild(row);
     });
-  } catch (err) {
-    console.error("❌ Error loading history:", err);
-    document.getElementById("battleHistoryStatus").innerText = "Error loading battle history.";
-  }
-}
-
-});
-function launchConfetti() {
-  const duration = 3 * 1000;
-  const end = Date.now() + duration;
-
-  (function frame() {
-    confetti({
-      particleCount: 5,
-      angle: 60,
-      spread: 70,
-      origin: { x: 0 },
-    });
-    confetti({
-      particleCount: 5,
-      angle: 120,
-      spread: 70,
-      origin: { x: 1 },
-    });
-
-    if (Date.now() < end) {
-      requestAnimationFrame(frame);
-    }
-  })();
-} // <-- Added missing closing brace for launchConfetti
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.addEventListener("DOMContentLoaded", () => {
-  loadBattleLeaderboard(); // 🏁 Load the leaderboard
-});
-  // START battle button
-  document.querySelectorAll(".start-battle-btn").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      const wrapper = e.target.closest(".battle-controls");
-      const tweetId = wrapper.getAttribute("data-tweetid");
-
-      if (tweetId) {
-        const success = await startBattle(tweetId);
-        if (!success) return;
-
-        loadBattleHistory();
-
-
-        // 🔁 Update attributes after start
-        wrapper.setAttribute("data-status", "challenged");
-        wrapper.setAttribute("data-canaccept", "true");
-
-        // 👁️ Update button visibility
-        document.querySelector(`#start-btn-${tweetId}`).style.display = "none";
-        document.querySelector(`#accept-btn-${tweetId}`).style.display = "inline-block";
-      } loadCurrentBattle();
-    });
-  });
-
-  // ACCEPT battle button — 🛑 FIXED: moved outside of start block
-  document.querySelectorAll(".accept-battle-btn").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      const wrapper = e.target.closest(".battle-controls");
-      const tweetId = wrapper.getAttribute("data-tweetid");
-      const wallet = getWallet(); // your localStorage wallet function
-
-      if (!wallet) {
-        alert("Please connect your wallet first.");
-        return;
-      }
-
-      try {
-        const response = await fetch(`${baseURL}/api/battle/accept`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, tweetId })
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-          alert(`❌ Could not accept battle: ${result.error}`);
-          return;
-        }
-
-        const { uuid, next } = result;
-        if (isMobile()) {
-          window.location.href = next.always;
-        } else {
-          showQR(uuid);
-        }
-
-        wrapper.setAttribute("data-status", "accepted");
-        wrapper.setAttribute("data-canaccept", "false");
-        document.querySelector(`#accept-btn-${tweetId}`).style.display = "none";
-
-        toast("⚔️ You joined the battle! Voting will now open.");
-      } catch (err) {
-        console.error("❌ Accept battle error:", err);
-        alert("Unexpected error while accepting battle.");
-      }
-    });
-  });
-});
-async function loadCurrentBattle() {
-  try {
-    const res = await fetch(`${baseURL}/api/battle/current`);
-    const data = await res.json();
-
-    const status = document.getElementById("battleStatus");
-    const content = document.getElementById("battleContent");
-    const notification = document.getElementById("battleNotification");
-
-    if (!data || !data.active || !data.battle || data.battle.status !== "accepted") {
-      status.textContent = "No active battles right now.";
-      content.style.display = "none";
-      notification.style.display = "none";
-      return;
-    }
-
-    const battle = data.battle;
-    const tweetA = battle.challengerTweetId;
-    const tweetB = battle.opponentTweetId;
-    const endTime = new Date(battle.expiresAt);
-
-    // Show UI
-    content.style.display = "block";
-    notification.style.display = "block";
-    status.style.display = "none";
-
-    // Fill in meme info
-    document.getElementById("meme1Link").href = `https://x.com/i/web/status/${tweetA}`;
-    document.getElementById("meme1Img").src = `https://pbs.twimg.com/media/${tweetA}.jpg?format=jpg&name=medium`;
-
-    document.getElementById("meme2Link").href = `https://x.com/i/web/status/${tweetB}`;
-    document.getElementById("meme2Img").src = `https://pbs.twimg.com/media/${tweetB}.jpg?format=jpg&name=medium`;
-
-    // Set global
-    window.currentBattleId = battle.battleId;
-
-    // Start countdown
-    startBattleCountdown(endTime);
-
-    // 👇 ✅ Load votes now
-    loadVoteCounts(battle.battleId);
-
-  } catch (err) {
-    console.error("❌ Failed to load current battle:", err);
-    document.getElementById("battleStatus").innerText = "Error loading battle.";
-  }
-}
-function loadVoteCounts(battleId) {
-  const statusEl = document.getElementById("battleVoteStatus");
-  const resultEl = document.getElementById("battleFinalResult");
-
-  const updateVotes = async () => {
-    try {
-      const res = await fetch(`${baseURL}/api/battle/votes/${battleId}`);
-      const data = await res.json();
-
-      if (!data.success) {
-        statusEl.innerText = "⚠️ Unable to fetch votes.";
-        return;
-      }
-
-      const { meme1Votes, meme2Votes, winner } = data;
-
-      statusEl.innerText = `📊 Votes — Meme 1: ${meme1Votes} | Meme 2: ${meme2Votes}`;
-
-      if (winner) {
-        resultEl.innerText = `🏆 Winner: Meme ${winner === "meme1" ? "1" : "2"} 🎉`;
-      }
-
-    } catch (err) {
-      console.error("❌ Vote fetch error:", err);
-      statusEl.innerText = "Error loading votes.";
-    }
-  };
-
-  updateVotes(); // First run
-  const interval = setInterval(updateVotes, 10000); // Every 10s
-  setTimeout(() => clearInterval(interval), 3600000); // Stop after 1h
-}
-
-function startBattleCountdown(endTime) {
-  const timerEl = document.getElementById("battleTimer");
-
-  const update = () => {
-    const now = new Date();
-    const diff = Math.max(0, Math.floor((endTime - now) / 1000));
-    if (diff <= 0) {
-      timerEl.innerText = "⏳ Battle ended!";
-      return;
-    }
-
-    const hrs = Math.floor(diff / 3600);
-    const mins = Math.floor((diff % 3600) / 60);
-    const secs = diff % 60;
-    timerEl.innerText = `⏱️ Ends in ${hrs}h ${mins}m ${secs}s`;
-
-    setTimeout(update, 1000);
-  };
-
-  update();
+    $("battleHistoryTableContainer").style.display = "block";
+  } catch (err) {}
 }
 async function loadBattleLeaderboard() {
   try {
     const res = await fetch(`${baseURL}/api/battle/leaderboard`);
     const data = await res.json();
-
-    const statusEl = document.getElementById("battleLeaderboardStatus");
-    const container = document.getElementById("battleLeaderboardContainer");
-    const table = document.getElementById("battleLeaderboardTable");
-
-    if (!data.success || !data.leaderboard.length) {
-      statusEl.textContent = "No leaderboard data found.";
-      return;
-    }
-
-    statusEl.style.display = "none";
-    container.style.display = "block";
-
-    table.innerHTML = "";
-    data.leaderboard.forEach((entry, index) => {
+    const tbody = $("battleLeaderboardTable");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    data.forEach((b, i) => {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>🥇 ${index + 1}</td>
-        <td>${entry.memeId}</td>
-        <td>${entry.wins}</td>
-        <td><a href="https://x.com/i/web/status/${entry.memeId}" target="_blank">View</a></td>
+        <td>${i+1}</td>
+        <td>${b.memeId || ""}</td>
+        <td>${b.wins ?? 0}</td>
+        <td><a href="https://x.com/${b.author}/status/${b.memeId}" target="_blank">Link</a></td>
       `;
-      table.appendChild(row);
+      tbody.appendChild(row);
     });
-
-  } catch (err) {
-    console.error("❌ Failed to load battle leaderboard:", err);
-    document.getElementById("battleLeaderboardStatus").textContent = "Error loading leaderboard.";
-  }
+    $("battleLeaderboardContainer").style.display = "block";
+  } catch (err) {}
 }
-async function linkTwitterHandle(wallet, handle) {
-  const responseBox = document.getElementById("linkResponse"); // Add this element to show messages
 
-  try {
-    const res = await fetch("https://waldocoin-backend-api.onrender.com/api/linkTwitter", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallet, handle })
-    });
+// ========== INITIALIZATION ==========
+async function initWaldoDashboard() {
+  const wallet = getWallet();
+  if (!wallet) return;
+  generateRewardTable();
+  await fetchUserStats(wallet);
+  await fetchConversionRate();
+  await loadTopMeme();
+  await loadMemes(wallet);
+  await loadCurrentBattle();
+  await loadBattleHistory();
+  await loadBattleLeaderboard();
+}
 
-    const data = await res.json();
-
-    if (res.ok && data.success) {
-      responseBox.innerHTML = `✅ Twitter handle linked and scanned. <br> 🔍 ${data.memesStored} memes found.`;
-      responseBox.style.color = "lime";
-    } else {
-      responseBox.innerHTML = `❌ Error: ${data.error || "Something went wrong."}`;
-      responseBox.style.color = "red";
+document.addEventListener("DOMContentLoaded", () => {
+  const wallet = getWallet();
+  if (!wallet) {
+    if (window.location.pathname === statsPage) {
+      window.location.replace(loginPage); return;
     }
-  } catch (err) {
-    responseBox.innerHTML = `❌ Request failed: ${err.message}`;
-    responseBox.style.color = "red";
+    showWaldoNotification("🔌 No WALDO wallet connected yet. Please connect!");
+    return;
   }
-}
+  $("walletAddress") && ($("walletAddress").innerText = `Wallet: ${wallet}`);
+  showWaldoNotification("✅ WALDO wallet connected");
+  initWaldoDashboard();
+});
+window.addEventListener("message", (event) => {
+  if (event.origin !== "https://waldocoin.live") return;
+  if (event.data.wallet) {
+    localStorage.setItem("xummWallet", event.data.wallet);
+    window.location.replace(statsPage);
+  }
+});
 </script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </body>
 </html>

@@ -1,5 +1,4 @@
-
-  <!DOCTYPE html>
+<!DOCTYPE html>
     <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WALDO Admin Panel</title>
@@ -198,6 +197,11 @@ select:focus {
 #countdown-date-secondary {
   color: #888;
 }
+#refundStatus {
+  margin-top: 10px;
+  color: #0f0;
+}
+
 </style>
 <div class="custom-black-box"></div>
 <!-- WALDO Admin Panel Table Section -->
@@ -329,13 +333,17 @@ select:focus {
     <button type="button" onclick="updateDaoConfig()">Update Config</button>
   </div>
 
-  <div class="section">
-    <h2>⚔️ Battle Debug &amp; Backup</h2>
-    <input id="payoutBattleId" type="text" placeholder="Battle ID">
-    <button type="button" onclick="triggerPayout()">Force Payout</button>
-    <button type="button" onclick="createFakeBattle()">Create Fake Battle</button>
-    <button type="button" onclick="viewBattles()">View All Battles</button>
-  </div>
+<div class="section">
+  <h2>⚔️ Battle Debug &amp; Backup</h2>
+
+  <input id="payoutBattleId" type="text" placeholder="Battle ID">
+  <button type="button" onclick="triggerPayout()">Force Payout</button>
+  <div id="refundStatus2"></div>
+  <button id="triggerRefundBtn" type="button">🧯 Trigger Manual Refund</button>
+  <button type="button" onclick="viewBattles()">View All Battles</button>
+
+  <div id="refundStatus"></div>
+</div>
 
 <script>
 const base = "https://waldocoin-backend-api.onrender.com";
@@ -620,4 +628,166 @@ document.addEventListener("DOMContentLoaded", () => {
   loadAirdropHistory();
   fetchPresaleCountdown();
 });
+</script>
+<style>
+  .digital-clock-box {
+    background-color: #000;
+    border: 3px solid #ff0033;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin: 30px auto;
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
+    max-width: 90%;
+    font-family: 'Courier New', monospace;
+  }
+
+  .digital-label,
+  .digital-date-label {
+    font-size: 16px;
+    color: #ff0033;
+    margin-bottom: 10px;
+  }
+
+  .digital-display {
+    font-size: 28px;
+    color: #00ffcc;
+    background-color: #111;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 2px solid #00ffcc;
+    display: inline-block;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+
+  @media screen and (max-width: 600px) {
+    .digital-display {
+      font-size: 22px;
+      padding: 10px 16px;
+    }
+
+    .digital-label,
+    .digital-date-label {
+      font-size: 14px;
+    }
+  }
+</style>
+
+<script>
+function updateCountdown() {
+  fetch("https://waldocoin-backend-api.onrender.com/api/presale/countdown")
+    .then(res => res.json())
+    .then(data => {
+      const countdownEl = document.getElementById("presale-countdown");
+      const utcEl = document.getElementById("countdown-date");
+      const localEl = document.getElementById("countdown-local");
+
+      const endDate = new Date(data.endDate);
+
+      utcEl.textContent = endDate.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC";
+      localEl.textContent = endDate.toLocaleString(); // Browser's local time
+
+      const updateTimer = () => {
+        const now = new Date();
+        const diff = endDate - now;
+
+        if (diff <= 0) {
+          countdownEl.textContent = "Presale Ended";
+          clearInterval(timer);
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        countdownEl.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+      };
+
+      updateTimer();
+      const timer = setInterval(updateTimer, 1000);
+    })
+    .catch(err => {
+      console.error("Countdown fetch error:", err);
+      document.getElementById("presale-countdown").textContent = "Error";
+      document.getElementById("countdown-date").textContent = "Fetch Error";
+      document.getElementById("countdown-local").textContent = "Fetch Error";
+    });
+}
+</script>
+<script>
+const API_BASE = "https://waldocoin-backend-api.onrender.com";
+
+// 🔐 You must set this via secure method (env-injected inline or input field):
+const getAdminKey = () => localStorage.getItem("waldoAdminKey") || prompt("Enter admin key");
+
+async function triggerPayout() {
+  const id = document.getElementById("payoutBattleId").value.trim();
+  if (!id) return alert("Please enter a Battle ID");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/battle/payout?id=${id}`, {
+      method: "POST",
+      headers: { "x-admin-key": getAdminKey() }
+    });
+    const data = await res.json();
+    alert(data.success ? `✅ Payout triggered: ${data.message || "Success"}` : `❌ ${data.error || "Failed"}`);
+  } catch (err) {
+    alert("❌ Request failed: " + err.message);
+  }
+}
+
+async function createFakeBattle() {
+  try {
+    const res = await fetch(`${API_BASE}/api/debug/fake-battle`, {
+      method: "POST",
+      headers: { "x-admin-key": getAdminKey() }
+    });
+    const data = await res.json();
+    alert(data.success ? "✅ Fake battle created" : `❌ ${data.error || "Failed to create fake battle"}`);
+  } catch (err) {
+    alert("❌ Request failed: " + err.message);
+  }
+}
+
+async function viewBattles() {
+  try {
+    const res = await fetch(`${API_BASE}/api/debug/battles`, {
+      headers: { "x-admin-key": getAdminKey() }
+    });
+    const data = await res.json();
+    alert("🗂️ Total battles: " + data.battles?.length);
+    console.log("🧠 Live battle data:", data);
+  } catch (err) {
+    alert("❌ Could not fetch battle list: " + err.message);
+  }
+}
+
+document.getElementById("triggerRefundBtn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("refundStatus");
+  statusEl.textContent = "⏳ Processing refund...";
+  statusEl.style.color = "#ff0";
+
+  try {
+    const res = await fetch(`${API_BASE}/api/debug/refund`, {
+      method: "GET",
+      headers: { "x-admin-key": getAdminKey() }
+    });
+    const data = await res.json();
+    if (data.success) {
+      statusEl.textContent = `✅ ${data.message || "Refund triggered"}`;
+      statusEl.style.color = "#0f0";
+    } else {
+      statusEl.textContent = `❌ ${data.error || "Refund failed"}`;
+      statusEl.style.color = "#f00";
+    }
+  } catch (err) {
+    statusEl.textContent = "❌ Request failed: " + err.message;
+    statusEl.style.color = "#f00";
+  }
+});
+
+document.addEventListener("DOMContentLoaded", updateCountdown);
 </script>
