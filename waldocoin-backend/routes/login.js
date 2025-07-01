@@ -15,7 +15,6 @@ router.get("/", async (req, res) => {
       options: {
         return_url: {
           app: "https://stats-page.waldocoin.live/",
-          web: "https://stats-page.waldocoin.live/"
         }
       }
     };
