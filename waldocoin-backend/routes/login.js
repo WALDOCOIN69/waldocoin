@@ -7,12 +7,17 @@ router.get("/ping", (_, res) => {
   res.json({ status: "✅ Login route is alive" });
 });
 
-// MAIN LOGIN ROUTE (QR + UUID for sign-in)
+// Create login QR (with return_url)
 router.get("/", async (req, res) => {
   try {
-    // 🚫 No return_url - fixes unwanted mobile redirect!
     const payload = {
-      txjson: { TransactionType: "SignIn" }
+      txjson: { TransactionType: "SignIn" },
+      options: {
+        return_url: {
+          app: "https://stats-page.waldocoin.live/",
+          web: "https://stats-page.waldocoin.live/"
+        }
+      }
     };
     const created = await xummClient.payload.create(payload);
     res.json({ qr: created.refs.qr_png, uuid: created.uuid });
@@ -22,7 +27,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// LOGIN STATUS CHECK
+// Check login status (unchanged)
 router.get("/status", async (req, res) => {
   const { uuid } = req.query;
   try {
