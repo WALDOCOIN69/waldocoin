@@ -1,16 +1,19 @@
+// routes/login.js
 import express from "express";
 import { xummClient } from "../utils/xummClient.js";
 const router = express.Router();
 
+// Health check
 router.get("/ping", (_, res) => {
   res.json({ status: "✅ Login route is alive" });
 });
 
-// Create login QR (NO return_url, NO options)
+// Create login QR (NO return_url)
 router.get("/", async (req, res) => {
   try {
     const payload = {
       txjson: { TransactionType: "SignIn" }
+      // No 'options', no 'return_url'
     };
     const created = await xummClient.payload.create(payload);
     res.json({ qr: created.refs.qr_png, uuid: created.uuid });
@@ -20,7 +23,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Check login status (unchanged)
+// Check login status
 router.get("/status", async (req, res) => {
   const { uuid } = req.query;
   try {
@@ -36,6 +39,7 @@ router.get("/status", async (req, res) => {
 });
 
 export default router;
+
 
 
 
