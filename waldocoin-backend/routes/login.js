@@ -6,16 +6,12 @@ router.get("/ping", (_, res) => {
   res.json({ status: "✅ Login route is alive" });
 });
 
-// Create login QR
+// Create login QR (NO return_url!)
 router.get("/", async (req, res) => {
   try {
     const payload = {
-      txjson: { TransactionType: "SignIn" },
-      options: {
-        return_url: {
-          app: "https://stats-page.waldocoin.live/",
-        }
-      }
+      txjson: { TransactionType: "SignIn" }
+      // No options, no return_url!
     };
     const created = await xummClient.payload.create(payload);
     res.json({ qr: created.refs.qr_png, uuid: created.uuid });
@@ -41,5 +37,6 @@ router.get("/status", async (req, res) => {
 });
 
 export default router;
+
 
 
