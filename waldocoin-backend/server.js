@@ -46,6 +46,8 @@ import daoArchiveRoute from "./routes/dao/archive.js";
 
 // 💰 Presale Route
 import presaleRoute from "./routes/presale.js";
+app.use("/api/presale", presaleRoute);
+app.use("/api/presale", presaleLookupRoute); // enables /api/presale/lookup
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -98,6 +100,7 @@ const app = express();
   app.use("/api/dao/archive", daoArchiveRoute);
 
   app.use("/api/presale", presaleRoute);
+  app.use('/api/presale', presaleLookup);
 
   app.get("/api/routes", (req, res) => {
   res.json(app._router.stack
