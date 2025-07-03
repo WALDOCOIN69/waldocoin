@@ -46,8 +46,7 @@ import daoArchiveRoute from "./routes/dao/archive.js";
 
 // 💰 Presale Route
 import presaleRoute from "./routes/presale.js";
-app.use("/api/presale", presaleRoute);
-app.use("/api/presale", presaleLookupRoute); // enables /api/presale/lookup
+import presaleLookup from "./routes/presaleLookup.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
