@@ -1,7 +1,6 @@
 // routes/presaleLookup.js (ESM Version)
 import express from 'express';
-import redis from '../redisClient.js'; // ✅ Adjust if your Redis client is in a different file
-
+import { redis } from '../redisClient.js'; 
 const router = express.Router();
 
 router.get('/lookup', async (req, res) => {
