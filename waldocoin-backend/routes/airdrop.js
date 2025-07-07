@@ -22,19 +22,21 @@ router.post("/", async (req, res) => {
 
   try {
     const sender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
-    const client = new xrpl.Client("wss://s1.ripple.com"); // XRPL mainnet
+    const client = new xrpl.Client("wss://s1.ripple.com");
     await client.connect();
 
-    const trustlineCheck = await client.request({
+    const trustlines = await client.request({
       command: "account_lines",
       account: wallet
     });
 
-    const hasTrust = trustlineCheck.result.lines.some(
-      line => line.currency === WALDOCOIN_TOKEN && line.issuer === WALDO_ISSUER
+    const hasTrustline = trustlines.result.lines.some(
+      (line) =>
+        String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
+        line.issuer === WALDO_ISSUER
     );
 
-    if (!hasTrust) {
+    if (!hasTrustline) {
       await client.disconnect();
       return res.status(400).json({ success: false, error: "❌ No WALDO trustline found" });
     }
@@ -46,20 +48,17 @@ router.post("/", async (req, res) => {
       Amount: {
         currency: String(WALDOCOIN_TOKEN).trim().toUpperCase(),
         issuer: String(WALDO_ISSUER).trim(),
-        value: "50000.000000" // ✅ force as exact string
+        value: "50000.000000" // must be string
       }
     };
-
-    console.log("🔍 TX Object:", JSON.stringify(tx, null, 2));
 
     const prepared = await client.autofill(tx);
     const signed = sender.sign(prepared);
     const result = await client.submitAndWait(signed.tx_blob);
-
     await client.disconnect();
 
     if (result.result.meta.TransactionResult !== "tesSUCCESS") {
-      console.error("❌ TX failed meta:", result.result.meta);
+      console.error("❌ TX failed:", result.result.meta);
       return res.status(500).json({
         success: false,
         error: "Transaction failed",
@@ -70,12 +69,13 @@ router.post("/", async (req, res) => {
     return res.json({ success: true, txHash: result.result.hash });
 
   } catch (err) {
-    console.error("❌ Airdrop error:", err.message);
+    console.error("❌ Airdrop error:", err);
     return res.status(500).json({ success: false, error: "Airdrop failed", detail: err.message });
   }
 });
 
 export default router;
+
 
 
 
