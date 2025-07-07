@@ -1,25 +1,28 @@
-<style>
-  #trustlineBtn {
-    padding: 12px 20px;
-    font-size: 16px;
-    background: #e63e3e;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    box-shadow: 0 0 10px #e63e3e;
-    transition: background 0.3s ease, box-shadow 0.3s ease;
-  }
+<!-- ✅ WALDO Trustline Button -->
+<button id="trustlineBtn" style="
+  padding: 12px 20px;
+  font-size: 16px;
+  background: #e63e3e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;">
+  ➕ Add WLO Trustline
+</button>
 
-  #trustlineBtn:hover {
-    background: #45a049; /* 🟢 Green on hover */
-    box-shadow: 0 0 12px #45a049;
-  }
-</style>
+<script>
+  document.getElementById("trustlineBtn").addEventListener("mouseover", function () {
+    this.style.background = "#45a049"; // 🟢 Green hover
+  });
 
-<div style="text-align: center; margin-top: 30px;">
-  <button id="trustlineBtn" onclick="window.open('https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000', '_blank')">
-    ➕ Add WLO Trustline
-  </button>
-</div>
+  document.getElementById("trustlineBtn").addEventListener("mouseout", function () {
+    this.style.background = "#e63e3e"; // 🔴 Red default
+  });
+
+  document.getElementById("trustlineBtn").addEventListener("click", function () {
+    const trustlineURL = "https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000";
+    window.open(trustlineURL, "_blank");
+  });
+</script>
 

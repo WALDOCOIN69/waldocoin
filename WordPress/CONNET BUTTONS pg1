@@ -1,15 +1,18 @@
-<!--connect xumm buttons-->
+<!-- WALDO Connect/Trustline Custom Block pg1 under presale btn-->
 <div class="button-container">
-  <button 
-    type="button"
-    onclick="window.location.href='/connect-wallet/'"
-    class="connect-wallet-button">
-    🔗 Connect XAMAN Wallet
-  </button>
+<button
+  type="button"
+  onclick="window.location.href='https://stats-page.waldocoin.live/connect/'"
+  class="connect-wallet-button"
+  id="connectWalletBtn">
+  🔗 Connect XAMAN Wallet
+</button>
 
   <div id="trustlineWarning" class="trustline-warning">
     <h3 class="trustline-warning-title">⚠️ You Need a WALDO Trustline</h3>
-    <p class="trustline-desc">Before you can receive WALDO rewards, you must add the trustline to your wallet.</p>
+    <p class="trustline-desc">
+      Before you can receive WALDO rewards, you must add the trustline to your wallet.
+    </p>
     <a href="https://xumm.app/detect/trust?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO" target="_blank">
       <div class="add-trustline-button">
         👉 <strong>Click here to add WALDO Trustline in XUMM</strong>
@@ -84,23 +87,75 @@
   .add-trustline-button:hover {
     transform: scale(1.05);
   }
+  .connect-wallet-button {
+    background: #00c853;
+    color: black;
+    font-weight: bold;
+    font-size: 20px;
+    padding: 16px 30px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 10px #00c85355;
+    transition: 
+      background 0.2s,
+      box-shadow 0.2s,
+      transform 0.12s;
+    outline: none;
+  }
+  .connect-wallet-button:hover, 
+  .connect-wallet-button:focus {
+    background: #25c2a0;
+    color: white;
+    box-shadow: 0 0 18px #25c2a0aa;
+    transform: scale(1.04);
+  }
+
+  .hall-of-fame-button {
+    background: gold;
+    color: black;
+    font-weight: bold;
+    font-size: 18px;
+    padding: 14px 26px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 10px #ffd70055;
+    transition: 
+      background 0.2s,
+      box-shadow 0.2s,
+      transform 0.12s;
+    outline: none;
+  }
+  .hall-of-fame-button:hover, 
+  .hall-of-fame-button:focus {
+    background: #fffbe3;
+    color: #e63e3e;
+    box-shadow: 0 0 18px gold;
+    transform: scale(1.04);
+  }
 </style>
 
 <script>
   async function checkTrustline(wallet) {
-    const res = await fetch("https://waldocoin-backend-api.onrender.com/api/trustline/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallet })
-    });
+    const res = await fetch(
+      `https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${wallet}`
+    );
     const data = await res.json();
-    if (data.success && !data.trustline) {
+    if (data.hasWaldoTrustline === false) {
       document.getElementById("trustlineWarning").style.display = "block";
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const wallet = localStorage.getItem("xumm_wallet");
-    if (wallet) checkTrustline(wallet);
+  document.addEventListener("DOMContentLoaded", function() {
+    try {
+      const wallet = localStorage.getItem("xummWallet");
+      if (wallet) {
+        checkTrustline(wallet);
+        var btn = document.getElementById("connectWalletBtn");
+    
+      }
+    } catch (e) {}
   });
 </script>
+

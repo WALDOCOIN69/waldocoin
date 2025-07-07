@@ -1,0 +1,214 @@
+<!-- 🚀 WALDO Presale Button -->
+<div style="text-align:center; margin: 40px 0;">
+  <button onclick="openWaldoSliderModal()" style="background: #ffea00; font-weight: bold; font-size: 20px; padding: 12px 30px; border: none; border-radius: 12px; cursor: pointer; color: black;">
+    Buy WALDO PRESALE
+  </button>
+</div>
+
+<!-- 🧨 Modal Wrapper -->
+<div id="waldoSliderModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.9); backdrop-filter:blur(4px); overflow-y:auto;">
+
+  <!-- Close Button -->
+  <span onclick="closeWaldoSliderModal()" style="position:absolute; top:20px; right:30px; font-size:26px; cursor:pointer; color:white;">✖</span>
+
+  <!-- Layout Wrapper -->
+<div style="display: flex; justify-content: center; gap: 40px; align-items: flex-start; padding: 40px 20px; max-width: 1200px; margin: 96px auto 0 auto; flex-wrap: wrap;">
+
+    <!-- 📎 Left Side: QR + Info -->
+    <div style="flex: 1; min-width: 280px; max-width: 500px; color: white; font-family: 'Arial Black', sans-serif;">
+
+      <!-- 🔗 Trustline QR -->
+      <div style="text-align:center; margin-bottom: 10px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000"
+             style="width:100px; border-radius:10px; border:2px solid red;" />
+        <div style="color: white; font-size: 13px; margin-top: 6px;">
+          <strong>➕ Add WALDO Trustline</strong><br>
+          WALDO won’t appear unless the trustline is added.
+        </div>
+      </div>
+     <!-- 💬 Info Text -->
+<div style="margin-top: 20px; text-align: center;">
+  <h2 style="color: #ffea00; font-size: 22px;">WALDO Presale:</h2>
+  <p style="font-size: 15px;">Buy in <strong>10 XRP increments only</strong><br>🔥 Bonus WALDO at 80 XRP and above!</p>
+  <p style="font-size: 14px;">Wallet: <span id="connectedWallet" style="color:#ff0;">Not connected</span><br>
+    <a href="javascript:void(0);" onclick="connectXummWallet()" style="color: yellow; font-weight: bold;">🔌 Connect XUMM Wallet</a>
+  </p>
+  <a href="https://waldocoin.live/presale/" target="_blank" style="color: #00ffff; font-size: 13px;">📄 View Presale Info Page</a>
+</div>
+      <!-- 📲 XUMM QR -->
+      <div style="margin-top: 25px; text-align: center;">
+        <img id="xummQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="width:90px; border-radius:10px; border:2px solid #ccc; background:#000;">
+        <div style="color:#ccc; font-size:11px;">Scan with XAMAN</div>
+        <a id="xummDeepLink" href="#" style="color:#00ffff; font-size:12px; margin-top:6px; display:none;">📲 Tap here for XAMAN App</a>
+      </div>
+    </div>
+
+    <!-- 💳 Right Side: Widget -->
+    <div class="waldo-swap-box">
+      <h2>Buy WALDO</h2>
+      <div class="swap-panel">
+        <label>XRP (10–100 Only)</label>
+        <div class="panel-row">
+          <input type="number" id="xrpInput" value="10" min="10" max="100" step="10" oninput="updateWaldoAmount()">
+          <span>Max</span>
+        </div>
+      </div>
+
+      <div style="text-align:center; font-size:22px; margin:8px 0;">⬇️</div>
+
+      <div class="swap-panel">
+        <label>WALDO</label>
+        <div class="panel-row">
+          <input type="text" id="waldoOutput" value="1,000,000" disabled>
+          <span>Est.</span>
+        </div>
+      </div>
+
+      <button id="buyWaldoBtn" onclick="buyWaldoSlider()">🔐 Buy Now with XUMM</button>
+      <p id="buySuccessMsg" style="color: #0f0; font-size: 14px; display: none; margin-top: 10px;">✅ WALDO sent! Check your wallet.</p>
+    </div>
+  </div>
+</div>
+
+<!-- 💄 Styling -->
+<style>
+.waldo-swap-box {
+  background: #111;
+  border-radius: 18px;
+  padding: 30px 25px;
+  font-family: 'Arial Black', sans-serif;
+  box-shadow: 0 0 30px rgba(255,0,0,0.3);
+  color: white;
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.swap-panel {
+  background: #222;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.swap-panel label {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.panel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-row input {
+  flex: 1;
+  background: #000;
+  border: none;
+  color: #fff;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 10px;
+  margin-right: 10px;
+}
+
+.panel-row span {
+  font-size: 14px;
+  color: #ccc;
+}
+
+#buyWaldoBtn {
+  background: #ffea00;
+  color: black;
+  font-weight: bold;
+  padding: 14px 0;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  width: 100%;
+  margin-top: 20px;
+  cursor: pointer;
+}
+#buyWaldoBtn:hover {
+  background: #fff000;
+}
+</style>
+
+<!-- 🔧 Script -->
+<script>
+const waldoBonusTable = {
+  10: 1000000, 20: 2000000, 30: 3000000, 40: 4000000, 50: 5000000,
+  60: 6000000, 70: 7000000, 80: 10000000, 90: 12000000, 100: 15000000
+};
+
+function openWaldoSliderModal() {
+  document.getElementById('waldoSliderModal').style.display = 'block';
+  updateWaldoAmount();
+  const wallet = localStorage.getItem("xummWallet");
+  document.getElementById("connectedWallet").innerText = wallet ? wallet : "Not connected";
+  document.getElementById("buySuccessMsg").style.display = "none";
+  document.getElementById("buyWaldoBtn").disabled = false;
+  document.getElementById("buyWaldoBtn").innerText = "🔐 Buy Now with XUMM";
+  if (!wallet) connectXummWallet();
+}
+
+function closeWaldoSliderModal() {
+  document.getElementById('waldoSliderModal').style.display = 'none';
+}
+
+function updateWaldoAmount() {
+  const amount = parseInt(document.getElementById("xrpInput").value);
+  const waldo = waldoBonusTable[amount] || 0;
+  document.getElementById("waldoOutput").value = waldo.toLocaleString();
+}
+
+async function buyWaldoSlider() {
+  const amount = parseInt(document.getElementById("xrpInput").value);
+  const wallet = localStorage.getItem("xummWallet");
+  if (!wallet) return alert("Please connect your XUMM wallet first.");
+
+  const btn = document.getElementById("buyWaldoBtn");
+  btn.innerText = "⏳ Sending...";
+  btn.disabled = true;
+
+  const res = await fetch("https://waldocoin-backend-api.onrender.com/api/presale/buy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ wallet, xrpAmount: amount })
+  });
+
+  const data = await res.json();
+  if (data && data.redirect) {
+    window.location.href = data.redirect;
+  } else if (data && data.success) {
+    document.getElementById("buySuccessMsg").style.display = "block";
+    btn.innerText = "✅ WALDO Sent!";
+  } else {
+    alert("Failed to create XUMM sign request.");
+    btn.innerText = "🔐 Buy Now with XUMM";
+    btn.disabled = false;
+  }
+}
+
+async function connectXummWallet() {
+  const res = await fetch("https://waldocoin-backend-api.onrender.com/api/login");
+  const data = await res.json();
+  if (data.qr && data.uuid) {
+    document.getElementById("xummQR").src = data.qr;
+    localStorage.setItem("xummUUID", data.uuid);
+
+    if (/Mobi|Android/i.test(navigator.userAgent) && data.refs?.xapp) {
+      const deepLink = document.getElementById("xummDeepLink");
+      deepLink.href = data.refs.xapp;
+      deepLink.style.display = "inline-block";
+    }
+  } else {
+    alert("Failed to connect with XUMM.");
+  }
+}
+</script>
+

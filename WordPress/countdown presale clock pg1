@@ -1,0 +1,102 @@
+<!-- WALDO Presale Countdown Block pg1 under all btns -->
+
+<div class="digital-clock-box">
+  <div class="digital-label">⏱ WALDO Presale Ends In :</div>
+  <div id="presale-countdown" class="digital-display">Loading countdown...</div>
+  <div class="digital-date-label">🗓 Ends At (UTC):</div>
+  <div id="countdown-date" class="digital-display">Loading UTC...</div>
+  <div class="digital-date-label">🕒 Your Local Time:</div>
+  <div id="countdown-local" class="digital-display">Loading local...</div>
+</div>
+
+<style>
+  .digital-clock-box {
+    background-color: #000;
+    border: 3px solid #ff0033;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin: 30px auto;
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
+    max-width: 90%;
+    font-family: 'Courier New', monospace;
+  }
+
+  .digital-label,
+  .digital-date-label {
+    font-size: 16px;
+    color: #ff0033;
+    margin-bottom: 10px;
+  }
+
+  .digital-display {
+    font-size: 28px;
+    color: #00ffcc;
+    background-color: #111;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 2px solid #00ffcc;
+    display: inline-block;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+
+  @media screen and (max-width: 600px) {
+    .digital-display {
+      font-size: 22px;
+      padding: 10px 16px;
+    }
+
+    .digital-label,
+    .digital-date-label {
+      font-size: 14px;
+    }
+  }
+</style>
+
+<script>
+function updateCountdown() {
+  fetch("https://waldocoin-backend-api.onrender.com/api/presale/countdown")
+    .then(res => res.json())
+    .then(data => {
+      const countdownEl = document.getElementById("presale-countdown");
+      const utcEl = document.getElementById("countdown-date");
+      const localEl = document.getElementById("countdown-local");
+
+      const endDate = new Date(data.endDate);
+
+      utcEl.textContent = endDate.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC";
+      localEl.textContent = endDate.toLocaleString(); // Browser's local time
+
+      const updateTimer = () => {
+        const now = new Date();
+        const diff = endDate - now;
+
+        if (diff <= 0) {
+          countdownEl.textContent = "Presale Ended";
+          clearInterval(timer);
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        countdownEl.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+      };
+
+      updateTimer();
+      const timer = setInterval(updateTimer, 1000);
+    })
+    .catch(err => {
+      console.error("Countdown fetch error:", err);
+      document.getElementById("presale-countdown").textContent = "Error";
+      document.getElementById("countdown-date").textContent = "Fetch Error";
+      document.getElementById("countdown-local").textContent = "Fetch Error";
+    });
+}
+
+document.addEventListener("DOMContentLoaded", updateCountdown);
+</script>
+

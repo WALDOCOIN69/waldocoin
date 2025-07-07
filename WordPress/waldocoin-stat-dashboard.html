@@ -91,9 +91,9 @@ html, body {
   margin: 0 auto;
   padding: 40px 10px;
   box-sizing: border-box;
-  max-width: 1400px;   /* Optional: control max width for desktop */
-  width: 100%;         /* Responsive! */
-}
+  max-width: 1400px;
+  width: 100%;
+}    /* Responsive! */
   .dashboard-title-card, .instruction-card {
     max-width: 98vw;
     padding-left: 8px;
@@ -595,6 +595,7 @@ html, body {
 </style>
 </head>
 <body>
+
     <!-- WALDO Dashboard Title -->
   <div>
     <div class="dashboard-title-card">
@@ -619,7 +620,6 @@ html, body {
 <button type="button" onclick="dismissWaldoNotification()" class="dismiss-btn">Dismiss</button>
   </div>
     <div class="container">
-      </div>
     <!-- WELCOME CARD + LINK TWITTER ACCOUNT -->
     <div class="card big-card">
       <button type="button" onclick="logoutWallet()" class="disconnect-btn">🔌 Disconnect</button>
@@ -860,7 +860,24 @@ html, body {
     </div>
     </div> <!-- Close .battle-bottom-row -->
     <!-- Close .container -->
+</div>
 <!-- END .container -->
+
+<script>
+(function() {
+  // Always force logout if not logged in on THIS device+tab
+  const wallet = localStorage.getItem('xummWallet');
+  const desktopFlag = sessionStorage.getItem('waldoLoginDesktop');
+  // Show for debugging
+  // alert('DASHBOARD: wallet=' + wallet + ' flag=' + desktopFlag);
+  if (!wallet || !desktopFlag) {
+    localStorage.removeItem('xummWallet');
+    sessionStorage.removeItem('waldoLoginDesktop');
+    window.location.replace('/');
+    throw new Error('Not signed in on desktop session.');
+  }
+})();
+</script>
 
 <script>
 /** === CONFIG === **/
@@ -871,10 +888,6 @@ const loginPage = "/connect-waldo-wallet/"; // Login page (adjust if different)
 /** === UTILS === **/
 function $(id) { return document.getElementById(id); }
 function getWallet() { return localStorage.getItem("xummWallet") || null; }
-function logoutWallet() {
-  localStorage.removeItem("xummWallet");
-  window.location.replace("/connect-waldo-wallet/");
-}
 
 /** === LEVELS === **/
 const levelTitles = {
@@ -1380,20 +1393,21 @@ async function initWaldoDashboard() {
   // More dashboard sections can go here (meme table, activity feed, battles, leaderboard etc)
 }
 
-/** === ON PAGE LOAD === **/
-document.addEventListener("DOMContentLoaded", () => {
+//** === ON PAGE LOAD === **/
+function startDashboard() {
   const wallet = getWallet();
   if (!wallet) {
-    if (window.location.pathname === statsPage) {
-      window.location.replace("/connect-waldo-wallet/"); 
-      return;
-    }
-    showWaldoNotification("🔌 No WALDO wallet connected yet. Please connect!");
+    console.log("Waiting for wallet login via postMessage...");
+    // Show a message or loading spinner here if you want
     return;
   }
   $("walletAddress") && ($("walletAddress").innerText = `Wallet: ${wallet}`);
   showWaldoNotification("✅ WALDO wallet connected");
   initWaldoDashboard();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  startDashboard();
 });
 
 /** === POSTMESSAGE LOGIN SUPPORT === **/
@@ -1402,15 +1416,41 @@ window.addEventListener("message", (event) => {
     event.origin !== "https://stats-page.waldocoin.live" &&
     event.origin !== "https://waldocoin.live"
   ) return;
+  
   if (event.data.wallet) {
     localStorage.setItem("xummWallet", event.data.wallet);
-    window.location.replace("/");
+    sessionStorage.setItem("waldoLoginDesktop", "1");
+    startDashboard();
   }
 });
+function logoutWallet() {
+  localStorage.removeItem("xummWallet");
+  sessionStorage.removeItem("waldoLoginDesktop");
+  window.location.replace("https://waldocoin.live/?logout=1");
+
+}
+window.logoutWallet = logoutWallet;
+
 /** === BUTTON HOOKS FOR HTML === **/
 window.dismissWaldoNotification = dismissWaldoNotification;
-window.logoutWallet = logoutWallet;
 window.copyReferral = copyReferral;
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("logout") === "1") {
+    // Toast style notification
+    const toast = document.createElement("div");
+    toast.textContent = "✅ You have been logged out.";
+    toast.style.cssText = `
+      position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+      background: #222; color: #fff; padding: 16px 36px; border-radius: 8px;
+      font-size: 1.25rem; box-shadow: 0 0 12px #25c2a0bb; z-index: 99999;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3200);
+  }
+});
 </script>
 </body>
 </html>

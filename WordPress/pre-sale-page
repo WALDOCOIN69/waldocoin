@@ -1,0 +1,315 @@
+<!--PRESALE PAGE-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WaldoCoin Presale</title>
+  <style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #e63e3e;
+    color: #e63e3e;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    border-radius: 10px;
+  }
+
+  header, section, footer {
+    padding: 20px;
+    background-color: #070707;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  }
+
+  h1, h2 {
+    color: #ffffff;
+    text-align: center;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .waldo-presale-lookup {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #000;
+    border: 2px solid red;
+    border-radius: 12px;
+    box-shadow: 0 0 20px red;
+    color: white;
+  }
+
+  .waldo-presale-lookup-title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .waldo-presale-lookup-input {
+    display: block;
+    margin: 0 auto 20px auto;
+    width: 90%;
+    max-width: 400px;
+    padding: 12px;
+    font-size: 18px;
+    border-radius: 8px;
+    border: none;
+  }
+
+  .waldo-presale-lookup-btn {
+    display: block;
+    margin: 0 auto;
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .waldo-presale-lookup-result {
+    margin-top: 25px;
+    text-align: left;
+    color: #fff;
+  }
+
+  /* 🔋 Progress Meter */
+  .meter {
+    height: 30px;
+    background: #222;
+    border: 2px solid #555;
+    border-radius: 15px;
+    overflow: hidden;
+    margin: 15px auto;
+    width: 80%;
+    max-width: 600px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff003c, #ff8c00, #ffff00);
+    transition: width 1.5s ease-in-out;
+  }
+
+  .conversion-section {
+    padding: 30px;
+    background: #111;
+    color: #fcfcfc;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .conversion-scroll {
+    overflow-x: auto;
+  }
+
+  .conversion-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #222;
+    color: white;
+    margin-top: 10px;
+  }
+
+  .conversion-table th,
+  .conversion-table td {
+    padding: 10px 14px;
+    border: 1px solid #fcfbfb;
+    text-align: left;
+    white-space: nowrap;
+    min-width: 140px;
+  }
+
+  .conversion-table th {
+    background-color: #e63e3e;
+    color: #fff;
+  }
+
+  .bonus {
+    color: #ffe600;
+    font-weight: bold;
+    display: block;
+    margin-top: 4px;
+    font-size: 0.95em;
+  }
+
+  @media (max-width: 600px) {
+    .conversion-table th,
+    .conversion-table td {
+      font-size: 0.95em;
+      min-width: 140px;
+    }
+  }
+
+  .telegram-link {
+    color: #e63e3e;
+    font-weight: bold;
+    text-decoration: none;
+  }
+
+  .telegram-link:hover {
+    text-decoration: underline;
+  }
+
+  /* 🔴 WALLET INFO CARD */
+  .wallet-info-container {
+    background: #000;
+    border: 2px solid red;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 25px;
+    color: #fff;
+    box-shadow: 0 0 20px red;
+    text-align: center;
+  }
+
+  .wallet-info-container img {
+    max-width: 200px;
+    margin: 10px 0;
+    border: 3px solid red;
+    border-radius: 12px;
+  }
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚀 Welcome to the WaldoCoin Presale!</h1>
+    <p><strong>Presale is LIVE!</strong> Use the WALDO Buy Widget on the homepage to participate instantly with your XUMM wallet.</p>
+  </header>
+
+  <section>
+    <h2>🔥 WALDO SOLD: <span id="soldDisplay">0</span> / 75,000,000</h2>
+    <div class="meter">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="waldo-presale-lookup">
+      <h2 class="waldo-presale-lookup-title">🔍 WALDO Presale Lookup</h2>
+      <input type="text" id="lookupWalletInput" placeholder="Enter XRPL Wallet (e.g. rXYZ...)" class="waldo-presale-lookup-input">
+      <button type="button" onclick="lookupPresale()" class="waldo-presale-lookup-btn">📦 Check WALDO Allocation</button>
+      <div id="lookupResult" class="waldo-presale-lookup-result"></div>
+      <div id="walletMatchInfo" class="wallet-info-container" style="display:none;">
+        <h3>✅ WALLET MATCH FOUND</h3>
+        <p><strong>Reminder:</strong> You <u>must have the WALDO trustline</u> to see your tokens in your wallet.</p>
+        <p><a href="https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000" target="_blank" style="color:#ffe600;">🔗 Click to View WALDO Token on XRPL</a></p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000" alt="WALDO Trustline QR">
+        <p><code>Token Issuer: rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY</code></p>
+      </div>
+    </div>
+
+    <section class="conversion-section">
+ <h2>📊 XRP to WALDO Conversion Chart</h2>
+<p style="color: white; text-align: center; font-size: 1.1em; margin-bottom: 20px;">
+  ⚠️ WALDO is only available in <strong>fixed increments of 10 XRP</strong>.<br>
+  Each 10 XRP = <strong>1,000,000 WALDO</strong>.<br>
+  Bonus tiers apply starting at <strong>80 XRP</strong> and up.
+</p>
+
+
+<div class="conversion-scroll">
+  <table class="conversion-table">
+    <thead>
+      <tr><th>XRP Sent</th><th>Total WALDO Received</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>10 XRP</td>
+        <td>1,000,000 WALDO</td>
+      </tr>
+      <tr>
+        <td>50 XRP</td>
+        <td>5,000,000 WALDO</td>
+      </tr>
+      <tr>
+        <td>80 XRP</td>
+        <td>8,000,000 WALDO + <span class="bonus">2M Bonus = 10,000,000</span></td>
+      </tr>
+      <tr>
+        <td>90 XRP</td>
+        <td>9,000,000 WALDO + <span class="bonus">3M Bonus = 12,000,000</span></td>
+      </tr>
+      <tr>
+        <td>100 XRP</td>
+        <td>10,000,000 WALDO + <span class="bonus">5M Bonus = 15,000,000</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+    </section>
+    <footer>
+      <p>Need help? Email <strong>support@waldocoin.live</strong> or join our 
+        <a href="https://t.me/WALDOCOINxrp" target="_blank" class="telegram-link">Telegram</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const baseURL = "https://waldocoin-backend-api.onrender.com";
+    const hardCap = 75000000;
+
+    function updateMeter(sold, max) {
+      const percent = (sold / max) * 100;
+      document.getElementById("progressBar").style.width = percent + "%";
+      document.getElementById("soldDisplay").textContent = sold.toLocaleString();
+    }
+
+    async function lookupPresale() {
+      const wallet = document.getElementById("lookupWalletInput").value.trim();
+      const resultDiv = document.getElementById("lookupResult");
+      const matchInfo = document.getElementById("walletMatchInfo");
+      resultDiv.innerHTML = "⏳ Checking...";
+      matchInfo.style.display = "none";
+
+      try {
+        const res = await fetch(`${baseURL}/api/presale/lookup?wallet=${wallet}`);
+        const data = await res.json();
+
+        if (data.error) {
+          resultDiv.innerHTML = `<p style="color: orange;">⚠️ ${data.error}</p>`;
+        } else {
+          resultDiv.innerHTML = `
+            <p><strong>Wallet:</strong> ${data.wallet}</p>
+            <p><strong>Amount Sent:</strong> ${data.amount} XRP</p>
+            <p><strong>WALDO Tokens:</strong> ${data.tokens.toLocaleString()} WALDO</p>
+            <p><strong>Bonus Tier:</strong> ${data.bonusTier || 'None'}</p>
+            <p><strong>Time:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+          `;
+          matchInfo.style.display = "block";
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Error fetching data.</p>`;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch(`${baseURL}/api/presale/total-sold`)
+        .then(res => res.json())
+        .then(data => updateMeter(data.sold, hardCap));
+
+      setInterval(() => {
+        fetch(`${baseURL}/api/presale/total-sold`)
+          .then(res => res.json())
+          .then(data => updateMeter(data.sold, hardCap));
+      }, 60000);
+    });
+  </script>
+</body>
+</html>

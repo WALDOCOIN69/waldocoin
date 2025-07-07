@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connect Your WALDO Wallet</title>
+ <style>
+    body {
+      background-color: #000 !important;
+      background-image: url("https://waldocoin.live/wp-content/uploads/2025/05/1737843965137.jpg") !important;
+      background-repeat: repeat !important;
+      background-size: 200px 200px !important;
+      background-attachment: fixed !important;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', Arial, sans-serif;
+    }
+    .xumm-login-wrapper {
+      margin-top: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 60px 20px;
+      background: rgba(0,0,0,0.82);
+      border-radius: 12px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 0 30px rgba(37, 194, 160, 0.4);
+    }
+    .xumm-login-wrapper h2 { font-size: 22px; margin: 0 0 12px 0; color: #25c2a0; }
+    #xummQr { max-width: 300px; }
+    #xummMobileLink { margin-top: 16px; font-size: 18px; color: #25c2a0; text-decoration: none; font-weight: bold; }
+    #connectError { margin-top: 16px; font-size: 15px; color: #ff5252; }
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #25c2a0;
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      animation: spin 1s linear infinite; margin: 0 auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+    @media (max-width: 600px) {
+      .xumm-login-wrapper { padding: 36px 4vw; }
+      #xummQr { max-width: 90vw; }
+    }
+  </style>
+</head>
+<body>
+  <div class="xumm-login-wrapper">
+    <h2>🔗 Connect Your XAMAN Wallet</h2>
+    <img id="xummQr" alt="Scan QR with XUMM" style="display:none;" />
+    <a id="xummMobileLink" style="display:none;" target="_blank">👉 Tap here to sign in with XUMM</a>
+    <div id="spinner" style="display:none; margin-top: 15px;">
+      <div class="loader"></div>
+      <p style="color: #999; font-size: 14px; margin-top: 10px;">Waiting for login...</p>
+    </div>
+    <div id="connectError"></div>
+  </div>
+  <script>
+    const baseURL = "https://waldocoin-backend-api.onrender.com";
+    const DASHBOARD_URL = "https://stats-page.waldocoin.live/";
+
+    function isMobileDevice() {
+      return /iphone|android|ipad|mobile/i.test(navigator.userAgent);
+    }
+
+    let pollingStarted = false;
+    let pollingUuid = null;
+
+    async function startXummLogin() {
+      try {
+        const res = await fetch(`${baseURL}/api/login`);
+        const { qr, uuid } = await res.json();
+
+        const qrImg = document.getElementById("xummQr");
+        const mobileLink = document.getElementById("xummMobileLink");
+        qrImg.style.display = "none";
+        mobileLink.style.display = "none";
+        document.getElementById("spinner").style.display = "none";
+        document.getElementById("connectError").textContent = "";
+
+        if (isMobileDevice()) {
+          mobileLink.href = `https://xumm.app/sign/${uuid}`;
+          mobileLink.style.display = "inline-block";
+          mobileLink.onclick = function(e) {
+            e.preventDefault();
+            if (!pollingStarted) {
+              document.getElementById("spinner").style.display = "block";
+              pollLoginStatus(uuid);
+              pollingStarted = true;
+            }
+            window.open(mobileLink.href, '_blank');
+          };
+        } else {
+          qrImg.src = qr;
+          qrImg.style.display = "block";
+          document.getElementById("spinner").style.display = "block";
+          sessionStorage.setItem("waldoLoginSessionId", uuid);
+          pollLoginStatus(uuid);
+        }
+      } catch (err) {
+        document.getElementById("connectError").textContent = "🚨 Could not connect to XUMM backend.";
+      }
+    }
+
+    function setLoginAndRedirect(wallet) {
+      localStorage.setItem("xummWallet", wallet);
+      sessionStorage.setItem("waldoLoginDesktop", "1");
+      sessionStorage.removeItem("waldoLoginSessionId");
+      window.location.replace(DASHBOARD_URL);
+    }
+
+    async function pollLoginStatus(uuid) {
+      if (pollingUuid === uuid) return; // Prevent double polling
+      pollingUuid = uuid;
+      const statusURL = `${baseURL}/api/login/status?uuid=${uuid}`;
+      let attempts = 0;
+      const maxAttempts = 30;
+
+      const poll = setInterval(async () => {
+        try {
+          const res = await fetch(statusURL);
+          const data = await res.json();
+
+          if (data.signed && data.account) {
+            clearInterval(poll);
+            setLoginAndRedirect(data.account);
+          }
+
+          attempts++;
+          if (attempts >= maxAttempts) {
+            clearInterval(poll);
+            document.getElementById("spinner").style.display = "none";
+            document.getElementById("connectError").textContent =
+              "⏱️ Login timed out. Please try again.";
+            sessionStorage.removeItem("waldoLoginSessionId");
+          }
+        } catch (err) {
+          clearInterval(poll);
+          document.getElementById("spinner").style.display = "none";
+          document.getElementById("connectError").textContent =
+            "❌ Something went wrong. Please refresh and try again.";
+          sessionStorage.removeItem("waldoLoginSessionId");
+        }
+      }, 2000);
+    }
+
+    document.addEventListener("DOMContentLoaded", startXummLogin);
+  </script>
+</body>
+</html>
+
