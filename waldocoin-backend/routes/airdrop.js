@@ -12,7 +12,6 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   const { wallet, password } = req.body;
 
-  // ✅ Validate input
   if (!wallet || !wallet.startsWith("r") || !password) {
     return res.status(400).json({ success: false, error: "Missing required fields" });
   }
@@ -22,33 +21,32 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    // ✅ Load wallet + connect to XRPL mainnet
     const sender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
-    const client = new xrpl.Client("wss://s1.ripple.com"); // ✅ XRPL mainnet
+    const client = new xrpl.Client("wss://s1.ripple.com"); // XRPL mainnet
     await client.connect();
 
-    // ✅ Check WALDO trustline
     const trustlineCheck = await client.request({
       command: "account_lines",
       account: wallet
     });
+
     const hasTrust = trustlineCheck.result.lines.some(
       line => line.currency === WALDOCOIN_TOKEN && line.issuer === WALDO_ISSUER
     );
+
     if (!hasTrust) {
       await client.disconnect();
       return res.status(400).json({ success: false, error: "❌ No WALDO trustline found" });
     }
 
-    // ✅ Prepare TX
     const tx = {
       TransactionType: "Payment",
       Account: sender.classicAddress,
       Destination: wallet,
       Amount: {
-        currency: WALDOCOIN_TOKEN.toUpperCase(),
-        issuer: WALDO_ISSUER.trim(),
-        value: (50000).toFixed(6) // Always send string format
+        currency: String(WALDOCOIN_TOKEN).trim().toUpperCase(),
+        issuer: String(WALDO_ISSUER).trim(),
+        value: "50000.000000" // ✅ force as exact string
       }
     };
 
@@ -60,7 +58,6 @@ router.post("/", async (req, res) => {
 
     await client.disconnect();
 
-    // ✅ Check XRPL result
     if (result.result.meta.TransactionResult !== "tesSUCCESS") {
       console.error("❌ TX failed meta:", result.result.meta);
       return res.status(500).json({
@@ -79,6 +76,7 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
 
 
 
