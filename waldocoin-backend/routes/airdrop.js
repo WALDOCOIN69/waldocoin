@@ -55,6 +55,12 @@ router.post("/claim", async (req, res) => {
   } else {
     return res.json({ success: false, error: "Transaction failed" });
   }
+
 });
+// In routes/airdrop.js
+router.post("/claim", async (req, res) => {
+  return res.json({ success: true, message: "Airdrop claim received" });
+});
+
 
 module.exports = router;
