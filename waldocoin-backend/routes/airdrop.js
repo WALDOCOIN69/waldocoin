@@ -1,37 +1,33 @@
-const express = require("express");
-const xrpl = require("xrpl");
-const router = express.Router();
-const { WALDO_ISSUER, WALDO_CURRENCY, WALDO_SECRET } = require("../constants");
-const claimed = new Set(); // Replace with Redis in production
+import express from "express";
+import xrpl from "xrpl";
+import dotenv from "dotenv";
 
-router.post("/claim", async (req, res) => {
+dotenv.config();
+
+const router = express.Router();
+const WALDO_ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
+const WALDO_CURRENCY = "WLO";
+const WALDO_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
+
+const claimed = new Set(); // Swap to Redis in prod
+
+router.post("/", async (req, res) => {
   const { wallet, password } = req.body;
 
-  console.log("🔐 Incoming airdrop claim request:", { wallet, password });
+  if (!wallet || !password) return res.json({ success: false, error: "Missing wallet or password" });
+  if (password !== "WALDOCREW") return res.json({ success: false, error: "Incorrect password" });
+  if (claimed.has(wallet)) return res.json({ success: false, error: "Already claimed" });
 
-  if (!wallet || !password) {
-    return res.json({ success: false, error: "Missing wallet or password" });
-  }
-
-  if (password !== "WALDOCREW") {
-    return res.json({ success: false, error: "Incorrect password" });
-  }
-
-  if (claimed.has(wallet)) {
-    return res.json({ success: false, error: "Already claimed" });
-  }
+  const client = new xrpl.Client("wss://s.altnet.rippletest.net");
+  await client.connect();
 
   try {
-    const client = new xrpl.Client("wss://s.altnet.rippletest.net");
-    await client.connect();
-
-    // Check trustline
-    const accountLines = await client.request({
+    const lines = await client.request({
       command: "account_lines",
       account: wallet
     });
 
-    const hasTrustline = accountLines.result.lines.some(
+    const hasTrustline = lines.result.lines.some(
       line => line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
     );
 
@@ -40,8 +36,8 @@ router.post("/claim", async (req, res) => {
       return res.json({ success: false, error: "No WALDO trustline found" });
     }
 
-    // Prepare payment
     const senderWallet = xrpl.Wallet.fromSecret(WALDO_SECRET);
+
     const tx = {
       TransactionType: "Payment",
       Account: senderWallet.classicAddress,
@@ -49,7 +45,7 @@ router.post("/claim", async (req, res) => {
       Amount: {
         currency: WALDO_CURRENCY,
         issuer: WALDO_ISSUER,
-        value: "50000"
+        value: "20000"
       }
     };
 
@@ -60,18 +56,17 @@ router.post("/claim", async (req, res) => {
 
     if (result.result.meta.TransactionResult === "tesSUCCESS") {
       claimed.add(wallet);
-      console.log("✅ Airdrop successful:", result.result.hash);
       return res.json({ success: true });
     } else {
-      console.error("❌ XRPL TX failed:", result.result.meta.TransactionResult);
       return res.json({ success: false, error: "Transaction failed" });
     }
 
   } catch (err) {
-    console.error("🔥 Server error during airdrop:", err);
-    return res.status(500).json({ success: false, error: "Server error" });
+    await client.disconnect();
+    return res.json({ success: false, error: "XRPL error", details: err.message });
   }
 });
 
-module.exports = router;
+export default router;
+
 
