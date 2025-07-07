@@ -1,3 +1,4 @@
+// routes/airdrop.js
 import express from "express";
 import xrpl from "xrpl";
 import {
@@ -44,14 +45,14 @@ router.post("/", async (req, res) => {
       TransactionType: "Payment",
       Account: sender.classicAddress,
       Destination: wallet,
- Amount: {
-  currency: WALDOCOIN_TOKEN.toUpperCase(),
-  issuer: WALDO_ISSUER.trim(),
-  value: (50000).toFixed(6)  // Always string: "50000.000000"
-}
-console.log("🔍 TX Object:", JSON.stringify(tx, null, 2));
-
+      Amount: {
+        currency: WALDOCOIN_TOKEN.toUpperCase(),
+        issuer: WALDO_ISSUER.trim(),
+        value: (50000).toFixed(6) // Always send string format
+      }
     };
+
+    console.log("🔍 TX Object:", JSON.stringify(tx, null, 2));
 
     const prepared = await client.autofill(tx);
     const signed = sender.sign(prepared);
@@ -78,5 +79,6 @@ console.log("🔍 TX Object:", JSON.stringify(tx, null, 2));
 });
 
 export default router;
+
 
 
