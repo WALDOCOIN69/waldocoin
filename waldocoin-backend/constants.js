@@ -1,5 +1,5 @@
 // constants.js
-export const WALDO_TREASURY = "rnWfL48YCknW6PYewFLKfMKUymHCfj3aww";
+export const WALDO_DISTRIBUTOR = "rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt";
 export const WALDOCOIN_TOKEN = "WLO"; // WALDO token code
 export const WALDO_ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F"; // WALDO issuer address
 export const WALDO_DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
