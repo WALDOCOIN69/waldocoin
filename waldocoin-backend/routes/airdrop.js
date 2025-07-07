@@ -29,6 +29,7 @@ router.post("/", async (req, res) => {
       command: "account_lines",
       account: wallet
     });
+    console.log("🔍 Trustlines returned:", JSON.stringify(trustlines.result.lines, null, 2));
 
     const hasTrustline = trustlines.result.lines.some(
       (line) =>
