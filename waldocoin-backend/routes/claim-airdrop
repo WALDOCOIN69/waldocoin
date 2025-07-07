@@ -1,0 +1,82 @@
+import express from "express";
+import xrpl from "xrpl";
+import redis from "../redisClient.js";
+import { WALDOCOIN_TOKEN, WALDO_ISSUER, WALDO_DISTRIBUTOR_SECRET } from "../constants.js";
+
+const router = express.Router();
+const WALDO_AMOUNT = "20000"; // Amount to send as airdrop (string format for XRPL)
+
+router.post("/claim-airdrop", async (req, res) => {
+  const { wallet, passcode } = req.body;
+
+  if (!wallet || !wallet.startsWith("r") || !passcode || passcode !== "WALDOCREW") {
+    return res.status(400).json({ success: false, error: "Invalid wallet or password." });
+  }
+
+  const alreadyClaimed = await redis.get(`airdrop:${wallet}`);
+  if (alreadyClaimed) {
+    return res.status(400).json({ success: false, error: "Wallet already claimed airdrop." });
+  }
+
+  try {
+    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
+    await client.connect();
+
+    // 🔍 Check Trustline
+    const trustlines = await client.request({
+      command: "account_lines",
+      account: wallet
+    });
+
+    const hasTrustline = trustlines.result.lines.some(
+      (line) => line.currency === WALDOCOIN_TOKEN && line.account === WALDO_ISSUER
+    );
+
+    if (!hasTrustline) {
+      await client.disconnect();
+      return res.status(400).json({
+        success: false,
+        error: "Missing trustline",
+        trustlineQR: `https://xumm.app/detect/xapp:trust_set?currency=${WALDOCOIN_TOKEN}&issuer=${WALDO_ISSUER}`
+      });
+    }
+
+    // ✅ Send WALDO
+    const walletSender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
+    const tx = {
+      TransactionType: "Payment",
+      Account: walletSender.classicAddress,
+      Destination: wallet,
+      Amount: {
+        currency: WALDOCOIN_TOKEN,
+        issuer: WALDO_ISSUER,
+        value: WALDO_AMOUNT
+      }
+    };
+
+    const prepared = await client.autofill(tx);
+    const signed = walletSender.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+    await client.disconnect();
+
+    if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+      return res.status(500).json({ success: false, error: "Transaction failed." });
+    }
+
+    // 💾 Save to Redis
+    await redis.set(`airdrop:${wallet}`, JSON.stringify({
+      claimed: true,
+      txHash: result.result.hash,
+      timestamp: Date.now()
+    }));
+
+    return res.json({ success: true, txHash: result.result.hash });
+
+  } catch (err) {
+    console.error("❌ Airdrop error:", err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
+export default router;
+

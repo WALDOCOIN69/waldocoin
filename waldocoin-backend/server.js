@@ -13,6 +13,9 @@ dotenv.config();
 import { connectRedis } from "./redisClient.js";
 import { refundExpiredBattles } from "./cron/battleRefunder.js";
 
+//airdrop
+import airdropRoute from "./routes/airdrop.js";
+
 // 🔗 WALDO Routes
 import loginRoute from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
@@ -25,6 +28,7 @@ import userStatsRoute from "./routes/userstats.js";
 import proposalsRoute from "./routes/proposals.js";
 import conversionRoute from "./routes/conversion.js";
 import topMemeRoute from "./routes/topmeme.js";
+
 
 // ⚔️ Meme Battle Routes
 import battleStartRoute from "./routes/battle/start.js";
@@ -97,6 +101,8 @@ const app = express();
   app.use("/api/dao/voter-history", daoVoterHistoryRoute);
   app.use("/api/dao/config", daoConfigRoute);
   app.use("/api/dao/archive", daoArchiveRoute);
+
+app.use("/api/airdrop", airdropRoute);
 
   app.use("/api/presale", presaleRoute);
   app.use('/api/presale', presaleLookup);
