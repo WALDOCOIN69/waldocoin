@@ -44,12 +44,13 @@ router.post("/", async (req, res) => {
       TransactionType: "Payment",
       Account: sender.classicAddress,
       Destination: wallet,
-      Amount: {
-        currency: WALDOCOIN_TOKEN,
-        issuer: WALDO_ISSUER,
-     value: (50000).toFixed(6)
+ Amount: {
+  currency: WALDOCOIN_TOKEN.toUpperCase(),
+  issuer: WALDO_ISSUER.trim(),
+  value: (50000).toFixed(6)  // Always string: "50000.000000"
+}
+console.log("🔍 TX Object:", JSON.stringify(tx, null, 2));
 
-      }
     };
 
     const prepared = await client.autofill(tx);
