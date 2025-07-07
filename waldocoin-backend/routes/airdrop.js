@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
       Amount: {
         currency: WALDOCOIN_TOKEN,
         issuer: WALDO_ISSUER,
-        value: "50000"
+      value: parseFloat("50000").toFixed(6).toString()
       }
     };
 
