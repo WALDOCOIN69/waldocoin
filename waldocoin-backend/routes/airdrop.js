@@ -1,72 +1,49 @@
+// routes/airdrop.js
 import express from "express";
-import xrpl from "xrpl";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { xummClient } from "../utils/xummClient.js";
+import { WALDO_ISSUER, WALDOCOIN_TOKEN } from "../constants.js";
 
 const router = express.Router();
-const WALDO_ISSUER = "rf97bQQbqztUnL1BYB5ti4rC691e7u5C8F";
-const WALDO_CURRENCY = "WLO";
-const WALDO_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
-
-const claimed = new Set(); // Swap to Redis in prod
 
 router.post("/", async (req, res) => {
   const { wallet, password } = req.body;
 
-  if (!wallet || !password) return res.json({ success: false, error: "Missing wallet or password" });
-  if (password !== "WALDOCREW") return res.json({ success: false, error: "Incorrect password" });
-  if (claimed.has(wallet)) return res.json({ success: false, error: "Already claimed" });
+  if (!wallet || !password) {
+    return res.status(400).json({ success: false, error: "Missing required fields" });
+  }
 
-  const client = new xrpl.Client("wss://s.altnet.rippletest.net");
-  await client.connect();
+  if (password !== "WALDOCREW") {
+    return res.status(401).json({ success: false, error: "Invalid password" });
+  }
 
   try {
-    const lines = await client.request({
-      command: "account_lines",
-      account: wallet
-    });
-
-    const hasTrustline = lines.result.lines.some(
-      line => line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
-    );
-
-    if (!hasTrustline) {
-      await client.disconnect();
-      return res.json({ success: false, error: "No WALDO trustline found" });
-    }
-
-    const senderWallet = xrpl.Wallet.fromSecret(WALDO_SECRET);
-
-    const tx = {
-      TransactionType: "Payment",
-      Account: senderWallet.classicAddress,
-      Destination: wallet,
-      Amount: {
-        currency: WALDO_CURRENCY,
-        issuer: WALDO_ISSUER,
-        value: "20000"
+    const payload = {
+      txjson: {
+        TransactionType: "Payment",
+        Destination: wallet,
+        Amount: {
+          currency: WALDOCOIN_TOKEN,
+          issuer: WALDO_ISSUER,
+          value: "50000"
+        }
+      },
+      options: {
+        submit: true,
+        expire: 300
       }
     };
 
-    const prepared = await client.autofill(tx);
-    const signed = senderWallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-    await client.disconnect();
+    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, (event) => {
+      if (event.data.signed === true) return true;
+      if (event.data.signed === false) throw new Error("User rejected");
+    });
 
-    if (result.result.meta.TransactionResult === "tesSUCCESS") {
-      claimed.add(wallet);
-      return res.json({ success: true });
-    } else {
-      return res.json({ success: false, error: "Transaction failed" });
-    }
-
+    return res.json({ success: true, uuid, next });
   } catch (err) {
-    await client.disconnect();
-    return res.json({ success: false, error: "XRPL error", details: err.message });
+    console.error("❌ Airdrop error:", err.message);
+    return res.status(500).json({ success: false, error: "Airdrop failed", detail: err.message });
   }
 });
 
 export default router;
-
 
