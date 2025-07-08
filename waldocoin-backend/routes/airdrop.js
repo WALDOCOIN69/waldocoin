@@ -1,4 +1,5 @@
-// routes/airdrop.js
+
+// routes/airdrop.js don't know why its not working
 import express from "express";
 import xrpl from "xrpl";
 import {
