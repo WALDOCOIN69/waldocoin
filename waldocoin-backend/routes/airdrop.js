@@ -1,5 +1,4 @@
-
-// routes/airdrop.js don't know why its not working
+// routes/airdrop.js
 import express from "express";
 import xrpl from "xrpl";
 import {
@@ -23,43 +22,59 @@ router.post("/", async (req, res) => {
 
   try {
     console.log("🐛 Airdrop POST called");
-console.log("🐛 wallet from body:", wallet);
-console.log("🐛 WALDOCOIN_TOKEN:", WALDOCOIN_TOKEN);
-console.log("🐛 WALDO_ISSUER:", WALDO_ISSUER);
+    console.log("🐛 wallet from body:", wallet);
+    console.log("🐛 WALDOCOIN_TOKEN:", WALDOCOIN_TOKEN);
+    console.log("🐛 WALDO_ISSUER:", WALDO_ISSUER);
 
     const sender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
-    console.log("🚨 Sender wallet derived from WALDO_DISTRIBUTOR_SECRET:", sender.classicAddress);
+    console.log("🚨 Sender wallet:", sender.classicAddress);
 
     const client = new xrpl.Client("wss://s1.ripple.com");
     await client.connect();
 
+    // 🔍 Check if the wallet is active
+    try {
+      await client.request({
+        command: 'account_info',
+        account: wallet
+      });
+    } catch (err) {
+      if (err.data?.error === 'actNotFound') {
+        await client.disconnect();
+        return res.status(400).json({
+          success: false,
+          error: "Destination wallet is not activated. Must hold XRP first."
+        });
+      }
+      throw err;
+    }
+
+    // 🔍 Check trustline
     const trustlines = await client.request({
       command: "account_lines",
       account: wallet
     });
-    console.log("🔍 Trustlines returned:", JSON.stringify(trustlines.result.lines, null, 2));
 
- const hasTrustline = trustlines.result.lines.some(
-  (line) =>
-    String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
-    line.account === WALDO_ISSUER
-);
-
-    console.log("🔍 Trustlines returned:", JSON.stringify(trustlines.result.lines, null, 2));
+    const hasTrustline = trustlines.result.lines.some(
+      (line) =>
+        String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
+        line.account === WALDO_ISSUER
+    );
 
     if (!hasTrustline) {
       await client.disconnect();
       return res.status(400).json({ success: false, error: "❌ No WALDO trustline found" });
     }
 
+    // ✅ Build and send TX
     const tx = {
       TransactionType: "Payment",
       Account: sender.classicAddress,
       Destination: wallet,
       Amount: {
-        currency: String(WALDOCOIN_TOKEN).trim().toUpperCase(),
-        issuer: String(WALDO_ISSUER).trim(),
-        value: "50000.000000" // must be string
+        currency: WALDOCOIN_TOKEN.toUpperCase(),
+        issuer: WALDO_ISSUER,
+        value: "50000.000000"
       }
     };
 
@@ -86,8 +101,6 @@ console.log("🐛 WALDO_ISSUER:", WALDO_ISSUER);
 });
 
 export default router;
-
-
 
 
 
