@@ -36,6 +36,7 @@ router.post("/", async (req, res) => {
         String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
         line.issuer === WALDO_ISSUER
     );
+    console.log("🔍 Trustlines returned:", JSON.stringify(trustlines.result.lines, null, 2));
 
     if (!hasTrustline) {
       await client.disconnect();
