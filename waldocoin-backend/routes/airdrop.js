@@ -22,6 +22,11 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    console.log("🐛 Airdrop POST called");
+console.log("🐛 wallet from body:", wallet);
+console.log("🐛 WALDOCOIN_TOKEN:", WALDOCOIN_TOKEN);
+console.log("🐛 WALDO_ISSUER:", WALDO_ISSUER);
+
     const sender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
     const client = new xrpl.Client("wss://s1.ripple.com");
     await client.connect();
