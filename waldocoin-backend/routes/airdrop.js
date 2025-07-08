@@ -28,6 +28,8 @@ console.log("🐛 WALDOCOIN_TOKEN:", WALDOCOIN_TOKEN);
 console.log("🐛 WALDO_ISSUER:", WALDO_ISSUER);
 
     const sender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
+    console.log("🚨 Sender wallet derived from WALDO_DISTRIBUTOR_SECRET:", sender.classicAddress);
+
     const client = new xrpl.Client("wss://s1.ripple.com");
     await client.connect();
 
