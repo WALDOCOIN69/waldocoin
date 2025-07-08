@@ -31,11 +31,12 @@ router.post("/", async (req, res) => {
     });
     console.log("🔍 Trustlines returned:", JSON.stringify(trustlines.result.lines, null, 2));
 
-    const hasTrustline = trustlines.result.lines.some(
-      (line) =>
-        String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
-        line.issuer === WALDO_ISSUER
-    );
+ const hasTrustline = trustlines.result.lines.some(
+  (line) =>
+    String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
+    line.account === WALDO_ISSUER
+);
+
     console.log("🔍 Trustlines returned:", JSON.stringify(trustlines.result.lines, null, 2));
 
     if (!hasTrustline) {
