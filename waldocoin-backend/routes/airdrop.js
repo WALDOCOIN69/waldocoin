@@ -17,40 +17,68 @@ const AIRDROP_REDIS_KEY = "airdrop:wallets"; // Redis set to track claimed walle
 const AIRDROP_COUNT_KEY = "airdrop:count"; // Redis counter for total airdrops
 
 router.post("/", async (req, res) => {
-  const { wallet, password } = req.body;
+  const { wallet, password, amount, adminOverride, reason } = req.body;
 
   // Input validation
   if (!wallet || typeof wallet !== 'string' || !wallet.startsWith("r") || wallet.length < 25 || wallet.length > 34) {
     return res.status(400).json({ success: false, error: "Invalid wallet address format" });
   }
 
-  if (!password || typeof password !== 'string') {
-    return res.status(400).json({ success: false, error: "Password is required" });
-  }
+  // Admin override handling
+  const isAdminOverride = adminOverride === true;
+  let airdropAmount = AIRDROP_AMOUNT;
 
-  if (password !== "WALDOCREW") {
-    return res.status(401).json({ success: false, error: "Invalid password" });
+  if (isAdminOverride) {
+    // Admin override - validate admin wallet and custom amount
+    const adminWallet = req.headers['x-admin-wallet'];
+    if (adminWallet !== "rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt") {
+      return res.status(403).json({ success: false, error: "Admin access required" });
+    }
+
+    if (!amount || amount <= 0 || amount > 10000) {
+      return res.status(400).json({ success: false, error: "Admin amount must be between 1 and 10,000 WALDO" });
+    }
+
+    if (!reason || typeof reason !== 'string') {
+      return res.status(400).json({ success: false, error: "Reason required for admin override" });
+    }
+
+    airdropAmount = amount.toString() + ".000000";
+    console.log(`🚨 Admin override: ${amount} WALDO to ${wallet} - Reason: ${reason}`);
+
+  } else {
+    // Regular airdrop - validate password
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ success: false, error: "Password is required" });
+    }
+
+    if (password !== "WALDOCREW") {
+      return res.status(401).json({ success: false, error: "Invalid password" });
+    }
   }
 
   try {
-    // Check if airdrop limit has been reached
-    const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
-    if (parseInt(currentCount) >= AIRDROP_LIMIT) {
-      return res.status(410).json({
-        success: false,
-        error: `Airdrop ended. Maximum ${AIRDROP_LIMIT} wallets have already claimed.`,
-        totalClaimed: parseInt(currentCount)
-      });
-    }
+    // For regular airdrops, check limits and duplicates
+    if (!isAdminOverride) {
+      // Check if airdrop limit has been reached
+      const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
+      if (parseInt(currentCount) >= AIRDROP_LIMIT) {
+        return res.status(410).json({
+          success: false,
+          error: `Airdrop ended. Maximum ${AIRDROP_LIMIT} wallets have already claimed.`,
+          totalClaimed: parseInt(currentCount)
+        });
+      }
 
-    // Check if wallet has already claimed airdrop
-    const hasAlreadyClaimed = await redis.sismember(AIRDROP_REDIS_KEY, wallet);
-    if (hasAlreadyClaimed) {
-      return res.status(409).json({
-        success: false,
-        error: "This wallet has already claimed the airdrop.",
-        totalClaimed: parseInt(currentCount)
-      });
+      // Check if wallet has already claimed airdrop
+      const hasAlreadyClaimed = await redis.sismember(AIRDROP_REDIS_KEY, wallet);
+      if (hasAlreadyClaimed) {
+        return res.status(409).json({
+          success: false,
+          error: "This wallet has already claimed the airdrop.",
+          totalClaimed: parseInt(currentCount)
+        });
+      }
     }
     console.log("🐛 Airdrop POST called");
     console.log("🐛 wallet from body:", wallet);
@@ -105,7 +133,7 @@ router.post("/", async (req, res) => {
       Amount: {
         currency: WALDOCOIN_TOKEN.toUpperCase(),
         issuer: WALDO_ISSUER,
-        value: AIRDROP_AMOUNT
+        value: airdropAmount
       }
     };
 
@@ -123,18 +151,28 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Transaction successful - Track in Redis
-    await redis.sadd(AIRDROP_REDIS_KEY, wallet); // Add wallet to claimed set
-    const newCount = await redis.incr(AIRDROP_COUNT_KEY); // Increment counter
+    // ✅ Transaction successful - Track in Redis (only for regular airdrops)
+    let newCount, remaining;
 
-    console.log(`✅ Airdrop successful! Wallet ${wallet} claimed. Total: ${newCount}/${AIRDROP_LIMIT}`);
+    if (!isAdminOverride) {
+      await redis.sadd(AIRDROP_REDIS_KEY, wallet); // Add wallet to claimed set
+      newCount = await redis.incr(AIRDROP_COUNT_KEY); // Increment counter
+      remaining = AIRDROP_LIMIT - newCount;
+      console.log(`✅ Regular airdrop successful! Wallet ${wallet} claimed. Total: ${newCount}/${AIRDROP_LIMIT}`);
+    } else {
+      const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
+      newCount = parseInt(currentCount);
+      remaining = AIRDROP_LIMIT - newCount;
+      console.log(`✅ Admin override successful! Sent ${airdropAmount} WALDO to ${wallet}. Reason: ${reason}`);
+    }
 
     return res.json({
       success: true,
       txHash: result.result.hash,
-      amount: AIRDROP_AMOUNT,
+      amount: airdropAmount,
       totalClaimed: newCount,
-      remaining: AIRDROP_LIMIT - newCount
+      remaining: remaining,
+      isAdminOverride: isAdminOverride
     });
 
   } catch (err) {

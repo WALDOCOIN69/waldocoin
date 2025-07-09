@@ -652,7 +652,29 @@ html, body {
       <img id="topMemeImage" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png" alt="Top Meme" class="meme-thumb">
       <p><a id="topMemeLink" href="#" target="_blank" class="xrpl-link-green">🔗 View Meme</a></p>
     </div>
-    <!-- XP Stats -->
+    <!-- Enhanced XP Level System -->
+    <div class="card xp-stats-card" id="userLevelCard">
+      <h3>🎮 Level Progression</h3>
+      <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+        <div style="flex: 1;">
+          <div style="font-size: 1.2em; color: #25c2a0; font-weight: bold;" id="levelDisplay">
+            Loading...
+          </div>
+          <div style="color: #ccc; font-size: 0.9em;" id="levelDetails">
+            Loading...
+          </div>
+        </div>
+      </div>
+      <div style="background: #333; border-radius: 10px; height: 8px; margin: 10px 0;">
+        <div id="levelProgressBar" style="background: linear-gradient(90deg, #25c2a0, #00ff88); height: 100%; border-radius: 10px; width: 0%; transition: width 0.5s ease;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.85em; color: #aaa;">
+        <span id="currentLevelXP">0 XP in current level</span>
+        <span id="nextLevelXP">0 XP to next</span>
+      </div>
+    </div>
+
+    <!-- XP Stats (Legacy) -->
     <div class="card xp-stats-card">
       <h3>🧠 WALDO XP Stats</h3>
       <p><strong>Level:</strong> <span id="waldoLevel">Loading...</span></p>
@@ -669,6 +691,29 @@ html, body {
     <div class="card">
       <h2>💰 Total WALDO Earned</h2>
       <p id="waldoTotalEarnedDisplay" class="waldo-total-earned-display">Loading...</p>
+    </div>
+
+    <!-- Staking Positions -->
+    <div class="card" id="stakingCard">
+      <h3>🏦 Staking Positions</h3>
+      <div style="margin: 15px 0;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+          <div>
+            <div style="color: #25c2a0; font-weight: bold;" id="totalStaked">0 WALDO</div>
+            <div style="font-size: 0.85em; color: #aaa;">Total Staked</div>
+          </div>
+          <div>
+            <div style="color: #00ff88; font-weight: bold;" id="totalRewards">0 WALDO</div>
+            <div style="font-size: 0.85em; color: #aaa;">Total Rewards</div>
+          </div>
+        </div>
+        <div id="stakingPositions">
+          <div style="color: #aaa; text-align: center; padding: 20px;">No active stakes</div>
+        </div>
+        <div style="margin-top: 15px; text-align: center;">
+          <button type="button" onclick="showStakingModal()" class="button-style">🏦 New Stake</button>
+        </div>
+      </div>
     </div>
     <!-- WALDO Promo Media -->
     <div class="card">
@@ -696,6 +741,50 @@ html, body {
         <button type="button" onclick="copyReferral()" class="button-style">Copy Referral Link</button>
         <p id="copyStatus" class="twitter-link-status"></p>
         <p class="centered-text">👥 Referrals: <strong id="refCount">0</strong></p>
+      </div>
+    </div>
+
+    <!-- Tokenomics Dashboard -->
+    <div class="card" id="tokenomicsCard">
+      <h3>💰 Tokenomics</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
+        <div style="background: #222; padding: 12px; border-radius: 8px;">
+          <div style="color: #25c2a0; font-weight: bold;" id="airdropsClaimed">0/1000</div>
+          <div style="font-size: 0.85em; color: #aaa;">Airdrops Claimed</div>
+        </div>
+        <div style="background: #222; padding: 12px; border-radius: 8px;">
+          <div style="color: #ff6b6b; font-weight: bold;" id="dailyBurns">0</div>
+          <div style="font-size: 0.85em; color: #aaa;">Daily Burns (WALDO)</div>
+        </div>
+        <div style="background: #222; padding: 12px; border-radius: 8px;">
+          <div style="color: #ffd93d; font-weight: bold;" id="totalBattles">0</div>
+          <div style="font-size: 0.85em; color: #aaa;">Total Battles</div>
+        </div>
+        <div style="background: #222; padding: 12px; border-radius: 8px;">
+          <div style="color: #6bcf7f; font-weight: bold;" id="waldoDistributed">0M</div>
+          <div style="font-size: 0.85em; color: #aaa;">WALDO Distributed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Status -->
+    <div class="card" id="securityCard">
+      <h3>🛡️ Security Status</h3>
+      <div style="margin: 15px 0;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+          <div id="securityIndicator" style="width: 12px; height: 12px; border-radius: 50%; background: #00ff88;"></div>
+          <span id="securityStatus" style="color: #00ff88; font-weight: bold;">CLEAN</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="background: #222; padding: 10px; border-radius: 6px;">
+            <div style="color: #25c2a0;" id="violationCount">0</div>
+            <div style="font-size: 0.8em; color: #aaa;">Violations</div>
+          </div>
+          <div style="background: #222; padding: 10px; border-radius: 6px;">
+            <div style="color: #00ff88;" id="accountStatus">ACTIVE</div>
+            <div style="font-size: 0.8em; color: #aaa;">Status</div>
+          </div>
+        </div>
       </div>
     </div>
     <!-- Recent Activity -->
@@ -853,6 +942,36 @@ html, body {
       <span onclick="closeNFTModal()" class="close-nft-modal">&times;</span>
       <img id="nftModalImg" src="https://waldocoin.live/wp-content/uploads/2025/04/waldo-placeholder.png/600x400.png?text=NFT+Preview" alt="NFT Preview" class="nft-modal-image">
     </div>
+
+    <!-- Staking Modal -->
+    <div id="stakingModal" class="nft-modal" style="display: none;">
+      <div style="background: #111; padding: 30px; border-radius: 15px; max-width: 500px; margin: 50px auto; position: relative;">
+        <span onclick="closeStakingModal()" class="close-nft-modal" style="position: absolute; top: 10px; right: 15px; font-size: 28px; cursor: pointer;">&times;</span>
+        <h3 style="color: #25c2a0; margin-top: 0;">🏦 Stake WALDO Tokens</h3>
+
+        <div style="margin: 20px 0;">
+          <label style="color: #fff; display: block; margin-bottom: 5px;">Amount to Stake:</label>
+          <input type="number" id="stakeAmount" placeholder="1000" min="1" style="width: 100%; padding: 10px; border-radius: 8px; border: none; background: #222; color: #fff;">
+        </div>
+
+        <div style="margin: 20px 0;">
+          <label style="color: #fff; display: block; margin-bottom: 5px;">Staking Duration:</label>
+          <select id="stakeDuration" style="width: 100%; padding: 10px; border-radius: 8px; border: none; background: #222; color: #fff;">
+            <option value="30">30 days (12% APY)</option>
+            <option value="90">90 days (12% APY)</option>
+            <option value="180">180 days (20% APY)</option>
+            <option value="365">365 days (20% APY)</option>
+          </select>
+        </div>
+
+        <div style="background: #222; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <div style="color: #25c2a0; font-weight: bold;">Estimated Returns:</div>
+          <div id="stakingEstimate" style="color: #fff; margin-top: 5px;">Select amount and duration</div>
+        </div>
+
+        <button type="button" onclick="createStake()" class="button-style" style="width: 100%; margin-top: 15px;">🏦 Create Stake</button>
+      </div>
+    </div>
     <!-- WALDO DAO Voting Card -->
     <div class="card big-card dao-voting-card" id="daoVotingCard">
       <h2>🗳 WALDOcoin DAO Voting</h2>
@@ -881,7 +1000,7 @@ html, body {
 
 <script>
 /** === CONFIG === **/
-const baseURL = "https://waldocoin-backend-api.onrender.com";
+const baseURL = "https://waldocoin-backend-api.onrender.com"; // Production API
 const statsPage = "/"; // Dashboard homepage
 const loginPage = "/connect-waldo-wallet/"; // Login page (adjust if different)
 
@@ -1374,12 +1493,285 @@ async function voteDAO(proposalId, yes) {
 window.voteDAO = voteDAO;
 // On dashboard init, call fetchDAOProposals();
 
+/** === NEW ENHANCED FEATURES === **/
+
+// Fetch user level progression
+async function fetchUserLevel(wallet) {
+  try {
+    const res = await fetch(`${baseURL}/api/userLevel/${wallet}`);
+    const data = await res.json();
+    if (data.success) {
+      updateLevelDisplay(data);
+    }
+  } catch (e) {
+    console.error("Error fetching user level:", e);
+  }
+}
+
+// Update level display in UI
+function updateLevelDisplay(levelData) {
+  const levelCard = $("userLevelCard");
+  if (!levelCard) return;
+
+  levelCard.innerHTML = `
+    <h3>🎮 Level Progression</h3>
+    <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+      <div style="flex: 1;">
+        <div style="font-size: 1.2em; color: #25c2a0; font-weight: bold;">
+          Level ${levelData.level}: ${levelData.title}
+        </div>
+        <div style="color: #ccc; font-size: 0.9em;">
+          ${levelData.totalXp} XP • ${levelData.multiplier}x multiplier
+        </div>
+      </div>
+    </div>
+    <div style="background: #333; border-radius: 10px; height: 8px; margin: 10px 0;">
+      <div style="background: linear-gradient(90deg, #25c2a0, #00ff88); height: 100%; border-radius: 10px; width: ${levelData.progress}%; transition: width 0.5s ease;"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 0.85em; color: #aaa;">
+      <span>${levelData.xpInCurrentLevel} XP in current level</span>
+      <span>${levelData.isMaxLevel ? 'MAX LEVEL!' : levelData.xpToNext + ' XP to next'}</span>
+    </div>
+  `;
+}
+
+// Fetch staking positions
+async function fetchStakingPositions(wallet) {
+  try {
+    const res = await fetch(`${baseURL}/api/staking/positions/${wallet}`);
+    const data = await res.json();
+    if (data.success) {
+      updateStakingDisplay(data);
+    }
+  } catch (e) {
+    console.error("Error fetching staking positions:", e);
+  }
+}
+
+// Update staking display
+function updateStakingDisplay(stakingData) {
+  const stakingCard = $("stakingCard");
+  if (!stakingCard) return;
+
+  const positions = stakingData.positions || [];
+  const positionsHtml = positions.length > 0 ?
+    positions.map(pos => `
+      <div style="background: #222; padding: 12px; border-radius: 8px; margin: 8px 0;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>${pos.amount} WALDO</span>
+          <span style="color: #25c2a0;">${(pos.apy * 100).toFixed(1)}% APY</span>
+        </div>
+        <div style="font-size: 0.85em; color: #aaa;">
+          Unlocks: ${new Date(pos.unlockDate).toLocaleDateString()}
+        </div>
+        <div style="font-size: 0.85em; color: #00ff88;">
+          Current Rewards: ${pos.currentRewards.toFixed(2)} WALDO
+        </div>
+      </div>
+    `).join('') :
+    '<div style="color: #aaa; text-align: center; padding: 20px;">No active stakes</div>';
+
+  stakingCard.innerHTML = `
+    <h3>🏦 Staking Positions</h3>
+    <div style="margin: 15px 0;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+        <div>
+          <div style="color: #25c2a0; font-weight: bold;">${stakingData.totalStaked.toFixed(2)} WALDO</div>
+          <div style="font-size: 0.85em; color: #aaa;">Total Staked</div>
+        </div>
+        <div>
+          <div style="color: #00ff88; font-weight: bold;">${stakingData.totalRewards.toFixed(2)} WALDO</div>
+          <div style="font-size: 0.85em; color: #aaa;">Total Rewards</div>
+        </div>
+      </div>
+      ${positionsHtml}
+    </div>
+  `;
+}
+
+// Fetch tokenomics stats
+async function fetchTokenomicsStats() {
+  try {
+    const res = await fetch(`${baseURL}/api/tokenomics/stats`);
+    const data = await res.json();
+    if (data.success) {
+      updateTokenomicsDisplay(data.stats);
+    }
+  } catch (e) {
+    console.error("Error fetching tokenomics:", e);
+  }
+}
+
+// Update tokenomics display
+function updateTokenomicsDisplay(stats) {
+  const tokenomicsCard = $("tokenomicsCard");
+  if (!tokenomicsCard) return;
+
+  tokenomicsCard.innerHTML = `
+    <h3>💰 Tokenomics</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
+      <div style="background: #222; padding: 12px; border-radius: 8px;">
+        <div style="color: #25c2a0; font-weight: bold;">${stats.airdrop.claimed}/1000</div>
+        <div style="font-size: 0.85em; color: #aaa;">Airdrops Claimed</div>
+      </div>
+      <div style="background: #222; padding: 12px; border-radius: 8px;">
+        <div style="color: #ff6b6b; font-weight: bold;">${stats.estimatedDailyBurns.toFixed(1)}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Daily Burns (WALDO)</div>
+      </div>
+      <div style="background: #222; padding: 12px; border-radius: 8px;">
+        <div style="color: #ffd93d; font-weight: bold;">${stats.battles.total}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Total Battles</div>
+      </div>
+      <div style="background: #222; padding: 12px; border-radius: 8px;">
+        <div style="color: #6bcf7f; font-weight: bold;">${(stats.airdrop.totalDistributed / 1000000).toFixed(1)}M</div>
+        <div style="font-size: 0.85em; color: #aaa;">WALDO Distributed</div>
+      </div>
+    </div>
+  `;
+}
+
+// Fetch security status
+async function fetchSecurityStatus(wallet) {
+  try {
+    const res = await fetch(`${baseURL}/api/security/check/${wallet}`);
+    const data = await res.json();
+    if (data.success) {
+      updateSecurityDisplay(data);
+    }
+  } catch (e) {
+    console.error("Error fetching security status:", e);
+  }
+}
+
+// Update security display
+function updateSecurityDisplay(securityData) {
+  const securityCard = $("securityCard");
+  if (!securityCard) return;
+
+  const statusColor = securityData.status === 'CLEAN' ? '#00ff88' :
+                     securityData.status === 'FLAGGED' ? '#ffd93d' : '#ff6b6b';
+
+  securityCard.innerHTML = `
+    <h3>🛡️ Security Status</h3>
+    <div style="margin: 15px 0;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <div style="width: 12px; height: 12px; border-radius: 50%; background: ${statusColor};"></div>
+        <span style="color: ${statusColor}; font-weight: bold;">${securityData.status}</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="background: #222; padding: 10px; border-radius: 6px;">
+          <div style="color: #25c2a0;">${securityData.violationCount}</div>
+          <div style="font-size: 0.8em; color: #aaa;">Violations</div>
+        </div>
+        <div style="background: #222; padding: 10px; border-radius: 6px;">
+          <div style="color: ${securityData.isBlocked ? '#ff6b6b' : '#00ff88'};">
+            ${securityData.isBlocked ? 'BLOCKED' : 'ACTIVE'}
+          </div>
+          <div style="font-size: 0.8em; color: #aaa;">Status</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Staking modal functions
+function showStakingModal() {
+  const modal = document.getElementById("stakingModal");
+  if (modal) modal.style.display = "block";
+  updateStakingEstimate();
+}
+
+function closeStakingModal() {
+  const modal = document.getElementById("stakingModal");
+  if (modal) modal.style.display = "none";
+}
+
+function updateStakingEstimate() {
+  const amount = parseFloat(document.getElementById("stakeAmount").value) || 0;
+  const duration = parseInt(document.getElementById("stakeDuration").value) || 30;
+  const apy = duration >= 180 ? 0.20 : 0.12;
+
+  const dailyRate = apy / 365;
+  const rewards = amount * (Math.pow(1 + dailyRate, duration) - 1);
+
+  const estimateDiv = document.getElementById("stakingEstimate");
+  if (estimateDiv && amount > 0) {
+    estimateDiv.innerHTML = `
+      <div>Amount: ${amount} WALDO</div>
+      <div>Duration: ${duration} days</div>
+      <div>APY: ${(apy * 100).toFixed(1)}%</div>
+      <div style="color: #00ff88; font-weight: bold;">Estimated Rewards: ${rewards.toFixed(2)} WALDO</div>
+      <div style="color: #25c2a0; font-weight: bold;">Total Return: ${(amount + rewards).toFixed(2)} WALDO</div>
+    `;
+  }
+}
+
+async function createStake() {
+  const amount = parseFloat(document.getElementById("stakeAmount").value);
+  const duration = parseInt(document.getElementById("stakeDuration").value);
+  const wallet = getWallet();
+
+  if (!amount || amount <= 0) {
+    showToast("Please enter a valid amount", "error");
+    return;
+  }
+
+  if (!wallet) {
+    showToast("Please connect your wallet first", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${baseURL}/api/staking/stake`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet, amount, duration })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      showToast("Staking transaction created! Please sign in XUMM", "success");
+      closeStakingModal();
+      // Optionally open XUMM link
+      if (data.redirect) {
+        window.open(data.redirect, '_blank');
+      }
+    } else {
+      showToast(data.error || "Failed to create stake", "error");
+    }
+  } catch (error) {
+    showToast("Error creating stake", "error");
+    console.error("Staking error:", error);
+  }
+}
+
+// Add event listeners for staking modal
+document.addEventListener("DOMContentLoaded", () => {
+  const stakeAmount = document.getElementById("stakeAmount");
+  const stakeDuration = document.getElementById("stakeDuration");
+
+  if (stakeAmount) stakeAmount.addEventListener("input", updateStakingEstimate);
+  if (stakeDuration) stakeDuration.addEventListener("change", updateStakingEstimate);
+});
+
+// Make functions globally available
+window.showStakingModal = showStakingModal;
+window.closeStakingModal = closeStakingModal;
+window.createStake = createStake;
+
 /** === INIT EVERYTHING === **/
 async function initWaldoDashboard() {
   const wallet = getWallet();
   if (!wallet) return;
   generateRewardTable();
+
+  // Load all dashboard data
   await fetchUserStats(wallet);
+  await fetchUserLevel(wallet);
+  await fetchStakingPositions(wallet);
+  await fetchTokenomicsStats();
+  await fetchSecurityStatus(wallet);
   await fetchConversionRate();
   await loadTopMeme();
   await fetchMemes(wallet);
@@ -1387,10 +1779,13 @@ async function initWaldoDashboard() {
   await fetchBattleStatus();
   await fetchBattleHistory();
   await fetchBattleLeaderboard();
-  setInterval(fetchBattleLeaderboard, 5 * 60 * 1000); // every 5 minutes
   await fetchDAOProposals();
 
-  // More dashboard sections can go here (meme table, activity feed, battles, leaderboard etc)
+  // Set up periodic updates
+  setInterval(fetchBattleLeaderboard, 5 * 60 * 1000); // every 5 minutes
+  setInterval(() => fetchUserLevel(wallet), 2 * 60 * 1000); // every 2 minutes
+  setInterval(() => fetchStakingPositions(wallet), 5 * 60 * 1000); // every 5 minutes
+  setInterval(fetchTokenomicsStats, 10 * 60 * 1000); // every 10 minutes
 }
 
 //** === ON PAGE LOAD === **/

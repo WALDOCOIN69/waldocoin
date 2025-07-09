@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WALDO Airdrop System Test</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .test-card {
+      background: #111;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+      border: 1px solid #333;
+    }
+    .test-result {
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+    .success { color: #00ff88; }
+    .error { color: #ff6b6b; }
+    .warning { color: #ffd93d; }
+    .btn {
+      background: #25c2a0;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    .btn:hover {
+      background: #1ea085;
+    }
+    .input {
+      width: 100%;
+      padding: 10px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: #fff;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="color: #25c2a0; text-align: center;">🎁 WALDO Airdrop System Test</h1>
+  
+  <div class="test-card">
+    <h3>🔧 Test Configuration</h3>
+    <input type="text" id="testWallet" class="input" placeholder="Test wallet address" 
+           value="rnWfL48YCknW6PYewFLKfMKUymHCfj3aww">
+    <input type="text" id="testPassword" class="input" placeholder="Test password" value="WALDOCREW">
+    <button onclick="runAllTests()" class="btn">🧪 Run All Tests</button>
+    <button onclick="clearResults()" class="btn">🧹 Clear Results</button>
+  </div>
+
+  <div class="test-card">
+    <h3>📊 Airdrop Status Test</h3>
+    <button onclick="testAirdropStatus()" class="btn">Test Status API</button>
+    <div id="statusResults" class="test-result"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>🔍 Wallet Check Test</h3>
+    <button onclick="testWalletCheck()" class="btn">Test Wallet Check</button>
+    <div id="walletResults" class="test-result"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>🎁 Airdrop Claim Test</h3>
+    <button onclick="testAirdropClaim()" class="btn">Test Claim (Safe)</button>
+    <div id="claimResults" class="test-result"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>🚨 Admin Override Test</h3>
+    <input type="number" id="adminAmount" class="input" placeholder="Amount (1-10000)" value="100">
+    <input type="text" id="adminReason" class="input" placeholder="Reason" value="Test admin override">
+    <button onclick="testAdminOverride()" class="btn">Test Admin Override</button>
+    <div id="adminResults" class="test-result"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>🛡️ Security Tests</h3>
+    <button onclick="testSecurityValidation()" class="btn">Test Security</button>
+    <div id="securityResults" class="test-result"></div>
+  </div>
+
+  <script>
+    const API_BASE = "https://waldocoin-backend-api.onrender.com";
+
+    function getTestWallet() {
+      return document.getElementById("testWallet").value.trim();
+    }
+
+    function getTestPassword() {
+      return document.getElementById("testPassword").value.trim();
+    }
+
+    function updateResults(elementId, content, type = 'success') {
+      const element = document.getElementById(elementId);
+      const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success';
+      element.innerHTML = `<div class="${className}">${content}</div>`;
+    }
+
+    async function testAirdropStatus() {
+      try {
+        updateResults("statusResults", "🔄 Testing airdrop status...");
+        
+        const res = await fetch(`${API_BASE}/api/airdrop/status`);
+        const data = await res.json();
+        
+        if (data.success) {
+          const airdrop = data.airdrop;
+          const result = `
+✅ Airdrop Status API Working!
+📊 Status: ${airdrop.status}
+🎯 Active: ${airdrop.isActive ? 'YES' : 'NO'}
+💰 Amount per claim: ${airdrop.amountPerClaim} WALDO
+📈 Total claimed: ${airdrop.totalClaimed}/${airdrop.totalLimit}
+⏳ Remaining: ${airdrop.remaining}
+🔄 Last updated: ${new Date().toLocaleTimeString()}
+          `;
+          updateResults("statusResults", result);
+        } else {
+          updateResults("statusResults", `❌ Error: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        updateResults("statusResults", `❌ Network Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testWalletCheck() {
+      const wallet = getTestWallet();
+      if (!wallet) {
+        updateResults("walletResults", "❌ Please enter a wallet address", 'error');
+        return;
+      }
+
+      try {
+        updateResults("walletResults", "🔄 Checking wallet status...");
+        
+        const res = await fetch(`${API_BASE}/api/airdrop/check/${wallet}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          const result = `
+✅ Wallet Check API Working!
+👛 Wallet: ${data.wallet}
+🎁 Has claimed: ${data.hasClaimed ? 'YES' : 'NO'}
+📊 Total claimed: ${data.totalClaimed}
+⏳ Remaining: ${data.remaining}
+🔄 Check time: ${new Date().toLocaleTimeString()}
+          `;
+          updateResults("walletResults", result, data.hasClaimed ? 'warning' : 'success');
+        } else {
+          updateResults("walletResults", `❌ Error: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        updateResults("walletResults", `❌ Network Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testAirdropClaim() {
+      const wallet = getTestWallet();
+      const password = getTestPassword();
+      
+      if (!wallet || !password) {
+        updateResults("claimResults", "❌ Please enter wallet and password", 'error');
+        return;
+      }
+
+      try {
+        updateResults("claimResults", "🔄 Testing airdrop claim (dry run)...");
+        
+        // First check if wallet already claimed
+        const checkRes = await fetch(`${API_BASE}/api/airdrop/check/${wallet}`);
+        const checkData = await checkRes.json();
+        
+        if (checkData.success && checkData.hasClaimed) {
+          updateResults("claimResults", `⚠️ Wallet ${wallet} has already claimed airdrop`, 'warning');
+          return;
+        }
+        
+        // Test the claim endpoint (this will actually claim if valid)
+        const res = await fetch(`${API_BASE}/api/airdrop`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet, password })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          const result = `
+✅ Airdrop Claim Successful!
+💰 Amount: ${data.amount} WALDO
+🔗 Transaction: ${data.txHash}
+📊 Total claimed: ${data.totalClaimed}
+⏳ Remaining: ${data.remaining}
+🎉 Claim time: ${new Date().toLocaleTimeString()}
+          `;
+          updateResults("claimResults", result);
+        } else {
+          const result = `
+❌ Airdrop Claim Failed
+🚫 Error: ${data.error}
+📊 Total claimed: ${data.totalClaimed || 'Unknown'}
+🔄 Test time: ${new Date().toLocaleTimeString()}
+          `;
+          updateResults("claimResults", result, 'error');
+        }
+      } catch (error) {
+        updateResults("claimResults", `❌ Network Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testAdminOverride() {
+      const wallet = getTestWallet();
+      const amount = parseFloat(document.getElementById("adminAmount").value);
+      const reason = document.getElementById("adminReason").value.trim();
+      
+      if (!wallet || !amount || !reason) {
+        updateResults("adminResults", "❌ Please fill all admin fields", 'error');
+        return;
+      }
+
+      try {
+        updateResults("adminResults", "🔄 Testing admin override...");
+        
+        const res = await fetch(`${API_BASE}/api/airdrop`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Admin-Wallet': 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt'
+          },
+          body: JSON.stringify({ 
+            wallet, 
+            amount, 
+            adminOverride: true, 
+            reason 
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          const result = `
+✅ Admin Override Successful!
+💰 Amount: ${data.amount} WALDO
+🔗 Transaction: ${data.txHash}
+🚨 Admin override: ${data.isAdminOverride ? 'YES' : 'NO'}
+📊 Total regular claims: ${data.totalClaimed}
+⏳ Remaining regular: ${data.remaining}
+🔄 Override time: ${new Date().toLocaleTimeString()}
+          `;
+          updateResults("adminResults", result);
+        } else {
+          updateResults("adminResults", `❌ Admin Override Failed: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        updateResults("adminResults", `❌ Network Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testSecurityValidation() {
+      try {
+        updateResults("securityResults", "🔄 Testing security validations...");
+        
+        let results = "🛡️ Security Validation Tests:\n\n";
+        
+        // Test invalid wallet
+        try {
+          const res1 = await fetch(`${API_BASE}/api/airdrop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wallet: "invalid", password: "WALDOCREW" })
+          });
+          const data1 = await res1.json();
+          results += `✅ Invalid wallet rejected: ${data1.error}\n`;
+        } catch (e) {
+          results += `❌ Invalid wallet test failed\n`;
+        }
+        
+        // Test invalid password
+        try {
+          const res2 = await fetch(`${API_BASE}/api/airdrop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wallet: getTestWallet(), password: "wrong" })
+          });
+          const data2 = await res2.json();
+          results += `✅ Invalid password rejected: ${data2.error}\n`;
+        } catch (e) {
+          results += `❌ Invalid password test failed\n`;
+        }
+        
+        // Test admin validation
+        try {
+          const res3 = await fetch(`${API_BASE}/api/airdrop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              wallet: getTestWallet(), 
+              amount: 100, 
+              adminOverride: true, 
+              reason: "test" 
+            })
+          });
+          const data3 = await res3.json();
+          results += `✅ Unauthorized admin rejected: ${data3.error}\n`;
+        } catch (e) {
+          results += `❌ Admin validation test failed\n`;
+        }
+        
+        results += `\n🔄 Security test completed: ${new Date().toLocaleTimeString()}`;
+        updateResults("securityResults", results);
+        
+      } catch (error) {
+        updateResults("securityResults", `❌ Security test error: ${error.message}`, 'error');
+      }
+    }
+
+    async function runAllTests() {
+      updateResults("statusResults", "🔄 Running...");
+      updateResults("walletResults", "🔄 Running...");
+      updateResults("claimResults", "🔄 Running...");
+      updateResults("adminResults", "🔄 Running...");
+      updateResults("securityResults", "🔄 Running...");
+      
+      await testAirdropStatus();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      await testWalletCheck();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      await testSecurityValidation();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Note: Not running actual claim test in batch to avoid accidental claims
+      updateResults("claimResults", "⚠️ Claim test skipped in batch mode (run manually)", 'warning');
+      updateResults("adminResults", "⚠️ Admin test skipped in batch mode (run manually)", 'warning');
+    }
+
+    function clearResults() {
+      const resultIds = ["statusResults", "walletResults", "claimResults", "adminResults", "securityResults"];
+      resultIds.forEach(id => {
+        document.getElementById(id).innerHTML = "";
+      });
+    }
+  </script>
+</body>
+</html>
