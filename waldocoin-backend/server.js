@@ -3,10 +3,10 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import { fileURLToPath } from "url";
-import path from "path";
+
 import dotenv from "dotenv";
 import cron from "node-cron";
+import xrpl from "xrpl";
 
 dotenv.config();
 
@@ -52,8 +52,7 @@ import daoArchiveRoute from "./routes/dao/archive.js";
 import presaleRoute from "./routes/presale.js";
 import presaleLookup from "./routes/presaleLookup.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
 
 const startServer = async () => {
   await connectRedis();
@@ -82,6 +81,10 @@ const app = express();
   app.use("/api/login/trustline-check", trustlineCheckRoute);
   app.use("/api/tweets", tweetsRoute);
   app.use("/api/userstats", userStatsRoute);
+  app.use("/api/userLevel", (await import("./routes/userLevel.js")).default);
+  app.use("/api/tokenomics", (await import("./routes/tokenomics.js")).default);
+  app.use("/api/security", (await import("./routes/security.js")).default);
+  app.use("/api/staking", (await import("./routes/staking.js")).default);
   app.use("/api/proposals", proposalsRoute);
   app.use("/api/conversion", conversionRoute);
   app.use("/api/topMeme", topMemeRoute);
@@ -107,7 +110,7 @@ app.use("/api/airdrop", airdropRoute);
   app.use("/api/presale", presaleRoute);
   app.use('/api/presale', presaleLookup);
 
-  app.get("/api/routes", (req, res) => {
+  app.get("/api/routes", (_, res) => {
   res.json(app._router.stack
     .filter(r => r.route && r.route.path)
     .map(r => ({
@@ -117,7 +120,7 @@ app.use("/api/airdrop", airdropRoute);
   );
 });
 
-app.get("/api/debug/refund", async (req, res) => {
+app.get("/api/debug/refund", async (_, res) => {
   await refundExpiredBattles();
   res.send("✅ Refund logic manually triggered");
     refundExpiredBattles()
@@ -126,9 +129,17 @@ app.get("/api/debug/refund", async (req, res) => {
       res.status(500).json({ success: false, error: err.message })
     );
 });
+console.log("Render ENV WALDO_DISTRIBUTOR_SECRET:", process.env.WALDO_DISTRIBUTOR_SECRET);
+
+try {
+  const testWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
+  console.log("🔍 Wallet Address from Secret:", testWallet.classicAddress);
+} catch (e) {
+  console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET:", e.message);
+}
 
   // 🧪 Health Check
-  app.get("/", (req, res) => {
+  app.get("/", (_, res) => {
     res.send("✅ WALDO backend is live at /api/*");
   });
 

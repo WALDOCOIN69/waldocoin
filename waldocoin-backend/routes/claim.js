@@ -25,8 +25,21 @@ const memeCooldownDays = 30;
 router.post("/", async (req, res) => {
   const { wallet, stake, tier, memeId } = req.body;
 
-  if (!wallet || !memeId || typeof tier !== "number") {
-    return res.status(400).json({ success: false, error: "Missing required fields" });
+  // Input validation
+  if (!wallet || typeof wallet !== 'string' || !wallet.startsWith("r") || wallet.length < 25 || wallet.length > 34) {
+    return res.status(400).json({ success: false, error: "Invalid wallet address format" });
+  }
+
+  if (!memeId || typeof memeId !== 'string' || memeId.length === 0) {
+    return res.status(400).json({ success: false, error: "Invalid meme ID" });
+  }
+
+  if (typeof tier !== "number" || tier < 0 || tier > 3 || !Number.isInteger(tier)) {
+    return res.status(400).json({ success: false, error: "Invalid tier value" });
+  }
+
+  if (stake !== undefined && typeof stake !== 'boolean') {
+    return res.status(400).json({ success: false, error: "Stake must be a boolean value" });
   }
 
   const now = dayjs();
@@ -90,7 +103,10 @@ if (!postedAtRaw) {
     const fee = Math.floor(gross * feeRate);
     const burn = Math.floor(fee * burnRate);
     const toXRP = fee - burn;
-    const net = gross - fee;
+
+    // For staked claims, tokens go to staking vault instead of user
+    const net = finalStake ? 0 : gross - fee; // Immediate payout only for instant claims
+    const stakedAmount = finalStake ? gross - fee : 0; // Amount to be staked
 
     // 🧠 Log claim metadata
     await redis.rPush(logKey, JSON.stringify({
@@ -103,42 +119,92 @@ if (!postedAtRaw) {
       burn,
       toXRP,
       net,
+      stakedAmount,
       timestamp: now.toISOString()
     }));
 
     await redis.incr(tierKey);
     await redis.set(memeClaimKey, "true"); // Prevent double claim
 
-    // 📝 Trigger payout via XUMM
-    const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: wallet,
-        Amount: String(net * 1_000_000), // drops
-        DestinationTag: 12345
-      },
-      options: {
-        submit: true,
-        expire: 300
-      }
-    };
+    // Handle staked vs instant claims differently
+    let payload;
 
-    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, (event) => {
-      if (event.data.signed === true) return true;
-      if (event.data.signed === false) throw new Error("User rejected the sign request");
-    });
+    if (finalStake && stakedAmount > 0) {
+      // For staked claims, create a staking position
+      const stakeId = uuidv4();
+      const unlockDate = now.add(30, 'day'); // 30-day minimum staking period
 
-    return res.json({
-      success: true,
-      claimId,
-      net,
-      fee,
-      burn,
-      toXRP,
-      stake: finalStake,
-      next,
-      uuid
-    });
+      // Store staking position
+      await redis.hSet(`stake:${stakeId}`, {
+        stakeId,
+        wallet,
+        amount: stakedAmount,
+        duration: 30,
+        apy: 0.12, // 12% APY
+        stakedAt: now.toISOString(),
+        unlockDate: unlockDate.toISOString(),
+        status: 'active',
+        source: 'meme_claim',
+        memeId,
+        rewards: 0,
+        lastCompounded: now.toISOString()
+      });
+
+      await redis.sAdd(`stakes:wallet:${wallet}`, stakeId);
+
+      // No immediate payout for staked claims
+      payload = null;
+
+    } else {
+      // For instant claims, create immediate payout
+      payload = {
+        txjson: {
+          TransactionType: "Payment",
+          Destination: wallet,
+          Amount: String(net * 1_000_000), // drops
+          DestinationTag: 12345
+        },
+        options: {
+          submit: true,
+          expire: 300
+        }
+      };
+    }
+
+    if (payload) {
+      // Process instant claim payment
+      const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, (event) => {
+        if (event.data.signed === true) return true;
+        if (event.data.signed === false) throw new Error("User rejected the sign request");
+      });
+
+      return res.json({
+        success: true,
+        claimId,
+        type: 'instant',
+        net,
+        fee,
+        burn,
+        toXRP,
+        stake: finalStake,
+        next,
+        uuid
+      });
+    } else {
+      // Staked claim - no immediate payment
+      return res.json({
+        success: true,
+        claimId,
+        type: 'staked',
+        stakedAmount,
+        fee,
+        burn,
+        toXRP,
+        stake: finalStake,
+        message: `${stakedAmount} WALDO staked for 30 days at 12% APY`,
+        unlockDate: now.add(30, 'day').toISOString()
+      });
+    }
 
   } catch (err) {
     console.error("❌ Claim processing error:", err);

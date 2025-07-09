@@ -2,7 +2,7 @@ import xrpl from "xrpl";
 import { WALDOCOIN_TOKEN, WALDO_ISSUER, WALDO_DISTRIBUTOR_SECRET } from "../constants.js";
 
 export async function xrpSendWaldo(wallet, amount) {
-  const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
+  const client = new xrpl.Client("wss://xrplcluster.com");
   await client.connect();
 
   const sender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);

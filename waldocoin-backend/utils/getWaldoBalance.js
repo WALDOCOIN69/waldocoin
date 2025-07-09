@@ -3,7 +3,7 @@ import { Client } from 'xrpl'
 const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
 const CURRENCY = 'WLO' // WALDO token
 
-export default async function getWaldoBalance(wallet, node = 'wss://s1.ripple.com') {
+export default async function getWaldoBalance(wallet, node = 'wss://xrplcluster.com') {
   const client = new Client(node)
 
   try {

@@ -6,7 +6,7 @@ import { redis } from "../../redisClient.js"; // <-- FIXED
 import { WALDO_ISSUER, WALDO_TOKEN, WALDO_DISTRIBUTOR } from "../config.js";
 
 const router = express.Router();
-const xrplClient = new Client("wss://s.altnet.rippletest.net:51233");
+const xrplClient = new Client("wss://xrplcluster.com");
 
 const WALDO_PER_XRP = 100000;
 

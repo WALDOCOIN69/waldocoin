@@ -1,16 +1,12 @@
 import express from "express";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+
 import xrpl from "xrpl";
 import { redis } from "../../redisClient.js"; 
 import { uploadToIPFS } from "../../utils/ipfsUploader.js";
 import { getXrplClient } from "../../utils/xrplClient.js"; // Optional: If you’re centralizing XRPL connections
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -40,7 +36,7 @@ router.post("/", async (req, res) => {
       return res.status(500).json({ success: false, error: "Failed to upload metadata to IPFS." });
     }
 
-    const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233"); // ⛓ XRPL Testnet
+    const client = new xrpl.Client("wss://xrplcluster.com"); // ⛓ XRPL Mainnet
     await client.connect();
 
     const walletInstance = xrpl.Wallet.fromSeed(process.env.MINTING_WALLET_SECRET);

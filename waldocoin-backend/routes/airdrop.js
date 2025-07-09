@@ -1,6 +1,7 @@
 // routes/airdrop.js
 import express from "express";
 import xrpl from "xrpl";
+import { redis } from "../redisClient.js";
 import {
   WALDOCOIN_TOKEN,
   WALDO_ISSUER,
@@ -9,11 +10,22 @@ import {
 
 const router = express.Router();
 
+// Airdrop configuration
+const AIRDROP_LIMIT = 1000; // Maximum number of airdrops
+const AIRDROP_AMOUNT = "50000.000000"; // Amount per airdrop
+const AIRDROP_REDIS_KEY = "airdrop:wallets"; // Redis set to track claimed wallets
+const AIRDROP_COUNT_KEY = "airdrop:count"; // Redis counter for total airdrops
+
 router.post("/", async (req, res) => {
   const { wallet, password } = req.body;
 
-  if (!wallet || !wallet.startsWith("r") || !password) {
-    return res.status(400).json({ success: false, error: "Missing required fields" });
+  // Input validation
+  if (!wallet || typeof wallet !== 'string' || !wallet.startsWith("r") || wallet.length < 25 || wallet.length > 34) {
+    return res.status(400).json({ success: false, error: "Invalid wallet address format" });
+  }
+
+  if (!password || typeof password !== 'string') {
+    return res.status(400).json({ success: false, error: "Password is required" });
   }
 
   if (password !== "WALDOCREW") {
@@ -21,6 +33,25 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    // Check if airdrop limit has been reached
+    const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
+    if (parseInt(currentCount) >= AIRDROP_LIMIT) {
+      return res.status(410).json({
+        success: false,
+        error: `Airdrop ended. Maximum ${AIRDROP_LIMIT} wallets have already claimed.`,
+        totalClaimed: parseInt(currentCount)
+      });
+    }
+
+    // Check if wallet has already claimed airdrop
+    const hasAlreadyClaimed = await redis.sismember(AIRDROP_REDIS_KEY, wallet);
+    if (hasAlreadyClaimed) {
+      return res.status(409).json({
+        success: false,
+        error: "This wallet has already claimed the airdrop.",
+        totalClaimed: parseInt(currentCount)
+      });
+    }
     console.log("🐛 Airdrop POST called");
     console.log("🐛 wallet from body:", wallet);
     console.log("🐛 WALDOCOIN_TOKEN:", WALDOCOIN_TOKEN);
@@ -29,7 +60,7 @@ router.post("/", async (req, res) => {
     const sender = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
     console.log("🚨 Sender wallet:", sender.classicAddress);
 
-    const client = new xrpl.Client("wss://s1.ripple.com");
+    const client = new xrpl.Client("wss://xrplcluster.com");
     await client.connect();
 
     // 🔍 Check if the wallet is active
@@ -74,7 +105,7 @@ router.post("/", async (req, res) => {
       Amount: {
         currency: WALDOCOIN_TOKEN.toUpperCase(),
         issuer: WALDO_ISSUER,
-        value: "50000.000000"
+        value: AIRDROP_AMOUNT
       }
     };
 
@@ -92,11 +123,73 @@ router.post("/", async (req, res) => {
       });
     }
 
-    return res.json({ success: true, txHash: result.result.hash });
+    // ✅ Transaction successful - Track in Redis
+    await redis.sadd(AIRDROP_REDIS_KEY, wallet); // Add wallet to claimed set
+    const newCount = await redis.incr(AIRDROP_COUNT_KEY); // Increment counter
+
+    console.log(`✅ Airdrop successful! Wallet ${wallet} claimed. Total: ${newCount}/${AIRDROP_LIMIT}`);
+
+    return res.json({
+      success: true,
+      txHash: result.result.hash,
+      amount: AIRDROP_AMOUNT,
+      totalClaimed: newCount,
+      remaining: AIRDROP_LIMIT - newCount
+    });
 
   } catch (err) {
     console.error("❌ Airdrop error:", err);
     return res.status(500).json({ success: false, error: "Airdrop failed", detail: err.message });
+  }
+});
+
+// GET /api/airdrop/status - Check airdrop status
+router.get("/status", async (_, res) => {
+  try {
+    const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
+    const totalClaimed = parseInt(currentCount);
+    const remaining = AIRDROP_LIMIT - totalClaimed;
+    const isActive = remaining > 0;
+
+    return res.json({
+      success: true,
+      airdrop: {
+        isActive,
+        totalLimit: AIRDROP_LIMIT,
+        totalClaimed,
+        remaining,
+        amountPerClaim: AIRDROP_AMOUNT,
+        status: isActive ? "ACTIVE" : "ENDED"
+      }
+    });
+  } catch (err) {
+    console.error("❌ Airdrop status error:", err);
+    return res.status(500).json({ success: false, error: "Failed to get airdrop status" });
+  }
+});
+
+// GET /api/airdrop/check/:wallet - Check if specific wallet has claimed
+router.get("/check/:wallet", async (req, res) => {
+  try {
+    const { wallet } = req.params;
+
+    if (!wallet || !wallet.startsWith("r")) {
+      return res.status(400).json({ success: false, error: "Invalid wallet address" });
+    }
+
+    const hasAlreadyClaimed = await redis.sismember(AIRDROP_REDIS_KEY, wallet);
+    const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
+
+    return res.json({
+      success: true,
+      wallet,
+      hasClaimed: hasAlreadyClaimed,
+      totalClaimed: parseInt(currentCount),
+      remaining: AIRDROP_LIMIT - parseInt(currentCount)
+    });
+  } catch (err) {
+    console.error("❌ Airdrop check error:", err);
+    return res.status(500).json({ success: false, error: "Failed to check wallet status" });
   }
 });
 

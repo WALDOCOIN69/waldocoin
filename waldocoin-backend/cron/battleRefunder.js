@@ -1,7 +1,6 @@
 // cron/battleRefunder.js
 import { redis } from "../redisClient.js";
-import { xummClient } from "../utils/xummClient.js";
-import { WALDO_ISSUER, WALDOCOIN_TOKEN, WALDO_DISTRIBUTOR_SECRET } from "../config.js";
+import { WALDO_ISSUER, WALDOCOIN_TOKEN, WALDO_DISTRIBUTOR_SECRET } from "../constants.js";
 import { Client, Wallet, convertStringToHex } from "xrpl";
 
 // 10 hours in ms
@@ -20,7 +19,7 @@ async function refundExpiredBattles() {
     if (now - createdAt > BATTLE_REFUND_WINDOW) {
       console.log(`🔄 Refunding unaccepted battle: ${key}`);
       // Send refund to challenger
-      const client = new Client("wss://s.altnet.rippletest.net:51233");
+      const client = new Client("wss://xrplcluster.com");
       const wallet = Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
       await client.connect();
 
