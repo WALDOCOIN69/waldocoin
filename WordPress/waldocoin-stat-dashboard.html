@@ -981,7 +981,33 @@ html, body {
     <!-- Close .container -->
 </div>
 <!-- END .container -->
-
+<script>
+(function() {
+  let isInitializing = false;
+  let originalInit = window.initWaldoDashboard;
+  
+  if (originalInit) {
+    window.initWaldoDashboard = async function() {
+      if (isInitializing) return;
+      isInitializing = true;
+      try {
+        await originalInit.call(this);
+      } finally {
+        isInitializing = false;
+      }
+    };
+  }
+  
+  window.addEventListener('beforeunload', () => {
+    if (window.dashboardIntervals) {
+      window.dashboardIntervals.forEach(clearInterval);
+    }
+    if (window.battleTimerInterval) {
+      clearInterval(window.battleTimerInterval);
+    }
+  });
+})();
+</script>
 <script>
 (function() {
   // Always force logout if not logged in on THIS device+tab
@@ -1329,8 +1355,14 @@ function renderBattleTimer(seconds) {
     timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
     seconds--;
   }
+
+  // Clear existing timer first
+  if (window.battleTimerInterval) {
+    clearInterval(window.battleTimerInterval);
+  }
+
   update();
-  battleTimerInterval = setInterval(update, 1000);
+  window.battleTimerInterval = setInterval(update, 1000);
 }
 
 async function startBattle() {
@@ -1761,44 +1793,123 @@ window.closeStakingModal = closeStakingModal;
 window.createStake = createStake;
 
 /** === INIT EVERYTHING === **/
+let dashboardIntervals = []; // Track intervals for cleanup
+let isDashboardInitialized = false; // Prevent multiple initializations
+
 async function initWaldoDashboard() {
   const wallet = getWallet();
-  if (!wallet) return;
-  generateRewardTable();
+  if (!wallet || isDashboardInitialized) return;
 
-  // Load all dashboard data
-  await fetchUserStats(wallet);
-  await fetchUserLevel(wallet);
-  await fetchStakingPositions(wallet);
-  await fetchTokenomicsStats();
-  await fetchSecurityStatus(wallet);
-  await fetchConversionRate();
-  await loadTopMeme();
-  await fetchMemes(wallet);
-  await fetchActivity(wallet);
-  await fetchBattleStatus();
-  await fetchBattleHistory();
-  await fetchBattleLeaderboard();
-  await fetchDAOProposals();
+  isDashboardInitialized = true;
+  console.log("🚀 Initializing WALDO Dashboard...");
 
-  // Set up periodic updates
-  setInterval(fetchBattleLeaderboard, 5 * 60 * 1000); // every 5 minutes
-  setInterval(() => fetchUserLevel(wallet), 2 * 60 * 1000); // every 2 minutes
-  setInterval(() => fetchStakingPositions(wallet), 5 * 60 * 1000); // every 5 minutes
-  setInterval(fetchTokenomicsStats, 10 * 60 * 1000); // every 10 minutes
+  // Clear any existing intervals
+  clearDashboardIntervals();
+
+  try {
+    generateRewardTable();
+
+    // Load all data with error handling
+    const loadPromises = [
+      fetchUserStats(wallet).catch(e => console.warn('User stats failed:', e)),
+      fetchUserLevel(wallet).catch(e => console.warn('User level failed:', e)),
+      fetchStakingPositions(wallet).catch(e => console.warn('Staking failed:', e)),
+      fetchTokenomicsStats().catch(e => console.warn('Tokenomics failed:', e)),
+      fetchSecurityStatus(wallet).catch(e => console.warn('Security failed:', e)),
+      fetchConversionRate().catch(e => console.warn('Conversion rate failed:', e)),
+      loadTopMeme().catch(e => console.warn('Top meme failed:', e)),
+      fetchMemes(wallet).catch(e => console.warn('Memes failed:', e)),
+      fetchActivity(wallet).catch(e => console.warn('Activity failed:', e)),
+      fetchBattleStatus().catch(e => console.warn('Battle status failed:', e)),
+      fetchBattleHistory().catch(e => console.warn('Battle history failed:', e)),
+      fetchBattleLeaderboard().catch(e => console.warn('Battle leaderboard failed:', e)),
+      fetchDAOProposals().catch(e => console.warn('DAO proposals failed:', e))
+    ];
+
+    await Promise.allSettled(loadPromises);
+    console.log("✅ Dashboard data loaded");
+
+    // Set up periodic updates with cleanup tracking
+    setupPeriodicUpdates(wallet);
+
+  } catch (error) {
+    console.error("❌ Dashboard initialization failed:", error);
+    isDashboardInitialized = false; // Allow retry
+  }
+}
+
+function clearDashboardIntervals() {
+  dashboardIntervals.forEach(interval => clearInterval(interval));
+  dashboardIntervals = [];
+
+  // Clear battle timer if exists
+  if (window.battleTimerInterval) {
+    clearInterval(window.battleTimerInterval);
+    window.battleTimerInterval = null;
+  }
+}
+
+function setupPeriodicUpdates(wallet) {
+  // Clear existing intervals first
+  clearDashboardIntervals();
+
+  // Set up new intervals with tracking
+  dashboardIntervals.push(
+    setInterval(() => {
+      fetchBattleLeaderboard().catch(e => console.warn('Periodic battle leaderboard failed:', e));
+    }, 5 * 60 * 1000) // every 5 minutes
+  );
+
+  dashboardIntervals.push(
+    setInterval(() => {
+      fetchUserLevel(wallet).catch(e => console.warn('Periodic user level failed:', e));
+    }, 3 * 60 * 1000) // every 3 minutes (reduced frequency)
+  );
+
+  dashboardIntervals.push(
+    setInterval(() => {
+      fetchStakingPositions(wallet).catch(e => console.warn('Periodic staking failed:', e));
+    }, 5 * 60 * 1000) // every 5 minutes
+  );
+
+  dashboardIntervals.push(
+    setInterval(() => {
+      fetchTokenomicsStats().catch(e => console.warn('Periodic tokenomics failed:', e));
+    }, 10 * 60 * 1000) // every 10 minutes
+  );
+
+  console.log("⏰ Periodic updates configured");
 }
 
 //** === ON PAGE LOAD === **/
+let dashboardStarted = false; // Prevent multiple starts
+
 function startDashboard() {
   const wallet = getWallet();
   if (!wallet) {
-    console.log("Waiting for wallet login via postMessage...");
-    // Show a message or loading spinner here if you want
+    console.log("⏳ Waiting for wallet login...");
     return;
   }
+
+  if (dashboardStarted) {
+    console.log("⚠️ Dashboard already started, skipping...");
+    return;
+  }
+
+  dashboardStarted = true;
+  console.log("🚀 Starting dashboard for wallet:", wallet);
+
   $("walletAddress") && ($("walletAddress").innerText = `Wallet: ${wallet}`);
   showWaldoNotification("✅ WALDO wallet connected");
   initWaldoDashboard();
+}
+
+// Reset dashboard state on logout
+function resetDashboard() {
+  dashboardStarted = false;
+  isDashboardInitialized = false;
+  clearDashboardIntervals();
+  console.log("🔄 Dashboard reset");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1811,11 +1922,15 @@ window.addEventListener("message", (event) => {
     event.origin !== "https://stats-page.waldocoin.live" &&
     event.origin !== "https://waldocoin.live"
   ) return;
-  
+
   if (event.data.wallet) {
     localStorage.setItem("xummWallet", event.data.wallet);
     sessionStorage.setItem("waldoLoginDesktop", "1");
-    startDashboard();
+
+    // Only start if not already started
+    if (!dashboardStarted) {
+      startDashboard();
+    }
   }
 });
 function logoutWallet() {

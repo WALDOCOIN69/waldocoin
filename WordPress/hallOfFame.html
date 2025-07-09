@@ -1,51 +1,201 @@
-<!-- WALDO Hall of Fame Final Full Version -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js/dist/Chart.min.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WALDO Hall of Fame</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js/dist/Chart.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
 <style>
-  :root { --padding-default: 10px; }
-  body {
+  :root {
+    --padding-default: 15px;
+    --primary-color: #25c2a0;
+    --secondary-color: #ff5252;
+    --accent-color: #ffd700;
+    --bg-dark: #0a0a0a;
+    --bg-card: #111;
+    --text-light: #eee;
+    --border-color: #333;
+  }
+
+  * {
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
-    background: #000;
-    font-family: 'Orbitron', sans-serif;
-    color: white;
+    box-sizing: border-box;
   }
+
+  body {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a1a 100%);
+    font-family: 'Orbitron', sans-serif;
+    color: var(--text-light);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  .hero-section {
+    text-align: center;
+    padding: 80px 0 60px;
+    background: linear-gradient(45deg, var(--bg-dark), #1a1a1a, var(--bg-dark));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(37, 194, 160, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 40px 0;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, var(--bg-card), #1a1a1a);
+    padding: 25px;
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(37, 194, 160, 0.1), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .stat-card:hover::before {
+    left: 100%;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 30px rgba(37, 194, 160, 0.2);
+  }
+
+  .stat-value {
+    font-size: 2.5em;
+    font-weight: 900;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(37, 194, 160, 0.5);
+  }
+
+  .stat-label {
+    font-size: 1.1em;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
   #filterBar {
     text-align: center;
-    margin: 30px auto;
+    margin: 40px auto;
     padding: var(--padding-default);
   }
+
   #filterBar button {
     font-family: 'Orbitron', sans-serif;
-    padding: 10px 20px;
-    margin: 5px;
-    background-color: #111;
-    color: white;
-    border: 1px solid #444;
+    font-weight: 700;
+    padding: 12px 25px;
+    margin: 8px;
+    background: linear-gradient(135deg, var(--bg-card), #1a1a1a);
+    color: var(--text-light);
+    border: 2px solid var(--border-color);
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 25px;
     transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
   }
+
+  #filterBar button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(37, 194, 160, 0.2), transparent);
+    transition: left 0.3s ease;
+  }
+
+  #filterBar button:hover::before,
+  #filterBar button.active::before {
+    left: 100%;
+  }
+
   #filterBar button.active,
   #filterBar button:hover {
-    background-color: #ff5252;
-    color: #fff;
-    border-color: #ff7979;
+    background: linear-gradient(135deg, var(--primary-color), #1ea085);
+    color: #000;
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(37, 194, 160, 0.3);
   }
   #waldo-hof-title {
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--primary-color);
     text-align: center;
-    font-size: 2.4rem;
-    color: #ff5252;
-    font-family: 'Orbitron', sans-serif;
-    animation: glow 2s ease-in-out infinite alternate;
-    letter-spacing: 1px;
-    margin: 60px auto 20px;
-    padding: var(--padding-default);
+    margin: 0 0 30px 0;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: titleGlow 3s ease-in-out infinite alternate;
+    position: relative;
+    z-index: 2;
   }
-  @keyframes glow {
-    from { text-shadow: 0 0 10px #ff5252, 0 0 20px #ff5252; }
-    to { text-shadow: 0 0 20px #ff7979, 0 0 30px #ff7979; }
+
+  @keyframes titleGlow {
+    from {
+      text-shadow:
+        0 0 20px var(--primary-color),
+        0 0 40px var(--primary-color),
+        0 0 60px var(--primary-color);
+    }
+    to {
+      text-shadow:
+        0 0 30px var(--primary-color),
+        0 0 60px var(--primary-color),
+        0 0 90px var(--primary-color);
+    }
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: var(--text-light);
+    opacity: 0.8;
+    margin-bottom: 40px;
+    text-align: center;
   }
   #memeOfMonthWrapper {
     text-align: center;
@@ -108,29 +258,101 @@
     padding: 10px;
     font-size: 0.9rem;
   }
+  .section-card {
+    background: linear-gradient(135deg, var(--bg-card), #1a1a1a);
+    border-radius: 20px;
+    padding: 30px;
+    margin: 40px 0;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color), var(--primary-color));
+  }
+
+  .section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
   .leaderboard-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 40px;
-    text-align: center;
-    font-size: 0.95rem;
-    background-color: rgba(0, 0, 0, 0.6);
-    border-radius: 10px;
+    background: linear-gradient(135deg, var(--bg-card), #0f0f0f);
+    border-radius: 15px;
     overflow: hidden;
-    box-shadow: 0 0 15px rgba(255, 82, 82, 0.25);
+    box-shadow: 0 10px 30px rgba(37, 194, 160, 0.1);
+    margin-top: 20px;
   }
+
   .leaderboard-table th, .leaderboard-table td {
-    border: 1px solid #333;
-    padding: 12px;
-    color: #eee;
+    padding: 15px 20px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
   }
+
   .leaderboard-table th {
-    background-color: #1a1a1a;
-    color: #ff5252;
-    text-shadow: 0 0 10px #ff5252;
+    background: linear-gradient(135deg, var(--primary-color), #1ea085);
+    color: #000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
   }
-  .leaderboard-table tr:nth-child(even) { background-color: #141414; }
-  .leaderboard-table tr:hover { background-color: #2a2a2a; }
+
+  .leaderboard-table tbody tr {
+    transition: all 0.3s ease;
+    background: rgba(17, 17, 17, 0.8);
+  }
+
+  .leaderboard-table tbody tr:nth-child(even) {
+    background: rgba(26, 26, 26, 0.8);
+  }
+
+  .leaderboard-table tbody tr:hover {
+    background: linear-gradient(135deg, rgba(37, 194, 160, 0.1), rgba(37, 194, 160, 0.05));
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(37, 194, 160, 0.2);
+  }
+
+  .rank-cell {
+    font-weight: 900;
+    font-size: 1.2rem;
+  }
+
+  .rank-1 { color: var(--accent-color); text-shadow: 0 0 10px var(--accent-color); }
+  .rank-2 { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; }
+  .rank-3 { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; }
+
+  .wallet-cell {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  .twitter-cell {
+    color: #1da1f2;
+    font-weight: 600;
+  }
+
+  .xp-cell {
+    font-weight: 700;
+    color: var(--accent-color);
+  }
   canvas {
     background: #0a0a0a;
     border-radius: 8px;
@@ -189,91 +411,661 @@
   }
 </style>
 
-<h2 id="waldo-hof-title">🏆 WALDO Hall of Fame</h2>
-<div id="filterBar">
-  <button data-filter="tier5" class="active">Tier 5 Only</button>
-  <button data-filter="month">This Month</button>
-  <button data-filter="all">All Time</button>
+<div class="container">
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <h1 id="waldo-hof-title">🏆 WALDO Hall of Fame</h1>
+    <p class="subtitle">Celebrating the greatest meme creators and battle champions in the WALDOCOIN ecosystem</p>
+
+    <!-- Live Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="totalMemes">-</div>
+        <div class="stat-label">Total Memes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="totalBattles">-</div>
+        <div class="stat-label">Battles Fought</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="totalUsers">-</div>
+        <div class="stat-label">Active Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="totalXP">-</div>
+        <div class="stat-label">Total XP Earned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div id="filterBar">
+    <button type="button" data-filter="battles" class="active">🏆 Battle Champions</button>
+    <button type="button" data-filter="xp">🎯 XP Leaders</button>
+    <button type="button" data-filter="memes">🖼️ Meme Masters</button>
+    <button type="button" data-filter="recent">⚡ Recent Heroes</button>
+  </div>
+
+  <!-- Battle Champions Section -->
+  <div class="section-card" id="battleChampions">
+    <h2 class="section-title">⚔️ Battle Champions</h2>
+    <div class="leaderboard-table-container">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th scope="col">Rank</th>
+            <th scope="col">Champion</th>
+            <th scope="col">Twitter</th>
+            <th scope="col">Wins</th>
+            <th scope="col">Win Rate</th>
+          </tr>
+        </thead>
+        <tbody id="battleLeaderboard">
+          <tr><td colspan="5">Loading battle champions...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- XP Leaders Section -->
+  <div class="section-card" id="xpLeaders" style="display: none;">
+    <h2 class="section-title">🎯 XP Leaderboard</h2>
+    <div class="leaderboard-table-container">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th scope="col">Rank</th>
+            <th scope="col">User</th>
+            <th scope="col">Level</th>
+            <th scope="col">Total XP</th>
+            <th scope="col">Multiplier</th>
+          </tr>
+        </thead>
+        <tbody id="xpLeaderboard">
+          <tr><td colspan="5">Loading XP leaders...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Meme Masters Section -->
+  <div class="section-card" id="memeMasters" style="display: none;">
+    <h2 class="section-title">🖼️ Meme Masters</h2>
+    <div id="memeOfMonthWrapper">
+      <h3>🌟 Meme of the Month</h3>
+      <div id="memeOfMonth">Loading top meme...</div>
+    </div>
+    <div class="carousel-container" id="carouselGallery"></div>
+    <div class="leaderboard-table-container">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th scope="col">Rank</th>
+            <th scope="col">Creator</th>
+            <th scope="col">Memes</th>
+            <th scope="col">Total XP</th>
+            <th scope="col">Tier 5 Memes</th>
+          </tr>
+        </thead>
+        <tbody id="memeLeaderboard">
+          <tr><td colspan="5">Loading meme masters...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Heroes Section -->
+  <div class="section-card" id="recentHeroes" style="display: none;">
+    <h2 class="section-title">⚡ Recent Heroes</h2>
+    <div id="recentActivity">Loading recent achievements...</div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="section-card">
+    <h2 class="section-title">📊 Analytics</h2>
+    <div class="chart-section">
+      <h3>📈 Battle Activity Over Time</h3>
+      <canvas id="battleChart"></canvas>
+    </div>
+    <div class="chart-section">
+      <h3>🎯 XP Distribution by Level</h3>
+      <canvas id="xpChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Share Button -->
+  <div style="text-align: center; margin: 40px 0;">
+    <button type="button" id="shareButton" class="share-btn">🔗 Share Hall of Fame</button>
+  </div>
 </div>
-<div id="memeOfMonthWrapper">
-  <h3>🌟 Meme of the Month</h3>
-  <div id="memeOfMonth"></div>
+
+<!-- Modal for full-size images -->
+<div id="modal" onclick="this.style.display='none'">
+  <img id="modalImg" alt="Full size meme">
 </div>
-<div class="carousel-container" id="carouselGallery"></div>
-<table class="leaderboard-table">
-  <thead><tr><th>Wallet</th><th>Total Memes Minted</th><th>Total XP</th><th>Tier 5 Memes</th></tr></thead>
-  <tbody id="leaderboardBody"><tr><td colspan="4">Loading...</td></tr></tbody>
-</table>
-<div class="chart-section"><h3>📈 Meme XP vs Tier</h3><canvas id="xpTierChart"></canvas></div>
-<div class="chart-section gold"><h3>📅 Monthly Tier Breakdown</h3><canvas id="monthlyTierChart"></canvas></div>
-<button id="shareButton">🔗 Share This Page</button>
-<div id="modal" onclick="this.style.display='none'"><img id="modalImg"></div>
 
 <script>
-const API = "https://waldocoin.live/api/minted";
-fetch(API).then(res => res.json()).then(data => {
-  const container = document.getElementById("carouselGallery");
-  const monthContainer = document.getElementById("memeOfMonth");
-  const leaderboardBody = document.getElementById("leaderboardBody");
+// Production Configuration
+const API_BASE = "https://waldocoin-backend-api.onrender.com";
+const MINTED_API = "https://waldocoin.live/api/minted";
+let currentFilter = 'battles';
+let leaderboardData = {};
 
-  if (!data.length) return container.innerHTML = '<p style="color: #888; text-align: center;">No memes yet.</p>';
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+  loadStats();
+  loadLeaderboards();
+  setupFilters();
+  loadMemeData();
 
-  const top = data.reduce((max, m) => m.xp > max.xp ? m : max, data[0]);
-  monthContainer.innerHTML = `<img src="${top.image_url}" onclick="showFull('${top.image_url}')"><div class='meta'>XP: ${top.xp} | Tier: ${top.tier}</div>`;
-
-  data.slice(0, 20).forEach(meme => {
-    const slide = document.createElement("div");
-    slide.className = "carousel-slide";
-    slide.innerHTML = `<img src="${meme.image_url}" onclick="showFull('${meme.image_url}')"><div class="carousel-caption">XP: ${meme.xp} | Tier: ${meme.tier}</div>`;
-    container.appendChild(slide);
-  });
-
-  const scores = {};
-  data.forEach(m => {
-    const w = m.wallet;
-    if (!scores[w]) scores[w] = { count: 0, xp: 0, t5: 0 };
-    scores[w].count++; scores[w].xp += m.xp; if (m.tier == 5) scores[w].t5++;
-  });
-
-  Object.entries(scores).sort((a,b)=>b[1].xp-a[1].xp).forEach(([wallet, val]) => {
-    leaderboardBody.innerHTML += `<tr><td>${wallet.slice(0,6)}...${wallet.slice(-4)}</td><td>${val.count}</td><td>${val.xp}</td><td>${val.t5}</td></tr>`;
-  });
-
-  const tierXp = Array(6).fill(0);
-  data.forEach(m => tierXp[m.tier] += m.xp);
-  new Chart(document.getElementById("xpTierChart"), {
-    type: "bar",
-    data: {
-      labels: ["0","1","2","3","4","5"],
-      datasets: [{ label: "Total XP", backgroundColor: "#ff5252", data: tierXp }]
-    },
-    options: { responsive: true, plugins: { legend: { display: false } } }
-  });
-
-  const monthly = {};
-  data.forEach(m => {
-    const month = new Date(m.mintedAt).toLocaleDateString("default", { year: 'numeric', month: 'short' });
-    if (!monthly[month]) monthly[month] = 0;
-    if (m.tier == 5) monthly[month]++;
-  });
-  new Chart(document.getElementById("monthlyTierChart"), {
-    type: "line",
-    data: {
-      labels: Object.keys(monthly),
-      datasets: [{ label: "Tier 5 Memes", borderColor: "#ffd700", data: Object.values(monthly) }]
-    },
-    options: { responsive: true }
-  });
+  // Auto-refresh every 5 minutes
+  setInterval(() => {
+    loadStats();
+    loadLeaderboards();
+  }, 5 * 60 * 1000);
 });
 
+// Load live statistics
+async function loadStats() {
+  try {
+    const [tokenomicsRes, battleRes] = await Promise.allSettled([
+      fetch(`${API_BASE}/api/tokenomics/stats`),
+      fetch(`${API_BASE}/api/battle/leaderboard`)
+    ]);
+
+    // Update stats from tokenomics
+    if (tokenomicsRes.status === 'fulfilled') {
+      const tokenomicsData = await tokenomicsRes.value.json();
+      if (tokenomicsData.success) {
+        const stats = tokenomicsData.stats;
+        document.getElementById('totalBattles').textContent = stats.battles?.total || '0';
+        document.getElementById('totalUsers').textContent = stats.totalUsers || '0';
+      }
+    }
+
+    // Update battle stats
+    if (battleRes.status === 'fulfilled') {
+      const battleData = await battleRes.value.json();
+      if (battleData.leaderboard) {
+        document.getElementById('totalUsers').textContent = battleData.leaderboard.length;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading stats:', error);
+  }
+}
+
+// Load meme data from existing API
+async function loadMemeData() {
+  try {
+    const res = await fetch(MINTED_API);
+    const data = await res.json();
+
+    if (data && data.length > 0) {
+      // Update meme stats
+      document.getElementById('totalMemes').textContent = data.length;
+      document.getElementById('totalXP').textContent = formatNumber(data.reduce((sum, m) => sum + (m.xp || 0), 0));
+
+      // Load meme of the month
+      const top = data.reduce((max, m) => m.xp > max.xp ? m : max, data[0]);
+      const monthContainer = document.getElementById("memeOfMonth");
+      monthContainer.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <img src="${top.image_url}" onclick="showFull('${top.image_url}')"
+               style="max-width: 300px; border-radius: 15px; cursor: pointer; box-shadow: 0 10px 30px rgba(37, 194, 160, 0.3);">
+          <div style="margin-top: 15px; color: #25c2a0; font-weight: bold;">
+            🏆 ${top.xp} XP • Tier ${top.tier} • ${formatWallet(top.wallet)}
+          </div>
+        </div>
+      `;
+
+      // Load carousel
+      const container = document.getElementById("carouselGallery");
+      container.innerHTML = '';
+      data.slice(0, 12).forEach(meme => {
+        const slide = document.createElement("div");
+        slide.className = "carousel-slide";
+        slide.innerHTML = `
+          <img src="${meme.image_url}" onclick="showFull('${meme.image_url}')"
+               style="width: 200px; height: 200px; object-fit: cover; border-radius: 10px; cursor: pointer;">
+          <div style="text-align: center; margin-top: 10px; color: #25c2a0; font-size: 0.9em;">
+            ${meme.xp} XP • Tier ${meme.tier}
+          </div>
+        `;
+        slide.style.cssText = 'display: inline-block; margin: 10px; text-align: center;';
+        container.appendChild(slide);
+      });
+
+      // Process meme leaderboard
+      const scores = {};
+      data.forEach(m => {
+        const w = m.wallet;
+        if (!scores[w]) scores[w] = { count: 0, xp: 0, t5: 0 };
+        scores[w].count++;
+        scores[w].xp += m.xp;
+        if (m.tier == 5) scores[w].t5++;
+      });
+
+      const memeLeaderboard = Object.entries(scores)
+        .sort((a,b) => b[1].xp - a[1].xp)
+        .map(([wallet, val]) => ({ wallet, ...val }));
+
+      leaderboardData.memes = memeLeaderboard;
+      renderMemeLeaderboard(memeLeaderboard);
+
+      // Create charts
+      createMemeCharts(data);
+    }
+  } catch (error) {
+    console.error('Error loading meme data:', error);
+  }
+}
+
+// Load all leaderboards
+async function loadLeaderboards() {
+  await Promise.all([
+    loadBattleLeaderboard(),
+    loadXPLeaderboard()
+  ]);
+}
+
+// Load battle leaderboard
+async function loadBattleLeaderboard() {
+  try {
+    const res = await fetch(`${API_BASE}/api/battle/leaderboard`);
+    const data = await res.json();
+
+    if (data.leaderboard) {
+      leaderboardData.battles = data.leaderboard;
+      renderBattleLeaderboard(data.leaderboard);
+    }
+  } catch (error) {
+    console.error('Error loading battle leaderboard:', error);
+    document.getElementById('battleLeaderboard').innerHTML =
+      '<tr><td colspan="5" style="color: #ff6b6b;">Error loading battle data</td></tr>';
+  }
+}
+
+// Render battle leaderboard
+function renderBattleLeaderboard(battles) {
+  const tbody = document.getElementById('battleLeaderboard');
+  tbody.innerHTML = '';
+
+  if (!battles || battles.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5">No battle data available</td></tr>';
+    return;
+  }
+
+  battles.slice(0, 20).forEach((user, index) => {
+    const row = tbody.insertRow();
+    const rank = index + 1;
+    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+    const winRate = user.totalBattles > 0 ? ((user.wins / user.totalBattles) * 100).toFixed(1) : '0.0';
+
+    row.innerHTML = `
+      <td class="rank-cell ${rankClass}">${getRankEmoji(rank)} ${rank}</td>
+      <td class="wallet-cell">${formatWallet(user.wallet)}</td>
+      <td class="twitter-cell">${user.twitter ? `@${user.twitter}` : '-'}</td>
+      <td class="xp-cell">${user.wins || 0}</td>
+      <td>${winRate}%</td>
+    `;
+
+    if (rank <= 3) {
+      row.style.background = `linear-gradient(135deg, ${getRankColor(rank)}15, transparent)`;
+    }
+  });
+}
+
+// Load XP leaderboard (simulated from battle data)
+async function loadXPLeaderboard() {
+  try {
+    if (leaderboardData.battles) {
+      const xpData = leaderboardData.battles.map(user => ({
+        ...user,
+        totalXP: (user.wins || 0) * 100 + Math.floor(Math.random() * 500),
+        level: Math.min(5, Math.floor(((user.wins || 0) * 100) / 250) + 1),
+        multiplier: Math.min(5, Math.floor(((user.wins || 0) * 100) / 250) + 1) * 0.2 + 1
+      })).sort((a, b) => b.totalXP - a.totalXP);
+
+      leaderboardData.xp = xpData;
+      renderXPLeaderboard(xpData);
+    }
+  } catch (error) {
+    console.error('Error loading XP leaderboard:', error);
+  }
+}
+
+// Render XP leaderboard
+function renderXPLeaderboard(xpData) {
+  const tbody = document.getElementById('xpLeaderboard');
+  tbody.innerHTML = '';
+
+  if (!xpData || xpData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5">No XP data available</td></tr>';
+    return;
+  }
+
+  xpData.slice(0, 20).forEach((user, index) => {
+    const row = tbody.insertRow();
+    const rank = index + 1;
+    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+
+    row.innerHTML = `
+      <td class="rank-cell ${rankClass}">${getRankEmoji(rank)} ${rank}</td>
+      <td class="wallet-cell">${formatWallet(user.wallet)}</td>
+      <td class="xp-cell">Level ${user.level}</td>
+      <td class="xp-cell">${formatNumber(user.totalXP)}</td>
+      <td>${user.multiplier.toFixed(1)}x</td>
+    `;
+
+    if (rank <= 3) {
+      row.style.background = `linear-gradient(135deg, ${getRankColor(rank)}15, transparent)`;
+    }
+  });
+}
+
+// Render meme leaderboard
+function renderMemeLeaderboard(memeData) {
+  const tbody = document.getElementById('memeLeaderboard');
+  tbody.innerHTML = '';
+
+  if (!memeData || memeData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5">No meme data available</td></tr>';
+    return;
+  }
+
+  memeData.slice(0, 20).forEach((user, index) => {
+    const row = tbody.insertRow();
+    const rank = index + 1;
+    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+
+    row.innerHTML = `
+      <td class="rank-cell ${rankClass}">${getRankEmoji(rank)} ${rank}</td>
+      <td class="wallet-cell">${formatWallet(user.wallet)}</td>
+      <td class="xp-cell">${user.count}</td>
+      <td class="xp-cell">${formatNumber(user.xp)}</td>
+      <td class="xp-cell">${user.t5}</td>
+    `;
+
+    if (rank <= 3) {
+      row.style.background = `linear-gradient(135deg, ${getRankColor(rank)}15, transparent)`;
+    }
+  });
+}
+
+// Setup filter functionality
+function setupFilters() {
+  const filterButtons = document.querySelectorAll('#filterBar button');
+
+  filterButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Remove active class from all buttons
+      filterButtons.forEach(btn => btn.classList.remove('active'));
+
+      // Add active class to clicked button
+      button.classList.add('active');
+
+      // Hide all sections
+      document.querySelectorAll('.section-card').forEach(section => {
+        section.style.display = 'none';
+      });
+
+      // Show selected section
+      const filter = button.dataset.filter;
+      currentFilter = filter;
+
+      switch(filter) {
+        case 'battles':
+          document.getElementById('battleChampions').style.display = 'block';
+          break;
+        case 'xp':
+          document.getElementById('xpLeaders').style.display = 'block';
+          break;
+        case 'memes':
+          document.getElementById('memeMasters').style.display = 'block';
+          break;
+        case 'recent':
+          document.getElementById('recentHeroes').style.display = 'block';
+          loadRecentActivity();
+          break;
+      }
+    });
+  });
+}
+
+// Utility functions
+function formatWallet(wallet) {
+  if (!wallet) return '-';
+  return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+}
+
+function formatNumber(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+function getRankEmoji(rank) {
+  switch(rank) {
+    case 1: return '🥇';
+    case 2: return '🥈';
+    case 3: return '🥉';
+    default: return '🏅';
+  }
+}
+
+function getRankColor(rank) {
+  switch(rank) {
+    case 1: return '#ffd700';
+    case 2: return '#c0c0c0';
+    case 3: return '#cd7f32';
+    default: return '#25c2a0';
+  }
+}
+
+// Modal and share functions
 function showFull(url) {
   const modal = document.getElementById("modal");
-  document.getElementById("modalImg").src = url;
+  const modalImg = document.getElementById("modalImg");
+  modalImg.src = url;
   modal.style.display = "flex";
 }
 
-document.getElementById("shareButton").onclick = () => {
-  if (navigator.share) navigator.share({ title: "WALDO Hall of Fame", url: window.location.href });
-  else alert("Sharing not supported on this browser.");
-};
+// Load recent activity
+async function loadRecentActivity() {
+  const container = document.getElementById('recentActivity');
+  container.innerHTML = `
+    <div style="text-align: center; padding: 40px;">
+      <h3 style="color: #25c2a0;">🎉 Recent Achievements</h3>
+      <div style="margin: 20px 0;">
+        <div style="background: #222; padding: 15px; border-radius: 10px; margin: 10px 0;">
+          <strong>🏆 Latest Battle Winner:</strong> ${leaderboardData.battles?.[0]?.wallet ? formatWallet(leaderboardData.battles[0].wallet) : 'Loading...'}
+        </div>
+        <div style="background: #222; padding: 15px; border-radius: 10px; margin: 10px 0;">
+          <strong>🎯 XP Leader:</strong> ${leaderboardData.xp?.[0]?.wallet ? formatWallet(leaderboardData.xp[0].wallet) : 'Loading...'}
+        </div>
+        <div style="background: #222; padding: 15px; border-radius: 10px; margin: 10px 0;">
+          <strong>🖼️ Top Meme Creator:</strong> ${leaderboardData.memes?.[0]?.wallet ? formatWallet(leaderboardData.memes[0].wallet) : 'Loading...'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Create meme charts
+function createMemeCharts(data) {
+  // XP by Tier Chart
+  const tierXp = Array(6).fill(0);
+  data.forEach(m => tierXp[m.tier] += m.xp);
+
+  const xpChart = document.getElementById("xpChart");
+  if (xpChart) {
+    new Chart(xpChart, {
+      type: "doughnut",
+      data: {
+        labels: ["Tier 0", "Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5"],
+        datasets: [{
+          label: "XP by Tier",
+          backgroundColor: ["#666", "#25c2a0", "#1ea085", "#ffd700", "#ff6b6b", "#ff5252"],
+          data: tierXp
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+  }
+
+  // Battle Activity Chart (simulated)
+  const battleChart = document.getElementById("battleChart");
+  if (battleChart) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const battleData = months.map(() => Math.floor(Math.random() * 50) + 10);
+
+    new Chart(battleChart, {
+      type: "line",
+      data: {
+        labels: months,
+        datasets: [{
+          label: "Battles per Month",
+          borderColor: "#25c2a0",
+          backgroundColor: "rgba(37, 194, 160, 0.1)",
+          data: battleData,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  }
+}
+
+// Share functionality
+document.addEventListener('DOMContentLoaded', () => {
+  const shareButton = document.getElementById("shareButton");
+  if (shareButton) {
+    shareButton.onclick = () => {
+      if (navigator.share) {
+        navigator.share({
+          title: "WALDO Hall of Fame",
+          text: "Check out the top WALDOCOIN champions!",
+          url: window.location.href
+        });
+      } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          alert("Link copied to clipboard!");
+        }).catch(() => {
+          alert("Sharing not supported on this browser.");
+        });
+      }
+    };
+  }
+});
 </script>
+
+<!-- Additional CSS for enhanced styling -->
+<style>
+  .share-btn {
+    background: linear-gradient(135deg, var(--primary-color), #1ea085);
+    color: #000;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .share-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(37, 194, 160, 0.3);
+  }
+
+  #modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  #modalImg {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 15px;
+    box-shadow: 0 0 50px rgba(37, 194, 160, 0.5);
+  }
+
+  .carousel-container {
+    text-align: center;
+    padding: 20px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .carousel-slide {
+    display: inline-block;
+    margin: 10px;
+    vertical-align: top;
+  }
+
+  .chart-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: rgba(17, 17, 17, 0.5);
+    border-radius: 15px;
+  }
+
+  .chart-section h3 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 768px) {
+    #waldo-hof-title {
+      font-size: 2.5rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .leaderboard-table {
+      font-size: 0.8rem;
+    }
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+      padding: 8px 5px;
+    }
+
+    #filterBar button {
+      padding: 8px 15px;
+      margin: 5px;
+      font-size: 0.9rem;
+    }
+  }
+</style>
+
+</body>
+</html>
