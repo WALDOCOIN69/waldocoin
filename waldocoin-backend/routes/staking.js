@@ -87,6 +87,7 @@ router.post("/stake", async (req, res) => {
       stakedAt: now.toISOString(),
       unlockDate: unlockDate.toISOString(),
       status: 'pending',
+      source: 'direct_stake', // Mark as direct stake for tiered re-staking eligibility
       txHash: null,
       rewards: 0,
       lastCompounded: now.toISOString()
@@ -266,28 +267,239 @@ router.get("/positions/:wallet", async (req, res) => {
   }
 });
 
-// Helper function to calculate staking rewards
+// Helper function to calculate staking rewards with proper payout logic
 async function calculateStakingRewards(stakeId) {
   try {
     const stakeData = await redis.hGetAll(`stake:${stakeId}`);
     if (!stakeData || !stakeData.wallet) return 0;
-    
+
     const stakedAt = dayjs(stakeData.stakedAt);
+    const unlockDate = dayjs(stakeData.unlockDate);
     const now = dayjs();
-    const daysStaked = now.diff(stakedAt, 'day', true);
-    
+
+    // Check if stake has matured and needs automatic payout
+    if (now.isAfter(unlockDate) && stakeData.status === 'active') {
+      await processAutomaticPayout(stakeId);
+      return 0; // No rewards during payout processing
+    }
+
+    // Only calculate rewards up to the unlock date, not beyond
+    const effectiveEndDate = now.isBefore(unlockDate) ? now : unlockDate;
+    const daysStaked = effectiveEndDate.diff(stakedAt, 'day', true);
+
     const principal = parseFloat(stakeData.amount);
     const apy = parseFloat(stakeData.apy);
-    
-    // Simple daily compounding calculation
+
+    // Simple daily compounding calculation - only up to unlock date
     const dailyRate = apy / 365;
     const rewards = principal * (Math.pow(1 + dailyRate, daysStaked) - 1);
-    
+
     return Math.max(0, rewards);
   } catch (error) {
     console.error("❌ Error calculating rewards:", error);
     return 0;
   }
 }
+
+// Process automatic payout when staking period ends
+async function processAutomaticPayout(stakeId) {
+  try {
+    const stakeData = await redis.hGetAll(`stake:${stakeId}`);
+    if (!stakeData || stakeData.status !== 'active') return;
+
+    const stakedAt = dayjs(stakeData.stakedAt);
+    const unlockDate = dayjs(stakeData.unlockDate);
+    const daysStaked = unlockDate.diff(stakedAt, 'day', true);
+
+    const principal = parseFloat(stakeData.amount);
+    const apy = parseFloat(stakeData.apy);
+
+    // Calculate final rewards for the exact staking period
+    const dailyRate = apy / 365;
+    const finalRewards = principal * (Math.pow(1 + dailyRate, daysStaked) - 1);
+    const totalPayout = principal + finalRewards;
+
+    // Create automatic payout transaction
+    const payload = {
+      txjson: {
+        TransactionType: "Payment",
+        Destination: stakeData.wallet,
+        Amount: {
+          currency: "WLO",
+          issuer: process.env.WALDO_ISSUER,
+          value: totalPayout.toString()
+        },
+        DestinationTag: 890 // Automatic payout tag
+      },
+      custom_meta: {
+        identifier: `AUTO_PAYOUT:${stakeId}`,
+        instruction: `Automatic payout: ${principal} WALDO + ${finalRewards.toFixed(2)} rewards`
+      }
+    };
+
+    const { created } = await xummClient.payload.createAndSubscribe(payload, (event) => {
+      return event.data.signed === true;
+    });
+
+    // Update stake status to completed with payout details
+    await redis.hSet(`stake:${stakeId}`, {
+      status: 'completed',
+      completedAt: dayjs().toISOString(),
+      finalRewards,
+      totalPayout,
+      payoutTxHash: created.uuid,
+      // Add 7-day window for re-staking into tiered APY
+      restakeWindowEnd: dayjs().add(7, 'day').toISOString()
+    });
+
+    console.log(`✅ Automatic payout processed for stake ${stakeId}: ${totalPayout} WALDO`);
+
+  } catch (error) {
+    console.error("❌ Error processing automatic payout:", error);
+  }
+}
+
+// Tiered re-staking endpoint (only available after payout)
+router.post("/restake", async (req, res) => {
+  try {
+    const { wallet, completedStakeId, amount, duration } = req.body;
+
+    if (!wallet || !completedStakeId || !amount || !duration) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, completedStakeId, amount, duration"
+      });
+    }
+
+    // Validate the completed stake and re-staking window
+    const completedStake = await redis.hGetAll(`stake:${completedStakeId}`);
+    if (!completedStake || completedStake.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid or incomplete stake reference"
+      });
+    }
+
+    // Ensure this was an original staking position (not instant payout)
+    // Only users who originally chose staking can access tiered re-staking
+    if (!completedStake.source || (completedStake.source !== 'meme_claim' && completedStake.source !== 'direct_stake')) {
+      return res.status(403).json({
+        success: false,
+        error: "Tiered re-staking is only available for users who originally chose staking over instant payout"
+      });
+    }
+
+    const restakeWindowEnd = dayjs(completedStake.restakeWindowEnd);
+    const now = dayjs();
+
+    if (now.isAfter(restakeWindowEnd)) {
+      return res.status(400).json({
+        success: false,
+        error: "Re-staking window has expired. Please create a new stake."
+      });
+    }
+
+    // Validate duration for tiered APY
+    if (duration < 30 || duration > 365) {
+      return res.status(400).json({
+        success: false,
+        error: "Duration must be between 30 and 365 days"
+      });
+    }
+
+    // Calculate tiered APY based on previous staking history
+    let tierMultiplier = 1.0;
+    const previousDuration = parseInt(completedStake.duration);
+
+    // Tier bonuses based on previous staking commitment
+    if (previousDuration >= 365) {
+      tierMultiplier = 1.3; // 30% bonus for previous year-long stakers
+    } else if (previousDuration >= 180) {
+      tierMultiplier = 1.2; // 20% bonus for previous 6-month stakers
+    } else if (previousDuration >= 90) {
+      tierMultiplier = 1.1; // 10% bonus for previous 3-month stakers
+    }
+
+    // Base APY calculation with tier bonus
+    const baseAPY = duration >= 180 ?
+      STAKING_CONFIG.baseAPY + STAKING_CONFIG.bonusAPY :
+      STAKING_CONFIG.baseAPY;
+
+    const tieredAPY = baseAPY * tierMultiplier;
+
+    const stakeId = uuidv4();
+    const unlockDate = now.add(duration, 'day');
+
+    // Create XUMM payment for re-staking
+    const payload = {
+      txjson: {
+        TransactionType: "Payment",
+        Destination: process.env.STAKING_VAULT_WALLET,
+        Amount: {
+          currency: "WLO",
+          issuer: process.env.WALDO_ISSUER,
+          value: amount.toString()
+        },
+        DestinationTag: 891 // Tiered re-staking tag
+      },
+      custom_meta: {
+        identifier: `RESTAKE:${stakeId}`,
+        instruction: `Tiered re-stake: ${amount} WALDO for ${duration} days at ${(tieredAPY * 100).toFixed(1)}% APY (${((tierMultiplier - 1) * 100).toFixed(0)}% tier bonus)`
+      }
+    };
+
+    const { created } = await xummClient.payload.createAndSubscribe(payload, (event) => {
+      return event.data.signed === true;
+    });
+
+    // Store tiered staking record
+    const stakeData = {
+      stakeId,
+      wallet,
+      amount: parseFloat(amount),
+      duration,
+      apy: tieredAPY,
+      baseAPY,
+      tierMultiplier,
+      previousStakeId: completedStakeId,
+      stakedAt: now.toISOString(),
+      unlockDate: unlockDate.toISOString(),
+      status: 'pending',
+      type: 'tiered_restake',
+      txHash: null,
+      rewards: 0,
+      lastCompounded: now.toISOString()
+    };
+
+    await redis.hSet(`stake:${stakeId}`, stakeData);
+    await redis.sAdd(`stakes:wallet:${wallet}`, stakeId);
+    await redis.set(`stake:pending:${stakeId}`, created.uuid, { EX: 900 });
+
+    // Mark the completed stake as re-staked to prevent multiple re-stakes
+    await redis.hSet(`stake:${completedStakeId}`, {
+      restakedTo: stakeId,
+      restakedAt: now.toISOString()
+    });
+
+    return res.json({
+      success: true,
+      stakeId,
+      tieredAPY,
+      tierMultiplier,
+      baseAPY,
+      uuid: created.uuid,
+      qr: created.refs.qr_png,
+      redirect: created.next.always,
+      stakeData
+    });
+
+  } catch (error) {
+    console.error("❌ Tiered re-staking error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to process tiered re-staking"
+    });
+  }
+});
 
 export default router;

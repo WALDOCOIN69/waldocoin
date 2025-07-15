@@ -52,7 +52,11 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Password is required" });
     }
 
-    if (password !== "WALDOCREW") {
+    // Get daily password from Redis first, then X_ADMIN_KEY env variable, then default
+    const redisPassword = await redis.get("airdrop:daily_password");
+    const dailyPassword = redisPassword || process.env.X_ADMIN_KEY || "WALDOCREW";
+
+    if (password !== dailyPassword) {
       return res.status(401).json({ success: false, error: "Invalid password" });
     }
   }
@@ -228,6 +232,126 @@ router.get("/check/:wallet", async (req, res) => {
   } catch (err) {
     console.error("❌ Airdrop check error:", err);
     return res.status(500).json({ success: false, error: "Failed to check wallet status" });
+  }
+});
+
+// POST /api/airdrop/set-password - Admin endpoint to update daily password
+router.post("/set-password", async (req, res) => {
+  try {
+    const { newPassword, adminKey } = req.body;
+
+    // Validate admin access using X_ADMIN_KEY
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Handle clearing override (empty password)
+    if (!newPassword || newPassword.trim() === '') {
+      await redis.del("airdrop:daily_password");
+      console.log(`🗑️ Daily airdrop password override cleared - now using X_ADMIN_KEY environment variable`);
+
+      return res.json({
+        success: true,
+        message: "Password override cleared - now using X_ADMIN_KEY environment variable",
+        newPassword: process.env.X_ADMIN_KEY || "WALDOCREW"
+      });
+    }
+
+    // Validate password
+    if (typeof newPassword !== 'string' || newPassword.length < 3) {
+      return res.status(400).json({ success: false, error: "Password must be at least 3 characters" });
+    }
+
+    // Store new password in Redis
+    await redis.set("airdrop:daily_password", newPassword);
+
+    console.log(`🔐 Daily airdrop password updated to: ${newPassword}`);
+
+    return res.json({
+      success: true,
+      message: "Daily password updated successfully",
+      newPassword: newPassword
+    });
+
+  } catch (err) {
+    console.error("❌ Set password error:", err);
+    return res.status(500).json({ success: false, error: "Failed to update password" });
+  }
+});
+
+// GET /api/airdrop/current-password - Admin endpoint to check current password
+router.get("/current-password", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Validate admin access using X_ADMIN_KEY
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get current password (same logic as main endpoint)
+    const redisPassword = await redis.get("airdrop:daily_password");
+    const currentPassword = redisPassword || process.env.X_ADMIN_KEY || "WALDOCREW";
+
+    return res.json({
+      success: true,
+      currentPassword: currentPassword,
+      source: redisPassword ? "redis" : (process.env.X_ADMIN_KEY ? "env (X_ADMIN_KEY)" : "default")
+    });
+
+  } catch (err) {
+    console.error("❌ Get password error:", err);
+    return res.status(500).json({ success: false, error: "Failed to get current password" });
+  }
+});
+
+// Admin login verification endpoint
+router.get('/verify-admin', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const expectedKey = process.env.X_ADMIN_KEY || 'waldogod2025';
+
+    if (!adminKey) {
+      return res.status(401).json({ success: false, error: "Admin key required" });
+    }
+
+    if (adminKey === expectedKey) {
+      return res.json({
+        success: true,
+        message: "Admin access verified",
+        adminKey: adminKey
+      });
+    } else {
+      return res.status(401).json({ success: false, error: "Invalid admin key" });
+    }
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
+// Debug endpoint to check environment variables
+router.get('/debug-env', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Only allow if admin key matches
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    return res.json({
+      success: true,
+      environment: {
+        X_ADMIN_KEY_SET: !!process.env.X_ADMIN_KEY,
+        X_ADMIN_KEY_VALUE: process.env.X_ADMIN_KEY || 'NOT_SET',
+        ADMIN_KEY_SET: !!process.env.ADMIN_KEY,
+        NODE_ENV: process.env.NODE_ENV || 'NOT_SET'
+      }
+    });
+  } catch (error) {
+    console.error('Debug env error:', error);
+    return res.status(500).json({ success: false, error: "Server error" });
   }
 });
 
