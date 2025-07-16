@@ -4,6 +4,39 @@ import { redis } from "../redisClient.js";
 
 const router = express.Router();
 
+// ✅ WALDO Presale Bonus Calculation - Updated Structure
+function calculateWaldoBonus(xrpAmount) {
+  const baseWaldo = xrpAmount * 100000; // 1 XRP = 100,000 WALDO base rate
+
+  let bonus = 0;
+  let bonusTier = null;
+  let bonusPercentage = 0;
+
+  if (xrpAmount >= 100) {
+    bonus = 3000000; // 3M bonus
+    bonusTier = "Tier 3 (100+ XRP)";
+    bonusPercentage = 30;
+  } else if (xrpAmount >= 90) {
+    bonus = 2000000; // 2M bonus
+    bonusTier = "Tier 2 (90+ XRP)";
+    bonusPercentage = 22;
+  } else if (xrpAmount >= 80) {
+    bonus = 1200000; // 1.2M bonus
+    bonusTier = "Tier 1 (80+ XRP)";
+    bonusPercentage = 15;
+  }
+
+  const totalWaldo = baseWaldo + bonus;
+
+  return {
+    baseWaldo,
+    bonus,
+    totalWaldo,
+    bonusTier,
+    bonusPercentage
+  };
+}
+
 // 🛡️ Admin key check middleware
 function adminCheck(req, res, next) {
   const key = req.headers["x-admin-key"];
@@ -46,6 +79,37 @@ router.get("/countdown", async (req, res) => {
   }
 });
 
+// ✅ GET /api/presale/calculate — Calculate WALDO bonus for XRP amount
+router.get("/calculate", async (req, res) => {
+  const xrpAmount = parseFloat(req.query.amount);
+
+  if (!xrpAmount || xrpAmount <= 0) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid XRP amount. Must be a positive number."
+    });
+  }
+
+  try {
+    const calculation = calculateWaldoBonus(xrpAmount);
+
+    res.json({
+      success: true,
+      xrpAmount: xrpAmount,
+      calculation: {
+        baseWaldo: calculation.baseWaldo,
+        bonus: calculation.bonus,
+        totalWaldo: calculation.totalWaldo,
+        bonusTier: calculation.bonusTier,
+        bonusPercentage: calculation.bonusPercentage
+      }
+    });
+  } catch (err) {
+    console.error("❌ Failed to calculate bonus:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
 // ✅ POST /api/presale/set-end-date — Set presale end date
 router.post("/set-end-date", adminCheck, async (req, res) => {
   const { newDate } = req.body;
@@ -62,12 +126,12 @@ router.post("/set-end-date", adminCheck, async (req, res) => {
   }
 });
 
-// ✅ POST /api/presale/log — Add a new presale buyer to Redis
+// ✅ POST /api/presale/log — Add a new presale buyer to Redis with auto bonus calculation
 router.post("/log", async (req, res) => {
   const { wallet, amount, tokens, email, timestamp, bonusTier } = req.body;
 
-  if (!wallet || !amount || !tokens || !timestamp) {
-    return res.status(400).json({ success: false, error: "Missing required fields" });
+  if (!wallet || !amount || !timestamp) {
+    return res.status(400).json({ success: false, error: "Missing required fields: wallet, amount, timestamp" });
   }
 
   try {
@@ -82,19 +146,39 @@ router.post("/log", async (req, res) => {
       return res.status(400).json({ success: false, error: "Already logged" });
     }
 
+    // Auto-calculate bonus based on XRP amount
+    const xrpAmount = parseFloat(amount);
+    const calculation = calculateWaldoBonus(xrpAmount);
+
     const newBuyer = {
       wallet,
-      amount,
-      tokens,
+      amount: xrpAmount,
+      tokens: tokens || calculation.totalWaldo, // Use provided tokens or calculated total
+      baseWaldo: calculation.baseWaldo,
+      bonus: calculation.bonus,
+      totalWaldo: calculation.totalWaldo,
+      bonusTier: bonusTier || calculation.bonusTier,
+      bonusPercentage: calculation.bonusPercentage,
       email: email || null,
       timestamp,
-      bonusTier: bonusTier || null,
     };
 
     buyers.push(newBuyer);
     await redis.set("presale:buyers", JSON.stringify(buyers));
 
-    res.json({ success: true, buyer: newBuyer });
+    console.log(`✅ Presale logged: ${wallet} - ${xrpAmount} XRP = ${calculation.totalWaldo.toLocaleString()} WALDO (${calculation.bonusTier || 'No bonus'})`);
+
+    res.json({
+      success: true,
+      buyer: newBuyer,
+      calculation: {
+        baseWaldo: calculation.baseWaldo,
+        bonus: calculation.bonus,
+        totalWaldo: calculation.totalWaldo,
+        bonusTier: calculation.bonusTier,
+        bonusPercentage: calculation.bonusPercentage
+      }
+    });
   } catch (err) {
     console.error("❌ Failed to log presale buyer:", err);
     res.status(500).json({ success: false, error: "Server error" });
