@@ -1,265 +1,100 @@
-// routes/staking.js - Comprehensive staking system
-import express from "express";
-import dayjs from "dayjs";
-import { redis } from "../redisClient.js";
-import { xummClient } from "../utils/xummClient.js";
-import { v4 as uuidv4 } from "uuid";
+import express from 'express';
+import { redis } from '../redisClient.js';
 
 const router = express.Router();
 
-console.log("🧩 Loaded: routes/staking.js");
+console.log("🏦 Loaded: routes/staking.js");
 
-// Staking configuration
-const STAKING_CONFIG = {
-  minStakingPeriod: 30, // days
-  maxStakingPeriod: 365, // days
-  baseAPY: 0.12, // 12% base APY
-  bonusAPY: 0.08, // 8% bonus for longer periods
-  earlyUnstakePenalty: 0.15, // 15% penalty for early unstaking
-  compoundingFrequency: 'daily' // daily compounding
-};
-
-// POST /api/staking/stake - Stake WALDO tokens
-router.post("/stake", async (req, res) => {
+// GET /api/staking/positions - Get all staking positions (admin only)
+router.get('/positions', async (req, res) => {
   try {
-    const { wallet, amount, duration } = req.body;
+    const adminKey = req.headers['x-admin-key'];
     
-    // Input validation
-    if (!wallet || !wallet.startsWith('r')) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid wallet address"
-      });
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
-    
-    if (!amount || amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid staking amount"
-      });
-    }
-    
-    if (!duration || duration < STAKING_CONFIG.minStakingPeriod || duration > STAKING_CONFIG.maxStakingPeriod) {
-      return res.status(400).json({
-        success: false,
-        error: `Staking duration must be between ${STAKING_CONFIG.minStakingPeriod} and ${STAKING_CONFIG.maxStakingPeriod} days`
-      });
-    }
-    
-    const stakeId = uuidv4();
-    const now = dayjs();
-    const unlockDate = now.add(duration, 'day');
-    
-    // Calculate APY based on duration
-    const apy = duration >= 180 ? 
-      STAKING_CONFIG.baseAPY + STAKING_CONFIG.bonusAPY : 
-      STAKING_CONFIG.baseAPY;
-    
-    // Create XUMM payment to lock tokens
-    const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: process.env.STAKING_VAULT_WALLET, // Dedicated staking vault
-        Amount: {
-          currency: "WLO",
-          issuer: process.env.WALDO_ISSUER,
-          value: amount.toString()
-        },
-        DestinationTag: 888 // Staking tag
-      },
-      custom_meta: {
-        identifier: `STAKE:${stakeId}`,
-        instruction: `Stake ${amount} WALDO for ${duration} days at ${(apy * 100).toFixed(1)}% APY`
-      }
-    };
-    
-    const { created } = await xummClient.payload.createAndSubscribe(payload, (event) => {
-      return event.data.signed === true;
-    });
-    
-    // Store staking record
-    const stakeData = {
-      stakeId,
-      wallet,
-      amount: parseFloat(amount),
-      duration,
-      apy,
-      stakedAt: now.toISOString(),
-      unlockDate: unlockDate.toISOString(),
-      status: 'pending',
-      source: 'direct_stake', // Mark as direct stake for tiered re-staking eligibility
-      txHash: null,
-      rewards: 0,
-      lastCompounded: now.toISOString()
-    };
-    
-    await redis.hSet(`stake:${stakeId}`, stakeData);
-    await redis.sAdd(`stakes:wallet:${wallet}`, stakeId);
-    await redis.set(`stake:pending:${stakeId}`, created.uuid, { EX: 900 }); // 15 min TTL
-    
-    return res.json({
-      success: true,
-      stakeId,
-      uuid: created.uuid,
-      qr: created.refs.qr_png,
-      redirect: created.next.always,
-      stakeData
-    });
-    
-  } catch (error) {
-    console.error("❌ Staking error:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to create staking transaction"
-    });
-  }
-});
 
-// POST /api/staking/unstake - Unstake tokens
-router.post("/unstake", async (req, res) => {
-  try {
-    const { wallet, stakeId, force = false } = req.body;
-    
-    if (!wallet || !stakeId) {
-      return res.status(400).json({
-        success: false,
-        error: "Wallet and stake ID required"
-      });
-    }
-    
-    const stakeData = await redis.hGetAll(`stake:${stakeId}`);
-    if (!stakeData || !stakeData.wallet) {
-      return res.status(404).json({
-        success: false,
-        error: "Stake not found"
-      });
-    }
-    
-    if (stakeData.wallet !== wallet) {
-      return res.status(403).json({
-        success: false,
-        error: "Not authorized to unstake this position"
-      });
-    }
-    
-    if (stakeData.status !== 'active') {
-      return res.status(400).json({
-        success: false,
-        error: "Stake is not active"
-      });
-    }
-    
-    const now = dayjs();
-    const unlockDate = dayjs(stakeData.unlockDate);
-    const isEarlyUnstake = now.isBefore(unlockDate);
-    
-    if (isEarlyUnstake && !force) {
-      return res.status(400).json({
-        success: false,
-        error: "Stake is still locked. Use force=true for early unstaking with penalty.",
-        unlockDate: stakeData.unlockDate,
-        penalty: `${STAKING_CONFIG.earlyUnstakePenalty * 100}%`
-      });
-    }
-    
-    // Calculate final rewards
-    const rewards = await calculateStakingRewards(stakeId);
-    const penalty = isEarlyUnstake ? parseFloat(stakeData.amount) * STAKING_CONFIG.earlyUnstakePenalty : 0;
-    const finalAmount = parseFloat(stakeData.amount) + rewards - penalty;
-    
-    // Create unstaking transaction
-    const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: wallet,
-        Amount: {
-          currency: "WLO",
-          issuer: process.env.WALDO_ISSUER,
-          value: finalAmount.toString()
-        },
-        DestinationTag: 889 // Unstaking tag
-      },
-      custom_meta: {
-        identifier: `UNSTAKE:${stakeId}`,
-        instruction: `Unstake ${stakeData.amount} WALDO + ${rewards.toFixed(2)} rewards${penalty > 0 ? ` - ${penalty.toFixed(2)} penalty` : ''}`
-      }
-    };
-    
-    const { created } = await xummClient.payload.createAndSubscribe(payload, (event) => {
-      return event.data.signed === true;
-    });
-    
-    // Update stake status
-    await redis.hSet(`stake:${stakeId}`, {
-      status: 'unstaking',
-      unstakedAt: now.toISOString(),
-      finalAmount,
-      rewards,
-      penalty: penalty || 0,
-      isEarlyUnstake
-    });
-    
-    return res.json({
-      success: true,
-      stakeId,
-      originalAmount: parseFloat(stakeData.amount),
-      rewards,
-      penalty,
-      finalAmount,
-      isEarlyUnstake,
-      uuid: created.uuid,
-      qr: created.refs.qr_png
-    });
-    
-  } catch (error) {
-    console.error("❌ Unstaking error:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to process unstaking"
-    });
-  }
-});
+    const limit = parseInt(req.query.limit) || 50;
+    const status = req.query.status || 'all'; // all, active, completed, unstaked
 
-// GET /api/staking/positions/:wallet - Get staking positions
-router.get("/positions/:wallet", async (req, res) => {
-  try {
-    const { wallet } = req.params;
-    
-    if (!wallet || !wallet.startsWith('r')) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid wallet address"
-      });
-    }
-    
-    const stakeIds = await redis.sMembers(`stakes:wallet:${wallet}`);
+    // Get all staking position keys
+    const stakingKeys = await redis.keys("staking:*");
     const positions = [];
-    
-    for (const stakeId of stakeIds) {
-      const stakeData = await redis.hGetAll(`stake:${stakeId}`);
-      if (stakeData && stakeData.wallet) {
-        const currentRewards = await calculateStakingRewards(stakeId);
-        positions.push({
-          ...stakeData,
-          amount: parseFloat(stakeData.amount),
-          apy: parseFloat(stakeData.apy),
-          rewards: parseFloat(stakeData.rewards),
-          currentRewards,
-          totalValue: parseFloat(stakeData.amount) + currentRewards
-        });
+
+    for (const key of stakingKeys) {
+      if (key.includes(':position:')) {
+        const positionData = await redis.hGetAll(key);
+        
+        if (positionData && Object.keys(positionData).length > 0) {
+          const walletAddress = key.split(':')[1];
+          const positionId = key.split(':')[3];
+          
+          // Calculate current value and time remaining
+          const startTime = new Date(positionData.startTime);
+          const endTime = new Date(positionData.endTime);
+          const now = new Date();
+          
+          const timeRemaining = Math.max(0, endTime - now);
+          const totalDuration = endTime - startTime;
+          const elapsed = now - startTime;
+          const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
+          
+          // Calculate current rewards
+          const baseAmount = parseFloat(positionData.amount) || 0;
+          const apy = parseFloat(positionData.apy) || 0;
+          const currentRewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
+          
+          const position = {
+            id: positionId,
+            walletAddress: walletAddress,
+            amount: baseAmount,
+            tier: positionData.tier || 'unknown',
+            apy: apy,
+            startTime: positionData.startTime,
+            endTime: positionData.endTime,
+            status: positionData.status || 'active',
+            progress: progress.toFixed(1),
+            timeRemaining: timeRemaining,
+            currentRewards: currentRewards.toFixed(2),
+            totalValue: (baseAmount + currentRewards).toFixed(2),
+            canUnstake: positionData.status === 'active' && timeRemaining <= 0,
+            earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%'
+          };
+
+          // Filter by status if specified
+          if (status === 'all' || position.status === status) {
+            positions.push(position);
+          }
+        }
       }
     }
-    
+
+    // Sort by start time (newest first)
+    positions.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+    // Calculate summary stats
+    const totalStaked = positions.reduce((sum, pos) => sum + pos.amount, 0);
+    const totalRewards = positions.reduce((sum, pos) => sum + parseFloat(pos.currentRewards), 0);
+    const activePositions = positions.filter(pos => pos.status === 'active').length;
+
+    console.log(`🏦 Staking positions requested: ${positions.length} positions, ${totalStaked} WALDO staked`);
+
     return res.json({
       success: true,
-      wallet,
-      positions,
-      totalStaked: positions.reduce((sum, p) => sum + p.amount, 0),
-      totalRewards: positions.reduce((sum, p) => sum + p.currentRewards, 0)
+      positions: positions.slice(0, limit),
+      summary: {
+        totalPositions: positions.length,
+        activePositions: activePositions,
+        totalStaked: totalStaked.toFixed(2),
+        totalRewards: totalRewards.toFixed(2),
+        averageAPY: positions.length > 0 ? (positions.reduce((sum, pos) => sum + pos.apy, 0) / positions.length).toFixed(2) : 0
+      },
+      filter: status,
+      timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
-    console.error("❌ Error getting staking positions:", error);
+    console.error('❌ Error getting staking positions:', error);
     return res.status(500).json({
       success: false,
       error: "Failed to get staking positions"
@@ -267,237 +102,291 @@ router.get("/positions/:wallet", async (req, res) => {
   }
 });
 
-// Helper function to calculate staking rewards with proper payout logic
-async function calculateStakingRewards(stakeId) {
+// GET /api/staking/user/:wallet - Get user's staking positions
+router.get('/user/:wallet', async (req, res) => {
   try {
-    const stakeData = await redis.hGetAll(`stake:${stakeId}`);
-    if (!stakeData || !stakeData.wallet) return 0;
-
-    const stakedAt = dayjs(stakeData.stakedAt);
-    const unlockDate = dayjs(stakeData.unlockDate);
-    const now = dayjs();
-
-    // Check if stake has matured and needs automatic payout
-    if (now.isAfter(unlockDate) && stakeData.status === 'active') {
-      await processAutomaticPayout(stakeId);
-      return 0; // No rewards during payout processing
+    const adminKey = req.headers['x-admin-key'];
+    
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    // Only calculate rewards up to the unlock date, not beyond
-    const effectiveEndDate = now.isBefore(unlockDate) ? now : unlockDate;
-    const daysStaked = effectiveEndDate.diff(stakedAt, 'day', true);
+    const { wallet } = req.params;
+    
+    if (!wallet || wallet.length < 25) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid wallet address"
+      });
+    }
 
-    const principal = parseFloat(stakeData.amount);
-    const apy = parseFloat(stakeData.apy);
+    // Get user's staking positions
+    const userStakingKeys = await redis.keys(`staking:${wallet}:position:*`);
+    const positions = [];
 
-    // Simple daily compounding calculation - only up to unlock date
-    const dailyRate = apy / 365;
-    const rewards = principal * (Math.pow(1 + dailyRate, daysStaked) - 1);
-
-    return Math.max(0, rewards);
-  } catch (error) {
-    console.error("❌ Error calculating rewards:", error);
-    return 0;
-  }
-}
-
-// Process automatic payout when staking period ends
-async function processAutomaticPayout(stakeId) {
-  try {
-    const stakeData = await redis.hGetAll(`stake:${stakeId}`);
-    if (!stakeData || stakeData.status !== 'active') return;
-
-    const stakedAt = dayjs(stakeData.stakedAt);
-    const unlockDate = dayjs(stakeData.unlockDate);
-    const daysStaked = unlockDate.diff(stakedAt, 'day', true);
-
-    const principal = parseFloat(stakeData.amount);
-    const apy = parseFloat(stakeData.apy);
-
-    // Calculate final rewards for the exact staking period
-    const dailyRate = apy / 365;
-    const finalRewards = principal * (Math.pow(1 + dailyRate, daysStaked) - 1);
-    const totalPayout = principal + finalRewards;
-
-    // Create automatic payout transaction
-    const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: stakeData.wallet,
-        Amount: {
-          currency: "WLO",
-          issuer: process.env.WALDO_ISSUER,
-          value: totalPayout.toString()
-        },
-        DestinationTag: 890 // Automatic payout tag
-      },
-      custom_meta: {
-        identifier: `AUTO_PAYOUT:${stakeId}`,
-        instruction: `Automatic payout: ${principal} WALDO + ${finalRewards.toFixed(2)} rewards`
+    for (const key of userStakingKeys) {
+      const positionData = await redis.hGetAll(key);
+      
+      if (positionData && Object.keys(positionData).length > 0) {
+        const positionId = key.split(':')[3];
+        
+        // Calculate current status
+        const startTime = new Date(positionData.startTime);
+        const endTime = new Date(positionData.endTime);
+        const now = new Date();
+        
+        const timeRemaining = Math.max(0, endTime - now);
+        const totalDuration = endTime - startTime;
+        const elapsed = now - startTime;
+        const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
+        
+        // Calculate rewards
+        const baseAmount = parseFloat(positionData.amount) || 0;
+        const apy = parseFloat(positionData.apy) || 0;
+        const currentRewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
+        
+        positions.push({
+          id: positionId,
+          amount: baseAmount,
+          tier: positionData.tier || 'unknown',
+          apy: apy,
+          startTime: positionData.startTime,
+          endTime: positionData.endTime,
+          status: positionData.status || 'active',
+          progress: progress.toFixed(1),
+          timeRemaining: timeRemaining,
+          currentRewards: currentRewards.toFixed(2),
+          totalValue: (baseAmount + currentRewards).toFixed(2),
+          canUnstake: positionData.status === 'active' && timeRemaining <= 0,
+          earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%',
+          daysRemaining: Math.ceil(timeRemaining / (24 * 60 * 60 * 1000))
+        });
       }
+    }
+
+    // Sort by start time (newest first)
+    positions.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+    const summary = {
+      totalPositions: positions.length,
+      activePositions: positions.filter(pos => pos.status === 'active').length,
+      totalStaked: positions.reduce((sum, pos) => sum + pos.amount, 0).toFixed(2),
+      totalRewards: positions.reduce((sum, pos) => sum + parseFloat(pos.currentRewards), 0).toFixed(2),
+      canUnstakeCount: positions.filter(pos => pos.canUnstake).length
     };
 
-    const { created } = await xummClient.payload.createAndSubscribe(payload, (event) => {
-      return event.data.signed === true;
-    });
-
-    // Update stake status to completed with payout details
-    await redis.hSet(`stake:${stakeId}`, {
-      status: 'completed',
-      completedAt: dayjs().toISOString(),
-      finalRewards,
-      totalPayout,
-      payoutTxHash: created.uuid,
-      // Add 7-day window for re-staking into tiered APY
-      restakeWindowEnd: dayjs().add(7, 'day').toISOString()
-    });
-
-    console.log(`✅ Automatic payout processed for stake ${stakeId}: ${totalPayout} WALDO`);
-
-  } catch (error) {
-    console.error("❌ Error processing automatic payout:", error);
-  }
-}
-
-// Tiered re-staking endpoint (only available after payout)
-router.post("/restake", async (req, res) => {
-  try {
-    const { wallet, completedStakeId, amount, duration } = req.body;
-
-    if (!wallet || !completedStakeId || !amount || !duration) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing required fields: wallet, completedStakeId, amount, duration"
-      });
-    }
-
-    // Validate the completed stake and re-staking window
-    const completedStake = await redis.hGetAll(`stake:${completedStakeId}`);
-    if (!completedStake || completedStake.status !== 'completed') {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid or incomplete stake reference"
-      });
-    }
-
-    // Ensure this was an original staking position (not instant payout)
-    // Only users who originally chose staking can access tiered re-staking
-    if (!completedStake.source || (completedStake.source !== 'meme_claim' && completedStake.source !== 'direct_stake')) {
-      return res.status(403).json({
-        success: false,
-        error: "Tiered re-staking is only available for users who originally chose staking over instant payout"
-      });
-    }
-
-    const restakeWindowEnd = dayjs(completedStake.restakeWindowEnd);
-    const now = dayjs();
-
-    if (now.isAfter(restakeWindowEnd)) {
-      return res.status(400).json({
-        success: false,
-        error: "Re-staking window has expired. Please create a new stake."
-      });
-    }
-
-    // Validate duration for tiered APY
-    if (duration < 30 || duration > 365) {
-      return res.status(400).json({
-        success: false,
-        error: "Duration must be between 30 and 365 days"
-      });
-    }
-
-    // Calculate tiered APY based on previous staking history
-    let tierMultiplier = 1.0;
-    const previousDuration = parseInt(completedStake.duration);
-
-    // Tier bonuses based on previous staking commitment
-    if (previousDuration >= 365) {
-      tierMultiplier = 1.3; // 30% bonus for previous year-long stakers
-    } else if (previousDuration >= 180) {
-      tierMultiplier = 1.2; // 20% bonus for previous 6-month stakers
-    } else if (previousDuration >= 90) {
-      tierMultiplier = 1.1; // 10% bonus for previous 3-month stakers
-    }
-
-    // Base APY calculation with tier bonus
-    const baseAPY = duration >= 180 ?
-      STAKING_CONFIG.baseAPY + STAKING_CONFIG.bonusAPY :
-      STAKING_CONFIG.baseAPY;
-
-    const tieredAPY = baseAPY * tierMultiplier;
-
-    const stakeId = uuidv4();
-    const unlockDate = now.add(duration, 'day');
-
-    // Create XUMM payment for re-staking
-    const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: process.env.STAKING_VAULT_WALLET,
-        Amount: {
-          currency: "WLO",
-          issuer: process.env.WALDO_ISSUER,
-          value: amount.toString()
-        },
-        DestinationTag: 891 // Tiered re-staking tag
-      },
-      custom_meta: {
-        identifier: `RESTAKE:${stakeId}`,
-        instruction: `Tiered re-stake: ${amount} WALDO for ${duration} days at ${(tieredAPY * 100).toFixed(1)}% APY (${((tierMultiplier - 1) * 100).toFixed(0)}% tier bonus)`
-      }
-    };
-
-    const { created } = await xummClient.payload.createAndSubscribe(payload, (event) => {
-      return event.data.signed === true;
-    });
-
-    // Store tiered staking record
-    const stakeData = {
-      stakeId,
-      wallet,
-      amount: parseFloat(amount),
-      duration,
-      apy: tieredAPY,
-      baseAPY,
-      tierMultiplier,
-      previousStakeId: completedStakeId,
-      stakedAt: now.toISOString(),
-      unlockDate: unlockDate.toISOString(),
-      status: 'pending',
-      type: 'tiered_restake',
-      txHash: null,
-      rewards: 0,
-      lastCompounded: now.toISOString()
-    };
-
-    await redis.hSet(`stake:${stakeId}`, stakeData);
-    await redis.sAdd(`stakes:wallet:${wallet}`, stakeId);
-    await redis.set(`stake:pending:${stakeId}`, created.uuid, { EX: 900 });
-
-    // Mark the completed stake as re-staked to prevent multiple re-stakes
-    await redis.hSet(`stake:${completedStakeId}`, {
-      restakedTo: stakeId,
-      restakedAt: now.toISOString()
-    });
+    console.log(`🏦 User staking positions requested: ${wallet} - ${positions.length} positions`);
 
     return res.json({
       success: true,
-      stakeId,
-      tieredAPY,
-      tierMultiplier,
-      baseAPY,
-      uuid: created.uuid,
-      qr: created.refs.qr_png,
-      redirect: created.next.always,
-      stakeData
+      wallet: wallet,
+      positions: positions,
+      summary: summary,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error("❌ Tiered re-staking error:", error);
+    console.error('❌ Error getting user staking positions:', error);
     return res.status(500).json({
       success: false,
-      error: "Failed to process tiered re-staking"
+      error: "Failed to get user staking positions"
+    });
+  }
+});
+
+// POST /api/staking/manual-unstake - Manually unstake a position (admin only)
+router.post('/manual-unstake', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { wallet, positionId, force } = req.body;
+    
+    if (!wallet || !positionId) {
+      return res.status(400).json({
+        success: false,
+        error: "Wallet address and position ID required"
+      });
+    }
+
+    // Check if position exists
+    const positionKey = `staking:${wallet}:position:${positionId}`;
+    const positionExists = await redis.exists(positionKey);
+    
+    if (!positionExists) {
+      return res.status(404).json({
+        success: false,
+        error: "Staking position not found"
+      });
+    }
+
+    // Get position data
+    const positionData = await redis.hGetAll(positionKey);
+    const baseAmount = parseFloat(positionData.amount) || 0;
+    const endTime = new Date(positionData.endTime);
+    const now = new Date();
+    const isEarly = now < endTime;
+
+    // Calculate final amount (with penalty if early)
+    let finalAmount = baseAmount;
+    let penalty = 0;
+    
+    if (isEarly && !force) {
+      return res.status(400).json({
+        success: false,
+        error: "Position not yet matured. Use force=true to apply 15% early unstaking penalty",
+        timeRemaining: Math.max(0, endTime - now),
+        earlyUnstakePenalty: "15%"
+      });
+    }
+    
+    if (isEarly && force) {
+      penalty = baseAmount * 0.15; // 15% penalty
+      finalAmount = baseAmount - penalty;
+    }
+
+    // Calculate rewards
+    const startTime = new Date(positionData.startTime);
+    const elapsed = now - startTime;
+    const apy = parseFloat(positionData.apy) || 0;
+    const rewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
+
+    // Update position status
+    await redis.hSet(positionKey, {
+      status: 'unstaked',
+      unstakedAt: now.toISOString(),
+      unstakedBy: 'admin',
+      finalAmount: finalAmount.toFixed(2),
+      penalty: penalty.toFixed(2),
+      rewards: rewards.toFixed(2),
+      totalReceived: (finalAmount + rewards).toFixed(2)
+    });
+
+    // Update global staking counters
+    const currentTotalStaked = await redis.get("staking:total_amount") || 0;
+    const currentActiveStakers = await redis.get("staking:active_count") || 0;
+    
+    await redis.set("staking:total_amount", Math.max(0, parseFloat(currentTotalStaked) - baseAmount));
+    await redis.set("staking:active_count", Math.max(0, parseInt(currentActiveStakers) - 1));
+
+    console.log(`🏦 Manual unstake by admin: ${wallet} - Position ${positionId} - Amount: ${finalAmount} WALDO`);
+
+    return res.json({
+      success: true,
+      message: `Position ${positionId} has been unstaked`,
+      unstakeDetails: {
+        wallet: wallet,
+        positionId: positionId,
+        originalAmount: baseAmount,
+        penalty: penalty,
+        finalAmount: finalAmount,
+        rewards: rewards.toFixed(2),
+        totalReceived: (finalAmount + rewards).toFixed(2),
+        wasEarly: isEarly,
+        unstakedBy: 'admin'
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error manually unstaking position:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to manually unstake position"
+    });
+  }
+});
+
+// GET /api/staking/stats - Get staking system statistics
+router.get('/stats', async (req, res) => {
+  try {
+    // Get basic staking metrics
+    const totalStaked = await redis.get("staking:total_amount") || 0;
+    const activeStakers = await redis.get("staking:active_count") || 0;
+    const totalUsers = await redis.get("users:total_count") || 0;
+
+    // Get all staking positions for detailed stats
+    const stakingKeys = await redis.keys("staking:*:position:*");
+    const positionsByTier = { tier1: 0, tier2: 0, tier3: 0, tier4: 0 };
+    const positionsByStatus = { active: 0, completed: 0, unstaked: 0 };
+    let totalRewards = 0;
+    let totalPenalties = 0;
+
+    for (const key of stakingKeys) {
+      const positionData = await redis.hGetAll(key);
+      
+      if (positionData && Object.keys(positionData).length > 0) {
+        const tier = positionData.tier || 'tier1';
+        const status = positionData.status || 'active';
+        
+        if (positionsByTier.hasOwnProperty(tier)) {
+          positionsByTier[tier]++;
+        }
+        
+        if (positionsByStatus.hasOwnProperty(status)) {
+          positionsByStatus[status]++;
+        }
+
+        // Add up rewards and penalties
+        if (positionData.rewards) {
+          totalRewards += parseFloat(positionData.rewards);
+        }
+        if (positionData.penalty) {
+          totalPenalties += parseFloat(positionData.penalty);
+        }
+      }
+    }
+
+    // Calculate participation rate
+    const participationRate = totalUsers > 0 ? ((activeStakers / totalUsers) * 100).toFixed(1) : 0;
+    const averageStakePerUser = activeStakers > 0 ? (totalStaked / activeStakers).toFixed(2) : 0;
+
+    const stakingStats = {
+      overview: {
+        totalStaked: parseFloat(totalStaked).toFixed(2),
+        activeStakers: parseInt(activeStakers),
+        totalPositions: stakingKeys.length,
+        participationRate: `${participationRate}%`,
+        averageStakePerUser: parseFloat(averageStakePerUser)
+      },
+      distribution: {
+        byTier: positionsByTier,
+        byStatus: positionsByStatus
+      },
+      rewards: {
+        totalRewardsPaid: totalRewards.toFixed(2),
+        totalPenaltiesCollected: totalPenalties.toFixed(2),
+        netRewards: (totalRewards - totalPenalties).toFixed(2)
+      },
+      tiers: {
+        tier1: { name: "30 Days", apy: "12%", minAmount: 100 },
+        tier2: { name: "90 Days", apy: "18%", minAmount: 500 },
+        tier3: { name: "180 Days", apy: "25%", minAmount: 1000 },
+        tier4: { name: "365 Days", apy: "35%", minAmount: 2500 }
+      },
+      system: {
+        earlyUnstakePenalty: "15%",
+        autoRenewal: "enabled",
+        lastUpdated: new Date().toISOString()
+      }
+    };
+
+    console.log(`🏦 Staking stats requested: ${totalStaked} WALDO staked by ${activeStakers} users`);
+
+    return res.json({
+      success: true,
+      stats: stakingStats,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting staking stats:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get staking statistics"
     });
   }
 });

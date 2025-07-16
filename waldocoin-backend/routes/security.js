@@ -1,256 +1,320 @@
-// routes/security.js - Security monitoring and fraud prevention API
-import express from "express";
-import { redis } from "../redisClient.js";
-import { logViolation, isAutoBlocked } from "../utils/security.js";
+import express from 'express';
+import { redis } from '../redisClient.js';
 
 const router = express.Router();
 
-console.log("🧩 Loaded: routes/security.js");
+console.log("🛡️ Loaded: routes/security.js");
 
-// Admin authentication middleware
-const adminAuth = (req, res, next) => {
-  const adminKey = req.headers['x-admin-key'] || req.query.adminKey;
-  if (adminKey !== process.env.ADMIN_KEY) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Unauthorized access' 
-    });
-  }
-  next();
-};
-
-// GET /api/security/violations - Get security violations
-router.get("/violations", adminAuth, async (req, res) => {
+// GET /api/security/overview - Get security overview
+router.get('/overview', async (req, res) => {
   try {
-    const { wallet, limit = 50 } = req.query;
-    
-    if (wallet) {
-      // Get violations for specific wallet
-      const logKey = `security:wallet:${wallet}:log`;
-      const violations = await redis.lRange(logKey, 0, limit - 1);
-      
-      return res.json({
-        success: true,
-        wallet,
-        violations: violations.map(v => JSON.parse(v)),
-        isBlocked: await isAutoBlocked(wallet)
-      });
-    } else {
-      // Get all violation keys
-      const keys = await redis.keys('security:wallet:*:log');
-      const allViolations = [];
-      
-      for (const key of keys.slice(0, 20)) { // Limit to 20 wallets
-        const wallet = key.split(':')[2];
-        const violations = await redis.lRange(key, 0, 4); // Last 5 violations
-        
-        if (violations.length > 0) {
-          allViolations.push({
-            wallet,
-            violations: violations.map(v => JSON.parse(v)),
-            isBlocked: await isAutoBlocked(wallet)
-          });
-        }
-      }
-      
-      return res.json({
-        success: true,
-        violations: allViolations
-      });
-    }
-  } catch (error) {
-    console.error("❌ Error getting violations:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to get violations" 
-    });
-  }
-});
+    // Get blocked users
+    const blockedUsers = await redis.keys("security:blocked:*");
+    const suspiciousUsers = await redis.keys("security:suspicious:*");
+    const flaggedTransactions = await redis.keys("security:flagged:*");
 
-// GET /api/security/blocked - Get blocked wallets
-router.get("/blocked", adminAuth, async (req, res) => {
-  try {
-    const keys = await redis.keys('security:wallet:*:blocked');
-    const blockedWallets = [];
-    
-    for (const key of keys) {
-      const wallet = key.split(':')[2];
-      const ttl = await redis.ttl(key);
-      
-      blockedWallets.push({
-        wallet,
-        expiresIn: ttl > 0 ? ttl : 'permanent',
-        expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : null
-      });
-    }
-    
-    return res.json({
-      success: true,
-      blockedWallets,
-      count: blockedWallets.length
-    });
-  } catch (error) {
-    console.error("❌ Error getting blocked wallets:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to get blocked wallets" 
-    });
-  }
-});
+    // Get recent security events
+    const recentEvents = await redis.lRange("security:events", 0, 9); // Last 10 events
 
-// POST /api/security/block - Manually block a wallet
-router.post("/block", adminAuth, async (req, res) => {
-  try {
-    const { wallet, reason, duration = 604800 } = req.body; // Default 7 days
-    
-    if (!wallet) {
-      return res.status(400).json({
-        success: false,
-        error: "Wallet address required"
-      });
-    }
-    
-    const blockKey = `security:wallet:${wallet}:blocked`;
-    await redis.set(blockKey, '1', { EX: duration });
-    
-    await logViolation(wallet, 'MANUAL_BLOCK', { 
-      reason: reason || 'Manual admin block',
-      duration,
-      admin: true 
-    });
-    
-    return res.json({
-      success: true,
-      message: `Wallet ${wallet} blocked for ${duration} seconds`,
-      wallet,
-      duration
-    });
-  } catch (error) {
-    console.error("❌ Error blocking wallet:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to block wallet" 
-    });
-  }
-});
-
-// POST /api/security/unblock - Unblock a wallet
-router.post("/unblock", adminAuth, async (req, res) => {
-  try {
-    const { wallet } = req.body;
-    
-    if (!wallet) {
-      return res.status(400).json({
-        success: false,
-        error: "Wallet address required"
-      });
-    }
-    
-    const blockKey = `security:wallet:${wallet}:blocked`;
-    const logKey = `security:wallet:${wallet}:log`;
-    
-    await redis.del(blockKey);
-    await redis.del(logKey); // Clear violation history
-    
-    return res.json({
-      success: true,
-      message: `Wallet ${wallet} unblocked and violation history cleared`,
-      wallet
-    });
-  } catch (error) {
-    console.error("❌ Error unblocking wallet:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to unblock wallet" 
-    });
-  }
-});
-
-// GET /api/security/stats - Security statistics
-router.get("/stats", adminAuth, async (req, res) => {
-  try {
-    const violationKeys = await redis.keys('security:wallet:*:log');
-    const blockedKeys = await redis.keys('security:wallet:*:blocked');
-    const rateLimitKeys = await redis.keys('rateLimit:*');
-    
-    // Count violations by type
-    const violationTypes = {};
-    let totalViolations = 0;
-    
-    for (const key of violationKeys.slice(0, 100)) { // Limit processing
-      const violations = await redis.lRange(key, 0, -1);
-      for (const violation of violations) {
-        try {
-          const parsed = JSON.parse(violation);
-          violationTypes[parsed.reason] = (violationTypes[parsed.reason] || 0) + 1;
-          totalViolations++;
-        } catch (e) {
-          // Skip invalid JSON
-        }
+    const events = [];
+    for (const eventStr of recentEvents) {
+      try {
+        events.push(JSON.parse(eventStr));
+      } catch (e) {
+        console.warn('Failed to parse security event:', eventStr);
       }
     }
-    
-    return res.json({
-      success: true,
-      stats: {
-        totalViolations,
-        violationTypes,
-        blockedWallets: blockedKeys.length,
-        activeRateLimits: rateLimitKeys.length,
-        walletsWithViolations: violationKeys.length
+
+    // Calculate security metrics
+    const totalUsers = await redis.get("users:total_count") || 0;
+    const blockedRate = totalUsers > 0 ? ((blockedUsers.length / totalUsers) * 100).toFixed(2) : 0;
+    const suspiciousRate = totalUsers > 0 ? ((suspiciousUsers.length / totalUsers) * 100).toFixed(2) : 0;
+
+    const overview = {
+      blockedUsers: blockedUsers.length,
+      suspiciousUsers: suspiciousUsers.length,
+      flaggedTransactions: flaggedTransactions.length,
+      blockedRate: `${blockedRate}%`,
+      suspiciousRate: `${suspiciousRate}%`,
+      recentEvents: events,
+      systemStatus: {
+        fraudDetection: 'active',
+        autoBlocking: 'enabled',
+        rateLimit: 'active',
+        lastScan: new Date().toISOString()
       },
+      alerts: [
+        {
+          level: 'info',
+          message: `${blockedUsers.length} users currently blocked`,
+          timestamp: new Date().toISOString()
+        },
+        {
+          level: 'warning',
+          message: `${suspiciousUsers.length} users flagged as suspicious`,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+
+    console.log(`🛡️ Security overview requested: ${blockedUsers.length} blocked, ${suspiciousUsers.length} suspicious`);
+
+    return res.json({
+      success: true,
+      overview: overview,
       timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error("❌ Error getting security stats:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to get security statistics" 
+    console.error('❌ Error getting security overview:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get security overview"
     });
   }
 });
 
 // GET /api/security/check/:wallet - Check wallet security status
-router.get("/check/:wallet", async (req, res) => {
+router.get('/check/:wallet', async (req, res) => {
   try {
+    const adminKey = req.headers['x-admin-key'];
+    
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
     const { wallet } = req.params;
     
-    if (!wallet || !wallet.startsWith('r')) {
+    if (!wallet || wallet.length < 25) {
       return res.status(400).json({
         success: false,
         error: "Invalid wallet address"
       });
     }
-    
-    const isBlocked = await isAutoBlocked(wallet);
-    const logKey = `security:wallet:${wallet}:log`;
-    const violations = await redis.lRange(logKey, 0, 9); // Last 10 violations
-    
-    // Check current rate limits
-    const rateLimitKeys = await redis.keys(`rateLimit:${wallet}:*`);
-    const rateLimits = {};
-    
-    for (const key of rateLimitKeys) {
-      const action = key.split(':')[2];
-      const count = await redis.get(key);
-      const ttl = await redis.ttl(key);
-      rateLimits[action] = { count: parseInt(count), expiresIn: ttl };
+
+    // Check various security flags
+    const isBlocked = await redis.exists(`security:blocked:${wallet}`);
+    const isSuspicious = await redis.exists(`security:suspicious:${wallet}`);
+    const blockReason = isBlocked ? await redis.get(`security:blocked:${wallet}`) : null;
+    const suspiciousReason = isSuspicious ? await redis.get(`security:suspicious:${wallet}`) : null;
+
+    // Get user activity data
+    const userData = await redis.hGetAll(`user:${wallet}`);
+    const userBattles = await redis.hGetAll(`user:${wallet}:battles`);
+    const userStaking = await redis.hGetAll(`user:${wallet}:staking`);
+
+    // Calculate risk score
+    let riskScore = 0;
+    const riskFactors = [];
+
+    if (isBlocked) {
+      riskScore += 100;
+      riskFactors.push('User is blocked');
     }
-    
+    if (isSuspicious) {
+      riskScore += 50;
+      riskFactors.push('Flagged as suspicious');
+    }
+
+    // Check activity patterns
+    const totalBattles = parseInt(userBattles.total) || 0;
+    const totalVotes = parseInt(userBattles.votes) || 0;
+    const lastActive = userData.lastActive;
+
+    if (totalVotes > totalBattles * 10) {
+      riskScore += 25;
+      riskFactors.push('Unusual voting pattern');
+    }
+
+    if (lastActive && new Date() - new Date(lastActive) > 30 * 24 * 60 * 60 * 1000) {
+      riskScore += 10;
+      riskFactors.push('Inactive for 30+ days');
+    }
+
+    const securityStatus = {
+      wallet: wallet,
+      isBlocked: !!isBlocked,
+      isSuspicious: !!isSuspicious,
+      blockReason: blockReason,
+      suspiciousReason: suspiciousReason,
+      riskScore: Math.min(riskScore, 100),
+      riskLevel: riskScore >= 75 ? 'HIGH' : riskScore >= 50 ? 'MEDIUM' : riskScore >= 25 ? 'LOW' : 'MINIMAL',
+      riskFactors: riskFactors,
+      userData: {
+        username: userData.username || 'Unknown',
+        lastActive: lastActive,
+        totalBattles: totalBattles,
+        totalVotes: totalVotes,
+        stakingActive: !!userStaking.active
+      },
+      recommendations: riskScore > 50 ? ['Monitor closely', 'Review recent activity'] : ['No action needed'],
+      lastChecked: new Date().toISOString()
+    };
+
+    console.log(`🛡️ Security check for ${wallet}: Risk ${securityStatus.riskLevel} (${riskScore})`);
+
     return res.json({
       success: true,
-      wallet,
-      isBlocked,
-      violationCount: violations.length,
-      recentViolations: violations.slice(0, 5).map(v => JSON.parse(v)),
-      rateLimits,
-      status: isBlocked ? 'BLOCKED' : violations.length > 0 ? 'FLAGGED' : 'CLEAN'
+      security: securityStatus
     });
+
   } catch (error) {
-    console.error("❌ Error checking wallet security:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to check wallet security" 
+    console.error('❌ Error checking wallet security:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to check wallet security"
+    });
+  }
+});
+
+// POST /api/security/block - Block a user (admin only)
+router.post('/block', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { wallet, reason } = req.body;
+    
+    if (!wallet || !reason) {
+      return res.status(400).json({
+        success: false,
+        error: "Wallet address and reason required"
+      });
+    }
+
+    // Block the user
+    await redis.set(`security:blocked:${wallet}`, reason);
+    
+    // Log security event
+    const event = {
+      type: 'user_blocked',
+      wallet: wallet,
+      reason: reason,
+      admin: true,
+      timestamp: new Date().toISOString()
+    };
+    
+    await redis.lPush("security:events", JSON.stringify(event));
+    await redis.lTrim("security:events", 0, 99); // Keep last 100 events
+
+    console.log(`🛡️ User blocked by admin: ${wallet} - ${reason}`);
+
+    return res.json({
+      success: true,
+      message: `User ${wallet} has been blocked`,
+      reason: reason,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error blocking user:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to block user"
+    });
+  }
+});
+
+// POST /api/security/unblock - Unblock a user (admin only)
+router.post('/unblock', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { wallet, reason } = req.body;
+    
+    if (!wallet) {
+      return res.status(400).json({
+        success: false,
+        error: "Wallet address required"
+      });
+    }
+
+    // Check if user is blocked
+    const isBlocked = await redis.exists(`security:blocked:${wallet}`);
+    
+    if (!isBlocked) {
+      return res.json({
+        success: false,
+        error: "User is not currently blocked"
+      });
+    }
+
+    // Unblock the user
+    await redis.del(`security:blocked:${wallet}`);
+    await redis.del(`security:suspicious:${wallet}`); // Also remove suspicious flag
+    
+    // Log security event
+    const event = {
+      type: 'user_unblocked',
+      wallet: wallet,
+      reason: reason || 'Admin unblock',
+      admin: true,
+      timestamp: new Date().toISOString()
+    };
+    
+    await redis.lPush("security:events", JSON.stringify(event));
+    await redis.lTrim("security:events", 0, 99);
+
+    console.log(`🛡️ User unblocked by admin: ${wallet} - ${reason || 'No reason provided'}`);
+
+    return res.json({
+      success: true,
+      message: `User ${wallet} has been unblocked`,
+      reason: reason || 'Admin unblock',
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error unblocking user:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to unblock user"
+    });
+  }
+});
+
+// GET /api/security/events - Get recent security events
+router.get('/events', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const limit = parseInt(req.query.limit) || 50;
+    const eventStrings = await redis.lRange("security:events", 0, limit - 1);
+    
+    const events = [];
+    for (const eventStr of eventStrings) {
+      try {
+        events.push(JSON.parse(eventStr));
+      } catch (e) {
+        console.warn('Failed to parse security event:', eventStr);
+      }
+    }
+
+    console.log(`🛡️ Security events requested: ${events.length} events`);
+
+    return res.json({
+      success: true,
+      events: events,
+      totalEvents: events.length,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting security events:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get security events"
     });
   }
 });
