@@ -238,7 +238,8 @@ router.get("/check/:wallet", async (req, res) => {
 // POST /api/airdrop/set-password - Admin endpoint to update daily password
 router.post("/set-password", async (req, res) => {
   try {
-    const { newPassword, adminKey } = req.body;
+    const { newPassword } = req.body;
+    const adminKey = req.headers['x-admin-key'];
 
     // Validate admin access using X_ADMIN_KEY
     if (adminKey !== process.env.X_ADMIN_KEY) {
