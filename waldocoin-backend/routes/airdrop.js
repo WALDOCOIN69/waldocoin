@@ -52,9 +52,9 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Password is required" });
     }
 
-    // Get daily password from Redis first, then X_ADMIN_KEY env variable, then default
+    // Get daily password from Redis override, otherwise use default
     const redisPassword = await redis.get("airdrop:daily_password");
-    const dailyPassword = redisPassword || process.env.X_ADMIN_KEY || "WALDOCREW";
+    const dailyPassword = redisPassword || "WALDOCREW";
 
     if (password !== dailyPassword) {
       return res.status(401).json({ success: false, error: "Invalid password" });
@@ -253,8 +253,8 @@ router.post("/set-password", async (req, res) => {
 
       return res.json({
         success: true,
-        message: "Password override cleared - now using X_ADMIN_KEY environment variable",
-        newPassword: process.env.X_ADMIN_KEY || "WALDOCREW"
+        message: "Password override cleared - now using default password",
+        newPassword: "WALDOCREW"
       });
     }
 
@@ -292,12 +292,12 @@ router.get("/current-password", async (req, res) => {
 
     // Get current password (same logic as main endpoint)
     const redisPassword = await redis.get("airdrop:daily_password");
-    const currentPassword = redisPassword || process.env.X_ADMIN_KEY || "WALDOCREW";
+    const currentPassword = redisPassword || "WALDOCREW";
 
     return res.json({
       success: true,
       currentPassword: currentPassword,
-      source: redisPassword ? "redis" : (process.env.X_ADMIN_KEY ? "env (X_ADMIN_KEY)" : "default")
+      source: redisPassword ? "redis (admin override)" : "default (WALDOCREW)"
     });
 
   } catch (err) {
