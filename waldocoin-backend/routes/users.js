@@ -348,40 +348,30 @@ router.get('/trustline-count', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
 
-    if (adminKey !== process.env.X_ADMIN_KEY) {
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    // Simplified: Just count Redis users for now
-    // TODO: Add XRPL trustline verification later
+    // Simple count - just return number of user keys in Redis
     const userKeys = await redis.keys("user:*");
-    let userCount = 0;
-    const walletsWithData = [];
 
-    for (const key of userKeys) {
-      if (!key.includes(':battles') && !key.includes(':staking') && !key.includes(':votes')) {
-        const walletAddress = key.split(':')[1];
-        const userData = await redis.hGetAll(key);
+    // Filter out battle/staking/vote keys
+    const actualUserKeys = userKeys.filter(key =>
+      !key.includes(':battles') &&
+      !key.includes(':staking') &&
+      !key.includes(':votes')
+    );
 
-        if (userData && Object.keys(userData).length > 0) {
-          userCount++;
-          walletsWithData.push({
-            wallet: walletAddress,
-            hasUserData: true,
-            userData: userData
-          });
-        }
-      }
-    }
+    const userCount = actualUserKeys.length;
+
+    console.log(`📊 Trustline count requested: ${userCount} users found`);
 
     return res.json({
       success: true,
       trustlineCount: userCount,
-      trustlineWallets: walletsWithData,
       summary: {
         totalTrustlines: userCount,
-        walletsWithData: walletsWithData.length,
-        totalRedisUsers: userKeys.filter(key => !key.includes(':battles') && !key.includes(':staking') && !key.includes(':votes')).length
+        totalRedisUsers: userCount
       },
       timestamp: new Date().toISOString()
     });
@@ -390,7 +380,8 @@ router.get('/trustline-count', async (req, res) => {
     console.error('❌ Error getting trustline count:', error);
     return res.status(500).json({
       success: false,
-      error: "Failed to get trustline count"
+      error: "Failed to get trustline count",
+      details: error.message
     });
   }
 });
