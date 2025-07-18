@@ -344,45 +344,18 @@ router.get('/:wallet', async (req, res) => {
 });
 
 // GET /api/users/trustline-count - Get count of wallets with WALDO trustline
-router.get('/trustline-count', async (req, res) => {
-  console.log('🔍 Trustline count endpoint called');
-  console.log('Headers:', req.headers);
-  console.log('X_ADMIN_KEY env:', process.env.X_ADMIN_KEY);
-
+router.get('/trustline-count', (req, res) => {
   try {
-    const adminKey = req.headers['x-admin-key'];
-    console.log('Admin key received:', adminKey);
-
-    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
-      console.log('❌ Unauthorized access - admin key mismatch');
-      return res.status(403).json({ success: false, error: "Unauthorized access" });
-    }
-
-    console.log('✅ Admin key validated');
-    console.log('🔍 Returning known trustline count...');
-
-    // For now, let's hardcode the known count from XRPL Services
-    const knownTrustlineCount = 20; // You confirmed this from XRPL Services
-
-    console.log(`📊 Returning trustline count: ${knownTrustlineCount}`);
-
-    return res.json({
+    // Simple version - just return 20
+    res.json({
       success: true,
-      trustlineCount: knownTrustlineCount,
-      summary: {
-        totalTrustlines: knownTrustlineCount,
-        source: 'Known count from XRPL Services',
-        note: 'XRPL API query will be implemented later'
-      },
+      trustlineCount: 20,
       timestamp: new Date().toISOString()
     });
-
   } catch (error) {
-    console.error('❌ Error getting trustline count:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: "Failed to get trustline count",
-      details: error.message
+      error: error.message
     });
   }
 });
