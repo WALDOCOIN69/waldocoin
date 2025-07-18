@@ -1804,9 +1804,15 @@
         console.log('Loading trustline count...');
         try {
           const trustlineData = await apiCall('/api/users/trustline-count');
-          console.log('Trustline data:', trustlineData);
+          console.log('Trustline data received:', trustlineData);
           if (trustlineData.success) {
-            document.getElementById('totalUsers').textContent = trustlineData.trustlineCount || '0';
+            const count = trustlineData.trustlineCount || '0';
+            console.log('Setting totalUsers to:', count);
+            document.getElementById('totalUsers').textContent = count;
+            console.log('totalUsers element after setting:', document.getElementById('totalUsers').textContent);
+          } else {
+            console.log('Trustline data not successful:', trustlineData);
+            document.getElementById('totalUsers').textContent = '0';
           }
         } catch (trustlineError) {
           console.log('Trustline count failed, using fallback:', trustlineError);
