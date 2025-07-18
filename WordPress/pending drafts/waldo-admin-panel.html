@@ -256,200 +256,6 @@
       border-color: #25c2a0;
       transform: translateY(-1px);
     }
-
-    /* Environment Status Styles */
-    .env-status {
-      background: #333;
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid #444;
-    }
-
-    .env-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      padding: 8px 0;
-      border-bottom: 1px solid #444;
-    }
-
-    .env-item:last-child {
-      margin-bottom: 0;
-      border-bottom: none;
-    }
-
-    .env-label {
-      color: #ccc;
-      font-size: 0.9em;
-    }
-
-    .env-value {
-      color: #25c2a0;
-      font-weight: bold;
-      font-family: 'Courier New', monospace;
-    }
-
-    /* Login Screen Styles */
-    .login-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .login-container {
-      background: #111;
-      border: 2px solid #25c2a0;
-      border-radius: 18px;
-      padding: 40px;
-      max-width: 500px;
-      width: 90%;
-      box-shadow: 0 0 30px rgba(37, 194, 160, 0.3);
-      text-align: center;
-    }
-
-    .login-header h1 {
-      color: #25c2a0;
-      margin: 0 0 10px 0;
-      font-size: 2.2em;
-    }
-
-    .login-header p {
-      color: #ccc;
-      margin: 0 0 30px 0;
-      font-size: 1.1em;
-    }
-
-    .login-form {
-      text-align: left;
-    }
-
-    .login-error {
-      background: rgba(231, 76, 60, 0.2);
-      border: 1px solid #e74c3c;
-      color: #e74c3c;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 15px 0;
-      text-align: center;
-      font-weight: bold;
-    }
-
-    .login-info {
-      background: rgba(37, 194, 160, 0.1);
-      border: 1px solid #25c2a0;
-      border-radius: 8px;
-      padding: 20px;
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .login-info p {
-      color: #25c2a0;
-      margin: 5px 0;
-      font-size: 0.9em;
-    }
-
-    .header-with-logout {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-
-    /* Utility Classes */
-    .hidden { display: none !important; }
-    .margin-bottom-30 { margin-bottom: 30px; }
-    .margin-bottom-20 { margin-bottom: 20px; }
-    .margin-bottom-15 { margin-bottom: 15px; }
-    .margin-bottom-10 { margin-bottom: 10px; }
-    .margin-top-15 { margin-top: 15px; }
-    .margin-top-10 { margin-top: 10px; }
-    .text-center { text-align: center; }
-    .text-muted { color: #666; }
-    .text-success { color: #27ae60; }
-    .text-error { color: #e74c3c; }
-    .text-warning { color: #f39c12; }
-    .text-primary { color: #25c2a0; }
-    .padding-20 { padding: 20px; }
-    .width-100 { width: 100%; }
-    .font-small { font-size: 0.9em; }
-    .font-bold { font-weight: bold; }
-    .opacity-80 { opacity: 0.8; }
-
-    .status-container {
-      background: #333;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-    }
-
-    .stat-box {
-      background: #333;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    .stat-number {
-      font-size: 1.5em;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-
-    .help-text {
-      color: #666;
-      display: block;
-      margin-top: 5px;
-      font-size: 0.9em;
-    }
-
-    /* Additional utility classes */
-    .section-title {
-      color: #25c2a0;
-      margin-bottom: 15px;
-    }
-
-    .section-title-spaced {
-      color: #25c2a0;
-      margin: 25px 0 15px 0;
-    }
-
-    .stake-details {
-      display: none;
-      background: #222;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 15px 0;
-    }
-
-    .emergency-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .checkbox-margin {
-      margin-right: 8px;
-    }
-
-    .alert-small {
-      margin-bottom: 15px;
-      font-size: 0.9em;
-    }
     
     .data-table {
       width: 100%;
@@ -618,60 +424,23 @@
   </style>
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="loginScreen" class="login-screen">
-    <div class="login-container">
-      <div class="login-header">
-        <h1>🔒 WALDO Admin Panel</h1>
-        <p>Enter admin password to access system controls</p>
-      </div>
-
-      <div class="login-form">
-        <div class="form-group">
-          <label class="form-label">Admin Password</label>
-          <input type="password" id="loginPassword" class="form-input" placeholder="Enter admin password" onkeypress="handleLoginKeypress(event)">
-        </div>
-
-        <button type="button" class="btn btn-primary" onclick="attemptLogin()">
-          🔓 Access Admin Panel
-        </button>
-
-        <div id="loginError" class="login-error hidden"></div>
-
-        <div class="login-info">
-          <p>💡 Use the X_ADMIN_KEY environment variable password</p>
-          <p>🔐 This password is for admin panel access only</p>
-        </div>
-      </div>
-    </div>
+  <!-- Admin Header -->
+  <div class="admin-header">
+    <div class="admin-title">🛠️ WALDO Emergency Admin Panel</div>
+    <div class="admin-subtitle">Backup controls and manual overrides for automated systems</div>
   </div>
-
-  <!-- Main Admin Panel (Hidden by default) -->
-  <div id="adminPanel" class="hidden">
-    <!-- Admin Header -->
-    <div class="admin-header">
-      <div class="header-with-logout">
-        <div>
-          <div class="admin-title">🛠️ WALDO Emergency Admin Panel</div>
-          <div class="admin-subtitle">Backup controls and manual overrides for automated systems</div>
-        </div>
-        <button type="button" class="btn btn-danger" onclick="logout()">
-          🚪 Logout
-        </button>
-      </div>
-    </div>
 
   <!-- Navigation -->
   <div class="admin-nav">
     <div class="nav-buttons">
-      <button type="button" class="nav-btn active" onclick="showSection('dashboard')">📊 System Status</button>
-      <button type="button" class="nav-btn" onclick="showSection('users')">👥 User Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('airdrops')">🎁 Manual Airdrop</button>
-      <button type="button" class="nav-btn" onclick="showSection('battles')">⚔️ Battle Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('staking')">🏦 Staking Monitor</button>
-      <button type="button" class="nav-btn" onclick="showSection('security')">🛡️ Security Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
+      <button class="nav-btn active" onclick="showSection('dashboard')">📊 System Status</button>
+      <button class="nav-btn" onclick="showSection('users')">👥 User Override</button>
+      <button class="nav-btn" onclick="showSection('airdrops')">🎁 Manual Airdrop</button>
+      <button class="nav-btn" onclick="showSection('battles')">⚔️ Battle Override</button>
+      <button class="nav-btn" onclick="showSection('staking')">🏦 Staking Monitor</button>
+      <button class="nav-btn" onclick="showSection('security')">🛡️ Security Override</button>
+      <button class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
+      <button class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
     </div>
   </div>
 
@@ -682,7 +451,7 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-value" id="totalUsers">-</div>
-          <div class="stat-label">WALDO Trustlines</div>
+          <div class="stat-label">Total Users</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="totalWaldoDistributed">-</div>
@@ -699,48 +468,24 @@
       </div>
 
       <!-- Admin Key Configuration -->
-      <div class="admin-card margin-bottom-30">
+      <div class="admin-card" style="margin-bottom: 30px;">
         <div class="card-title">🔑 Admin Key Configuration</div>
-        <p class="text-muted margin-bottom-20">Enter your admin key to access advanced features. Current airdrop password is set via X_ADMIN_KEY environment variable.</p>
+        <p style="color: #ccc; margin-bottom: 20px;">Enter your admin key to access advanced features like password management.</p>
 
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Admin Key</label>
-              <input type="password" id="adminKeyInput" class="form-input" placeholder="Enter admin key">
-            </div>
+        <div class="form-group">
+          <label class="form-label">Admin Key</label>
+          <input type="password" id="adminKeyInput" class="form-input" placeholder="Enter admin key">
+        </div>
 
-            <button type="button" class="btn btn-primary" onclick="saveAdminKey()">
-              💾 Save Admin Key
-            </button>
-            <button type="button" class="btn btn-secondary" onclick="clearAdminKey()">
-              🗑️ Clear Key
-            </button>
+        <button type="button" class="btn btn-primary" onclick="saveAdminKey()">
+          💾 Save Admin Key
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="clearAdminKey()">
+          🗑️ Clear Key
+        </button>
 
-            <div id="adminKeyStatus" class="margin-top-15">
-              <span id="keyStatusText" class="text-muted">No admin key stored</span>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Environment Status</label>
-              <div class="env-status">
-                <div class="env-item">
-                  <span class="env-label">X_ADMIN_KEY (Admin Access):</span>
-                  <span class="env-value" id="envAdminKey">waldogod2025</span>
-                </div>
-                <div class="env-item">
-                  <span class="env-label">ADMIN_KEY (API Access):</span>
-                  <span class="env-value" id="envApiKey">Set in Render</span>
-                </div>
-              </div>
-            </div>
-
-            <button type="button" class="btn btn-secondary" onclick="testEnvironmentKeys()">
-              🧪 Test Environment Keys
-            </button>
-          </div>
+        <div id="adminKeyStatus" style="margin-top: 15px;">
+          <span id="keyStatusText" style="color: #666;">No admin key stored</span>
         </div>
       </div>
 
@@ -751,6 +496,7 @@
             <div class="spinner"></div> Loading...
           </div>
         </div>
+        
         <div class="admin-card">
           <div class="card-title">🚨 System Alerts</div>
           <div id="systemAlerts" class="loading">
@@ -762,28 +508,13 @@
 
     <!-- Users Section -->
     <div id="users" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
+      <div class="alert alert-warning" style="margin-bottom: 20px;">
         ⚠️ <strong>User Security Override</strong><br>
         Manual user blocking/unblocking for when automated fraud detection needs intervention.
       </div>
 
       <div class="admin-card">
         <div class="card-title">👥 User Security Controls</div>
-
-        <!-- Export Users Section -->
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #25c2a0; margin-bottom: 10px;">📊 Export User Data</h4>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button onclick="exportUsersCSV()" class="btn btn-secondary">
-              📥 Download CSV
-            </button>
-            <button onclick="exportUsersJSON()" class="btn btn-secondary">
-              📥 Download JSON
-            </button>
-            <span style="color: #666; font-size: 0.9em;">Export all user data before reset</span>
-          </div>
-          <div id="exportResult" class="margin-top-10"></div>
-        </div>
 
         <div class="form-group">
           <input type="text" id="userSearch" class="form-input" placeholder="Search by wallet address or Twitter handle...">
@@ -793,77 +524,30 @@
           <div class="spinner"></div> Loading users...
         </div>
       </div>
-
-      <!-- Manual Security Actions -->
-      <div class="admin-card margin-top-20">
-        <div class="card-title">🛡️ Manual Security Actions</div>
-
-        <div class="grid-2">
-          <!-- Block User -->
-          <div>
-            <h4 style="color: #e74c3c; margin-bottom: 15px;">🚫 Block User</h4>
-            <div class="form-group">
-              <input type="text" id="blockWallet" class="form-input" placeholder="Wallet address to block">
-            </div>
-            <div class="form-group">
-              <input type="text" id="blockReason" class="form-input" placeholder="Reason for blocking">
-            </div>
-            <button onclick="blockUser()" class="btn btn-danger">Block User</button>
-            <div id="blockResult" class="result-message"></div>
-          </div>
-
-          <!-- Unblock User -->
-          <div>
-            <h4 style="color: #27ae60; margin-bottom: 15px;">✅ Unblock User</h4>
-            <div class="form-group">
-              <input type="text" id="unblockWallet" class="form-input" placeholder="Wallet address to unblock">
-            </div>
-            <div class="form-group">
-              <input type="text" id="unblockReason" class="form-input" placeholder="Reason for unblocking">
-            </div>
-            <button onclick="unblockUser()" class="btn btn-success">Unblock User</button>
-            <div id="unblockResult" class="result-message"></div>
-          </div>
-        </div>
-
-        <!-- Security Check -->
-        <div class="margin-top-20">
-          <h4 style="color: #f39c12; margin-bottom: 15px;">🔍 Security Check</h4>
-          <div class="form-group">
-            <input type="text" id="checkWallet" class="form-input" placeholder="Wallet address to check">
-          </div>
-          <button onclick="checkUserSecurity()" class="btn btn-warning">Check Security Status</button>
-          <div id="securityCheckResult" class="result-message"></div>
-        </div>
-      </div>
     </div>
 
     <!-- Airdrops Section -->
     <div id="airdrops" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
+      <div class="alert alert-warning" style="margin-bottom: 20px;">
         ⚠️ <strong>Manual Airdrop Override</strong><br>
         Use this only when automated airdrop system fails or for emergency distributions.
       </div>
 
       <!-- Daily Password Management -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">🔐 Airdrop Password Management</div>
-
-        <div class="alert alert-info margin-bottom-20">
-          ℹ️ <strong>Password Priority:</strong> Redis Override (Admin Set) → Default (WALDOCREW)
-        </div>
+      <div class="admin-card" style="margin-bottom: 30px;">
+        <div class="card-title">🔐 Daily Password Management</div>
 
         <div class="grid-2">
           <div>
             <div class="form-group">
-              <label class="form-label">Current Active Password</label>
+              <label class="form-label">Current Password Status</label>
               <div id="currentPasswordDisplay" class="password-display">
-                WALDOCREW (default)
+                Click refresh to load current password
               </div>
-              <div id="passwordSource" class="password-source">
-                Source: <span id="sourceText">default</span>
+              <div id="passwordSource" class="password-source" style="display: none;">
+                Source: <span id="sourceText"></span>
               </div>
-              <button type="button" class="btn btn-secondary margin-top-10" onclick="getCurrentAirdropPassword()">
+              <button type="button" class="btn btn-secondary" onclick="getCurrentAirdropPassword()" style="margin-top: 10px;">
                 🔄 Refresh Current Password
               </button>
             </div>
@@ -871,26 +555,22 @@
 
           <div>
             <div class="form-group">
-              <label class="form-label">Override Password (Redis)</label>
-              <input type="text" id="newDailyPassword" class="form-input" placeholder="Enter override password">
-              <small class="help-text">
-                This will temporarily override the X_ADMIN_KEY environment variable
-              </small>
+              <label class="form-label">New Daily Password</label>
+              <input type="text" id="newDailyPassword" class="form-input" placeholder="Enter new password">
             </div>
 
-            <div class="quick-passwords margin-top-10 margin-bottom-10">
+            <div class="quick-passwords" style="margin: 10px 0;">
               <button type="button" class="quick-btn" onclick="setQuickAirdropPassword('WALDOCREW')">WALDOCREW</button>
               <button type="button" class="quick-btn" onclick="setQuickAirdropPassword('WALDO2025')">WALDO2025</button>
               <button type="button" class="quick-btn" onclick="setQuickAirdropPassword('MOONWALDO')">MOONWALDO</button>
               <button type="button" class="quick-btn" onclick="generateDailyAirdropPassword()">📅 Today's Password</button>
               <button type="button" class="quick-btn" onclick="generateRandomAirdropPassword()">🎲 Random</button>
-              <button type="button" class="quick-btn" onclick="clearPasswordOverride()">🗑️ Clear Override</button>
             </div>
 
             <button type="button" class="btn btn-primary" onclick="updateAirdropPassword()">
-              🔐 Set Override Password
+              🔐 Update Daily Password
             </button>
-            <div id="passwordUpdateStatus" class="margin-top-10"></div>
+            <div id="passwordUpdateStatus" style="margin-top: 10px;"></div>
           </div>
         </div>
       </div>
@@ -938,38 +618,11 @@
           </div>
         </div>
       </div>
-
-      <!-- Reset Airdrop Section -->
-      <div class="admin-card" style="border: 2px solid #e74c3c; background: #2a1f1f;">
-        <div class="card-title" style="color: #e74c3c;">🔄 Reset Airdrop System</div>
-
-        <div class="alert alert-warning margin-bottom-15">
-          ⚠️ <strong>DANGER:</strong> This will reset the airdrop counter to 0/1000 and clear all claimed wallets. Use only for testing or official launch preparation.
-        </div>
-
-        <div class="margin-bottom-15">
-          <strong>What gets reset:</strong>
-          <ul style="margin: 10px 0; padding-left: 20px; color: #ccc;">
-            <li>Airdrop counter: Reset to 0/1000</li>
-            <li>Claimed wallets: All cleared</li>
-            <li>Password override: Cleared (back to WALDOCREW)</li>
-          </ul>
-        </div>
-
-        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-          <button onclick="resetAirdropSystem()" class="btn" style="background: #e74c3c; color: white; border: none;">
-            🔄 Reset Airdrop System
-          </button>
-          <span style="color: #ff6b6b; font-size: 0.9em; font-weight: bold;">⚠️ This action cannot be undone!</span>
-        </div>
-
-        <div id="resetResult" class="margin-top-15"></div>
-      </div>
     </div>
 
     <!-- Battles Section -->
     <div id="battles" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
+      <div class="alert alert-warning" style="margin-bottom: 20px;">
         ⚠️ <strong>Battle Emergency Controls</strong><br>
         Use these controls only when automated battle system malfunctions or requires manual intervention.
       </div>
@@ -979,23 +632,23 @@
 
         <div class="grid-2">
           <div>
-            <h3 class="section-title">Current Battle Status</h3>
+            <h3 style="color: #25c2a0; margin-bottom: 15px;">Current Battle Status</h3>
             <div id="currentBattle" class="loading">
               <div class="spinner"></div> Loading...
             </div>
           </div>
 
           <div>
-            <h3 class="section-title">Emergency Controls</h3>
-            <div class="alert alert-error alert-small">
+            <h3 style="color: #25c2a0; margin-bottom: 15px;">Emergency Controls</h3>
+            <div class="alert alert-error" style="margin-bottom: 15px; font-size: 0.9em;">
               ⚠️ These actions cannot be undone and will affect active users
             </div>
-            <button type="button" class="btn btn-warning" onclick="endCurrentBattle()">⏹️ Force End Battle</button>
-            <button type="button" class="btn btn-danger" onclick="cancelCurrentBattle()">❌ Emergency Cancel</button>
+            <button class="btn btn-warning" onclick="endCurrentBattle()">⏹️ Force End Battle</button>
+            <button class="btn btn-danger" onclick="cancelCurrentBattle()">❌ Emergency Cancel</button>
           </div>
         </div>
 
-        <h3 class="section-title-spaced">Recent Battles</h3>
+        <h3 style="color: #25c2a0; margin: 25px 0 15px 0;">Recent Battles</h3>
         <div id="battleHistory" class="loading">
           <div class="spinner"></div> Loading battle history...
         </div>
@@ -1004,7 +657,7 @@
 
     <!-- Staking Section -->
     <div id="staking" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
+      <div class="alert alert-warning" style="margin-bottom: 20px;">
         ⚠️ <strong>Staking Emergency Controls</strong><br>
         Manual unstaking is a backup mechanism for when automated functions fail. Use with caution.
       </div>
@@ -1038,11 +691,12 @@
         <div class="admin-card">
           <div class="card-title">🔓 Manual Unstaking</div>
 
-          <div class="margin-bottom-20">
+          <div style="margin-bottom: 20px;">
             <label class="form-label">User Wallet Address</label>
-            <input type="text" id="unstakeWalletAddress" class="form-input margin-bottom-10"
-                   placeholder="rWalletAddress...">
-            <button type="button" onclick="loadUserStakes()" class="btn btn-secondary width-100">
+            <input type="text" id="unstakeWalletAddress" class="form-input"
+                   placeholder="rWalletAddress..."
+                   style="margin-bottom: 10px;">
+            <button onclick="loadUserStakes()" class="btn btn-secondary" style="width: 100%;">
               🔍 Load User Stakes
             </button>
           </div>
@@ -1055,7 +709,7 @@
               </select>
             </div>
 
-            <div id="stakeDetails" class="stake-details">
+            <div id="stakeDetails" style="display: none; background: #222; padding: 15px; border-radius: 8px; margin: 15px 0;">
               <div class="stake-detail-row">
                 <span>Amount:</span>
                 <span id="stakeAmount">-</span>
@@ -1084,7 +738,7 @@
 
             <div class="form-group">
               <label class="form-label">
-                <input type="checkbox" id="forceUnstake" class="checkbox-margin">
+                <input type="checkbox" id="forceUnstake" style="margin-right: 8px;">
                 Force Early Unstaking (15% penalty will apply)
               </label>
             </div>
@@ -1095,12 +749,12 @@
                         placeholder="Explain why manual unstaking is necessary..."></textarea>
             </div>
 
-            <button type="button" onclick="executeManualUnstake()" class="btn btn-danger width-100">
+            <button onclick="executeManualUnstake()" class="btn btn-danger" style="width: 100%;">
               🔓 Execute Manual Unstake
             </button>
           </div>
 
-          <div id="unstakeResult" class="margin-top-15"></div>
+          <div id="unstakeResult" style="margin-top: 15px;"></div>
         </div>
       </div>
     </div>
@@ -1122,7 +776,7 @@
           <div class="form-group">
             <label class="form-label">Check Wallet</label>
             <input type="text" id="securityWallet" class="form-input" placeholder="Enter wallet address">
-            <button type="button" class="btn margin-top-10" onclick="checkWalletSecurity()">🔍 Check Security</button>
+            <button class="btn" onclick="checkWalletSecurity()" style="margin-top: 10px;">🔍 Check Security</button>
           </div>
 
           <div id="securityResults"></div>
@@ -1173,7 +827,7 @@
 
     <!-- System Section -->
     <div id="system" class="admin-section">
-      <div class="alert alert-error margin-bottom-20">
+      <div class="alert alert-error" style="margin-bottom: 20px;">
         🚨 <strong>EMERGENCY SYSTEM CONTROLS</strong><br>
         These controls can affect the entire WALDOCOIN system. Use only in critical situations.
       </div>
@@ -1190,14 +844,14 @@
         <div class="admin-card">
           <div class="card-title">🚨 Emergency Controls</div>
 
-          <div class="alert alert-warning alert-small">
+          <div class="alert alert-warning" style="margin-bottom: 15px; font-size: 0.9em;">
             ⚠️ These actions affect all users and cannot be easily undone
           </div>
 
-          <div class="emergency-controls">
-            <button type="button" class="btn" onclick="refreshAllData()">🔄 Force Data Refresh</button>
-            <button type="button" class="btn btn-warning" onclick="clearCache()">🗑️ Emergency Cache Clear</button>
-            <button type="button" class="btn btn-danger" onclick="emergencyStop()">🛑 SYSTEM EMERGENCY STOP</button>
+          <div style="display: flex; flex-direction: column; gap: 15px;">
+            <button class="btn" onclick="refreshAllData()">🔄 Force Data Refresh</button>
+            <button class="btn btn-warning" onclick="clearCache()">🗑️ Emergency Cache Clear</button>
+            <button class="btn btn-danger" onclick="emergencyStop()">🛑 SYSTEM EMERGENCY STOP</button>
           </div>
         </div>
       </div>
@@ -1211,473 +865,41 @@
     let currentSection = 'dashboard';
     let isAuthenticated = false;
 
-    // Login Functions
-    async function attemptLogin() {
-      const password = document.getElementById('loginPassword').value.trim();
-      const loginError = document.getElementById('loginError');
-
-      if (!password) {
-        showLoginError('Please enter a password');
-        return;
-      }
-
-      try {
-        // Use verify-admin endpoint for authentication
-        const response = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
-          headers: { 'x-admin-key': password }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Admin authentication successful
-          localStorage.setItem('adminKey', password);
-          isAuthenticated = true;
-
-          // Hide login screen and show admin panel
-          document.getElementById('loginScreen').style.display = 'none';
-          document.getElementById('adminPanel').classList.remove('hidden');
-
-          // Load dashboard by default
-          showSection('dashboard');
-
-          hideLoginError();
-
-          // Show success message
-          console.log('Admin login successful!', data.message);
-        } else {
-          showLoginError(`Invalid admin password. Error: ${data.error || 'Unknown error'}`);
-          console.log('Login failed:', data);
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        showLoginError(`Connection failed: ${error.message}. Check if backend is running.`);
-      }
-    }
-
-    function handleLoginKeypress(event) {
-      if (event.key === 'Enter') {
-        attemptLogin();
-      }
-    }
-
-    // 📥 Export Users as CSV
-    async function exportUsersCSV() {
-      const resultDiv = document.getElementById('exportResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">📥 Exporting users to CSV...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/users/list?limit=1000`, {
-          headers: { 'x-admin-key': adminKey }
-        });
-
-        const data = await response.json();
-
-        if (data.success && data.users) {
-          // Create CSV content
-          const headers = [
-            'Wallet Address', 'Username', 'Twitter Handle', 'XP Level', 'Total XP',
-            'WALDO Balance', 'Last Active', 'Joined At', 'Battles Total', 'Battles Won',
-            'Battle Votes', 'Staking Active', 'Total Staked', 'Staking Positions'
-          ];
-
-          let csvContent = headers.join(',') + '\n';
-
-          data.users.forEach(user => {
-            const row = [
-              `"${user.walletAddress}"`,
-              `"${user.username}"`,
-              `"${user.twitterHandle || ''}"`,
-              user.xpLevel,
-              user.totalXP,
-              user.waldoBalance,
-              `"${user.lastActive}"`,
-              `"${user.joinedAt}"`,
-              user.battles.total,
-              user.battles.won,
-              user.battles.votes,
-              user.staking.active,
-              user.staking.totalStaked,
-              user.staking.positions
-            ];
-            csvContent += row.join(',') + '\n';
-          });
-
-          // Download CSV
-          const blob = new Blob([csvContent], { type: 'text/csv' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `waldocoin-users-${new Date().toISOString().split('T')[0]}.csv`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-
-          resultDiv.innerHTML = `<div style="color: #27ae60;">✅ CSV exported: ${data.users.length} users</div>`;
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Export failed: ${data.error}</div>`;
-        }
-      } catch (error) {
-        console.error('Export error:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error during export</div>';
-      }
-    }
-
-    // 📥 Export Users as JSON
-    async function exportUsersJSON() {
-      const resultDiv = document.getElementById('exportResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">📥 Exporting users to JSON...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/users/list?limit=1000`, {
-          headers: { 'x-admin-key': adminKey }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Download JSON
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `waldocoin-users-${new Date().toISOString().split('T')[0]}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-
-          resultDiv.innerHTML = `<div style="color: #27ae60;">✅ JSON exported: ${data.users.length} users</div>`;
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Export failed: ${data.error}</div>`;
-        }
-      } catch (error) {
-        console.error('Export error:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error during export</div>';
-      }
-    }
-
-    // 🔄 Reset Airdrop System
-    async function resetAirdropSystem() {
-      // Double confirmation for safety
-      const firstConfirm = confirm(
-        "⚠️ DANGER: This will reset the airdrop system!\n\n" +
-        "• Counter will reset to 0/1000\n" +
-        "• All claimed wallets will be cleared\n" +
-        "• Password override will be cleared\n\n" +
-        "Are you sure you want to continue?"
-      );
-
-      if (!firstConfirm) return;
-
-      const secondConfirm = confirm(
-        "🚨 FINAL WARNING!\n\n" +
-        "This action CANNOT be undone!\n" +
-        "All airdrop progress will be lost!\n\n" +
-        "Type 'RESET' in the next dialog to confirm."
-      );
-
-      if (!secondConfirm) return;
-
-      const typeConfirm = prompt("Type 'RESET' to confirm (case sensitive):");
-      if (typeConfirm !== 'RESET') {
-        showAlert('Reset cancelled - confirmation text did not match', 'warning');
-        return;
-      }
-
-      const resultDiv = document.getElementById('resetResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">🔄 Resetting airdrop system...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/airdrop/reset`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = `
-            <div style="color: #27ae60; font-weight: bold;">✅ Airdrop system reset successfully!</div>
-            <div style="color: #ccc; margin-top: 10px; font-size: 0.9em;">
-              • Counter: ${data.details.counter}<br>
-              • Claimed wallets: ${data.details.claimedWallets}<br>
-              • Password: ${data.details.passwordOverride}<br>
-              • Total limit: ${data.details.totalLimit}
-            </div>
-          `;
-
-          // Refresh airdrop status
-          setTimeout(() => {
-            loadAirdropData();
-          }, 1000);
-
-          showAlert('Airdrop system reset successfully! Ready for fresh launch.', 'success');
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Reset failed: ${data.error}</div>`;
-          showAlert(`Reset failed: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Reset error:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error during reset</div>';
-        showAlert('Network error during reset', 'error');
-      }
-    }
-
-    function showLoginError(message) {
-      const loginError = document.getElementById('loginError');
-      loginError.textContent = message;
-      loginError.classList.remove('hidden');
-    }
-
-    function hideLoginError() {
-      const loginError = document.getElementById('loginError');
-      loginError.classList.add('hidden');
-    }
-
-    function logout() {
-      if (confirm('Are you sure you want to logout from the admin panel?')) {
-        // Clear all stored authentication data
-        localStorage.removeItem('adminKey');
-        localStorage.removeItem('xummWallet'); // Clear any old wallet data
-        sessionStorage.clear(); // Clear session data
-        isAuthenticated = false;
-
-        // Show login screen and hide admin panel
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('adminPanel').classList.add('hidden');
-
-        // Clear password field and any error messages
-        document.getElementById('loginPassword').value = '';
-        hideLoginError();
-
-        // Clear any test results
-        const testDiv = document.getElementById('connectionTest');
-        if (testDiv) testDiv.innerHTML = '';
-
-        console.log('Logged out successfully');
-      }
-    }
-
-    // Check if user is already logged in on page load
-    function checkExistingLogin() {
-      const savedKey = localStorage.getItem('adminKey');
-      if (savedKey) {
-        // Auto-login with saved key
-        document.getElementById('loginPassword').value = savedKey;
-        attemptLogin();
-      } else {
-        // Show login screen by default
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('adminPanel').classList.add('hidden');
-      }
-    }
-
-    // Test backend connection
-    async function testConnection() {
-      const testDiv = document.getElementById('connectionTest');
-      testDiv.innerHTML = '<div style="color: #f39c12;">🔄 Testing connection...</div>';
-
-      // Test 1: Basic API connection
-      try {
-        const response1 = await fetch(`${API_BASE}/api/airdrop/status`);
-        testDiv.innerHTML += `<div style="color: #666;">Status endpoint: ${response1.status}</div>`;
-
-        if (response1.ok) {
-          const data1 = await response1.json();
-          if (data1.success) {
-            testDiv.innerHTML += '<div style="color: #27ae60;">✅ Backend API: Connected</div>';
-          } else {
-            testDiv.innerHTML += '<div style="color: #e74c3c;">❌ Backend API: Error in response</div>';
-          }
-        } else {
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Backend API: HTTP ${response1.status}</div>`;
-        }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Backend API: ${error.message}</div>`;
-      }
-
-      // Test 2: Try current-password endpoint
-      try {
-        const response2 = await fetch(`${API_BASE}/api/airdrop/current-password`, {
-          headers: { 'x-admin-key': 'waldogod2025' }
-        });
-        testDiv.innerHTML += `<div style="color: #666;">Password endpoint: ${response2.status}</div>`;
-
-        if (response2.ok) {
-          const data2 = await response2.json();
-          if (data2.success) {
-            testDiv.innerHTML += `<div style="color: #27ae60;">✅ Password 'waldogod2025': Works</div>`;
-            testDiv.innerHTML += `<div style="color: #25c2a0;">Current password: ${data2.currentPassword}</div>`;
-            testDiv.innerHTML += `<div style="color: #25c2a0;">Source: ${data2.source}</div>`;
-          } else {
-            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password failed: ${data2.error}</div>`;
-          }
-        } else {
-          const text = await response2.text();
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password endpoint: HTTP ${response2.status}</div>`;
-          testDiv.innerHTML += `<div style="color: #666;">Response: ${text.substring(0, 100)}...</div>`;
-        }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password test: ${error.message}</div>`;
-      }
-
-      // Test 3: Try verify-admin endpoint
-      try {
-        const response3 = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
-          headers: { 'x-admin-key': 'waldogod2025' }
-        });
-        testDiv.innerHTML += `<div style="color: #666;">Verify endpoint: ${response3.status}</div>`;
-
-        if (response3.ok) {
-          const data3 = await response3.json();
-          if (data3.success) {
-            testDiv.innerHTML += '<div style="color: #27ae60;">✅ Admin verification: Success</div>';
-          } else {
-            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Admin verification: ${data3.error}</div>`;
-          }
-        } else {
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Verify endpoint: HTTP ${response3.status}</div>`;
-        }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Verify test: ${error.message}</div>`;
-      }
-
-      // Test 4: Debug environment variables
-      try {
-        const response4 = await fetch(`${API_BASE}/api/airdrop/debug-env`, {
-          headers: { 'x-admin-key': 'waldogod2025' }
-        });
-
-        if (response4.ok) {
-          const data4 = await response4.json();
-          if (data4.success) {
-            testDiv.innerHTML += '<div style="color: #27ae60;">✅ Environment debug: Success</div>';
-            testDiv.innerHTML += `<div style="color: #25c2a0;">X_ADMIN_KEY set: ${data4.environment.X_ADMIN_KEY_SET}</div>`;
-            testDiv.innerHTML += `<div style="color: #25c2a0;">X_ADMIN_KEY value: ${data4.environment.X_ADMIN_KEY_VALUE}</div>`;
-          } else {
-            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Environment debug: ${data4.error}</div>`;
-          }
-        } else {
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Debug endpoint: HTTP ${response4.status}</div>`;
-        }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Debug test: ${error.message}</div>`;
-      }
-
-      // Test 5: Check available routes
-      try {
-        const response5 = await fetch(`${API_BASE}/api/routes`);
-
-        if (response5.ok) {
-          const routes = await response5.json();
-          testDiv.innerHTML += '<div style="color: #27ae60;">✅ Available routes loaded</div>';
-
-          const airdropRoutes = routes.filter(r => r.path && r.path.includes('airdrop'));
-          if (airdropRoutes.length > 0) {
-            testDiv.innerHTML += '<div style="color: #25c2a0;">Airdrop routes found:</div>';
-            airdropRoutes.forEach(route => {
-              testDiv.innerHTML += `<div style="color: #666; font-size: 0.9em;">${route.method} ${route.path}</div>`;
-            });
-          } else {
-            testDiv.innerHTML += '<div style="color: #e74c3c;">❌ No airdrop routes found in backend</div>';
-          }
-        } else {
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Routes endpoint: HTTP ${response5.status}</div>`;
-        }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Routes test: ${error.message}</div>`;
-      }
-    }
-
-    // Authentication check - now uses password-based login
+    // Authentication check
     function checkAdminAuth() {
-      const adminKey = localStorage.getItem('adminKey');
-      if (!adminKey) {
-        // Show login screen instead of old modal
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('adminPanel').classList.add('hidden');
+      const wallet = localStorage.getItem("xummWallet");
+      if (!wallet || wallet !== ADMIN_WALLET) {
+        showAuthModal();
         return false;
       }
       isAuthenticated = true;
-      updateAdminKeyStatus(); // Update admin key status on auth
       return true;
     }
 
-    // Admin Key Management
-    function saveAdminKey() {
-      const adminKey = document.getElementById('adminKeyInput').value.trim();
-      if (!adminKey) {
-        showAlert('Please enter an admin key', 'error');
-        return;
-      }
-
-      localStorage.setItem('adminKey', adminKey);
-      document.getElementById('adminKeyInput').value = ''; // Clear input for security
-      updateAdminKeyStatus();
-      showAlert('Admin key saved successfully', 'success');
+    // Show authentication modal
+    function showAuthModal() {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9); display: flex; align-items: center;
+        justify-content: center; z-index: 10000;
+      `;
+      modal.innerHTML = `
+        <div style="background: #111; padding: 40px; border-radius: 15px; text-align: center; max-width: 400px;">
+          <h2 style="color: #25c2a0; margin-bottom: 20px;">🔐 Admin Access Required</h2>
+          <p style="color: #ccc; margin-bottom: 30px;">Only authorized WALDO administrators can access this panel.</p>
+          <button onclick="redirectToLogin()" style="background: #25c2a0; color: #000; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            🔑 Login with WALDO Wallet
+          </button>
+        </div>
+      `;
+      document.body.appendChild(modal);
     }
 
-    function clearAdminKey() {
-      localStorage.removeItem('adminKey');
-      updateAdminKeyStatus();
-      showAlert('Admin key cleared', 'info');
+    // Redirect to login
+    function redirectToLogin() {
+      window.location.href = "https://waldocoin.live/connect-waldo-wallet/";
     }
-
-    function updateAdminKeyStatus() {
-      const adminKey = localStorage.getItem('adminKey');
-      const statusText = document.getElementById('keyStatusText');
-
-      if (adminKey) {
-        statusText.textContent = '✅ Admin key is stored and ready';
-        statusText.className = 'text-primary';
-      } else {
-        statusText.textContent = '❌ No admin key stored';
-        statusText.className = 'text-muted';
-      }
-    }
-
-    async function testEnvironmentKeys() {
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        if (!adminKey) {
-          showAlert('Please save your admin key first', 'error');
-          return;
-        }
-
-        // Test current airdrop password (should be WALDOCREW or admin override)
-        const response = await fetch(`${API_BASE}/api/airdrop/current-password`, {
-          headers: {
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          document.getElementById('envAdminKey').textContent = data.currentPassword;
-          showAlert(`Environment test successful! Current airdrop password: ${data.currentPassword}`, 'success');
-        } else {
-          showAlert(`Environment test failed: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Environment test error:', error);
-        showAlert('Failed to test environment keys', 'error');
-      }
-    }
-
-    // Old authentication functions removed - now using password-based login screen
 
     // Navigation
     function showSection(sectionName) {
@@ -1709,15 +931,10 @@
         throw new Error('Authentication required');
       }
 
-      const adminKey = localStorage.getItem('adminKey');
-      if (!adminKey) {
-        throw new Error('Admin key not found');
-      }
-
       const defaultOptions = {
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey,
+          'X-Admin-Wallet': ADMIN_WALLET,
           ...options.headers
         }
       };
@@ -1776,20 +993,15 @@
       }
     }
 
-    // Dashboard functions - Production Ready with full backend support
+    // Dashboard functions - Production Ready
     async function loadDashboardData() {
       try {
-        // Load real user count based on WALDO trustlines
-        const trustlineData = await apiCall('/api/users/trustline-count');
-        if (trustlineData.success) {
-          document.getElementById('totalUsers').textContent = trustlineData.trustlineCount || '0';
-        }
-
         // Load tokenomics stats for dashboard
         const tokenomicsData = await apiCall('/api/tokenomics/stats');
         if (tokenomicsData.success) {
           const stats = tokenomicsData.stats;
-          document.getElementById('totalWaldoDistributed').textContent = (stats.airdrop.totalDistributed / 1000).toFixed(1) + 'K';
+          document.getElementById('totalUsers').textContent = stats.totalUsers || '0';
+          document.getElementById('totalWaldoDistributed').textContent = (stats.airdrop.totalDistributed / 1000000).toFixed(1) + 'M';
           document.getElementById('activeBattles').textContent = stats.battles.active || '0';
           document.getElementById('totalStaked').textContent = (stats.staking?.totalStaked / 1000 || 0).toFixed(1) + 'K';
         }
@@ -1802,8 +1014,8 @@
         if (battleData.active) {
           activityHtml += `
             <div style="padding: 10px; border-bottom: 1px solid #333; color: #ccc;">
-              <div style="font-weight: bold; color: #25c2a0;">⚔️ Battle #${battleData.battle.id} Active</div>
-              <div style="font-size: 0.9em; opacity: 0.8;">${battleData.battle.totalVotes} total votes</div>
+              <div style="font-weight: bold; color: #25c2a0;">⚔️ Battle #${battleData.id} Active</div>
+              <div style="font-size: 0.9em; opacity: 0.8;">${battleData.meme1.votes + battleData.meme2.votes} total votes</div>
             </div>
           `;
         }
@@ -1850,45 +1062,30 @@
       let healthHtml = '';
 
       try {
-        // Check API connectivity using airdrop status endpoint (no auth required)
-        const response = await fetch(`${API_BASE}/api/airdrop/status`);
-        const data = await response.json();
-
-        if (data.success) {
-          healthHtml += '<div class="alert alert-success">✅ Backend API: Online</div>';
-        } else {
-          healthHtml += '<div class="alert alert-error">❌ Backend API: Offline</div>';
-        }
+        // Check API connectivity
+        await apiCall('/api/health');
+        healthHtml += '<div class="alert alert-success">✅ Backend API: Online</div>';
       } catch (e) {
-        console.error('Backend API health check failed:', e);
         healthHtml += '<div class="alert alert-error">❌ Backend API: Offline</div>';
       }
 
       try {
-        // Check battle system (no auth required)
-        const battleResponse = await fetch(`${API_BASE}/api/battle/current`);
-        if (battleResponse.ok) {
-          healthHtml += '<div class="alert alert-success">✅ Battle System: Operational</div>';
-        } else {
-          healthHtml += '<div class="alert alert-warning">⚠️ Battle System: Issues detected</div>';
-        }
+        // Check battle system
+        await apiCall('/api/battle/current');
+        healthHtml += '<div class="alert alert-success">✅ Battle System: Operational</div>';
       } catch (e) {
-        console.error('Battle system health check failed:', e);
         healthHtml += '<div class="alert alert-warning">⚠️ Battle System: Issues detected</div>';
       }
 
       try {
-        // Check airdrop system (no auth required)
-        const airdropResponse = await fetch(`${API_BASE}/api/airdrop/status`);
-        const airdropData = await airdropResponse.json();
-
+        // Check airdrop system
+        const airdropData = await apiCall('/api/airdrop/status');
         if (airdropData.success && airdropData.airdrop.isActive) {
           healthHtml += '<div class="alert alert-success">✅ Airdrop System: Active</div>';
         } else {
           healthHtml += '<div class="alert alert-warning">⚠️ Airdrop System: Inactive</div>';
         }
       } catch (e) {
-        console.error('Airdrop system health check failed:', e);
         healthHtml += '<div class="alert alert-error">❌ Airdrop System: Error</div>';
       }
 
@@ -1911,91 +1108,17 @@
       }, 5000);
     }
 
-    // Users functions - Production Ready with full backend support
+    // Users functions - Production Ready
     async function loadUsersData() {
       try {
-        // Get user list from backend
-        const usersData = await apiCall('/api/users/list?limit=50');
+        // Get user stats from multiple endpoints
+        const [battleLeaderboard, securityData] = await Promise.allSettled([
+          apiCall('/api/battle/leaderboard'),
+          apiCall('/api/security/overview')
+        ]);
+
         const usersDiv = document.getElementById('usersList');
         let usersHtml = '';
-
-        if (usersData.success && usersData.users.length > 0) {
-          usersHtml = `
-            <div style="margin-bottom: 20px; padding: 15px; background: #333; border-radius: 8px;">
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center;">
-                <div>
-                  <div style="font-size: 1.5em; color: #25c2a0; font-weight: bold;">${usersData.summary.totalUsers}</div>
-                  <div style="font-size: 0.9em; color: #ccc;">Total Users</div>
-                </div>
-                <div>
-                  <div style="font-size: 1.5em; color: #27ae60; font-weight: bold;">${usersData.summary.activeUsers}</div>
-                  <div style="font-size: 0.9em; color: #ccc;">Active Users</div>
-                </div>
-                <div>
-                  <div style="font-size: 1.5em; color: #f39c12; font-weight: bold;">${usersData.summary.stakingUsers}</div>
-                  <div style="font-size: 0.9em; color: #ccc;">Staking</div>
-                </div>
-                <div>
-                  <div style="font-size: 1.5em; color: #e74c3c; font-weight: bold;">${usersData.summary.blockedUsers}</div>
-                  <div style="font-size: 0.9em; color: #ccc;">Blocked</div>
-                </div>
-              </div>
-            </div>
-
-            <div style="max-height: 400px; overflow-y: auto;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="background: #444; position: sticky; top: 0;">
-                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #555;">User</th>
-                    <th style="padding: 10px; text-align: center; border-bottom: 1px solid #555;">Level</th>
-                    <th style="padding: 10px; text-align: center; border-bottom: 1px solid #555;">WALDO</th>
-                    <th style="padding: 10px; text-align: center; border-bottom: 1px solid #555;">Battles</th>
-                    <th style="padding: 10px; text-align: center; border-bottom: 1px solid #555;">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-          `;
-
-          usersData.users.forEach(user => {
-            const statusColor = user.security.isBlocked ? '#e74c3c' :
-                               user.security.isSuspicious ? '#f39c12' : '#27ae60';
-            const statusText = user.security.isBlocked ? 'Blocked' :
-                              user.security.isSuspicious ? 'Suspicious' : 'Active';
-
-            usersHtml += `
-              <tr style="border-bottom: 1px solid #333;">
-                <td style="padding: 10px;">
-                  <div style="font-weight: bold; color: #25c2a0;">${user.username}</div>
-                  <div style="font-size: 0.8em; color: #666;">${user.walletAddress.slice(0, 8)}...${user.walletAddress.slice(-6)}</div>
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                  <div style="color: #25c2a0; font-weight: bold;">Level ${user.xpLevel}</div>
-                  <div style="font-size: 0.8em; color: #666;">${user.totalXP} XP</div>
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                  <div style="color: #ffd93d; font-weight: bold;">${user.waldoBalance.toFixed(1)}</div>
-                  ${user.staking.active ? '<div style="font-size: 0.8em; color: #25c2a0;">+Staking</div>' : ''}
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                  <div style="color: #ccc;">${user.battles.won}W / ${user.battles.total}T</div>
-                  <div style="font-size: 0.8em; color: #666;">${user.battles.votes} votes</div>
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                  <div style="color: ${statusColor}; font-weight: bold;">${statusText}</div>
-                  <div style="font-size: 0.8em; color: #666;">${user.security.riskLevel}</div>
-                </td>
-              </tr>
-            `;
-          });
-
-          usersHtml += `
-                </tbody>
-              </table>
-            </div>
-          `;
-        } else {
-          usersHtml = '<div style="color: #666; text-align: center; padding: 40px;">No users found</div>';
-        }
 
         // Combine data from battle leaderboard (most active users)
         if (battleLeaderboard.status === 'fulfilled' && battleLeaderboard.value.leaderboard) {
@@ -2100,10 +1223,11 @@
       }
     }
 
-    // Battle functions - Production Ready
+    // Battle functions
     async function loadBattlesData() {
       try {
-        const battle = await apiCall('/api/battle/current');
+        const res = await fetch(`${API_BASE}/api/battle/current`);
+        const battle = await res.json();
 
         const currentDiv = document.getElementById('currentBattle');
         if (battle.active) {
@@ -2122,7 +1246,8 @@
         }
 
         // Load battle history
-        const history = await apiCall('/api/battle/history?limit=10');
+        const historyRes = await fetch(`${API_BASE}/api/battle/history`);
+        const history = await historyRes.json();
 
         const historyDiv = document.getElementById('battleHistory');
         if (history.battles && history.battles.length > 0) {
@@ -2158,10 +1283,11 @@
       }
     }
 
-    // Staking functions - Production Ready
+    // Staking functions
     async function loadStakingData() {
       try {
-        const data = await apiCall('/api/staking/positions?limit=20');
+        const res = await fetch(`${API_BASE}/api/admin/staking-overview`);
+        const data = await res.json();
 
         if (data.success) {
           document.getElementById('totalStakingPositions').textContent = data.data.totalPositions || '0';
@@ -2327,55 +1453,43 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    // Security functions - Production Ready
+    // Security functions
     async function loadSecurityData() {
       try {
-        const data = await apiCall('/api/security/overview');
+        const res = await fetch(`${API_BASE}/api/admin/security-overview`);
+        const data = await res.json();
 
         const alertsDiv = document.getElementById('securityAlerts');
         if (data.success) {
-          let alertsHtml = `
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-              <div style="text-align: center; padding: 15px; background: #333; border-radius: 8px;">
-                <div style="font-size: 1.5em; color: #e74c3c; font-weight: bold;">${data.overview.blockedUsers}</div>
-                <div style="font-size: 0.9em; color: #ccc;">Blocked Users</div>
-              </div>
-              <div style="text-align: center; padding: 15px; background: #333; border-radius: 8px;">
-                <div style="font-size: 1.5em; color: #f39c12; font-weight: bold;">${data.overview.suspiciousUsers}</div>
-                <div style="font-size: 0.9em; color: #ccc;">Suspicious Users</div>
-              </div>
-              <div style="text-align: center; padding: 15px; background: #333; border-radius: 8px;">
-                <div style="font-size: 1.5em; color: #25c2a0; font-weight: bold;">${data.overview.flaggedTransactions}</div>
-                <div style="font-size: 0.9em; color: #ccc;">Flagged Transactions</div>
+          alertsDiv.innerHTML = `
+            <div style="margin-bottom: 20px;">
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div style="background: #333; padding: 15px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 1.5em; color: #e74c3c; font-weight: bold;">${data.data.blockedUsers || 0}</div>
+                  <div style="color: #ccc;">Blocked Users</div>
+                </div>
+                <div style="background: #333; padding: 15px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 1.5em; color: #f39c12; font-weight: bold;">${data.data.flaggedUsers || 0}</div>
+                  <div style="color: #ccc;">Flagged Users</div>
+                </div>
+                <div style="background: #333; padding: 15px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 1.5em; color: #27ae60; font-weight: bold;">${data.data.totalViolations || 0}</div>
+                  <div style="color: #ccc;">Total Violations</div>
+                </div>
               </div>
             </div>
-          `;
 
-          if (data.overview.recentEvents && data.overview.recentEvents.length > 0) {
-            alertsHtml += '<h4 style="margin-bottom: 15px;">Recent Security Events</h4>';
-            alertsHtml += '<div style="max-height: 200px; overflow-y: auto;">';
-
-            data.overview.recentEvents.forEach(event => {
-              const eventColor = event.type === 'user_blocked' ? '#e74c3c' :
-                                event.type === 'user_unblocked' ? '#27ae60' : '#f39c12';
-
-              alertsHtml += `
-                <div style="padding: 10px; margin-bottom: 8px; background: #333; border-radius: 5px; border-left: 3px solid ${eventColor};">
-                  <div style="font-weight: bold; color: ${eventColor};">${event.type.replace('_', ' ').toUpperCase()}</div>
-                  <div style="font-size: 0.9em; color: #ccc;">Wallet: ${event.wallet}</div>
-                  <div style="font-size: 0.8em; color: #666;">${new Date(event.timestamp).toLocaleString()}</div>
+            ${data.data.recentAlerts && data.data.recentAlerts.length > 0 ?
+              data.data.recentAlerts.map(alert => `
+                <div class="alert alert-${alert.type}">
+                  <strong>${alert.title}</strong><br>
+                  ${alert.message}
+                  <div style="font-size: 0.9em; opacity: 0.8; margin-top: 5px;">${new Date(alert.timestamp).toLocaleString()}</div>
                 </div>
-              `;
-            });
-
-            alertsHtml += '</div>';
-          } else {
-            alertsHtml += '<div style="color: #666; text-align: center; padding: 20px;">No recent security events</div>';
-          }
-
-          alertsDiv.innerHTML = alertsHtml;
-        } else {
-          alertsDiv.innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">Error loading security data</div>';
+              `).join('') :
+              '<div style="color: #27ae60; text-align: center; padding: 20px;">✅ No security alerts</div>'
+            }
+          `;
         }
       } catch (error) {
         console.error('Error loading security data:', error);
@@ -2409,189 +1523,6 @@ This action cannot be undone. Continue?`;
         }
       } catch (error) {
         document.getElementById('securityResults').innerHTML = `<div class="alert alert-error">Network error checking wallet</div>`;
-      }
-    }
-
-    // Manual security action functions
-    async function blockUser() {
-      const wallet = document.getElementById('blockWallet').value.trim();
-      const reason = document.getElementById('blockReason').value.trim();
-      const resultDiv = document.getElementById('blockResult');
-
-      if (!wallet || !reason) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = '❌ Please enter both wallet address and reason';
-        return;
-      }
-
-      if (!wallet.startsWith('r') || wallet.length < 25) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = '❌ Invalid wallet address format';
-        return;
-      }
-
-      try {
-        resultDiv.className = 'loading';
-        resultDiv.innerHTML = '⏳ Blocking user...';
-
-        const response = await apiCall('/api/security/block', {
-          method: 'POST',
-          body: JSON.stringify({ wallet, reason })
-        });
-
-        if (response.success) {
-          resultDiv.className = 'success';
-          resultDiv.innerHTML = `✅ <strong>User Blocked Successfully</strong><br>Wallet: ${wallet}<br>Reason: ${reason}`;
-
-          // Clear form
-          document.getElementById('blockWallet').value = '';
-          document.getElementById('blockReason').value = '';
-
-          // Refresh security data
-          loadSecurityData();
-          loadUsersData();
-        } else {
-          resultDiv.className = 'error';
-          resultDiv.innerHTML = `❌ <strong>Blocking Failed</strong><br>${response.error || 'Unknown error occurred'}`;
-        }
-      } catch (error) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = `❌ <strong>Network Error</strong><br>${error.message}`;
-      }
-    }
-
-    async function unblockUser() {
-      const wallet = document.getElementById('unblockWallet').value.trim();
-      const reason = document.getElementById('unblockReason').value.trim();
-      const resultDiv = document.getElementById('unblockResult');
-
-      if (!wallet) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = '❌ Please enter wallet address';
-        return;
-      }
-
-      if (!wallet.startsWith('r') || wallet.length < 25) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = '❌ Invalid wallet address format';
-        return;
-      }
-
-      try {
-        resultDiv.className = 'loading';
-        resultDiv.innerHTML = '⏳ Unblocking user...';
-
-        const response = await apiCall('/api/security/unblock', {
-          method: 'POST',
-          body: JSON.stringify({ wallet, reason: reason || 'Admin unblock' })
-        });
-
-        if (response.success) {
-          resultDiv.className = 'success';
-          resultDiv.innerHTML = `✅ <strong>User Unblocked Successfully</strong><br>Wallet: ${wallet}<br>Reason: ${reason || 'Admin unblock'}`;
-
-          // Clear form
-          document.getElementById('unblockWallet').value = '';
-          document.getElementById('unblockReason').value = '';
-
-          // Refresh security data
-          loadSecurityData();
-          loadUsersData();
-        } else {
-          resultDiv.className = 'error';
-          resultDiv.innerHTML = `❌ <strong>Unblocking Failed</strong><br>${response.error || 'Unknown error occurred'}`;
-        }
-      } catch (error) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = `❌ <strong>Network Error</strong><br>${error.message}`;
-      }
-    }
-
-    async function checkUserSecurity() {
-      const wallet = document.getElementById('checkWallet').value.trim();
-      const resultDiv = document.getElementById('securityCheckResult');
-
-      if (!wallet) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = '❌ Please enter wallet address';
-        return;
-      }
-
-      if (!wallet.startsWith('r') || wallet.length < 25) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = '❌ Invalid wallet address format';
-        return;
-      }
-
-      try {
-        resultDiv.className = 'loading';
-        resultDiv.innerHTML = '⏳ Checking security status...';
-
-        const response = await apiCall(`/api/security/check/${wallet}`);
-
-        if (response.success) {
-          const security = response.security;
-          const riskColor = security.riskLevel === 'HIGH' ? '#e74c3c' :
-                           security.riskLevel === 'MEDIUM' ? '#f39c12' : '#27ae60';
-
-          resultDiv.className = 'info';
-          resultDiv.innerHTML = `
-            <div style="background: #333; padding: 15px; border-radius: 8px; margin-top: 10px;">
-              <div style="font-weight: bold; color: #25c2a0; margin-bottom: 10px;">Security Report: ${wallet.slice(0, 8)}...${wallet.slice(-6)}</div>
-
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
-                <div>
-                  <div style="color: #ccc; font-size: 0.9em;">Status</div>
-                  <div style="color: ${security.isBlocked ? '#e74c3c' : security.isSuspicious ? '#f39c12' : '#27ae60'}; font-weight: bold;">
-                    ${security.isBlocked ? '🚫 BLOCKED' : security.isSuspicious ? '⚠️ SUSPICIOUS' : '✅ ACTIVE'}
-                  </div>
-                </div>
-                <div>
-                  <div style="color: #ccc; font-size: 0.9em;">Risk Level</div>
-                  <div style="color: ${riskColor}; font-weight: bold;">${security.riskLevel} (${security.riskScore}/100)</div>
-                </div>
-              </div>
-
-              ${security.blockReason ? `
-                <div style="margin-bottom: 10px;">
-                  <div style="color: #ccc; font-size: 0.9em;">Block Reason</div>
-                  <div style="color: #e74c3c;">${security.blockReason}</div>
-                </div>
-              ` : ''}
-
-              ${security.riskFactors.length > 0 ? `
-                <div style="margin-bottom: 10px;">
-                  <div style="color: #ccc; font-size: 0.9em;">Risk Factors</div>
-                  <div style="color: #f39c12;">${security.riskFactors.join(', ')}</div>
-                </div>
-              ` : ''}
-
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.9em;">
-                <div>
-                  <div style="color: #666;">Battles</div>
-                  <div style="color: #ccc;">${security.userData.totalBattles}</div>
-                </div>
-                <div>
-                  <div style="color: #666;">Votes</div>
-                  <div style="color: #ccc;">${security.userData.totalVotes}</div>
-                </div>
-                <div>
-                  <div style="color: #666;">Last Active</div>
-                  <div style="color: #ccc;">${security.userData.lastActive ? new Date(security.userData.lastActive).toLocaleDateString() : 'Never'}</div>
-                </div>
-              </div>
-            </div>
-          `;
-
-          // Clear form
-          document.getElementById('checkWallet').value = '';
-        } else {
-          resultDiv.className = 'error';
-          resultDiv.innerHTML = `❌ <strong>Security Check Failed</strong><br>${response.error || 'Unknown error occurred'}`;
-        }
-      } catch (error) {
-        resultDiv.className = 'error';
-        resultDiv.innerHTML = `❌ <strong>Network Error</strong><br>${error.message}`;
       }
     }
 
@@ -2633,7 +1564,14 @@ This action cannot be undone. Continue?`;
       });
     });
 
-    // Old logout function removed - using the password-based logout function instead
+    // Logout function
+    function logout() {
+      if (confirm('Logout from admin panel?')) {
+        localStorage.removeItem('xummWallet');
+        sessionStorage.removeItem('waldoLoginDesktop');
+        window.location.href = 'https://waldocoin.live/';
+      }
+    }
 
     // Airdrop Password Management Functions
     async function getCurrentAirdropPassword() {
@@ -2684,10 +1622,10 @@ This action cannot be undone. Continue?`;
         const response = await fetch(`${API_BASE}/api/airdrop/set-password`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
+            adminKey: adminKey,
             newPassword: newPassword
           })
         });
@@ -2728,41 +1666,6 @@ This action cannot be undone. Continue?`;
       const password = `WALDO${month}${day}`;
       document.getElementById('newDailyPassword').value = password;
       showAlert(`Generated today's password: ${password}`, 'info');
-    }
-
-    async function clearPasswordOverride() {
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        if (!adminKey) {
-          showAlert('Please save your admin key first', 'error');
-          return;
-        }
-
-        // Clear the Redis override by setting it to empty
-        const response = await fetch(`${API_BASE}/api/airdrop/set-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            adminKey: adminKey,
-            newPassword: '' // This will clear the Redis override
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          showAlert('Password override cleared. Now using default password (WALDOCREW)', 'success');
-          getCurrentAirdropPassword(); // Refresh current password display
-          document.getElementById('newDailyPassword').value = ''; // Clear input
-        } else {
-          showAlert(`Failed to clear override: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Clear override error:', error);
-        showAlert('Failed to clear password override', 'error');
-      }
     }
 
     // Form handlers - Production Ready
@@ -2842,58 +1745,9 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    // DAO functions - Production Ready
+    // Placeholder functions for remaining features
     async function loadDAOData() {
-      try {
-        const data = await apiCall('/api/dao/proposals?limit=10');
-        const daoDiv = document.getElementById('daoProposals');
-
-        if (data.success && data.proposals.length > 0) {
-          let daoHtml = `
-            <div style="max-height: 400px; overflow-y: auto;">
-          `;
-
-          data.proposals.forEach(proposal => {
-            const statusColor = proposal.status === 'active' ? '#25c2a0' :
-                               proposal.status === 'passed' ? '#27ae60' : '#e74c3c';
-            const timeRemaining = proposal.timeRemaining > 0 ?
-              Math.ceil(proposal.timeRemaining / (24 * 60 * 60 * 1000)) + ' days' : 'Expired';
-
-            daoHtml += `
-              <div style="padding: 15px; margin-bottom: 10px; background: #333; border-radius: 8px; border-left: 4px solid ${statusColor};">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                  <div>
-                    <div style="font-weight: bold; color: #25c2a0; margin-bottom: 5px;">${proposal.title}</div>
-                    <div style="font-size: 0.9em; color: #ccc; margin-bottom: 8px;">${proposal.description.substring(0, 100)}${proposal.description.length > 100 ? '...' : ''}</div>
-                  </div>
-                  <div style="text-align: right;">
-                    <div style="color: ${statusColor}; font-weight: bold; text-transform: uppercase;">${proposal.status}</div>
-                    <div style="font-size: 0.8em; color: #666;">${timeRemaining}</div>
-                  </div>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div style="display: flex; gap: 20px;">
-                    <div style="color: #27ae60;">✓ ${proposal.votes.yes} Yes</div>
-                    <div style="color: #e74c3c;">✗ ${proposal.votes.no} No</div>
-                    <div style="color: #ccc;">Total: ${proposal.votes.total}</div>
-                  </div>
-                  <div style="font-size: 0.8em; color: #666;">
-                    Support: ${(proposal.currentSupport * 100).toFixed(1)}% | Quorum: ${proposal.quorumMet ? '✓' : '✗'}
-                  </div>
-                </div>
-              </div>
-            `;
-          });
-
-          daoHtml += '</div>';
-          daoDiv.innerHTML = daoHtml;
-        } else {
-          daoDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No active DAO proposals</div>';
-        }
-      } catch (error) {
-        console.error('Error loading DAO data:', error);
-        document.getElementById('daoProposals').innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">Error loading DAO proposals</div>';
-      }
+      document.getElementById('daoProposals').innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">DAO features coming soon...</div>';
     }
 
     async function loadSystemData() {
@@ -3006,13 +1860,6 @@ This action cannot be undone. Continue?`;
         });
       }
     });
-
-    // Initialize login check when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      checkExistingLogin();
-    });
   </script>
-
-  </div> <!-- Close adminPanel -->
 </body>
 </html>

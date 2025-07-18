@@ -201,6 +201,15 @@
   </section>
 
   <div class="container">
+    <!-- WALDO Bonus Calculator -->
+    <div class="waldo-presale-lookup" style="margin-bottom: 30px;">
+      <h2 class="waldo-presale-lookup-title">💰 WALDO Bonus Calculator</h2>
+      <p style="color: #ccc; margin-bottom: 20px;">Calculate your WALDO tokens and bonus tier based on your XRP investment:</p>
+      <input type="number" id="xrpAmountInput" placeholder="Enter XRP amount (e.g., 85)" min="1" step="0.1" class="waldo-presale-lookup-input" oninput="showBonusCalculation()">
+      <button type="button" onclick="showBonusCalculation()" class="waldo-presale-lookup-btn">💎 Calculate Bonus</button>
+      <div id="bonusCalculationResult" class="waldo-presale-lookup-result"></div>
+    </div>
+
     <div class="waldo-presale-lookup">
       <h2 class="waldo-presale-lookup-title">🔍 WALDO Presale Lookup</h2>
       <input type="text" id="lookupWalletInput" placeholder="Enter XRPL Wallet (e.g. rXYZ...)" class="waldo-presale-lookup-input">
@@ -240,15 +249,15 @@
       </tr>
       <tr>
         <td>80 XRP</td>
-        <td>8,000,000 WALDO + <span class="bonus">2M Bonus = 10,000,000</span></td>
+        <td>8,000,000 WALDO + <span class="bonus">1.2M Bonus (15%) = 9,200,000</span></td>
       </tr>
       <tr>
         <td>90 XRP</td>
-        <td>9,000,000 WALDO + <span class="bonus">3M Bonus = 12,000,000</span></td>
+        <td>9,000,000 WALDO + <span class="bonus">2M Bonus (22%) = 11,000,000</span></td>
       </tr>
       <tr>
         <td>100 XRP</td>
-        <td>10,000,000 WALDO + <span class="bonus">5M Bonus = 15,000,000</span></td>
+        <td>10,000,000 WALDO + <span class="bonus">3M Bonus (30%) = 13,000,000</span></td>
       </tr>
     </tbody>
   </table>
@@ -271,6 +280,70 @@
       document.getElementById("soldDisplay").textContent = sold.toLocaleString();
     }
 
+    // ✅ Calculate WALDO bonus for XRP amount
+    async function calculateBonus(xrpAmount) {
+      try {
+        const res = await fetch(`${baseURL}/api/presale/calculate?amount=${xrpAmount}`);
+        const data = await res.json();
+
+        if (data.success) {
+          return data.calculation;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error calculating bonus:', error);
+        return null;
+      }
+    }
+
+    // ✅ Display bonus calculation for user input
+    async function showBonusCalculation() {
+      const xrpInput = document.getElementById('xrpAmountInput');
+      const resultDiv = document.getElementById('bonusCalculationResult');
+
+      if (!xrpInput || !resultDiv) return;
+
+      const xrpAmount = parseFloat(xrpInput.value);
+
+      if (!xrpAmount || xrpAmount <= 0) {
+        resultDiv.innerHTML = '';
+        return;
+      }
+
+      resultDiv.innerHTML = '⏳ Calculating...';
+
+      const calculation = await calculateBonus(xrpAmount);
+
+      if (calculation) {
+        const bonusText = calculation.bonus > 0 ?
+          `<span style="color: #ffd93d;">+${(calculation.bonus / 1000000).toFixed(1)}M Bonus (${calculation.bonusPercentage}%)</span>` :
+          'No bonus';
+
+        resultDiv.innerHTML = `
+          <div style="background: #333; padding: 15px; border-radius: 8px; margin-top: 10px;">
+            <div style="color: #25c2a0; font-weight: bold; margin-bottom: 10px;">💰 Your WALDO Calculation</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+              <div>
+                <div style="color: #ccc; font-size: 0.9em;">Base WALDO</div>
+                <div style="color: #fff; font-weight: bold;">${(calculation.baseWaldo / 1000000).toFixed(1)}M</div>
+              </div>
+              <div>
+                <div style="color: #ccc; font-size: 0.9em;">Bonus</div>
+                <div>${bonusText}</div>
+              </div>
+            </div>
+            <div style="border-top: 1px solid #555; margin: 15px 0; padding-top: 15px;">
+              <div style="color: #ccc; font-size: 0.9em;">Total WALDO</div>
+              <div style="color: #ffd93d; font-size: 1.2em; font-weight: bold;">${(calculation.totalWaldo / 1000000).toFixed(1)}M WALDO</div>
+              ${calculation.bonusTier ? `<div style="color: #25c2a0; font-size: 0.9em; margin-top: 5px;">${calculation.bonusTier}</div>` : ''}
+            </div>
+          </div>
+        `;
+      } else {
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">Error calculating bonus</div>';
+      }
+    }
+
     async function lookupPresale() {
       const wallet = document.getElementById("lookupWalletInput").value.trim();
       const resultDiv = document.getElementById("lookupResult");
@@ -285,10 +358,18 @@
         if (data.error) {
           resultDiv.innerHTML = `<p style="color: orange;">⚠️ ${data.error}</p>`;
         } else {
+          // Enhanced display with bonus information
+          const bonusDisplay = data.bonus ?
+            `<span style="color: #ffd93d;">+${(data.bonus / 1000000).toFixed(1)}M Bonus (${data.bonusPercentage || 'N/A'}%)</span>` :
+            'No bonus';
+
           resultDiv.innerHTML = `
+            <div style="color: #25c2a0; font-weight: bold; margin-bottom: 10px;">✅ Presale Purchase Found!</div>
             <p><strong>Wallet:</strong> ${data.wallet}</p>
             <p><strong>Amount Sent:</strong> ${data.amount} XRP</p>
-            <p><strong>WALDO Tokens:</strong> ${data.tokens.toLocaleString()} WALDO</p>
+            <p><strong>Base WALDO:</strong> ${data.baseWaldo ? (data.baseWaldo / 1000000).toFixed(1) + 'M' : 'N/A'}</p>
+            <p><strong>Bonus:</strong> ${bonusDisplay}</p>
+            <p><strong>Total WALDO:</strong> <span style="color: #ffd93d; font-weight: bold;">${(data.totalWaldo || data.tokens) ? ((data.totalWaldo || data.tokens) / 1000000).toFixed(1) + 'M' : 'N/A'}</span></p>
             <p><strong>Bonus Tier:</strong> ${data.bonusTier || 'None'}</p>
             <p><strong>Time:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
           `;

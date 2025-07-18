@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Careers - Join the WALDOCOIN Ecosystem</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+      color: #ffffff;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 60px 0;
+      background: linear-gradient(135deg, #25c2a0 0%, #00ff88 100%);
+      margin-bottom: 40px;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg') center/cover;
+      opacity: 0.1;
+      z-index: 1;
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .header h1 {
+      font-size: 3.5em;
+      font-weight: 900;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      color: #000;
+    }
+
+    .header p {
+      font-size: 1.3em;
+      color: #000;
+      font-weight: 600;
+    }
+
+    .meme-text {
+      font-size: 1.2em;
+      color: #25c2a0;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background: #222;
+      border-radius: 10px;
+      border: 2px solid #25c2a0;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .info-section {
+      background: #222;
+      padding: 30px;
+      border-radius: 15px;
+      border: 1px solid #333;
+    }
+
+    .info-section h2 {
+      color: #25c2a0;
+      font-size: 2em;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .job-card {
+      background: #191919;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border-left: 4px solid #25c2a0;
+      transition: transform 0.3s ease;
+    }
+
+    .job-card:hover {
+      transform: translateX(5px);
+    }
+
+    .job-title {
+      color: #00ff88;
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-bottom: 8px;
+    }
+
+    .job-type {
+      color: #25c2a0;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+    }
+
+    .job-description {
+      color: #ccc;
+      font-size: 0.95em;
+    }
+
+    .application-form {
+      background: #222;
+      padding: 30px;
+      border-radius: 15px;
+      border: 1px solid #333;
+      grid-column: 1 / -1;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    label {
+      display: block;
+      color: #25c2a0;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 1.1em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 15px;
+      background: #333;
+      border: 2px solid #444;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1em;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #25c2a0;
+      box-shadow: 0 0 10px rgba(37, 194, 160, 0.3);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .file-upload {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .file-upload input[type="file"] {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-upload-label {
+      display: block;
+      padding: 15px;
+      background: #444;
+      border: 2px dashed #25c2a0;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .file-upload-label:hover {
+      background: #555;
+      border-color: #00ff88;
+    }
+
+    .file-upload-text {
+      color: #25c2a0;
+      font-weight: 600;
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, #25c2a0 0%, #00ff88 100%);
+      color: #000;
+      padding: 18px 40px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(37, 194, 160, 0.3);
+    }
+
+    .benefits {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .benefit-card {
+      background: #191919;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      border: 1px solid #333;
+    }
+
+    .benefit-icon {
+      font-size: 2.5em;
+      margin-bottom: 15px;
+    }
+
+    .benefit-title {
+      color: #25c2a0;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.success {
+      background: #25c2a020;
+      border: 1px solid #25c2a0;
+      color: #25c2a0;
+    }
+
+    .alert.error {
+      background: #ff6b6b20;
+      border: 1px solid #ff6b6b;
+      color: #ff6b6b;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .header h1 {
+        font-size: 2.5em;
+      }
+      
+      .container {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <div class="header-content">
+        <h1>🐸 WE'RE HIRING!</h1>
+        <p>Come Meme With Us & Get Paid in WALDO! 💰</p>
+      </div>
+    </div>
+
+    <div class="meme-text">
+      🎯 "Sir, this is not a Wendy's... this is WALDOCOIN and we're looking for meme legends!" 🎯
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Open Positions -->
+      <div class="info-section">
+        <h2>🎯 We Need These Legends</h2>
+
+        <div class="job-card">
+          <div class="job-title">🔥 Meme Code Wizard</div>
+          <div class="job-type">Full-time • Remote • Pajamas Optional</div>
+          <div class="job-description">
+            Turn coffee into XRPL magic! Build sick integrations, make tokens go brrrr, and help us moon! 🚀
+          </div>
+        </div>
+
+        <div class="job-card">
+          <div class="job-title">🎨 UI/UX Meme Master</div>
+          <div class="job-type">Full-time • Remote • Creativity Required</div>
+          <div class="job-description">
+            Make our dashboard so beautiful that users will screenshot it for their Instagram stories! ✨
+          </div>
+        </div>
+
+        <div class="job-card">
+          <div class="job-title">📱 Chief Meme Officer</div>
+          <div class="job-type">Full-time • Remote • Must Love Chaos</div>
+          <div class="job-description">
+            Manage our wild community, create viral content, and turn Twitter into our playground! 🐸
+          </div>
+        </div>
+
+        <div class="job-card">
+          <div class="job-title">🎪 Hype Beast Extraordinaire</div>
+          <div class="job-type">Contract • Remote • Energy Drink Provided</div>
+          <div class="job-description">
+            Make WALDOCOIN the talk of crypto Twitter! Create campaigns that make people FOMO harder than GME! 📈
+          </div>
+        </div>
+      </div>
+
+      <!-- Why Join Us -->
+      <div class="info-section">
+        <h2>🎉 Why We're Actually Cool</h2>
+
+        <div class="benefits">
+          <div class="benefit-card">
+            <div class="benefit-icon">💸</div>
+            <div class="benefit-title">Get Paid to Meme</div>
+            <div>Real money + WALDO tokens + bragging rights</div>
+          </div>
+
+          <div class="benefit-card">
+            <div class="benefit-icon">🏖️</div>
+            <div class="benefit-title">Work From Anywhere</div>
+            <div>Beach, bed, or Bali - we don't care!</div>
+          </div>
+
+          <div class="benefit-card">
+            <div class="benefit-icon">🤯</div>
+            <div class="benefit-title">Build Wild Stuff</div>
+            <div>Meme battles, token staking, pure chaos!</div>
+          </div>
+
+          <div class="benefit-card">
+            <div class="benefit-icon">🧠</div>
+            <div class="benefit-title">Level Up IRL</div>
+            <div>Learn Web3, DeFi, and how to be legendary</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Application Form -->
+    <div class="application-form">
+      <h2 style="color: #25c2a0; margin-bottom: 30px; text-align: center;">
+        🎯 Ready to Join the Meme Army?
+      </h2>
+
+      <div class="meme-text" style="margin-bottom: 30px;">
+        "This is where legends are born and memes become reality!" 🚀
+      </div>
+      
+      <div id="alertContainer"></div>
+      
+      <form id="applicationForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name *</label>
+            <input type="text" id="firstName" name="firstName" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="lastName">Last Name *</label>
+            <input type="text" id="lastName" name="lastName" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="position">Which Meme Role Calls to You? *</label>
+            <select id="position" name="position" required>
+              <option value="">Pick your destiny...</option>
+              <option value="meme-code-wizard">🔥 Meme Code Wizard</option>
+              <option value="ui-ux-meme-master">🎨 UI/UX Meme Master</option>
+              <option value="chief-meme-officer">📱 Chief Meme Officer</option>
+              <option value="hype-beast">🎪 Hype Beast Extraordinaire</option>
+              <option value="other">🤷 Something Else (tell us below!)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="experience">How Long Have You Been Coding/Creating? *</label>
+            <select id="experience" name="experience" required>
+              <option value="">How experienced are you?</option>
+              <option value="0-1">🌱 0-1 years (Still Learning)</option>
+              <option value="2-3">🚀 2-3 years (Getting Good)</option>
+              <option value="4-6">💪 4-6 years (Pretty Solid)</option>
+              <option value="7-10">🔥 7-10 years (Very Experienced)</option>
+              <option value="10+">🧙 10+ years (Absolute Legend)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="skills">What's Your Superpower? *</label>
+          <textarea id="skills" name="skills" placeholder="Tell us what you're good at! Programming languages, design tools, social media wizardry, etc. Don't be shy! 🚀" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="portfolio">Show Us Your Cool Stuff!</label>
+          <textarea id="portfolio" name="portfolio" placeholder="Drop your GitHub, portfolio, LinkedIn, Twitter, or anything that shows off your work! We love seeing what you've built 🎨"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="coverLetter">Why Do You Want to Join Our Meme Empire? *</label>
+          <textarea id="coverLetter" name="coverLetter" placeholder="Tell us your story! Why WALDOCOIN? What gets you excited about memes and crypto? What would you bring to our chaotic but awesome team? 🐸" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="resume">Drop Your Resume Here! *</label>
+          <div class="file-upload">
+            <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+            <label for="resume" class="file-upload-label">
+              <div class="file-upload-text">
+                📄 Drag & drop or click to upload (PDF, DOC, DOCX)
+              </div>
+              <div id="fileName" style="margin-top: 10px; color: #00ff88; font-size: 0.9em;"></div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="availability">When Can You Start Making Memes With Us?</label>
+          <select id="availability" name="availability">
+            <option value="">When are you free?</option>
+            <option value="immediately">🏃 Right Now! (Let's go!)</option>
+            <option value="2-weeks">📅 2 weeks (Need to quit my boring job)</option>
+            <option value="1-month">⏰ 1 month (Gotta wrap things up)</option>
+            <option value="flexible">🤷 Flexible (Let's talk!)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          🎯 Join the Meme Revolution!
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // File upload handling
+    document.getElementById('resume').addEventListener('change', function(e) {
+      const fileName = e.target.files[0]?.name;
+      const fileNameDiv = document.getElementById('fileName');
+      if (fileName) {
+        fileNameDiv.textContent = `Selected: ${fileName}`;
+      } else {
+        fileNameDiv.textContent = '';
+      }
+    });
+
+    // Form submission
+    document.getElementById('applicationForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const alertContainer = document.getElementById('alertContainer');
+      
+      // Show loading state
+      const submitBtn = document.querySelector('.submit-btn');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = '⏳ Submitting...';
+      submitBtn.disabled = true;
+      
+      // Simulate form submission (replace with actual endpoint)
+      setTimeout(() => {
+        // Success message
+        alertContainer.innerHTML = `
+          <div class="alert success">
+            🎉 <strong>YOOO! Application Received!</strong><br>
+            Welcome to the WALDO family! We'll check out your application and slide into your DMs within a few days. Get ready to meme your way to the moon! 🚀🐸
+          </div>
+        `;
+        
+        // Reset form
+        this.reset();
+        document.getElementById('fileName').textContent = '';
+        
+        // Reset button
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+        
+        // Scroll to alert
+        alertContainer.scrollIntoView({ behavior: 'smooth' });
+        
+      }, 2000);
+    });
+
+    // Form validation
+    const requiredFields = document.querySelectorAll('[required]');
+    requiredFields.forEach(field => {
+      field.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          this.style.borderColor = '#ff6b6b';
+        } else {
+          this.style.borderColor = '#25c2a0';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

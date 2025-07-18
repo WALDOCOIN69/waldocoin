@@ -23,6 +23,8 @@ services:
         sync: false
       - key: WALDO_ISSUER
         sync: false
+      - key: STAKING_VAULT_WALLET
+        sync: false
       - key: DISTRIBUTOR_SECRET
         sync: false
       - key: DISTRIBUTOR_WALLET
@@ -45,6 +47,8 @@ services:
       - key: WALDO_ISSUER
         sync: false
       - key: WALDO_CURRENCY
+        sync: false
+      - key: STAKING_VAULT_WALLET
         sync: false
       - key: PORT
         value: 4000
@@ -69,6 +73,8 @@ services:
       - key: WALDO_ISSUER
         sync: false
       - key: WALDO_CURRENCY
+        sync: false
+      - key: STAKING_VAULT_WALLET
         sync: false
       - key: DISTRIBUTOR_WALLET
         sync: false

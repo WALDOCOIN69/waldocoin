@@ -5,21 +5,23 @@ const router = express.Router();
 
 console.log("👥 Loaded: routes/users.js");
 
-// GET /api/users/list - Get user list (admin only)
+// GET /api/users/list - Get user list (admin only) - Based on WALDO trustlines
 router.get('/list', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const limit = parseInt(req.query.limit) || 50;
     const search = req.query.search || '';
+    const onlyTrustlines = req.query.trustlines === 'true';
 
-    // Get user keys
+    // Get user keys from Redis (these are wallets that interacted with the system)
     const userKeys = await redis.keys("user:*");
     const users = [];
+    let trustlineUsers = [];
 
     for (const key of userKeys) {
       if (!key.includes(':battles') && !key.includes(':staking') && !key.includes(':votes')) {
@@ -337,6 +339,81 @@ router.get('/:wallet', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: "Failed to get user details"
+    });
+  }
+});
+
+// GET /api/users/trustline-count - Get count of wallets with WALDO trustline
+router.get('/trustline-count', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Query XRPL for all wallets with WALDO trustlines
+    const response = await fetch('https://s1.ripple.com:51234/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'account_lines',
+        params: [{
+          account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
+          ledger_index: 'validated'
+        }]
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.result && data.result.lines) {
+      // Filter for WALDO trustlines only
+      const waldoTrustlines = data.result.lines.filter(line =>
+        line.currency === 'WLO' || line.currency === 'WALDO'
+      );
+
+      const trustlineWallets = waldoTrustlines.map(line => line.account);
+
+      // Get additional data for these wallets from Redis
+      const walletsWithData = [];
+      for (const wallet of trustlineWallets) {
+        const userData = await redis.hGetAll(`user:${wallet}`);
+        walletsWithData.push({
+          wallet: wallet,
+          balance: line.balance || '0',
+          limit: line.limit || '1000000000',
+          hasUserData: Object.keys(userData).length > 0,
+          userData: userData
+        });
+      }
+
+      return res.json({
+        success: true,
+        trustlineCount: waldoTrustlines.length,
+        trustlineWallets: walletsWithData,
+        summary: {
+          totalTrustlines: waldoTrustlines.length,
+          walletsWithData: walletsWithData.filter(w => w.hasUserData).length,
+          walletsWithBalance: waldoTrustlines.filter(line => parseFloat(line.balance || 0) > 0).length
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      return res.json({
+        success: true,
+        trustlineCount: 0,
+        trustlineWallets: [],
+        summary: { totalTrustlines: 0, walletsWithData: 0, walletsWithBalance: 0 },
+        timestamp: new Date().toISOString()
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error getting trustline count:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get trustline count"
     });
   }
 });
