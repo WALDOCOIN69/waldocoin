@@ -352,62 +352,36 @@ router.get('/trustline-count', async (req, res) => {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    // For now, let's count Redis users and verify they have trustlines
-    // This is more reliable than querying XRPL issuer account
+    // Simplified: Just count Redis users for now
+    // TODO: Add XRPL trustline verification later
     const userKeys = await redis.keys("user:*");
-    let trustlineCount = 0;
+    let userCount = 0;
     const walletsWithData = [];
 
     for (const key of userKeys) {
       if (!key.includes(':battles') && !key.includes(':staking') && !key.includes(':votes')) {
         const walletAddress = key.split(':')[1];
+        const userData = await redis.hGetAll(key);
 
-        // Check if this wallet has WALDO trustline via XRPL
-        try {
-          const response = await fetch('https://s1.ripple.com:51234/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              method: 'account_lines',
-              params: [{
-                account: walletAddress,
-                ledger_index: 'validated'
-              }]
-            })
+        if (userData && Object.keys(userData).length > 0) {
+          userCount++;
+          walletsWithData.push({
+            wallet: walletAddress,
+            hasUserData: true,
+            userData: userData
           });
-
-          const data = await response.json();
-
-          if (data.result && data.result.lines) {
-            const hasTrustline = data.result.lines.some(line =>
-              (line.currency === 'WLO' || line.currency === 'WALDO') &&
-              line.account === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
-            );
-
-            if (hasTrustline) {
-              trustlineCount++;
-              const userData = await redis.hGetAll(key);
-              walletsWithData.push({
-                wallet: walletAddress,
-                hasUserData: Object.keys(userData).length > 0,
-                userData: userData
-              });
-            }
-          }
-        } catch (error) {
-          console.log(`⚠️ Could not check trustline for ${walletAddress}:`, error.message);
         }
       }
     }
 
     return res.json({
       success: true,
-      trustlineCount: trustlineCount,
+      trustlineCount: userCount,
       trustlineWallets: walletsWithData,
       summary: {
-        totalTrustlines: trustlineCount,
-        walletsWithData: walletsWithData.filter(w => w.hasUserData).length,
-        totalRedisUsers: userKeys.length
+        totalTrustlines: userCount,
+        walletsWithData: walletsWithData.length,
+        totalRedisUsers: userKeys.filter(key => !key.includes(':battles') && !key.includes(':staking') && !key.includes(':votes')).length
       },
       timestamp: new Date().toISOString()
     });
