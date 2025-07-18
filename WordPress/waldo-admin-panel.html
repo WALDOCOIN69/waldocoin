@@ -1802,10 +1802,16 @@
       try {
         // Load real user count based on WALDO trustlines
         console.log('Loading trustline count...');
-        const trustlineData = await apiCall('/api/users/trustline-count');
-        console.log('Trustline data:', trustlineData);
-        if (trustlineData.success) {
-          document.getElementById('totalUsers').textContent = trustlineData.trustlineCount || '0';
+        try {
+          const trustlineData = await apiCall('/api/users/trustline-count');
+          console.log('Trustline data:', trustlineData);
+          if (trustlineData.success) {
+            document.getElementById('totalUsers').textContent = trustlineData.trustlineCount || '0';
+          }
+        } catch (trustlineError) {
+          console.log('Trustline count failed, using fallback:', trustlineError);
+          // Fallback: Just show 0 instead of breaking
+          document.getElementById('totalUsers').textContent = '0';
         }
 
         // Load tokenomics stats for dashboard
