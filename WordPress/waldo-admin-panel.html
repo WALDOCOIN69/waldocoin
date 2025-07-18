@@ -1222,16 +1222,29 @@
       }
 
       try {
+        // Debug: Log the password being sent
+        console.log('Attempting login with password:', password);
+        console.log('API_BASE:', API_BASE);
+
         // Use verify-admin endpoint for authentication
         const response = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
-          headers: { 'x-admin-key': password }
+          method: 'GET',
+          headers: {
+            'x-admin-key': password,
+            'Content-Type': 'application/json'
+          }
         });
 
+        console.log('Response status:', response.status);
+
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorText = await response.text();
+          console.log('Error response:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('Login response:', data);
 
         if (data.success) {
           // Admin authentication successful
@@ -1243,7 +1256,7 @@
           document.getElementById('adminPanel').classList.remove('hidden');
 
           // Load dashboard by default
-          showSection('dashboard');
+          showSection('dashboard', null);
 
           hideLoginError();
 
@@ -1680,7 +1693,7 @@
     // Old authentication functions removed - now using password-based login screen
 
     // Navigation
-    function showSection(sectionName) {
+    function showSection(sectionName, clickedElement = null) {
       // Hide all sections
       document.querySelectorAll('.admin-section').forEach(section => {
         section.classList.remove('active');
@@ -1694,8 +1707,16 @@
       // Show selected section
       document.getElementById(sectionName).classList.add('active');
 
-      // Add active class to clicked button
-      event.target.classList.add('active');
+      // Add active class to clicked button (if provided)
+      if (clickedElement) {
+        clickedElement.classList.add('active');
+      } else {
+        // Fallback: find the nav button for this section
+        const navBtn = document.querySelector(`[onclick*="${sectionName}"]`);
+        if (navBtn) {
+          navBtn.classList.add('active');
+        }
+      }
 
       currentSection = sectionName;
 
@@ -1780,7 +1801,9 @@
     async function loadDashboardData() {
       try {
         // Load real user count based on WALDO trustlines
+        console.log('Loading trustline count...');
         const trustlineData = await apiCall('/api/users/trustline-count');
+        console.log('Trustline data:', trustlineData);
         if (trustlineData.success) {
           document.getElementById('totalUsers').textContent = trustlineData.trustlineCount || '0';
         }
