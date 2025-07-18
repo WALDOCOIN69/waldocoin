@@ -75,7 +75,7 @@ router.post("/", async (req, res) => {
       }
 
       // Check if wallet has already claimed airdrop
-      const hasAlreadyClaimed = await redis.sismember(AIRDROP_REDIS_KEY, wallet);
+      const hasAlreadyClaimed = await redis.sIsMember(AIRDROP_REDIS_KEY, wallet);
       if (hasAlreadyClaimed) {
         return res.status(409).json({
           success: false,
@@ -159,7 +159,7 @@ router.post("/", async (req, res) => {
     let newCount, remaining;
 
     if (!isAdminOverride) {
-      await redis.sadd(AIRDROP_REDIS_KEY, wallet); // Add wallet to claimed set
+      await redis.sAdd(AIRDROP_REDIS_KEY, wallet); // Add wallet to claimed set
       newCount = await redis.incr(AIRDROP_COUNT_KEY); // Increment counter
       remaining = AIRDROP_LIMIT - newCount;
       console.log(`✅ Regular airdrop successful! Wallet ${wallet} claimed. Total: ${newCount}/${AIRDROP_LIMIT}`);
@@ -219,7 +219,7 @@ router.get("/check/:wallet", async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid wallet address" });
     }
 
-    const hasAlreadyClaimed = await redis.sismember(AIRDROP_REDIS_KEY, wallet);
+    const hasAlreadyClaimed = await redis.sIsMember(AIRDROP_REDIS_KEY, wallet);
     const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
 
     return res.json({
