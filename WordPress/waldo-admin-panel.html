@@ -1797,28 +1797,33 @@
       }
     }
 
-    // Dashboard functions - Production Ready with full backend support
-    async function loadDashboardData() {
+    // Load trustline count independently
+    async function loadTrustlineCount() {
+      console.log('🔍 Loading trustline count independently...');
       try {
-        // Load real user count based on WALDO trustlines
-        console.log('Loading trustline count...');
-        try {
-          const trustlineData = await apiCall('/api/users/trustline-count');
-          console.log('Trustline data received:', trustlineData);
-          if (trustlineData.success) {
-            const count = trustlineData.trustlineCount || '0';
-            console.log('Setting totalUsers to:', count);
-            document.getElementById('totalUsers').textContent = count;
-            console.log('totalUsers element after setting:', document.getElementById('totalUsers').textContent);
-          } else {
-            console.log('Trustline data not successful:', trustlineData);
-            document.getElementById('totalUsers').textContent = '0';
-          }
-        } catch (trustlineError) {
-          console.log('Trustline count failed, using fallback:', trustlineError);
-          // Fallback: Just show 0 instead of breaking
+        const trustlineData = await apiCall('/api/users/trustline-count');
+        console.log('✅ Trustline data received:', trustlineData);
+        if (trustlineData.success) {
+          const count = trustlineData.trustlineCount || '0';
+          console.log('📊 Setting totalUsers to:', count);
+          document.getElementById('totalUsers').textContent = count;
+          console.log('✅ totalUsers element now shows:', document.getElementById('totalUsers').textContent);
+        } else {
+          console.log('❌ Trustline data not successful:', trustlineData);
           document.getElementById('totalUsers').textContent = '0';
         }
+      } catch (trustlineError) {
+        console.log('❌ Trustline count failed:', trustlineError);
+        document.getElementById('totalUsers').textContent = '0';
+      }
+    }
+
+    // Dashboard functions - Production Ready with full backend support
+    async function loadDashboardData() {
+      // Load trustline count first, independently
+      await loadTrustlineCount();
+
+      try {
 
         // Load tokenomics stats for dashboard
         const tokenomicsData = await apiCall('/api/tokenomics/stats');
@@ -1872,8 +1877,8 @@
         console.error('Error loading dashboard:', error);
         showAlert('Error loading dashboard data: ' + error.message, 'error');
 
-        // Show fallback data
-        document.getElementById('totalUsers').textContent = '-';
+        // Show fallback data (but don't override trustline count)
+        // document.getElementById('totalUsers').textContent = '-'; // Don't override trustline count
         document.getElementById('totalWaldoDistributed').textContent = '-';
         document.getElementById('activeBattles').textContent = '-';
         document.getElementById('totalStaked').textContent = '-';
