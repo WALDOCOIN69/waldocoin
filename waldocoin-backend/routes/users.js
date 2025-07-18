@@ -352,62 +352,65 @@ router.get('/trustline-count', async (req, res) => {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    // Query XRPL for all wallets with WALDO trustlines
-    const response = await fetch('https://s1.ripple.com:51234/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        method: 'account_lines',
-        params: [{
-          account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
-          ledger_index: 'validated'
-        }]
-      })
-    });
+    // For now, let's count Redis users and verify they have trustlines
+    // This is more reliable than querying XRPL issuer account
+    const userKeys = await redis.keys("user:*");
+    let trustlineCount = 0;
+    const walletsWithData = [];
 
-    const data = await response.json();
+    for (const key of userKeys) {
+      if (!key.includes(':battles') && !key.includes(':staking') && !key.includes(':votes')) {
+        const walletAddress = key.split(':')[1];
 
-    if (data.result && data.result.lines) {
-      // Filter for WALDO trustlines only
-      const waldoTrustlines = data.result.lines.filter(line =>
-        line.currency === 'WLO' || line.currency === 'WALDO'
-      );
+        // Check if this wallet has WALDO trustline via XRPL
+        try {
+          const response = await fetch('https://s1.ripple.com:51234/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              method: 'account_lines',
+              params: [{
+                account: walletAddress,
+                ledger_index: 'validated'
+              }]
+            })
+          });
 
-      const trustlineWallets = waldoTrustlines.map(line => line.account);
+          const data = await response.json();
 
-      // Get additional data for these wallets from Redis
-      const walletsWithData = [];
-      for (const wallet of trustlineWallets) {
-        const userData = await redis.hGetAll(`user:${wallet}`);
-        walletsWithData.push({
-          wallet: wallet,
-          balance: line.balance || '0',
-          limit: line.limit || '1000000000',
-          hasUserData: Object.keys(userData).length > 0,
-          userData: userData
-        });
+          if (data.result && data.result.lines) {
+            const hasTrustline = data.result.lines.some(line =>
+              (line.currency === 'WLO' || line.currency === 'WALDO') &&
+              line.account === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+            );
+
+            if (hasTrustline) {
+              trustlineCount++;
+              const userData = await redis.hGetAll(key);
+              walletsWithData.push({
+                wallet: walletAddress,
+                hasUserData: Object.keys(userData).length > 0,
+                userData: userData
+              });
+            }
+          }
+        } catch (error) {
+          console.log(`⚠️ Could not check trustline for ${walletAddress}:`, error.message);
+        }
       }
-
-      return res.json({
-        success: true,
-        trustlineCount: waldoTrustlines.length,
-        trustlineWallets: walletsWithData,
-        summary: {
-          totalTrustlines: waldoTrustlines.length,
-          walletsWithData: walletsWithData.filter(w => w.hasUserData).length,
-          walletsWithBalance: waldoTrustlines.filter(line => parseFloat(line.balance || 0) > 0).length
-        },
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      return res.json({
-        success: true,
-        trustlineCount: 0,
-        trustlineWallets: [],
-        summary: { totalTrustlines: 0, walletsWithData: 0, walletsWithBalance: 0 },
-        timestamp: new Date().toISOString()
-      });
     }
+
+    return res.json({
+      success: true,
+      trustlineCount: trustlineCount,
+      trustlineWallets: walletsWithData,
+      summary: {
+        totalTrustlines: trustlineCount,
+        walletsWithData: walletsWithData.filter(w => w.hasUserData).length,
+        totalRedisUsers: userKeys.length
+      },
+      timestamp: new Date().toISOString()
+    });
 
   } catch (error) {
     console.error('❌ Error getting trustline count:', error);
