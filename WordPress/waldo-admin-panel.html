@@ -1801,7 +1801,7 @@
     async function loadTrustlineCount() {
       console.log('🔍 Loading trustline count independently...');
       try {
-        const trustlineData = await apiCall('/api/users/trustline-count');
+        const trustlineData = await apiCall('/api/airdrop/trustline-count');
         console.log('✅ Trustline data received:', trustlineData);
         if (trustlineData.success) {
           const count = trustlineData.trustlineCount || '0';

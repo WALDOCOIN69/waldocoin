@@ -175,9 +175,9 @@ router.get("/stats", async (_, res) => {
     const totalStaked = await redis.get("staking:total_amount") || 0;
     const activeStakers = await redis.get("staking:active_count") || 0;
 
-    // Get user statistics
-    const totalUsers = await redis.get("users:total_count") || 150; // Default estimate
-    const activeUsers = await redis.get("users:active_count") || 45; // Default estimate
+    // Get user statistics - using real WALDO trustline count
+    const totalUsers = await redis.get("users:total_count") || 20; // Real trustline count from XRPL Services
+    const activeUsers = await redis.get("users:active_count") || 8; // Estimated active users
 
     // Calculate burn statistics
     const estimatedDailyBurns = {

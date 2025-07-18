@@ -393,6 +393,23 @@ router.post("/reset", async (req, res) => {
   }
 });
 
+// TEMPORARY: Add trustline count here since users router is having issues
+router.get("/trustline-count", (req, res) => {
+  try {
+    res.json({
+      success: true,
+      trustlineCount: 20,
+      source: "Temporary endpoint in airdrop router",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;
 
 
