@@ -356,6 +356,43 @@ router.get('/debug-env', async (req, res) => {
   }
 });
 
+// POST /api/airdrop/reset - Admin endpoint to reset airdrop system
+router.post("/reset", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Validate admin access using X_ADMIN_KEY
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Reset airdrop data in Redis
+    await redis.del("airdrop:count");        // Reset counter to 0
+    await redis.del("airdrop:wallets");      // Clear claimed wallets set
+    await redis.del("airdrop:daily_password"); // Clear password override (back to default)
+
+    console.log("🔄 Airdrop system reset by admin");
+
+    return res.json({
+      success: true,
+      message: "Airdrop system reset successfully",
+      details: {
+        counter: "Reset to 0",
+        claimedWallets: "Cleared",
+        passwordOverride: "Cleared (back to WALDOCREW default)",
+        totalLimit: 1000
+      }
+    });
+
+  } catch (error) {
+    console.error("Error resetting airdrop:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to reset airdrop system"
+    });
+  }
+});
+
 export default router;
 
 
