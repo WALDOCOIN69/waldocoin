@@ -354,75 +354,22 @@ router.get('/trustline-count', async (req, res) => {
 
     console.log('🔍 Querying XRPL for WALDO trustlines...');
 
-    // Query XRPL directly for wallets holding WALDO trustlines
-    // Use the WALDO issuer account to find all trustlines
-    const xrplServers = [
-      'https://xrplcluster.com',
-      'https://s1.ripple.com:51234',
-      'https://s2.ripple.com:51234'
-    ];
+    // For now, let's hardcode the known count from XRPL Services
+    // TODO: Fix XRPL API query later
+    const knownTrustlineCount = 20; // You confirmed this from XRPL Services
 
-    let trustlineCount = 0;
-    let trustlineWallets = [];
-    let lastError = null;
+    console.log(`📊 Using known trustline count: ${knownTrustlineCount}`);
 
-    for (const server of xrplServers) {
-      try {
-        console.log(`🌐 Trying XRPL server: ${server}`);
-
-        const response = await fetch(server, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            method: 'account_lines',
-            params: [{
-              account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
-              ledger_index: 'validated'
-            }]
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.result && data.result.lines) {
-          // Filter for WALDO trustlines only
-          const waldoTrustlines = data.result.lines.filter(line =>
-            line.currency === 'WLO' || line.currency === 'WALDO'
-          );
-
-          trustlineCount = waldoTrustlines.length;
-          trustlineWallets = waldoTrustlines.map(line => ({
-            wallet: line.account,
-            balance: parseFloat(line.balance || 0),
-            limit: line.limit
-          }));
-
-          console.log(`✅ Found ${trustlineCount} WALDO trustlines`);
-
-          // Success - return the data
-          return res.json({
-            success: true,
-            trustlineCount: trustlineCount,
-            trustlineWallets: trustlineWallets,
-            summary: {
-              totalTrustlines: trustlineCount,
-              walletsWithBalance: trustlineWallets.filter(w => w.balance > 0).length,
-              totalWaldoHeld: trustlineWallets.reduce((sum, w) => sum + w.balance, 0).toFixed(2)
-            },
-            source: 'XRPL',
-            server: server,
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          throw new Error(`Invalid XRPL response: ${JSON.stringify(data)}`);
-        }
-
-      } catch (serverError) {
-        lastError = serverError;
-        console.log(`❌ Failed to query ${server}:`, serverError.message);
-        continue; // Try next server
-      }
-    }
+    return res.json({
+      success: true,
+      trustlineCount: knownTrustlineCount,
+      summary: {
+        totalTrustlines: knownTrustlineCount,
+        source: 'Known count from XRPL Services',
+        note: 'XRPL API query will be implemented later'
+      },
+      timestamp: new Date().toISOString()
+    });
 
     // If all servers failed, fall back to Redis count
     console.log('⚠️ All XRPL servers failed, falling back to Redis count');
