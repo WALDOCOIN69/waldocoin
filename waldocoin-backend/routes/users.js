@@ -345,20 +345,26 @@ router.get('/:wallet', async (req, res) => {
 
 // GET /api/users/trustline-count - Get count of wallets with WALDO trustline
 router.get('/trustline-count', async (req, res) => {
+  console.log('🔍 Trustline count endpoint called');
+  console.log('Headers:', req.headers);
+  console.log('X_ADMIN_KEY env:', process.env.X_ADMIN_KEY);
+
   try {
     const adminKey = req.headers['x-admin-key'];
+    console.log('Admin key received:', adminKey);
 
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      console.log('❌ Unauthorized access - admin key mismatch');
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    console.log('🔍 Querying XRPL for WALDO trustlines...');
+    console.log('✅ Admin key validated');
+    console.log('🔍 Returning known trustline count...');
 
     // For now, let's hardcode the known count from XRPL Services
-    // TODO: Fix XRPL API query later
     const knownTrustlineCount = 20; // You confirmed this from XRPL Services
 
-    console.log(`📊 Using known trustline count: ${knownTrustlineCount}`);
+    console.log(`📊 Returning trustline count: ${knownTrustlineCount}`);
 
     return res.json({
       success: true,
@@ -368,27 +374,6 @@ router.get('/trustline-count', async (req, res) => {
         source: 'Known count from XRPL Services',
         note: 'XRPL API query will be implemented later'
       },
-      timestamp: new Date().toISOString()
-    });
-
-    // If all servers failed, fall back to Redis count
-    console.log('⚠️ All XRPL servers failed, falling back to Redis count');
-    const userKeys = await redis.keys("user:*");
-    const actualUserKeys = userKeys.filter(key =>
-      !key.includes(':battles') &&
-      !key.includes(':staking') &&
-      !key.includes(':votes')
-    );
-
-    return res.json({
-      success: true,
-      trustlineCount: actualUserKeys.length,
-      summary: {
-        totalTrustlines: actualUserKeys.length,
-        fallback: true,
-        xrplError: lastError?.message
-      },
-      source: 'Redis (XRPL failed)',
       timestamp: new Date().toISOString()
     });
 
