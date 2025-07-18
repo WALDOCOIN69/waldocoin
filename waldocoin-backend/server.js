@@ -88,6 +88,7 @@ const app = express();
   app.use("/api/battle", (await import("./routes/battle.js")).default);
   app.use("/api/dao", (await import("./routes/dao.js")).default);
   app.use("/api/users", (await import("./routes/users.js")).default);
+  app.use("/api/rewards", (await import("./routes/rewards.js")).default);
   app.use("/api/proposals", proposalsRoute);
   app.use("/api/conversion", conversionRoute);
   app.use("/api/topMeme", topMemeRoute);
