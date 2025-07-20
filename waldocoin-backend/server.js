@@ -96,6 +96,7 @@ const app = express();
   app.use("/api/topMeme", topMemeRoute);
   app.use("/api/linkTwitter", linkTwitterRoute);
   app.use("/api/activity", activityRoute);
+  app.use("/api/system", (await import("./routes/system.js")).default);
 
   app.use("/api/battle/start", battleStartRoute);
   app.use("/api/battle/accept", battleAcceptRoute);

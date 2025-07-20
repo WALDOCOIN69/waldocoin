@@ -1041,6 +1041,95 @@
         </div>
       </div>
 
+      <!-- Minimum WALDO Requirements Control -->
+      <div class="admin-card" style="border: 2px solid #e74c3c; background: #2a1616;">
+        <div class="card-title" style="color: #e74c3c;">💰 Minimum WALDO Requirements</div>
+
+        <div class="margin-bottom-20">
+          <h4 style="color: #e74c3c; margin-bottom: 10px;">📊 Current Requirements</h4>
+          <div id="currentWaldoRequirements" class="margin-bottom-15">
+            <div style="color: #666; font-style: italic;">Loading current requirements...</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+          <h4 style="color: #e74c3c; margin-bottom: 15px;">⚙️ Update Minimum Requirements</h4>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for Meme Rewards:</label>
+              <input type="number" id="minWaldoMemes" class="form-input" min="0" max="100000" step="100" placeholder="6000">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 6000 WALDO (6 XRP worth)</div>
+            </div>
+
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for Battles:</label>
+              <input type="number" id="minWaldoBattles" class="form-input" min="0" max="100000" step="100" placeholder="6000">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 6000 WALDO (6 XRP worth)</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for DAO Voting:</label>
+              <input type="number" id="minWaldoDAO" class="form-input" min="0" max="100000" step="100" placeholder="100">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 100 WALDO</div>
+            </div>
+
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">WALDO per XRP Rate:</label>
+              <input type="number" id="waldoPerXrp" class="form-input" min="1" max="10000" step="1" placeholder="1000">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 1000 WALDO per XRP</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for Change:</label>
+            <input type="text" id="requirementChangeReason" class="form-input" placeholder="e.g., Market adjustment, Anti-spam measure, Economic rebalancing" maxlength="100">
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button onclick="updateWaldoRequirements()" class="btn" style="background: #e74c3c; color: white;">
+              💰 Update Requirements
+            </button>
+            <button onclick="resetWaldoRequirements()" class="btn" style="background: #95a5a6; color: white;">
+              🔄 Reset to Defaults
+            </button>
+          </div>
+
+          <div id="requirementResult" class="margin-top-15"></div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #e74c3c; margin-bottom: 10px;">🚀 Quick Requirement Presets</h4>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="setQuickRequirement('launch', 6000, 6000, 100)" class="btn btn-secondary" style="font-size: 0.9em;">
+              🚀 Launch (6K WALDO)
+            </button>
+            <button onclick="setQuickRequirement('growth', 3000, 3000, 50)" class="btn btn-secondary" style="font-size: 0.9em;">
+              📈 Growth (3K WALDO)
+            </button>
+            <button onclick="setQuickRequirement('premium', 10000, 10000, 500)" class="btn btn-secondary" style="font-size: 0.9em;">
+              💎 Premium (10K WALDO)
+            </button>
+            <button onclick="setQuickRequirement('open', 0, 0, 0)" class="btn btn-secondary" style="font-size: 0.9em;">
+              🌍 Open Access (No Min)
+            </button>
+          </div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #e74c3c; margin-bottom: 10px;">📈 Requirement History</h4>
+          <div id="requirementHistory" style="max-height: 200px; overflow-y: auto;">
+            <div style="color: #666; font-style: italic;">No requirement changes yet</div>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          💡 <strong>How it works:</strong> Users need minimum WALDO balance to claim meme rewards, start battles, and vote in DAO. Airdrop users get 50,000 WALDO (well above minimums). Changes apply immediately.
+        </div>
+      </div>
+
       <!-- Bonus Control System -->
       <div class="admin-card" style="border: 2px solid #f39c12; background: #2a2416;">
         <div class="card-title" style="color: #f39c12;">🎁 Reward Bonus Control System</div>
@@ -1445,6 +1534,230 @@
     function handleLoginKeypress(event) {
       if (event.key === 'Enter') {
         attemptLogin();
+      }
+    }
+
+    // 💰 WALDO Requirements Control Functions
+    async function loadWaldoRequirements() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/waldo-requirements`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const requirementsDiv = document.getElementById('currentWaldoRequirements');
+
+        if (data.success) {
+          const req = data.requirements;
+          requirementsDiv.innerHTML = `
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                  <div style="color: #e74c3c; font-weight: bold;">Meme Rewards</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${req.memeRewards.toLocaleString()} WALDO</div>
+                  <div style="color: #666; font-size: 0.9em;">${(req.memeRewards / req.waldoPerXrp).toFixed(1)} XRP worth</div>
+                </div>
+                <div>
+                  <div style="color: #e74c3c; font-weight: bold;">Battle Participation</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${req.battles.toLocaleString()} WALDO</div>
+                  <div style="color: #666; font-size: 0.9em;">${(req.battles / req.waldoPerXrp).toFixed(1)} XRP worth</div>
+                </div>
+              </div>
+              <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                  <div style="color: #e74c3c; font-weight: bold;">DAO Voting</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${req.daoVoting.toLocaleString()} WALDO</div>
+                  <div style="color: #666; font-size: 0.9em;">${(req.daoVoting / req.waldoPerXrp).toFixed(1)} XRP worth</div>
+                </div>
+                <div>
+                  <div style="color: #e74c3c; font-weight: bold;">Exchange Rate</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${req.waldoPerXrp.toLocaleString()} WALDO/XRP</div>
+                  <div style="color: #666; font-size: 0.9em;">1 XRP = ${req.waldoPerXrp} WALDO</div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          // Update form placeholders
+          document.getElementById('minWaldoMemes').placeholder = req.memeRewards;
+          document.getElementById('minWaldoBattles').placeholder = req.battles;
+          document.getElementById('minWaldoDAO').placeholder = req.daoVoting;
+          document.getElementById('waldoPerXrp').placeholder = req.waldoPerXrp;
+        } else {
+          requirementsDiv.innerHTML = '<div style="color: #e74c3c;">Error loading requirements</div>';
+        }
+      } catch (error) {
+        console.error('Error loading WALDO requirements:', error);
+        document.getElementById('currentWaldoRequirements').innerHTML = '<div style="color: #e74c3c;">Error loading requirements</div>';
+      }
+    }
+
+    async function updateWaldoRequirements() {
+      const minWaldoMemes = parseInt(document.getElementById('minWaldoMemes').value);
+      const minWaldoBattles = parseInt(document.getElementById('minWaldoBattles').value);
+      const minWaldoDAO = parseInt(document.getElementById('minWaldoDAO').value);
+      const waldoPerXrp = parseInt(document.getElementById('waldoPerXrp').value);
+      const reason = document.getElementById('requirementChangeReason').value.trim();
+
+      if (!minWaldoMemes && !minWaldoBattles && !minWaldoDAO && !waldoPerXrp) {
+        showAlert('Please enter at least one value to update', 'warning');
+        return;
+      }
+
+      const resultDiv = document.getElementById('requirementResult');
+      resultDiv.innerHTML = '<div style="color: #ffd93d;">💰 Updating WALDO requirements...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/update-waldo-requirements`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            memeRewards: minWaldoMemes || undefined,
+            battles: minWaldoBattles || undefined,
+            daoVoting: minWaldoDAO || undefined,
+            waldoPerXrp: waldoPerXrp || undefined,
+            reason: reason || 'Admin requirement update'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ Requirements updated successfully!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              ${data.changes.join(' • ')}
+            </div>
+          `;
+
+          // Clear form
+          document.getElementById('minWaldoMemes').value = '';
+          document.getElementById('minWaldoBattles').value = '';
+          document.getElementById('minWaldoDAO').value = '';
+          document.getElementById('waldoPerXrp').value = '';
+          document.getElementById('requirementChangeReason').value = '';
+
+          // Refresh displays
+          loadWaldoRequirements();
+          loadRequirementHistory();
+          showAlert('WALDO requirements updated successfully', 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to update: ${data.error}</div>`;
+          showAlert(`Failed to update requirements: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Update requirements error:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error updating requirements</div>';
+        showAlert('Network error updating requirements', 'error');
+      }
+    }
+
+    async function resetWaldoRequirements() {
+      const confirm = window.confirm('⚠️ Reset WALDO requirements to defaults?\n\n• Meme Rewards: 6000 WALDO (6 XRP)\n• Battles: 6000 WALDO (6 XRP)\n• DAO Voting: 100 WALDO\n• Rate: 1000 WALDO per XRP\n\nThis action cannot be undone.');
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/reset-waldo-requirements`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            reason: 'Reset to default requirements'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('requirementResult').innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ Requirements reset to defaults!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              6000 WALDO for memes/battles • 100 WALDO for DAO • 1000 WALDO/XRP
+            </div>
+          `;
+
+          loadWaldoRequirements();
+          loadRequirementHistory();
+          showAlert('Requirements reset to defaults', 'success');
+        } else {
+          showAlert(`Failed to reset: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Reset requirements error:', error);
+        showAlert('Network error resetting requirements', 'error');
+      }
+    }
+
+    function setQuickRequirement(preset, memes, battles, dao) {
+      let eventName, waldoPerXrp = 1000;
+
+      switch(preset) {
+        case 'launch':
+          eventName = 'Launch Configuration';
+          break;
+        case 'growth':
+          eventName = 'Growth Phase';
+          break;
+        case 'premium':
+          eventName = 'Premium Access';
+          break;
+        case 'open':
+          eventName = 'Open Access';
+          break;
+      }
+
+      // Set the form values
+      document.getElementById('minWaldoMemes').value = memes;
+      document.getElementById('minWaldoBattles').value = battles;
+      document.getElementById('minWaldoDAO').value = dao;
+      document.getElementById('waldoPerXrp').value = waldoPerXrp;
+      document.getElementById('requirementChangeReason').value = eventName;
+
+      // Auto-update
+      updateWaldoRequirements();
+    }
+
+    async function loadRequirementHistory() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/requirement-history`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const historyDiv = document.getElementById('requirementHistory');
+
+        if (data.success && data.history && data.history.length > 0) {
+          let historyHtml = '';
+          data.history.slice(0, 10).forEach(entry => { // Show last 10 changes
+            const date = new Date(entry.timestamp).toLocaleString();
+            historyHtml += `
+              <div style="background: #2a2a2a; padding: 8px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid #e74c3c;">
+                <div style="display: flex; justify-content: between; align-items: center;">
+                  <div>
+                    <strong style="color: #e74c3c;">${entry.reason}</strong>
+                    <div style="color: #ccc; font-size: 0.9em;">${entry.changes.join(' • ')}</div>
+                  </div>
+                  <div style="color: #666; font-size: 0.8em;">${date}</div>
+                </div>
+              </div>
+            `;
+          });
+          historyDiv.innerHTML = historyHtml;
+        } else {
+          historyDiv.innerHTML = '<div style="color: #666; font-style: italic;">No requirement changes yet</div>';
+        }
+      } catch (error) {
+        console.error('Error loading requirement history:', error);
+        document.getElementById('requirementHistory').innerHTML = '<div style="color: #e74c3c;">Error loading history</div>';
       }
     }
 
@@ -2282,11 +2595,13 @@
       // Load section data
       loadSectionData(sectionName);
 
-      // Load active bonuses and airdrop config if on dashboard
+      // Load active bonuses, airdrop config, and WALDO requirements if on dashboard
       if (sectionName === 'dashboard') {
         loadActiveBonuses();
         loadAirdropConfig();
         loadConfigHistory();
+        loadWaldoRequirements();
+        loadRequirementHistory();
       }
     }
 

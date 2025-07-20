@@ -297,6 +297,22 @@ router.post('/start', async (req, res) => {
       });
     }
 
+    // Check minimum WALDO balance requirement (6 XRP worth)
+    const userData = await redis.hGetAll(`user:${wallet}`);
+    const waldoBalance = parseInt(userData.waldoBalance) || 0;
+
+    const waldoPerXrp = await redis.get("conversion:waldo_per_xrp") || 1000;
+    const minimumWaldo = 6 * waldoPerXrp; // 6 XRP worth
+
+    if (waldoBalance < minimumWaldo) {
+      return res.status(400).json({
+        success: false,
+        error: `Minimum ${minimumWaldo.toLocaleString()} WALDO (6 XRP worth) required to start battles`,
+        minimumRequired: minimumWaldo,
+        currentBalance: waldoBalance
+      });
+    }
+
     // Check if there's already an active battle
     const currentBattleId = await redis.get("battle:current");
     if (currentBattleId) {

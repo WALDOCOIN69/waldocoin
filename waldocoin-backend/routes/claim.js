@@ -228,6 +228,26 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Check minimum WALDO balance requirement (dynamic from admin settings)
+    const userData = await redis.hGetAll(`user:${wallet}`);
+    const waldoBalance = parseInt(userData.waldoBalance) || 0;
+
+    // Get current minimum requirement from admin settings
+    const minimumWaldo = await redis.get("requirements:meme_rewards") || 6000; // Default 6000 WALDO
+    const waldoPerXrp = await redis.get("conversion:waldo_per_xrp") || 1000; // Default 1000 WALDO per XRP
+    const xrpWorth = (minimumWaldo / waldoPerXrp).toFixed(1);
+
+    if (waldoBalance < minimumWaldo) {
+      return res.status(400).json({
+        success: false,
+        error: `Minimum ${parseInt(minimumWaldo).toLocaleString()} WALDO (${xrpWorth} XRP worth) required to claim meme rewards. Current balance: ${waldoBalance.toLocaleString()} WALDO`,
+        minimumRequired: parseInt(minimumWaldo),
+        currentBalance: waldoBalance,
+        shortfall: parseInt(minimumWaldo) - waldoBalance,
+        xrpWorth: parseFloat(xrpWorth)
+      });
+    }
+
     // Check if already claimed
     const claimKey = `claim:${wallet}:${memeId}`;
     const alreadyClaimed = await redis.get(claimKey);
