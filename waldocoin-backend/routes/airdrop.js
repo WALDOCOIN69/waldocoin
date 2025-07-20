@@ -54,7 +54,7 @@ router.post("/", async (req, res) => {
 
     // Get daily password from Redis override, otherwise use current default
     const redisPassword = await redis.get("airdrop:daily_password");
-    const dailyPassword = redisPassword || "waldogod2025";
+    const dailyPassword = redisPassword || "WALDOCREW";
 
     if (password !== dailyPassword) {
       return res.status(401).json({ success: false, error: "Invalid password" });
