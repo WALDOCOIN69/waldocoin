@@ -965,6 +965,176 @@
 
         <div id="resetResult" class="margin-top-15"></div>
       </div>
+
+      <!-- Airdrop Configuration Controls -->
+      <div class="admin-card" style="border: 2px solid #3498db; background: #1a2332;">
+        <div class="card-title" style="color: #3498db;">⚙️ Airdrop Configuration Controls</div>
+
+        <div class="margin-bottom-20">
+          <h4 style="color: #3498db; margin-bottom: 10px;">📊 Current Airdrop Settings</h4>
+          <div id="currentAirdropConfig" class="margin-bottom-15">
+            <div style="color: #666; font-style: italic;">Loading current configuration...</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+          <h4 style="color: #3498db; margin-bottom: 15px;">🔧 Update Airdrop Limits</h4>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Maximum Wallets:</label>
+              <input type="number" id="maxWallets" class="form-input" min="100" max="100000" step="100" placeholder="1000">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 1000 wallets</div>
+            </div>
+
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Duration (days):</label>
+              <input type="number" id="airdropDays" class="form-input" min="1" max="365" step="1" placeholder="5">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 5 days</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for Change:</label>
+            <input type="text" id="configChangeReason" class="form-input" placeholder="e.g., High demand, Extended promotion, Contest event" maxlength="100">
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button onclick="updateAirdropConfig()" class="btn" style="background: #3498db; color: white;">
+              ⚙️ Update Configuration
+            </button>
+            <button onclick="resetToDefaults()" class="btn" style="background: #95a5a6; color: white;">
+              🔄 Reset to Defaults
+            </button>
+          </div>
+
+          <div id="configResult" class="margin-top-15"></div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #3498db; margin-bottom: 10px;">🚀 Quick Configuration Presets</h4>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="setQuickConfig(2000, 10, 'Extended Launch')" class="btn btn-secondary" style="font-size: 0.9em;">
+              🚀 Extended Launch (2K wallets, 10 days)
+            </button>
+            <button onclick="setQuickConfig(5000, 14, 'Major Promotion')" class="btn btn-secondary" style="font-size: 0.9em;">
+              🎯 Major Promo (5K wallets, 14 days)
+            </button>
+            <button onclick="setQuickConfig(10000, 30, 'Mega Campaign')" class="btn btn-secondary" style="font-size: 0.9em;">
+              💎 Mega Campaign (10K wallets, 30 days)
+            </button>
+            <button onclick="setQuickConfig(500, 3, 'Limited Flash')" class="btn btn-secondary" style="font-size: 0.9em;">
+              ⚡ Flash Drop (500 wallets, 3 days)
+            </button>
+          </div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #3498db; margin-bottom: 10px;">📈 Configuration History</h4>
+          <div id="configHistory" style="max-height: 200px; overflow-y: auto;">
+            <div style="color: #666; font-style: italic;">No configuration changes yet</div>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          💡 <strong>Note:</strong> Configuration changes take effect immediately. Users will see updated limits in real-time. All changes are logged for audit purposes.
+        </div>
+      </div>
+
+      <!-- Bonus Control System -->
+      <div class="admin-card" style="border: 2px solid #f39c12; background: #2a2416;">
+        <div class="card-title" style="color: #f39c12;">🎁 Reward Bonus Control System</div>
+
+        <div class="margin-bottom-20">
+          <h4 style="color: #f39c12; margin-bottom: 10px;">🚀 Active Bonus Multipliers</h4>
+          <div id="activeBonuses" class="margin-bottom-15">
+            <div style="color: #666; font-style: italic;">No active bonuses - all rewards at base rates</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+          <h4 style="color: #f39c12; margin-bottom: 15px;">⚡ Set New Bonus</h4>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Bonus Type:</label>
+              <select id="bonusType" class="form-input">
+                <option value="all">All Rewards (Global)</option>
+                <option value="meme">Meme Rewards Only</option>
+                <option value="battle">Battle Rewards Only</option>
+                <option value="referral">Referral Rewards Only</option>
+                <option value="staking">Staking Rewards Only</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Multiplier:</label>
+              <select id="bonusMultiplier" class="form-input">
+                <option value="1.5">1.5x (50% bonus)</option>
+                <option value="2">2x (Double rewards)</option>
+                <option value="2.5">2.5x (150% bonus)</option>
+                <option value="3">3x (Triple rewards)</option>
+                <option value="5">5x (500% bonus)</option>
+                <option value="10">10x (1000% bonus)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Duration (hours):</label>
+              <select id="bonusDuration" class="form-input">
+                <option value="1">1 Hour</option>
+                <option value="6">6 Hours</option>
+                <option value="12">12 Hours</option>
+                <option value="24">24 Hours (1 Day)</option>
+                <option value="48">48 Hours (2 Days)</option>
+                <option value="72">72 Hours (3 Days)</option>
+                <option value="168">168 Hours (1 Week)</option>
+                <option value="0">Permanent (until manually removed)</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Event Name:</label>
+              <input type="text" id="bonusName" class="form-input" placeholder="e.g., Weekend Bonus, Contest Event" maxlength="50">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="setBonusMultiplier()" class="btn" style="background: #f39c12; color: white;">
+              🚀 Activate Bonus
+            </button>
+            <button onclick="clearAllBonuses()" class="btn" style="background: #e74c3c; color: white;">
+              🗑️ Clear All Bonuses
+            </button>
+          </div>
+
+          <div id="bonusResult" class="margin-top-15"></div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #f39c12; margin-bottom: 10px;">📊 Quick Bonus Presets</h4>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="setQuickBonus('weekend', 2, 48)" class="btn btn-secondary" style="font-size: 0.9em;">
+              🌟 Weekend 2x (48h)
+            </button>
+            <button onclick="setQuickBonus('contest', 5, 24)" class="btn btn-secondary" style="font-size: 0.9em;">
+              🏆 Contest 5x (24h)
+            </button>
+            <button onclick="setQuickBonus('flash', 10, 1)" class="btn btn-secondary" style="font-size: 0.9em;">
+              ⚡ Flash 10x (1h)
+            </button>
+            <button onclick="setQuickBonus('launch', 3, 72)" class="btn btn-secondary" style="font-size: 0.9em;">
+              🚀 Launch 3x (72h)
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          💡 <strong>How it works:</strong> Bonuses multiply the base reward amounts. Users will see the bonus in their reward notifications. All bonuses are logged and can be reverted instantly.
+        </div>
+      </div>
     </div>
 
     <!-- Battles Section -->
@@ -1275,6 +1445,395 @@
     function handleLoginKeypress(event) {
       if (event.key === 'Enter') {
         attemptLogin();
+      }
+    }
+
+    // ⚙️ Airdrop Configuration Functions
+    async function loadAirdropConfig() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/config`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const configDiv = document.getElementById('currentAirdropConfig');
+
+        if (data.success) {
+          const config = data.config;
+          const endDate = new Date(config.endDate).toLocaleDateString();
+          const daysRemaining = Math.ceil((new Date(config.endDate) - new Date()) / (1000 * 60 * 60 * 24));
+
+          configDiv.innerHTML = `
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #3498db;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                  <div style="color: #3498db; font-weight: bold;">Wallet Limit</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${config.claimed}/${config.maxWallets}</div>
+                  <div style="color: #666; font-size: 0.9em;">${config.maxWallets - config.claimed} remaining</div>
+                </div>
+                <div>
+                  <div style="color: #3498db; font-weight: bold;">Duration</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${daysRemaining} days left</div>
+                  <div style="color: #666; font-size: 0.9em;">Ends: ${endDate}</div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          // Update form placeholders
+          document.getElementById('maxWallets').placeholder = config.maxWallets;
+          document.getElementById('airdropDays').placeholder = Math.ceil(config.durationDays);
+        } else {
+          configDiv.innerHTML = '<div style="color: #e74c3c;">Error loading configuration</div>';
+        }
+      } catch (error) {
+        console.error('Error loading airdrop config:', error);
+        document.getElementById('currentAirdropConfig').innerHTML = '<div style="color: #e74c3c;">Error loading configuration</div>';
+      }
+    }
+
+    async function updateAirdropConfig() {
+      const maxWallets = parseInt(document.getElementById('maxWallets').value);
+      const airdropDays = parseInt(document.getElementById('airdropDays').value);
+      const reason = document.getElementById('configChangeReason').value.trim();
+
+      if (!maxWallets && !airdropDays) {
+        showAlert('Please enter at least one value to update', 'warning');
+        return;
+      }
+
+      if (maxWallets && (maxWallets < 100 || maxWallets > 100000)) {
+        showAlert('Wallet limit must be between 100 and 100,000', 'error');
+        return;
+      }
+
+      if (airdropDays && (airdropDays < 1 || airdropDays > 365)) {
+        showAlert('Duration must be between 1 and 365 days', 'error');
+        return;
+      }
+
+      const resultDiv = document.getElementById('configResult');
+      resultDiv.innerHTML = '<div style="color: #ffd93d;">⚙️ Updating airdrop configuration...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/update-config`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            maxWallets: maxWallets || undefined,
+            durationDays: airdropDays || undefined,
+            reason: reason || 'Admin configuration update'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ Configuration updated successfully!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              ${data.changes.join(' • ')}
+            </div>
+          `;
+
+          // Clear form
+          document.getElementById('maxWallets').value = '';
+          document.getElementById('airdropDays').value = '';
+          document.getElementById('configChangeReason').value = '';
+
+          // Refresh displays
+          loadAirdropConfig();
+          loadConfigHistory();
+          showAlert('Airdrop configuration updated successfully', 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to update: ${data.error}</div>`;
+          showAlert(`Failed to update configuration: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Config update error:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error updating configuration</div>';
+        showAlert('Network error updating configuration', 'error');
+      }
+    }
+
+    async function resetToDefaults() {
+      const confirm = window.confirm('⚠️ Reset airdrop configuration to defaults?\n\n• 1000 wallet limit\n• 5 day duration\n\nThis action cannot be undone.');
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/reset-config`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            reason: 'Reset to default configuration'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('configResult').innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ Configuration reset to defaults!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              1000 wallet limit • 5 day duration
+            </div>
+          `;
+
+          loadAirdropConfig();
+          loadConfigHistory();
+          showAlert('Configuration reset to defaults', 'success');
+        } else {
+          showAlert(`Failed to reset: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Reset config error:', error);
+        showAlert('Network error resetting configuration', 'error');
+      }
+    }
+
+    function setQuickConfig(wallets, days, eventName) {
+      // Set the form values
+      document.getElementById('maxWallets').value = wallets;
+      document.getElementById('airdropDays').value = days;
+      document.getElementById('configChangeReason').value = eventName;
+
+      // Auto-update
+      updateAirdropConfig();
+    }
+
+    async function loadConfigHistory() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/config-history`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const historyDiv = document.getElementById('configHistory');
+
+        if (data.success && data.history && data.history.length > 0) {
+          let historyHtml = '';
+          data.history.slice(0, 10).forEach(entry => { // Show last 10 changes
+            const date = new Date(entry.timestamp).toLocaleString();
+            historyHtml += `
+              <div style="background: #2a2a2a; padding: 8px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid #3498db;">
+                <div style="display: flex; justify-content: between; align-items: center;">
+                  <div>
+                    <strong style="color: #3498db;">${entry.reason}</strong>
+                    <div style="color: #ccc; font-size: 0.9em;">${entry.changes.join(' • ')}</div>
+                  </div>
+                  <div style="color: #666; font-size: 0.8em;">${date}</div>
+                </div>
+              </div>
+            `;
+          });
+          historyDiv.innerHTML = historyHtml;
+        } else {
+          historyDiv.innerHTML = '<div style="color: #666; font-style: italic;">No configuration changes yet</div>';
+        }
+      } catch (error) {
+        console.error('Error loading config history:', error);
+        document.getElementById('configHistory').innerHTML = '<div style="color: #e74c3c;">Error loading history</div>';
+      }
+    }
+
+    // 🎁 Bonus Control System Functions
+    async function setBonusMultiplier() {
+      const bonusType = document.getElementById('bonusType').value;
+      const multiplier = parseFloat(document.getElementById('bonusMultiplier').value);
+      const duration = parseInt(document.getElementById('bonusDuration').value);
+      const eventName = document.getElementById('bonusName').value.trim() || 'Admin Bonus';
+
+      const resultDiv = document.getElementById('bonusResult');
+      resultDiv.innerHTML = '<div style="color: #ffd93d;">🚀 Setting bonus multiplier...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/rewards/set-bonus`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            type: bonusType,
+            multiplier: multiplier,
+            duration: duration,
+            eventName: eventName
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ Bonus activated successfully!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              ${eventName}: ${multiplier}x multiplier for ${bonusType} rewards
+              ${duration > 0 ? `(expires in ${duration} hours)` : '(permanent)'}
+            </div>
+          `;
+
+          // Refresh active bonuses display
+          loadActiveBonuses();
+          showAlert(`Bonus activated: ${eventName} (${multiplier}x)`, 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to set bonus: ${data.error}</div>`;
+          showAlert(`Failed to set bonus: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Bonus error:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error setting bonus</div>';
+        showAlert('Network error setting bonus', 'error');
+      }
+    }
+
+    async function clearAllBonuses() {
+      const confirm = window.confirm('⚠️ Are you sure you want to clear ALL active bonuses?\n\nThis will revert all rewards back to base rates.');
+      if (!confirm) return;
+
+      const resultDiv = document.getElementById('bonusResult');
+      resultDiv.innerHTML = '<div style="color: #ffd93d;">🗑️ Clearing all bonuses...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/rewards/clear-bonuses`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ All bonuses cleared!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              All rewards reverted to base rates. ${data.clearedCount || 0} bonuses removed.
+            </div>
+          `;
+
+          // Refresh active bonuses display
+          loadActiveBonuses();
+          showAlert('All bonuses cleared - back to base rates', 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to clear bonuses: ${data.error}</div>`;
+          showAlert(`Failed to clear bonuses: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Clear bonuses error:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error clearing bonuses</div>';
+        showAlert('Network error clearing bonuses', 'error');
+      }
+    }
+
+    function setQuickBonus(preset, multiplier, duration) {
+      let eventName, bonusType;
+
+      switch(preset) {
+        case 'weekend':
+          eventName = 'Weekend Bonus';
+          bonusType = 'all';
+          break;
+        case 'contest':
+          eventName = 'Contest Event';
+          bonusType = 'meme';
+          break;
+        case 'flash':
+          eventName = 'Flash Bonus';
+          bonusType = 'all';
+          break;
+        case 'launch':
+          eventName = 'Launch Celebration';
+          bonusType = 'all';
+          break;
+      }
+
+      // Set the form values
+      document.getElementById('bonusType').value = bonusType;
+      document.getElementById('bonusMultiplier').value = multiplier.toString();
+      document.getElementById('bonusDuration').value = duration.toString();
+      document.getElementById('bonusName').value = eventName;
+
+      // Activate the bonus
+      setBonusMultiplier();
+    }
+
+    async function loadActiveBonuses() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/rewards/active-bonuses`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const bonusesDiv = document.getElementById('activeBonuses');
+
+        if (data.success && data.bonuses && data.bonuses.length > 0) {
+          let bonusesHtml = '';
+          data.bonuses.forEach(bonus => {
+            const expiresText = bonus.permanent ? 'Permanent' :
+              `Expires: ${new Date(bonus.expiresAt).toLocaleString()}`;
+
+            bonusesHtml += `
+              <div style="background: #333; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #f39c12;">
+                <div style="display: flex; justify-content: between; align-items: center;">
+                  <div>
+                    <strong style="color: #f39c12;">${bonus.eventName}</strong>
+                    <span style="color: #27ae60; margin-left: 10px;">${bonus.multiplier}x ${bonus.type} rewards</span>
+                  </div>
+                  <button onclick="removeBonus('${bonus.id}')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">
+                    Remove
+                  </button>
+                </div>
+                <div style="color: #666; font-size: 0.9em; margin-top: 5px;">${expiresText}</div>
+              </div>
+            `;
+          });
+          bonusesDiv.innerHTML = bonusesHtml;
+        } else {
+          bonusesDiv.innerHTML = '<div style="color: #666; font-style: italic;">No active bonuses - all rewards at base rates</div>';
+        }
+      } catch (error) {
+        console.error('Error loading active bonuses:', error);
+        document.getElementById('activeBonuses').innerHTML = '<div style="color: #e74c3c;">Error loading bonuses</div>';
+      }
+    }
+
+    async function removeBonus(bonusId) {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/rewards/remove-bonus`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ bonusId: bonusId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          loadActiveBonuses(); // Refresh the display
+          showAlert('Bonus removed successfully', 'success');
+        } else {
+          showAlert(`Failed to remove bonus: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Remove bonus error:', error);
+        showAlert('Network error removing bonus', 'error');
       }
     }
 
@@ -1722,6 +2281,13 @@
 
       // Load section data
       loadSectionData(sectionName);
+
+      // Load active bonuses and airdrop config if on dashboard
+      if (sectionName === 'dashboard') {
+        loadActiveBonuses();
+        loadAirdropConfig();
+        loadConfigHistory();
+      }
     }
 
     // Production-ready API call wrapper
@@ -2945,10 +3511,613 @@ This action cannot be undone. Continue?`;
       `;
     }
 
-    // Emergency Action Functions
+    // 🔍 Production-Ready Function Implementations
+
+    // User Management Functions
+    async function exportUsersCSV() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/users/export?format=csv`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `waldo-users-${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          showAlert('User data exported successfully', 'success');
+        } else {
+          showAlert('Failed to export user data', 'error');
+        }
+      } catch (error) {
+        console.error('Export CSV error:', error);
+        showAlert('Error exporting user data', 'error');
+      }
+    }
+
+    async function exportUsersJSON() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/users/export?format=json`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `waldo-users-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          showAlert('User data exported successfully', 'success');
+        } else {
+          showAlert('Failed to export user data', 'error');
+        }
+      } catch (error) {
+        console.error('Export JSON error:', error);
+        showAlert('Error exporting user data', 'error');
+      }
+    }
+
+    async function blockUser() {
+      const wallet = document.getElementById('blockWallet').value.trim();
+      const reason = document.getElementById('blockReason').value.trim();
+
+      if (!wallet || !reason) {
+        showAlert('Please enter both wallet address and reason', 'warning');
+        return;
+      }
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/users/block`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ wallet, reason })
+        });
+
+        const data = await response.json();
+        const resultDiv = document.getElementById('blockResult');
+
+        if (data.success) {
+          resultDiv.innerHTML = `<div style="color: #27ae60;">✅ User blocked successfully</div>`;
+          document.getElementById('blockWallet').value = '';
+          document.getElementById('blockReason').value = '';
+          showAlert('User blocked successfully', 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to block user: ${data.error}</div>`;
+          showAlert(`Failed to block user: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Block user error:', error);
+        document.getElementById('blockResult').innerHTML = '<div style="color: #e74c3c;">❌ Network error</div>';
+        showAlert('Network error blocking user', 'error');
+      }
+    }
+
+    async function unblockUser() {
+      const wallet = document.getElementById('unblockWallet').value.trim();
+      const reason = document.getElementById('unblockReason').value.trim();
+
+      if (!wallet || !reason) {
+        showAlert('Please enter both wallet address and reason', 'warning');
+        return;
+      }
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/users/unblock`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ wallet, reason })
+        });
+
+        const data = await response.json();
+        const resultDiv = document.getElementById('unblockResult');
+
+        if (data.success) {
+          resultDiv.innerHTML = `<div style="color: #27ae60;">✅ User unblocked successfully</div>`;
+          document.getElementById('unblockWallet').value = '';
+          document.getElementById('unblockReason').value = '';
+          showAlert('User unblocked successfully', 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to unblock user: ${data.error}</div>`;
+          showAlert(`Failed to unblock user: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Unblock user error:', error);
+        document.getElementById('unblockResult').innerHTML = '<div style="color: #e74c3c;">❌ Network error</div>';
+        showAlert('Network error unblocking user', 'error');
+      }
+    }
+
+    async function checkUserSecurity() {
+      const wallet = document.getElementById('checkWallet').value.trim();
+
+      if (!wallet) {
+        showAlert('Please enter a wallet address', 'warning');
+        return;
+      }
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/users/security-check?wallet=${wallet}`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const resultDiv = document.getElementById('securityCheckResult');
+
+        if (data.success) {
+          const user = data.user;
+          resultDiv.innerHTML = `
+            <div style="background: #333; padding: 15px; border-radius: 6px; margin-top: 10px;">
+              <div style="color: #25c2a0; font-weight: bold;">Security Status for ${wallet}</div>
+              <div style="margin-top: 10px;">
+                <div>Status: <span style="color: ${user.blocked ? '#e74c3c' : '#27ae60'}">${user.blocked ? 'BLOCKED' : 'ACTIVE'}</span></div>
+                <div>Total Claims: ${user.totalClaims || 0}</div>
+                <div>Last Activity: ${user.lastActivity ? new Date(user.lastActivity).toLocaleString() : 'Never'}</div>
+                <div>Risk Score: <span style="color: ${user.riskScore > 50 ? '#e74c3c' : '#27ae60'}">${user.riskScore || 0}/100</span></div>
+                ${user.blocked ? `<div style="color: #e74c3c;">Block Reason: ${user.blockReason}</div>` : ''}
+              </div>
+            </div>
+          `;
+          showAlert('Security check completed', 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to check security: ${data.error}</div>`;
+          showAlert(`Failed to check security: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Security check error:', error);
+        document.getElementById('securityCheckResult').innerHTML = '<div style="color: #e74c3c;">❌ Network error</div>';
+        showAlert('Network error checking security', 'error');
+      }
+    }
+
     function viewUser(wallet) {
-      showAlert(`Viewing security details for: ${wallet}`, 'success');
-      // In production, this would show detailed user security info
+      // Set the wallet in the security check field and run the check
+      document.getElementById('checkWallet').value = wallet;
+      checkUserSecurity();
+    }
+
+    // Airdrop Password Management Functions
+    async function getCurrentAirdropPassword() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/current-password`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert(`Current password: ${data.password}`, 'info');
+        } else {
+          showAlert(`Failed to get password: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Get password error:', error);
+        showAlert('Error getting current password', 'error');
+      }
+    }
+
+    function setQuickAirdropPassword(password) {
+      document.getElementById('newDailyPassword').value = password;
+    }
+
+    function generateDailyAirdropPassword() {
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+      const password = `WALDO${dateStr}`;
+      document.getElementById('newDailyPassword').value = password;
+    }
+
+    function generateRandomAirdropPassword() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let password = 'WALDO';
+      for (let i = 0; i < 6; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      document.getElementById('newDailyPassword').value = password;
+    }
+
+    async function clearPasswordOverride() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/clear-password-override`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('newDailyPassword').value = '';
+          showAlert('Password override cleared', 'success');
+        } else {
+          showAlert(`Failed to clear override: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Clear override error:', error);
+        showAlert('Error clearing password override', 'error');
+      }
+    }
+
+    async function updateAirdropPassword() {
+      const newPassword = document.getElementById('newDailyPassword').value.trim();
+
+      if (!newPassword) {
+        showAlert('Please enter a password', 'warning');
+        return;
+      }
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/update-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ password: newPassword })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Airdrop password updated successfully', 'success');
+          document.getElementById('newDailyPassword').value = '';
+        } else {
+          showAlert(`Failed to update password: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Update password error:', error);
+        showAlert('Error updating password', 'error');
+      }
+    }
+
+    // Battle Management Functions
+    async function endCurrentBattle() {
+      const confirm = window.confirm('⚠️ Force end the current battle?\n\nThis will immediately end the battle and trigger payouts.');
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/battle/force-end`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Battle ended successfully', 'success');
+        } else {
+          showAlert(`Failed to end battle: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('End battle error:', error);
+        showAlert('Error ending battle', 'error');
+      }
+    }
+
+    async function cancelCurrentBattle() {
+      const confirm = window.confirm('⚠️ EMERGENCY CANCEL current battle?\n\nThis will cancel the battle and refund all participants. This action cannot be undone.');
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/battle/emergency-cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Battle cancelled and participants refunded', 'success');
+        } else {
+          showAlert(`Failed to cancel battle: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Cancel battle error:', error);
+        showAlert('Error cancelling battle', 'error');
+      }
+    }
+
+    // Staking Management Functions
+    async function loadUserStakes() {
+      const wallet = document.getElementById('unstakeWalletAddress').value.trim();
+
+      if (!wallet) {
+        showAlert('Please enter a wallet address', 'warning');
+        return;
+      }
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/staking/user-stakes?wallet=${wallet}`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const stakesDiv = document.getElementById('userStakesList');
+
+        if (data.success && data.stakes && data.stakes.length > 0) {
+          let stakesHtml = '<div style="margin-top: 15px;"><h5>Active Stakes:</h5>';
+          data.stakes.forEach((stake, index) => {
+            stakesHtml += `
+              <div style="background: #333; padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+                <div><strong>Stake ${index + 1}:</strong> ${stake.amount} WALDO</div>
+                <div>Duration: ${stake.duration} days</div>
+                <div>Started: ${new Date(stake.startDate).toLocaleDateString()}</div>
+                <div>Ends: ${new Date(stake.endDate).toLocaleDateString()}</div>
+                <div>Status: <span style="color: ${stake.active ? '#27ae60' : '#e74c3c'}">${stake.active ? 'Active' : 'Completed'}</span></div>
+              </div>
+            `;
+          });
+          stakesHtml += '</div>';
+          stakesDiv.innerHTML = stakesHtml;
+        } else {
+          stakesDiv.innerHTML = '<div style="color: #666; margin-top: 15px;">No active stakes found for this wallet</div>';
+        }
+      } catch (error) {
+        console.error('Load stakes error:', error);
+        document.getElementById('userStakesList').innerHTML = '<div style="color: #e74c3c; margin-top: 15px;">Error loading stakes</div>';
+        showAlert('Error loading user stakes', 'error');
+      }
+    }
+
+    async function executeManualUnstake() {
+      const wallet = document.getElementById('unstakeWalletAddress').value.trim();
+      const reason = document.getElementById('unstakeReason').value.trim();
+
+      if (!wallet || !reason) {
+        showAlert('Please enter both wallet address and reason', 'warning');
+        return;
+      }
+
+      const confirm = window.confirm(`⚠️ Manually unstake all positions for ${wallet}?\n\nReason: ${reason}\n\nThis action cannot be undone.`);
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/staking/manual-unstake`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ wallet, reason })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert(`Manual unstake completed: ${data.unstakedAmount} WALDO returned`, 'success');
+          document.getElementById('unstakeWalletAddress').value = '';
+          document.getElementById('unstakeReason').value = '';
+          document.getElementById('userStakesList').innerHTML = '';
+        } else {
+          showAlert(`Failed to unstake: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Manual unstake error:', error);
+        showAlert('Error executing manual unstake', 'error');
+      }
+    }
+
+    // Security Functions
+    async function checkWalletSecurity() {
+      const wallet = document.getElementById('securityWallet').value.trim();
+
+      if (!wallet) {
+        showAlert('Please enter a wallet address', 'warning');
+        return;
+      }
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/security/wallet-check?wallet=${wallet}`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const resultsDiv = document.getElementById('securityResults');
+
+        if (data.success) {
+          const security = data.security;
+          resultsDiv.innerHTML = `
+            <div style="background: #333; padding: 15px; border-radius: 6px; margin-top: 15px;">
+              <h5 style="color: #25c2a0;">Security Analysis for ${wallet}</h5>
+              <div style="margin-top: 10px;">
+                <div>Risk Level: <span style="color: ${security.riskLevel === 'HIGH' ? '#e74c3c' : security.riskLevel === 'MEDIUM' ? '#f39c12' : '#27ae60'}">${security.riskLevel}</span></div>
+                <div>Fraud Score: ${security.fraudScore}/100</div>
+                <div>Suspicious Activities: ${security.suspiciousActivities || 0}</div>
+                <div>Last Violation: ${security.lastViolation ? new Date(security.lastViolation).toLocaleString() : 'None'}</div>
+                <div>Account Status: <span style="color: ${security.blocked ? '#e74c3c' : '#27ae60'}">${security.blocked ? 'BLOCKED' : 'ACTIVE'}</span></div>
+              </div>
+            </div>
+          `;
+        } else {
+          resultsDiv.innerHTML = `<div style="color: #e74c3c; margin-top: 15px;">Error: ${data.error}</div>`;
+        }
+      } catch (error) {
+        console.error('Security check error:', error);
+        document.getElementById('securityResults').innerHTML = '<div style="color: #e74c3c; margin-top: 15px;">Network error</div>';
+        showAlert('Error checking wallet security', 'error');
+      }
+    }
+
+    // System Functions
+    async function refreshAllData() {
+      showAlert('Refreshing all data...', 'info');
+      try {
+        // Reload current section data
+        const currentSection = document.querySelector('.nav-btn.active').textContent.toLowerCase();
+        if (currentSection.includes('dashboard')) {
+          loadDashboardData();
+          loadActiveBonuses();
+          loadAirdropConfig();
+          loadConfigHistory();
+        }
+        showAlert('Data refreshed successfully', 'success');
+      } catch (error) {
+        console.error('Refresh error:', error);
+        showAlert('Error refreshing data', 'error');
+      }
+    }
+
+    async function clearCache() {
+      const confirm = window.confirm('⚠️ Clear all cached data?\n\nThis will clear Redis cache and force fresh data loading.');
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/clear-cache`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Cache cleared successfully', 'success');
+        } else {
+          showAlert(`Failed to clear cache: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Clear cache error:', error);
+        showAlert('Error clearing cache', 'error');
+      }
+    }
+
+    async function emergencyStop() {
+      const confirm = window.confirm('🛑 EMERGENCY SYSTEM STOP?\n\nThis will disable all user-facing functions:\n- Airdrop claims\n- Battle participation\n- Staking operations\n\nOnly use in critical situations!');
+      if (!confirm) return;
+
+      const doubleConfirm = window.confirm('⚠️ FINAL CONFIRMATION\n\nAre you absolutely sure you want to stop the system?\n\nThis will affect all users immediately.');
+      if (!doubleConfirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/emergency-stop`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('🛑 EMERGENCY STOP ACTIVATED - All user functions disabled', 'error');
+        } else {
+          showAlert(`Failed to activate emergency stop: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Emergency stop error:', error);
+        showAlert('Error activating emergency stop', 'error');
+      }
+    }
+
+    // Admin Key Management Functions
+    function saveAdminKey() {
+      const adminKey = document.getElementById('adminKeyInput').value.trim();
+
+      if (!adminKey) {
+        showAlert('Please enter an admin key', 'warning');
+        return;
+      }
+
+      localStorage.setItem('adminKey', adminKey);
+      showAlert('Admin key saved successfully', 'success');
+      document.getElementById('adminKeyInput').value = '';
+    }
+
+    function clearAdminKey() {
+      const confirm = window.confirm('⚠️ Clear stored admin key?\n\nYou will need to re-enter it to access admin functions.');
+      if (!confirm) return;
+
+      localStorage.removeItem('adminKey');
+      showAlert('Admin key cleared', 'success');
+    }
+
+    async function testEnvironmentKeys() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        if (!adminKey) {
+          showAlert('Please save an admin key first', 'warning');
+          return;
+        }
+
+        const response = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('✅ Admin key is valid and working', 'success');
+        } else {
+          showAlert('❌ Admin key validation failed', 'error');
+        }
+      } catch (error) {
+        console.error('Test keys error:', error);
+        showAlert('Error testing admin key', 'error');
+      }
+    }
+
+    // Reset System Function
+    async function resetAirdropSystem() {
+      const confirm = window.confirm('⚠️ RESET AIRDROP SYSTEM?\n\nThis will:\n- Reset claim counter to 0\n- Clear all claimed wallets\n- Reset to default configuration\n\nThis action CANNOT be undone!');
+      if (!confirm) return;
+
+      const doubleConfirm = window.confirm('🚨 FINAL CONFIRMATION\n\nAre you absolutely sure?\n\nAll airdrop progress will be lost!');
+      if (!doubleConfirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/airdrop/reset-system`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('🔄 Airdrop system reset successfully', 'success');
+          // Refresh dashboard data
+          loadDashboardData();
+          loadAirdropConfig();
+        } else {
+          showAlert(`Failed to reset system: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Reset system error:', error);
+        showAlert('Error resetting airdrop system', 'error');
+      }
     }
 
     function blockUser(wallet) {
