@@ -1130,6 +1130,54 @@
         </div>
       </div>
 
+      <!-- AI Fraud Detection System -->
+      <div class="admin-card" style="border: 2px solid #9b59b6; background: #2a1a2a;">
+        <div class="card-title" style="color: #9b59b6;">🤖 AI Fraud Detection System</div>
+
+        <div class="margin-bottom-20">
+          <h4 style="color: #9b59b6; margin-bottom: 10px;">📊 Real-Time Fraud Analytics</h4>
+          <div id="fraudAnalytics" class="margin-bottom-15">
+            <div style="color: #666; font-style: italic;">Loading fraud detection analytics...</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+          <h4 style="color: #9b59b6; margin-bottom: 15px;">🚨 Recent Violations</h4>
+          <div id="recentViolations" style="max-height: 300px; overflow-y: auto;">
+            <div style="color: #666; font-style: italic;">Loading recent violations...</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+          <h4 style="color: #9b59b6; margin-bottom: 15px;">🔍 Suspicious Activity Monitor</h4>
+          <div id="suspiciousActivity" style="max-height: 250px; overflow-y: auto;">
+            <div style="color: #666; font-style: italic;">Loading suspicious activity...</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #9b59b6; margin-bottom: 10px;">⚙️ Fraud Detection Controls</h4>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="refreshFraudData()" class="btn" style="background: #9b59b6; color: white;">
+              🔄 Refresh Data
+            </button>
+            <button onclick="exportViolations()" class="btn btn-secondary">
+              📥 Export Violations
+            </button>
+            <button onclick="clearOldViolations()" class="btn" style="background: #e67e22; color: white;">
+              🗑️ Clear Old Data
+            </button>
+            <button onclick="adjustSensitivity()" class="btn btn-secondary">
+              🎛️ Adjust Sensitivity
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          🤖 <strong>AI System Active:</strong> Advanced bot detection, behavioral analysis, timing patterns, IP reputation, and automated blocking. 3 violations = 7-day auto-block.
+        </div>
+      </div>
+
       <!-- Bonus Control System -->
       <div class="admin-card" style="border: 2px solid #f39c12; background: #2a2416;">
         <div class="card-title" style="color: #f39c12;">🎁 Reward Bonus Control System</div>
@@ -2595,13 +2643,16 @@
       // Load section data
       loadSectionData(sectionName);
 
-      // Load active bonuses, airdrop config, and WALDO requirements if on dashboard
+      // Load active bonuses, airdrop config, WALDO requirements, and fraud data if on dashboard
       if (sectionName === 'dashboard') {
         loadActiveBonuses();
         loadAirdropConfig();
         loadConfigHistory();
         loadWaldoRequirements();
         loadRequirementHistory();
+        loadFraudAnalytics();
+        loadRecentViolations();
+        loadSuspiciousActivity();
       }
     }
 
@@ -4433,6 +4484,198 @@ This action cannot be undone. Continue?`;
         console.error('Reset system error:', error);
         showAlert('Error resetting airdrop system', 'error');
       }
+    }
+
+    // 🤖 AI Fraud Detection Functions
+    async function loadFraudAnalytics() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/security/fraud-analytics`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const analyticsDiv = document.getElementById('fraudAnalytics');
+
+        if (data.success) {
+          const stats = data.analytics;
+          analyticsDiv.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+                <div style="color: #e74c3c; font-weight: bold;">Total Violations</div>
+                <div style="color: #fff; font-size: 1.5em;">${stats.totalViolations || 0}</div>
+                <div style="color: #666; font-size: 0.9em;">Last 24 hours</div>
+              </div>
+              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12;">
+                <div style="color: #f39c12; font-weight: bold;">Blocked Wallets</div>
+                <div style="color: #fff; font-size: 1.5em;">${stats.blockedWallets || 0}</div>
+                <div style="color: #666; font-size: 0.9em;">Currently blocked</div>
+              </div>
+              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #9b59b6;">
+                <div style="color: #9b59b6; font-weight: bold;">Bot Detections</div>
+                <div style="color: #fff; font-size: 1.5em;">${stats.botDetections || 0}</div>
+                <div style="color: #666; font-size: 0.9em;">AI-detected bots</div>
+              </div>
+              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60;">
+                <div style="color: #27ae60; font-weight: bold;">Clean Requests</div>
+                <div style="color: #fff; font-size: 1.5em;">${stats.cleanRequests || 0}</div>
+                <div style="color: #666; font-size: 0.9em;">Legitimate traffic</div>
+              </div>
+            </div>
+          `;
+        } else {
+          analyticsDiv.innerHTML = '<div style="color: #e74c3c;">Error loading fraud analytics</div>';
+        }
+      } catch (error) {
+        console.error('Error loading fraud analytics:', error);
+        document.getElementById('fraudAnalytics').innerHTML = '<div style="color: #e74c3c;">Error loading analytics</div>';
+      }
+    }
+
+    async function loadRecentViolations() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/security/recent-violations?limit=20`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const violationsDiv = document.getElementById('recentViolations');
+
+        if (data.success && data.violations && data.violations.length > 0) {
+          let violationsHtml = '';
+          data.violations.forEach(violation => {
+            const time = new Date(violation.timestamp).toLocaleString();
+            const severityColor = violation.reason.includes('BOT') ? '#e74c3c' :
+                                 violation.reason.includes('SUSPICIOUS') ? '#f39c12' : '#95a5a6';
+
+            violationsHtml += `
+              <div style="background: #2a2a2a; padding: 10px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid ${severityColor};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: ${severityColor};">${violation.reason}</strong>
+                    <div style="color: #ccc; font-size: 0.9em;">Wallet: ${violation.wallet}</div>
+                    ${violation.meta ? `<div style="color: #666; font-size: 0.8em;">${JSON.stringify(violation.meta).substring(0, 100)}...</div>` : ''}
+                  </div>
+                  <div style="color: #666; font-size: 0.8em;">${time}</div>
+                </div>
+              </div>
+            `;
+          });
+          violationsDiv.innerHTML = violationsHtml;
+        } else {
+          violationsDiv.innerHTML = '<div style="color: #27ae60; font-style: italic;">No recent violations - system is clean! 🎉</div>';
+        }
+      } catch (error) {
+        console.error('Error loading violations:', error);
+        document.getElementById('recentViolations').innerHTML = '<div style="color: #e74c3c;">Error loading violations</div>';
+      }
+    }
+
+    async function loadSuspiciousActivity() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/security/suspicious-activity?limit=15`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const activityDiv = document.getElementById('suspiciousActivity');
+
+        if (data.success && data.activity && data.activity.length > 0) {
+          let activityHtml = '';
+          data.activity.forEach(activity => {
+            const time = new Date(activity.timestamp).toLocaleString();
+            const riskColor = activity.riskScore >= 80 ? '#e74c3c' :
+                             activity.riskScore >= 60 ? '#f39c12' : '#3498db';
+
+            activityHtml += `
+              <div style="background: #2a2a2a; padding: 8px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid ${riskColor};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: ${riskColor};">Risk Score: ${activity.riskScore}/100</strong>
+                    <div style="color: #ccc; font-size: 0.9em;">Wallet: ${activity.wallet}</div>
+                    <div style="color: #666; font-size: 0.8em;">${activity.patterns.join(', ')}</div>
+                  </div>
+                  <div style="color: #666; font-size: 0.8em;">${time}</div>
+                </div>
+              </div>
+            `;
+          });
+          activityDiv.innerHTML = activityHtml;
+        } else {
+          activityDiv.innerHTML = '<div style="color: #27ae60; font-style: italic;">No suspicious activity detected! 🛡️</div>';
+        }
+      } catch (error) {
+        console.error('Error loading suspicious activity:', error);
+        document.getElementById('suspiciousActivity').innerHTML = '<div style="color: #e74c3c;">Error loading activity</div>';
+      }
+    }
+
+    function refreshFraudData() {
+      showAlert('Refreshing fraud detection data...', 'info');
+      loadFraudAnalytics();
+      loadRecentViolations();
+      loadSuspiciousActivity();
+      showAlert('Fraud data refreshed successfully', 'success');
+    }
+
+    async function exportViolations() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/security/export-violations`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `fraud-violations-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          showAlert('Violations exported successfully', 'success');
+        } else {
+          showAlert('Failed to export violations', 'error');
+        }
+      } catch (error) {
+        console.error('Export violations error:', error);
+        showAlert('Error exporting violations', 'error');
+      }
+    }
+
+    async function clearOldViolations() {
+      const confirm = window.confirm('⚠️ Clear old violation data?\n\nThis will remove violations older than 30 days. Recent violations will be kept for security monitoring.');
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/security/clear-old-violations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert(`Cleared ${data.clearedCount || 0} old violation records`, 'success');
+          refreshFraudData();
+        } else {
+          showAlert(`Failed to clear violations: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Clear violations error:', error);
+        showAlert('Error clearing old violations', 'error');
+      }
+    }
+
+    function adjustSensitivity() {
+      showAlert('🎛️ Fraud detection sensitivity adjustment coming soon! Current settings are optimized for launch.', 'info');
     }
 
     function blockUser(wallet) {

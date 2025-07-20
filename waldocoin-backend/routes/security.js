@@ -319,4 +319,152 @@ router.get('/events', async (req, res) => {
   }
 });
 
+// GET /api/security/fraud-analytics - Get fraud detection analytics
+router.get('/fraud-analytics', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get fraud analytics from Redis
+    const now = Date.now();
+    const oneDayAgo = now - (24 * 60 * 60 * 1000);
+
+    // Count violations in last 24 hours
+    const violationKeys = await redis.keys('violation:*');
+    let totalViolations = 0;
+    let botDetections = 0;
+    let blockedWallets = 0;
+
+    for (const key of violationKeys) {
+      const violation = await redis.hGetAll(key);
+      if (violation.timestamp && new Date(violation.timestamp).getTime() > oneDayAgo) {
+        totalViolations++;
+        if (violation.reason && violation.reason.includes('BOT')) {
+          botDetections++;
+        }
+      }
+    }
+
+    // Count currently blocked wallets
+    const blockedKeys = await redis.keys('blocked:*');
+    blockedWallets = blockedKeys.length;
+
+    // Estimate clean requests (total requests - violations)
+    const totalRequests = await redis.get('stats:total_requests') || 0;
+    const cleanRequests = Math.max(0, parseInt(totalRequests) - totalViolations);
+
+    return res.json({
+      success: true,
+      analytics: {
+        totalViolations,
+        botDetections,
+        blockedWallets,
+        cleanRequests,
+        detectionRate: totalRequests > 0 ? ((totalViolations / totalRequests) * 100).toFixed(2) : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting fraud analytics:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get fraud analytics"
+    });
+  }
+});
+
+// GET /api/security/recent-violations - Get recent security violations
+router.get('/recent-violations', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const limit = parseInt(req.query.limit) || 20;
+
+    // Get recent violations
+    const violationKeys = await redis.keys('violation:*');
+    const violations = [];
+
+    for (const key of violationKeys) {
+      const violation = await redis.hGetAll(key);
+      if (violation && Object.keys(violation).length > 0) {
+        violations.push({
+          wallet: violation.wallet,
+          reason: violation.reason,
+          timestamp: violation.timestamp,
+          meta: violation.meta ? JSON.parse(violation.meta) : null
+        });
+      }
+    }
+
+    // Sort by timestamp (newest first)
+    violations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return res.json({
+      success: true,
+      violations: violations.slice(0, limit),
+      totalViolations: violations.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting recent violations:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get recent violations"
+    });
+  }
+});
+
+// GET /api/security/suspicious-activity - Get suspicious activity
+router.get('/suspicious-activity', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const limit = parseInt(req.query.limit) || 15;
+
+    // Get suspicious activity (violations with risk scores)
+    const violationKeys = await redis.keys('violation:*');
+    const suspiciousActivity = [];
+
+    for (const key of violationKeys) {
+      const violation = await redis.hGetAll(key);
+      if (violation && violation.reason && violation.reason.includes('SUSPICIOUS')) {
+        const meta = violation.meta ? JSON.parse(violation.meta) : {};
+        suspiciousActivity.push({
+          wallet: violation.wallet,
+          timestamp: violation.timestamp,
+          riskScore: meta.botScore || meta.riskScore || 60,
+          patterns: meta.detectedPatterns || ['Unknown pattern']
+        });
+      }
+    }
+
+    // Sort by risk score (highest first)
+    suspiciousActivity.sort((a, b) => b.riskScore - a.riskScore);
+
+    return res.json({
+      success: true,
+      activity: suspiciousActivity.slice(0, limit),
+      totalSuspicious: suspiciousActivity.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting suspicious activity:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get suspicious activity"
+    });
+  }
+});
+
 export default router;
