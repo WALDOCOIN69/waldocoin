@@ -410,6 +410,173 @@ router.get("/trustline-count", (req, res) => {
   }
 });
 
+// ⚙️ Airdrop Configuration Management
+
+// GET /api/airdrop/config - Get current airdrop configuration
+router.get("/config", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get current configuration from Redis
+    const maxWallets = await redis.get("airdrop:max_wallets") || 1000;
+    const endDate = await redis.get("airdrop:end_date") || new Date(Date.now() + (5 * 24 * 60 * 60 * 1000)).toISOString();
+    const claimed = await redis.get("airdrop:count") || 0;
+
+    const startDate = await redis.get("airdrop:start_date") || new Date().toISOString();
+    const durationDays = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+
+    return res.json({
+      success: true,
+      config: {
+        maxWallets: parseInt(maxWallets),
+        claimed: parseInt(claimed),
+        remaining: parseInt(maxWallets) - parseInt(claimed),
+        startDate: startDate,
+        endDate: endDate,
+        durationDays: durationDays,
+        isActive: parseInt(claimed) < parseInt(maxWallets) && new Date() < new Date(endDate)
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting airdrop config:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get airdrop configuration"
+    });
+  }
+});
+
+// POST /api/airdrop/update-config - Update airdrop configuration
+router.post("/update-config", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { maxWallets, durationDays, reason } = req.body;
+    const changes = [];
+
+    // Update max wallets if provided
+    if (maxWallets && maxWallets !== undefined) {
+      await redis.set("airdrop:max_wallets", maxWallets);
+      changes.push(`Wallet limit: ${maxWallets}`);
+    }
+
+    // Update duration if provided
+    if (durationDays && durationDays !== undefined) {
+      const startDate = await redis.get("airdrop:start_date") || new Date().toISOString();
+      const newEndDate = new Date(new Date(startDate).getTime() + (durationDays * 24 * 60 * 60 * 1000)).toISOString();
+      await redis.set("airdrop:end_date", newEndDate);
+      changes.push(`Duration: ${durationDays} days`);
+    }
+
+    // Log the configuration change
+    const configChange = {
+      timestamp: new Date().toISOString(),
+      reason: reason || 'Configuration update',
+      changes: changes,
+      adminKey: adminKey.slice(-4) // Only store last 4 chars for security
+    };
+
+    await redis.lPush("airdrop:config_history", JSON.stringify(configChange));
+    await redis.lTrim("airdrop:config_history", 0, 49); // Keep last 50 changes
+
+    console.log(`⚙️ Airdrop config updated: ${changes.join(', ')} - Reason: ${reason}`);
+
+    return res.json({
+      success: true,
+      changes: changes,
+      message: `Configuration updated: ${changes.join(', ')}`
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating airdrop config:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to update airdrop configuration"
+    });
+  }
+});
+
+// POST /api/airdrop/reset-config - Reset to default configuration
+router.post("/reset-config", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { reason } = req.body;
+
+    // Reset to defaults
+    await redis.set("airdrop:max_wallets", 1000);
+    const startDate = new Date().toISOString();
+    const endDate = new Date(Date.now() + (5 * 24 * 60 * 60 * 1000)).toISOString();
+    await redis.set("airdrop:start_date", startDate);
+    await redis.set("airdrop:end_date", endDate);
+
+    // Log the reset
+    const configChange = {
+      timestamp: new Date().toISOString(),
+      reason: reason || 'Reset to default configuration',
+      changes: ['Wallet limit: 1000', 'Duration: 5 days'],
+      adminKey: adminKey.slice(-4)
+    };
+
+    await redis.lPush("airdrop:config_history", JSON.stringify(configChange));
+
+    console.log(`🔄 Airdrop config reset to defaults - Reason: ${reason}`);
+
+    return res.json({
+      success: true,
+      message: "Configuration reset to defaults (1000 wallets, 5 days)"
+    });
+
+  } catch (error) {
+    console.error('❌ Error resetting airdrop config:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to reset airdrop configuration"
+    });
+  }
+});
+
+// GET /api/airdrop/config-history - Get configuration change history
+router.get("/config-history", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get configuration history
+    const historyData = await redis.lRange("airdrop:config_history", 0, 19); // Last 20 changes
+    const history = historyData.map(item => JSON.parse(item));
+
+    return res.json({
+      success: true,
+      history: history,
+      count: history.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting config history:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get configuration history"
+    });
+  }
+});
+
 export default router;
 
 
