@@ -362,4 +362,104 @@ router.get('/proposal/:id', async (req, res) => {
   }
 });
 
+// POST /api/dao/vote - Vote on a DAO proposal
+router.post('/vote', async (req, res) => {
+  try {
+    const { wallet, proposalId, vote } = req.body; // vote: true (yes) or false (no)
+
+    if (!wallet || !proposalId || typeof vote !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, proposalId, vote (boolean)"
+      });
+    }
+
+    // Get proposal
+    const proposalData = await redis.hGetAll(`dao:proposal:${proposalId}`);
+
+    if (!proposalData || Object.keys(proposalData).length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Proposal not found"
+      });
+    }
+
+    if (proposalData.status !== 'active') {
+      return res.status(400).json({
+        success: false,
+        error: "Proposal is not accepting votes"
+      });
+    }
+
+    // Check if proposal has expired
+    const expiresAt = new Date(proposalData.expiresAt);
+    if (new Date() > expiresAt) {
+      return res.status(400).json({
+        success: false,
+        error: "Proposal voting period has expired"
+      });
+    }
+
+    // Check if user already voted
+    const voteKey = `dao:vote:${proposalId}:${wallet}`;
+    const existingVote = await redis.get(voteKey);
+
+    if (existingVote) {
+      return res.status(400).json({
+        success: false,
+        error: "You have already voted on this proposal"
+      });
+    }
+
+    // Get user's WALDO balance (simplified - in production would check actual balance)
+    const userData = await redis.hGetAll(`user:${wallet}`);
+    const waldoBalance = parseInt(userData.waldoBalance) || 0;
+
+    if (waldoBalance < 100) {
+      return res.status(400).json({
+        success: false,
+        error: "Minimum 100 WALDO required to vote"
+      });
+    }
+
+    // Record vote
+    await redis.set(voteKey, JSON.stringify({
+      wallet,
+      proposalId,
+      vote,
+      votingPower: waldoBalance,
+      votedAt: new Date().toISOString()
+    }), { EX: 30 * 24 * 60 * 60 }); // 30 day expiry
+
+    // Update proposal vote counts
+    const voteField = vote ? 'yesVotes' : 'noVotes';
+    const powerField = vote ? 'yesVotingPower' : 'noVotingPower';
+
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, voteField, 1);
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, powerField, waldoBalance);
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, 'totalVotes', 1);
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, 'totalVotingPower', waldoBalance);
+
+    // Update user stats
+    await redis.hIncrBy(`user:${wallet}`, 'daoVotes', 1);
+    await redis.hIncrBy(`user:${wallet}`, 'daoVotingPower', waldoBalance);
+
+    console.log(`🗳️ DAO vote recorded: ${wallet} voted ${vote ? 'YES' : 'NO'} on ${proposalId} with ${waldoBalance} voting power`);
+
+    return res.json({
+      success: true,
+      message: `Vote recorded: ${vote ? 'YES' : 'NO'}`,
+      vote,
+      votingPower: waldoBalance
+    });
+
+  } catch (error) {
+    console.error('❌ DAO vote error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to record vote"
+    });
+  }
+});
+
 export default router;

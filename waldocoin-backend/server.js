@@ -28,6 +28,8 @@ import userStatsRoute from "./routes/userstats.js";
 import proposalsRoute from "./routes/proposals.js";
 import conversionRoute from "./routes/conversion.js";
 import topMemeRoute from "./routes/topmeme.js";
+import linkTwitterRoute from "./routes/linkTwitter.js";
+import activityRoute from "./routes/activity.js";
 
 
 // ⚔️ Meme Battle Routes
@@ -92,6 +94,8 @@ const app = express();
   app.use("/api/proposals", proposalsRoute);
   app.use("/api/conversion", conversionRoute);
   app.use("/api/topMeme", topMemeRoute);
+  app.use("/api/linkTwitter", linkTwitterRoute);
+  app.use("/api/activity", activityRoute);
 
   app.use("/api/battle/start", battleStartRoute);
   app.use("/api/battle/accept", battleAcceptRoute);

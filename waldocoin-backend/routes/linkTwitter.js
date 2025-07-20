@@ -11,13 +11,16 @@ const router = express.Router();
 
 console.log("🔗 Loaded: routes/linkTwitter.js");
 
-// 🔗 Link Twitter Handle to Wallet
+// 🔗 Link Twitter Handle to Wallet (Updated for stats dashboard compatibility)
 router.post("/", async (req, res) => {
-  const { wallet, handle } = req.body;
+  const { wallet, twitterHandle } = req.body; // Updated to match stats dashboard
 
-  if (!wallet || !handle) {
-    return res.status(400).json({ success: false, error: "Missing wallet or handle" });
+  if (!wallet || !twitterHandle) {
+    return res.status(400).json({ success: false, error: "Missing wallet or twitterHandle" });
   }
+
+  // Clean handle (remove @ if present)
+  const cleanHandle = twitterHandle.replace(/^@/, '').toLowerCase();
 
   const key = `user:${wallet}`;
 
@@ -27,17 +30,29 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Twitter already linked and locked." });
     }
 
-    await redis.hSet(key, "twitterHandle", handle);
-    await redis.set(`twitter:${handle.toLowerCase()}`, wallet);
-    await redis.set(`wallet:handle:${wallet}`, handle.toLowerCase());
+    await redis.hSet(key, "twitterHandle", cleanHandle);
+    await redis.set(`twitter:${cleanHandle}`, wallet);
+    await redis.set(`wallet:handle:${wallet}`, cleanHandle);
+
+    // Award XP bonus for linking
+    await redis.hIncrBy(key, 'xp', 100);
 
     // 🔍 Scan for #WaldoMeme tweets right after linking
-    const memesFound = await scan_user(handle.toLowerCase());
+    let memesFound = 0;
+    try {
+      memesFound = await scan_user(cleanHandle);
+    } catch (scanError) {
+      console.log('⚠️ Scan failed but linking succeeded:', scanError.message);
+    }
+
+    console.log(`🐦 Twitter linked: ${wallet} -> @${cleanHandle}`);
 
     return res.json({
       success: true,
-      message: `Twitter handle linked successfully and scanned.`,
-      memesStored: memesFound
+      message: `Twitter handle @${cleanHandle} linked successfully!`,
+      twitterHandle: cleanHandle,
+      memesStored: memesFound,
+      xpBonus: 100
     });
 
   } catch (err) {

@@ -216,5 +216,84 @@ if (!postedAtRaw) {
   }
 });
 
+// POST /api/claim - Claim meme rewards (for stats dashboard)
+router.post('/', async (req, res) => {
+  try {
+    const { wallet, memeId, tier, stake } = req.body;
+
+    if (!wallet || !memeId || !tier) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, memeId, tier"
+      });
+    }
+
+    // Check if already claimed
+    const claimKey = `claim:${wallet}:${memeId}`;
+    const alreadyClaimed = await redis.get(claimKey);
+
+    if (alreadyClaimed) {
+      return res.json({
+        success: false,
+        error: "Meme already claimed by this wallet"
+      });
+    }
+
+    // Calculate reward based on tier
+    const tierRewards = {
+      1: 10,   // Tier 1: 10 WALDO
+      2: 25,   // Tier 2: 25 WALDO
+      3: 50,   // Tier 3: 50 WALDO
+      4: 100,  // Tier 4: 100 WALDO
+      5: 250   // Tier 5: 250 WALDO
+    };
+
+    const baseReward = tierRewards[tier] || 10;
+    let finalReward = baseReward;
+
+    // Apply staking bonus if chosen
+    if (stake) {
+      finalReward = Math.floor(baseReward * 1.5); // 50% bonus for staking
+    }
+
+    // Record the claim
+    await redis.set(claimKey, JSON.stringify({
+      wallet,
+      memeId,
+      tier,
+      baseReward,
+      finalReward,
+      staked: stake,
+      claimedAt: new Date().toISOString()
+    }), { EX: 60 * 60 * 24 * 30 }); // 30 day expiry
+
+    // Update user stats
+    const userKey = `user:${wallet}`;
+    await redis.hIncrBy(userKey, 'totalClaimed', finalReward);
+    await redis.hIncrBy(userKey, 'totalClaims', 1);
+
+    // Update global stats
+    await redis.incrBy('stats:total_claimed', finalReward);
+    await redis.incr('stats:total_claims');
+
+    console.log(`💰 Claim processed: ${wallet} claimed ${finalReward} WALDO for meme ${memeId} (tier ${tier})`);
+
+    return res.json({
+      success: true,
+      message: `Successfully claimed ${finalReward} WALDO!`,
+      reward: finalReward,
+      staked: stake,
+      tier: tier
+    });
+
+  } catch (error) {
+    console.error('❌ Claim error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to process claim"
+    });
+  }
+});
+
 export default router;
 

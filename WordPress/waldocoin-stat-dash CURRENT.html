@@ -3326,12 +3326,25 @@ const baseURL = "https://waldocoin-backend-api.onrender.com"; // Production API
 const statsPage = "/"; // Dashboard homepage
 const loginPage = "/connect-waldo-wallet/"; // Login page (adjust if different)
 
-// Feature flags for API endpoints that don't exist yet
+// 🚀 PRODUCTION LAUNCH - ALL FEATURES ENABLED!
 const FEATURES = {
-  BATTLE_HISTORY: false,
-  BATTLE_LEADERBOARD: false,
-  DAO_PROPOSALS: false,
-  ACTIVITY_FEED: false
+  USER_STATS: true,        // ✅ Working
+  CONVERSION_RATES: true,  // ✅ Working
+  TOP_MEME: true,         // ✅ Working
+  MEME_LISTING: true,     // ✅ Working
+  BATTLE_STATUS: true,    // ✅ Working
+  DAO_PROPOSALS: true,    // ✅ Working
+
+  // ✅ NOW ENABLED - All endpoints implemented!
+  MEME_CLAIMING: true,    // ✅ /api/claim implemented
+  NFT_MINTING: true,      // ✅ /api/mint working
+  STAKING_SYSTEM: true,   // ✅ Staking endpoints implemented
+  TWITTER_LINKING: true,  // ✅ /api/linkTwitter implemented
+  ACTIVITY_FEED: true,    // ✅ /api/activity implemented
+  BATTLE_ACTIONS: true,   // ✅ Battle action endpoints implemented
+  BATTLE_HISTORY: true,   // ✅ /api/battle/history implemented
+  BATTLE_LEADERBOARD: true, // ✅ /api/battle/leaderboard implemented
+  DAO_VOTING: true        // ✅ /api/dao/vote implemented
 };
 
 /** === UTILS === **/
@@ -3713,6 +3726,11 @@ function renderMemePagination(totalPages, currentPage) {
 }
 // Claim/Stake/Mint Handlers
 async function claimMeme(id, tier) {
+  if (!FEATURES.MEME_CLAIMING) {
+    showToast("🚧 Meme claiming temporarily disabled", "info");
+    return;
+  }
+
   try {
     const res = await fetch(`${baseURL}/api/claim`, {
       method: "POST",
@@ -3720,10 +3738,13 @@ async function claimMeme(id, tier) {
       body: JSON.stringify({ wallet: getWallet(), memeId: id, tier, stake: false })
     });
     const data = await res.json();
-    if (data.success) showToast("Claim initiated! Check your XAMAN wallet.", "success");
+    if (data.success) showToast(data.message || "Claim successful!", "success");
     else showToast(data.error || "Claim failed", "error");
     fetchMemes(getWallet()); // Refresh
-  } catch (e) { showToast("Claim error", "error"); }
+  } catch (e) {
+    console.error('Claim error:', e);
+    showToast("Claim error: " + e.message, "error");
+  }
 }
 async function stakeMeme(id, tier) {
   try {

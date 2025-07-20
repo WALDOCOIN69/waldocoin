@@ -285,4 +285,289 @@ router.post('/cancel', async (req, res) => {
   }
 });
 
+// POST /api/battle/start - Start a new battle
+router.post('/start', async (req, res) => {
+  try {
+    const { wallet, tweetId } = req.body;
+
+    if (!wallet || !tweetId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, tweetId"
+      });
+    }
+
+    // Check if there's already an active battle
+    const currentBattleId = await redis.get("battle:current");
+    if (currentBattleId) {
+      return res.status(400).json({
+        success: false,
+        error: "A battle is already active. Wait for it to complete."
+      });
+    }
+
+    // Create new battle
+    const battleId = `battle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = new Date();
+    const endTime = new Date(startTime.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+
+    const battleData = {
+      battleId,
+      challenger: wallet,
+      challengerTweetId: tweetId,
+      opponent: null,
+      opponentTweetId: null,
+      status: 'waiting_opponent',
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      votes: {},
+      totalVotes: 0,
+      winner: null
+    };
+
+    // Store battle
+    await redis.hSet(`battle:${battleId}`, battleData);
+    await redis.set("battle:current", battleId, { EX: 24 * 60 * 60 }); // 24 hour expiry
+
+    console.log(`⚔️ Battle started: ${battleId} by ${wallet}`);
+
+    return res.json({
+      success: true,
+      message: "Battle started! Waiting for opponent.",
+      battleId,
+      endTime: endTime.toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Start battle error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to start battle"
+    });
+  }
+});
+
+// POST /api/battle/accept - Accept a battle challenge
+router.post('/accept', async (req, res) => {
+  try {
+    const { wallet, tweetId } = req.body;
+
+    if (!wallet || !tweetId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, tweetId"
+      });
+    }
+
+    // Get current battle
+    const currentBattleId = await redis.get("battle:current");
+    if (!currentBattleId) {
+      return res.status(400).json({
+        success: false,
+        error: "No active battle to accept"
+      });
+    }
+
+    const battleData = await redis.hGetAll(`battle:${currentBattleId}`);
+
+    if (battleData.status !== 'waiting_opponent') {
+      return res.status(400).json({
+        success: false,
+        error: "Battle is not accepting opponents"
+      });
+    }
+
+    if (battleData.challenger === wallet) {
+      return res.status(400).json({
+        success: false,
+        error: "Cannot accept your own battle"
+      });
+    }
+
+    // Update battle with opponent
+    await redis.hSet(`battle:${currentBattleId}`, {
+      opponent: wallet,
+      opponentTweetId: tweetId,
+      status: 'active',
+      acceptedAt: new Date().toISOString()
+    });
+
+    console.log(`⚔️ Battle accepted: ${currentBattleId} by ${wallet}`);
+
+    return res.json({
+      success: true,
+      message: "Battle accepted! Voting is now open.",
+      battleId: currentBattleId
+    });
+
+  } catch (error) {
+    console.error('❌ Accept battle error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to accept battle"
+    });
+  }
+});
+
+// POST /api/battle/vote - Vote in a battle
+router.post('/vote', async (req, res) => {
+  try {
+    const { wallet, meme } = req.body; // meme: 'challenger' or 'opponent'
+
+    if (!wallet || !meme) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, meme"
+      });
+    }
+
+    if (!['challenger', 'opponent'].includes(meme)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid meme choice. Must be 'challenger' or 'opponent'"
+      });
+    }
+
+    // Get current battle
+    const currentBattleId = await redis.get("battle:current");
+    if (!currentBattleId) {
+      return res.status(400).json({
+        success: false,
+        error: "No active battle to vote in"
+      });
+    }
+
+    const battleData = await redis.hGetAll(`battle:${currentBattleId}`);
+
+    if (battleData.status !== 'active') {
+      return res.status(400).json({
+        success: false,
+        error: "Battle is not accepting votes"
+      });
+    }
+
+    // Check if user already voted
+    const voteKey = `vote:${currentBattleId}:${wallet}`;
+    const existingVote = await redis.get(voteKey);
+
+    if (existingVote) {
+      return res.status(400).json({
+        success: false,
+        error: "You have already voted in this battle"
+      });
+    }
+
+    // Record vote
+    await redis.set(voteKey, meme, { EX: 24 * 60 * 60 }); // 24 hour expiry
+    await redis.hIncrBy(`battle:${currentBattleId}`, `votes_${meme}`, 1);
+    await redis.hIncrBy(`battle:${currentBattleId}`, 'totalVotes', 1);
+
+    console.log(`🗳️ Vote recorded: ${wallet} voted for ${meme} in ${currentBattleId}`);
+
+    return res.json({
+      success: true,
+      message: `Vote recorded for ${meme}!`,
+      vote: meme
+    });
+
+  } catch (error) {
+    console.error('❌ Vote battle error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to record vote"
+    });
+  }
+});
+
+// GET /api/battle/history - Get battle history
+router.get('/history', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+
+    // Get completed battles
+    const battleKeys = await redis.keys('battle:battle_*');
+    const battles = [];
+
+    for (const key of battleKeys.slice(0, limit)) {
+      const battleData = await redis.hGetAll(key);
+      if (battleData && battleData.status === 'completed') {
+        battles.push({
+          battleId: battleData.battleId,
+          challenger: battleData.challenger,
+          opponent: battleData.opponent,
+          winner: battleData.winner,
+          totalVotes: parseInt(battleData.totalVotes) || 0,
+          challengerVotes: parseInt(battleData.votes_challenger) || 0,
+          opponentVotes: parseInt(battleData.votes_opponent) || 0,
+          startTime: battleData.startTime,
+          endTime: battleData.endTime,
+          completedAt: battleData.completedAt
+        });
+      }
+    }
+
+    // Sort by completion date (newest first)
+    battles.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+    return res.json({
+      success: true,
+      battles: battles.slice(0, limit),
+      totalBattles: battles.length
+    });
+
+  } catch (error) {
+    console.error('❌ Battle history error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get battle history"
+    });
+  }
+});
+
+// GET /api/battle/leaderboard - Get battle leaderboard
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+
+    // Get all user battle stats
+    const userKeys = await redis.keys('user:*');
+    const leaderboard = [];
+
+    for (const userKey of userKeys) {
+      const userData = await redis.hGetAll(userKey);
+      if (userData && userData.battleWins) {
+        const wallet = userKey.replace('user:', '');
+        leaderboard.push({
+          wallet,
+          wins: parseInt(userData.battleWins) || 0,
+          losses: parseInt(userData.battleLosses) || 0,
+          totalBattles: (parseInt(userData.battleWins) || 0) + (parseInt(userData.battleLosses) || 0),
+          winRate: userData.battleWins ? ((parseInt(userData.battleWins) / ((parseInt(userData.battleWins) || 0) + (parseInt(userData.battleLosses) || 0))) * 100).toFixed(1) : '0.0',
+          totalVotes: parseInt(userData.totalVotesReceived) || 0,
+          reputation: parseInt(userData.battleReputation) || 0
+        });
+      }
+    }
+
+    // Sort by wins, then by win rate
+    leaderboard.sort((a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return parseFloat(b.winRate) - parseFloat(a.winRate);
+    });
+
+    return res.json({
+      success: true,
+      leaderboard: leaderboard.slice(0, limit),
+      totalPlayers: leaderboard.length
+    });
+
+  } catch (error) {
+    console.error('❌ Battle leaderboard error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get battle leaderboard"
+    });
+  }
+});
+
 export default router;
