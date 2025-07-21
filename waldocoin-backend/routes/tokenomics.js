@@ -159,25 +159,60 @@ router.get("/calculator", async (req, res) => {
 
 // GET /api/tokenomics/stats - Get comprehensive tokenomics statistics for admin panel
 router.get("/stats", async (_, res) => {
-  // Set a global timeout for the entire request
+  // Set a more aggressive global timeout for the entire request
   const globalTimeout = setTimeout(() => {
     console.log('⏰ Tokenomics global timeout reached, returning fallback data');
     if (!res.headersSent) {
       res.json({
         success: true,
-        totalSupply: 100000000000,
-        circulatingSupply: 2500000,
-        trustlineCount: 24,
-        walletsWithBalance: 17,
-        totalWaldoHeld: 1200000,
-        airdropClaimed: 45,
-        airdropRemaining: 955,
-        totalDistributed: 2250,
+        stats: {
+          totalUsers: 24,
+          totalWaldoDistributed: 7250,
+          activeBattles: 2,
+          totalStaked: 1250000,
+          airdrop: {
+            totalClaimed: 145,
+            totalDistributed: 7250,
+            remaining: 855,
+            progress: "14.5",
+            isActive: true
+          },
+          battles: {
+            active: 2,
+            total: 15,
+            averageParticipation: "8.3",
+            estimatedDailyBurns: { battles: 500 }
+          },
+          staking: {
+            totalStaked: 1250000,
+            activeStakers: 18,
+            averageStake: "69444.44",
+            stakingRate: "75.0"
+          },
+          burns: { battles: 500, claims: 145, total: 645 },
+          trustlines: {
+            total: 24,
+            withBalance: 17,
+            totalWaldoHeld: "1200000.00",
+            source: 'Fallback - XRPL timeout'
+          },
+          system: {
+            lastUpdated: new Date().toISOString(),
+            uptime: Math.floor(process.uptime()),
+            memoryUsage: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024)
+          }
+        },
+        feeStructure: {
+          battle: { start: 100, vote: 5, burnRate: 0.05 },
+          claim: { instantFeeRate: 0.10, stakedFeeRate: 0.05, burnRate: 0.02 },
+          nft: { mintCost: 50 },
+          dao: { votingRequirement: 10000 }
+        },
         source: "Fallback - XRPL timeout",
         timestamp: new Date().toISOString()
       });
     }
-  }, 8000); // 8 second global timeout
+  }, 5000); // 5 second global timeout (more aggressive)
 
   try {
     // Get airdrop statistics
@@ -217,7 +252,7 @@ router.get("/stats", async (_, res) => {
         try {
           console.log(`🔗 Trying XRPL server: ${server}`);
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout (faster)
+          const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout (very aggressive)
 
           response = await fetch(server, {
             method: 'POST',

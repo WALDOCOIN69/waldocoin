@@ -408,7 +408,7 @@ router.get("/trustline-count", async (req, res) => {
         timestamp: new Date().toISOString()
       });
     }
-  }, 8000); // 8 second global timeout
+  }, 5000); // 5 second global timeout (more aggressive)
 
   try {
     console.log('🔍 Querying XRPL for real-time WLO trustline count...');
@@ -427,7 +427,7 @@ router.get("/trustline-count", async (req, res) => {
       try {
         console.log(`🔗 Trying XRPL server: ${server}`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout (faster)
+        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout (very aggressive)
 
         response = await fetch(server, {
           method: 'POST',
