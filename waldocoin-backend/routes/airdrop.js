@@ -485,12 +485,9 @@ router.get("/trustline-count", async (req, res) => {
       }));
       console.log(`📋 Sample trustlines:`, sampleCurrencies);
 
-      // Filter for WALDO trustlines - check both WLO and hex-encoded WALDO
+      // Filter for WLO trustlines only
       const wloTrustlines = data.result.lines.filter(line =>
-        line.currency === 'WLO' ||
-        line.currency === '57414C444F000000000000000000000000000000' || // WALDO in hex
-        line.currency.toLowerCase().includes('waldo') ||
-        line.currency.toLowerCase().includes('wlo')
+        line.currency === 'WLO'
       );
 
       console.log(`🎯 WALDO/WLO trustlines found: ${wloTrustlines.length}`);

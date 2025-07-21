@@ -288,12 +288,9 @@ router.get("/stats", async (_, res) => {
       const data = await response.json();
 
       if (data.result && data.result.lines) {
-        // Filter for WALDO trustlines - check both WLO and hex-encoded WALDO
+        // Filter for WLO trustlines only
         const wloTrustlines = data.result.lines.filter(line =>
-          line.currency === 'WLO' ||
-          line.currency === '57414C444F000000000000000000000000000000' || // WALDO in hex
-          line.currency.toLowerCase().includes('waldo') ||
-          line.currency.toLowerCase().includes('wlo')
+          line.currency === 'WLO'
         );
 
         console.log(`🔍 Found ${data.result.lines.length} total trustlines`);
