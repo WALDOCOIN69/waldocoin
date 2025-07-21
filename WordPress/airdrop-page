@@ -164,7 +164,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('authenticated') === 'true') {
     console.log("Returned from Xaman - checking authentication...");
-    showToast("🔄 Checking wallet connection...", "info");
+
+    // Close any open popups immediately
+    closeXummQR();
 
     // Clean URL
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -233,6 +235,9 @@ async function checkAuthNow(attempt = 1) {
       // SUCCESS! Connect wallet
       currentWallet = status.account || status.response?.signer;
       walletReady = true;
+
+      // Close any popups
+      closeXummQR();
 
       document.getElementById("connectWalletBtn").innerHTML = "✅ Wallet Connected";
       document.getElementById("connectWalletBtn").style.background = "#27ae60";
