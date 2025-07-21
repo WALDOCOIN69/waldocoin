@@ -161,7 +161,7 @@ router.get("/calculator", async (req, res) => {
 router.get("/stats", async (_, res) => {
   try {
     // Get airdrop statistics (REAL DATA from Redis - like working airdrop status)
-    const airdropClaimed = await redis.get("airdrop:total_claimed") || 0;
+    const airdropClaimed = await redis.get("airdrop:count") || 0;
     const airdropRemaining = 1000 - parseInt(airdropClaimed);
     const totalDistributed = parseInt(airdropClaimed) * 50000; // 50,000 WALDO per airdrop
 
