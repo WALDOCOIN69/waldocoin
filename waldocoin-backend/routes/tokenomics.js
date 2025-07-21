@@ -167,12 +167,12 @@ router.get("/stats", async (_, res) => {
         success: true,
         stats: {
           totalUsers: 159,
-          totalWaldoDistributed: 0,
+          totalWaldoDistributed: 8000000, // 160 airdrops × 50,000 WALDO
           activeBattles: 0,
           totalStaked: 0,
           airdrop: {
             totalClaimed: 160,
-            totalDistributed: 8000,
+            totalDistributed: 8000000, // 160 × 50,000 WALDO
             remaining: 840,
             progress: "16.0",
             isActive: true
@@ -219,7 +219,7 @@ router.get("/stats", async (_, res) => {
     // Get airdrop statistics
     const airdropClaimed = await redis.get("airdrop:total_claimed") || 0;
     const airdropRemaining = 1000 - parseInt(airdropClaimed);
-    const totalDistributed = parseInt(airdropClaimed) * 50; // 50 WALDO per airdrop
+    const totalDistributed = parseInt(airdropClaimed) * 50000; // 50,000 WALDO per airdrop
 
     // Get battle statistics
     const activeBattles = await redis.get("battles:active_count") || 0;
