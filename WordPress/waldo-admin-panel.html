@@ -3917,26 +3917,34 @@ This action cannot be undone. Continue?`;
     // Form handlers - Production Ready
     async function handleAirdropSubmit(e) {
       e.preventDefault();
+      console.log('🚀 Admin airdrop function called');
 
       const wallet = document.getElementById('airdropWallet').value.trim();
       const amount = parseFloat(document.getElementById('airdropAmount').value);
       const reason = document.getElementById('airdropReason').value.trim() || 'Admin manual airdrop';
 
+      console.log('📝 Form data:', { wallet, amount, reason });
+
       // Validation
       if (!wallet || !wallet.match(/^r[a-zA-Z0-9]{24,34}$/)) {
-        showAlert('Please enter a valid XRPL wallet address', 'error');
+        console.log('❌ Wallet validation failed');
+        alert('Please enter a valid XRPL wallet address');
         return;
       }
 
       if (!amount || amount <= 0 || amount > 1000000) {
-        showAlert('Amount must be between 1 and 1,000,000 WALDO', 'error');
+        console.log('❌ Amount validation failed');
+        alert('Amount must be between 1 and 1,000,000 WALDO');
         return;
       }
 
       // Confirm action
       if (!confirm(`Send ${amount} WALDO to ${wallet}?\n\nReason: ${reason}`)) {
+        console.log('❌ User cancelled');
         return;
       }
+
+      console.log('✅ Starting airdrop request...');
 
       try {
         // Use the existing airdrop endpoint
@@ -3950,15 +3958,20 @@ This action cannot be undone. Continue?`;
           })
         });
 
+        console.log('📡 API Response:', data);
+
         if (data.success) {
-          showAlert(`✅ Airdrop sent successfully! Transaction: ${data.txHash || 'Pending'}`, 'success');
+          console.log('✅ Airdrop successful!');
+          alert(`✅ Airdrop sent successfully! Transaction: ${data.txHash || 'Pending'}`);
           document.getElementById('airdropForm').reset();
           loadAirdropsData();
         } else {
-          showAlert(`❌ ${data.error || 'Failed to send airdrop'}`, 'error');
+          console.log('❌ Airdrop failed:', data.error);
+          alert(`❌ ${data.error || 'Failed to send airdrop'}`);
         }
       } catch (error) {
-        showAlert(`❌ Error sending airdrop: ${error.message}`, 'error');
+        console.log('❌ API Error:', error);
+        alert(`❌ Error sending airdrop: ${error.message}`);
       }
     }
 
