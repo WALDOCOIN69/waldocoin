@@ -177,6 +177,9 @@ window.addEventListener("DOMContentLoaded", () => {
     // Check if there's a pending authentication
     checkPendingAuth();
   }
+
+  // DESKTOP FIX: Start continuous background checking for pending auth
+  startBackgroundAuthCheck();
 });
 
 // Check for pending authentication on page load
@@ -213,6 +216,56 @@ async function checkPendingAuth() {
       console.error("Error checking pending auth:", error);
     }
   }
+}
+
+// DESKTOP FIX: Continuous background auth checking
+function startBackgroundAuthCheck() {
+  // Only run if not already connected
+  if (walletReady) return;
+
+  const backgroundCheck = setInterval(async () => {
+    const uuid = localStorage.getItem('xumm_uuid');
+    if (!uuid || walletReady) {
+      clearInterval(backgroundCheck);
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
+      const status = await response.json();
+
+      if (status?.signed && (status?.account || status?.response?.signer)) {
+        clearInterval(backgroundCheck);
+
+        // SUCCESS! Connect wallet
+        currentWallet = status.account || status.response?.signer;
+        walletReady = true;
+
+        // Close any popups
+        closeXummQR();
+
+        document.getElementById("connectWalletBtn").innerHTML = "✅ Wallet Connected";
+        document.getElementById("connectWalletBtn").style.background = "#27ae60";
+        document.getElementById("connectWalletBtn").disabled = true;
+
+        document.getElementById("walletStatus").innerText = `✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}`;
+        document.getElementById("walletStatus").style.color = "#0f0";
+
+        localStorage.removeItem('xumm_uuid');
+        showToast("✅ Wallet connected successfully!", "success");
+
+        checkWalletStatus();
+        checkTrustlineStatus();
+      }
+    } catch (error) {
+      console.error("Background auth check error:", error);
+    }
+  }, 1000); // Check every 1 second in background
+
+  // Stop background checking after 10 minutes
+  setTimeout(() => {
+    clearInterval(backgroundCheck);
+  }, 600000);
 }
 
 // Immediate authentication check (when returning from Xaman)
@@ -489,7 +542,7 @@ async function connectXummWallet() {
       } catch (pollError) {
         console.error("Polling error:", pollError);
       }
-    }, 500); // Check every 500ms for faster detection
+    }, 250); // Check every 250ms for ultra-fast desktop detection
 
     // Add timeout to prevent infinite polling
     setTimeout(() => {
