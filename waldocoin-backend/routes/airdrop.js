@@ -112,21 +112,25 @@ router.post("/", async (req, res) => {
       throw err;
     }
 
-    // 🔍 Check trustline
-    const trustlines = await client.request({
-      command: "account_lines",
-      account: wallet
-    });
+    // 🔍 Check trustline (skip for admin overrides)
+    if (!isAdminOverride) {
+      const trustlines = await client.request({
+        command: "account_lines",
+        account: wallet
+      });
 
-    const hasTrustline = trustlines.result.lines.some(
-      (line) =>
-        String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
-        line.account === WALDO_ISSUER
-    );
+      const hasTrustline = trustlines.result.lines.some(
+        (line) =>
+          String(line.currency).trim().toUpperCase() === String(WALDOCOIN_TOKEN).trim().toUpperCase() &&
+          line.account === WALDO_ISSUER
+      );
 
-    if (!hasTrustline) {
-      await client.disconnect();
-      return res.status(400).json({ success: false, error: "❌ No WALDO trustline found" });
+      if (!hasTrustline) {
+        await client.disconnect();
+        return res.status(400).json({ success: false, error: "❌ No WALDO trustline found" });
+      }
+    } else {
+      console.log("🚨 Admin override: Skipping trustline check");
     }
 
     // ✅ Build and send TX
