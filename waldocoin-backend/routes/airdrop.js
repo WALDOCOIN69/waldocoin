@@ -414,11 +414,12 @@ router.get("/trustline-count", async (req, res) => {
   try {
     console.log('🔍 Querying XRPL for real-time WLO trustline count...');
 
-    // Try multiple XRPL servers for reliability
+    // Try multiple XRPL servers for reliability - FIXED URLs
     const servers = [
-      'https://xrplcluster.com',
       'https://s1.ripple.com:51234',
-      'https://s2.ripple.com:51234'
+      'https://s2.ripple.com:51234',
+      'https://xrplcluster.com',
+      'https://xrpl.ws'
     ];
 
     let response = null;
@@ -448,9 +449,14 @@ router.get("/trustline-count", async (req, res) => {
         if (response.ok) {
           console.log(`✅ Successfully connected to ${server}`);
           break; // Success, exit loop
+        } else {
+          console.log(`❌ ${server} returned status:`, response.status, response.statusText);
         }
       } catch (serverError) {
-        console.log(`❌ Failed to connect to ${server}:`, serverError.message);
+        console.log(`❌ Failed to connect to ${server}:`, serverError.name, serverError.message);
+        if (serverError.name === 'AbortError') {
+          console.log(`⏰ ${server} timed out after 2 seconds`);
+        }
         lastError = serverError;
         continue; // Try next server
       }
@@ -461,8 +467,24 @@ router.get("/trustline-count", async (req, res) => {
     }
 
     const data = await response.json();
+    console.log(`📡 XRPL Response structure:`, {
+      hasResult: !!data.result,
+      hasLines: !!(data.result && data.result.lines),
+      linesCount: data.result?.lines?.length || 0,
+      error: data.error || null
+    });
 
     if (data.result && data.result.lines) {
+      console.log(`🔍 Found ${data.result.lines.length} total trustlines from issuer`);
+
+      // Show first few currencies for debugging
+      const sampleCurrencies = data.result.lines.slice(0, 10).map(line => ({
+        currency: line.currency,
+        balance: line.balance,
+        account: line.account?.slice(0, 10) + '...'
+      }));
+      console.log(`📋 Sample trustlines:`, sampleCurrencies);
+
       // Filter for WALDO trustlines - check both WLO and hex-encoded WALDO
       const wloTrustlines = data.result.lines.filter(line =>
         line.currency === 'WLO' ||
@@ -471,9 +493,7 @@ router.get("/trustline-count", async (req, res) => {
         line.currency.toLowerCase().includes('wlo')
       );
 
-      console.log(`🔍 Found ${data.result.lines.length} total trustlines`);
-      console.log(`🎯 WALDO/WLO trustlines: ${wloTrustlines.length}`);
-      console.log(`📋 Sample currencies found:`, data.result.lines.slice(0, 5).map(line => line.currency));
+      console.log(`🎯 WALDO/WLO trustlines found: ${wloTrustlines.length}`);
 
       const trustlineCount = wloTrustlines.length;
       const walletsWithBalance = wloTrustlines.filter(line => parseFloat(line.balance || 0) > 0).length;
