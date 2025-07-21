@@ -2897,7 +2897,16 @@
           if (tokenomicsData.success && tokenomicsData.stats) {
             const stats = tokenomicsData.stats;
             if (stats.airdrop) {
-              document.getElementById('totalWaldoDistributed').textContent = (stats.airdrop.totalDistributed / 1000).toFixed(1) + 'K';
+              const amount = stats.airdrop.totalDistributed;
+              let formatted;
+              if (amount >= 1000000) {
+                formatted = (amount / 1000000).toFixed(1) + 'M';
+              } else if (amount >= 1000) {
+                formatted = (amount / 1000).toFixed(1) + 'K';
+              } else {
+                formatted = amount.toString();
+              }
+              document.getElementById('totalWaldoDistributed').textContent = formatted;
             }
             if (stats.battles) {
               document.getElementById('activeBattles').textContent = stats.battles.active || '0';
