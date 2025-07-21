@@ -118,14 +118,30 @@ const app = express();
   app.use("/api/dao/config", daoConfigRoute);
   app.use("/api/dao/archive", daoArchiveRoute);
 
-app.use("/api/airdrop", airdropRoute);
+  console.log("🔗 Registering airdrop routes...");
+  app.use("/api/airdrop", airdropRoute);
 
-  // 🔐 Admin Routes
+  console.log("🔐 Registering admin routes...");
   app.use("/api/admin/send-waldo", adminSendWaldoRoute);
   app.use("/api/admin/trustline", adminTrustlineRoute);
 
   app.use("/api/presale", presaleRoute);
   app.use('/api/presale', presaleLookup);
+
+  // Health check endpoint
+  app.get("/api/health", (_, res) => {
+    res.json({
+      status: "OK",
+      timestamp: new Date().toISOString(),
+      version: "2025-01-21-v2",
+      endpoints: {
+        airdrop: "/api/airdrop",
+        trustlineCount: "/api/airdrop/trustline-count",
+        tokenomics: "/api/tokenomics/stats",
+        admin: "/api/admin/send-waldo"
+      }
+    });
+  });
 
   app.get("/api/routes", (_, res) => {
   res.json(app._router.stack
