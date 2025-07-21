@@ -101,15 +101,26 @@
       <div id="xummLoginBox">
         <!-- Mobile: Show direct link prominently -->
         <div id="mobileView" style="display:none; margin-bottom:15px;">
-          <a id="xummDeepLink" href="#" style="display:inline-block; background:#25c2a0; color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold; margin-bottom:10px;">
+          <a id="xummDeepLink" href="#" style="display:inline-block; background:linear-gradient(135deg, #25c2a0, #20a085); color:white; padding:15px 25px; border-radius:12px; text-decoration:none; font-weight:bold; margin-bottom:10px; font-size:16px; box-shadow: 0 4px 12px rgba(37, 194, 160, 0.3); transition: all 0.3s ease; width: 100%; text-align: center; box-sizing: border-box;">
             📲 Open in Xaman App
           </a>
-          <div style="font-size:11px; color:#666;">Tap to open directly in Xaman wallet</div>
+          <div style="font-size:12px; color:#666; text-align: center; line-height: 1.4;">
+            Tap to open Xaman wallet, then:<br>
+            1. Review the sign-in request<br>
+            2. Tap "Accept and Sign" to authenticate
+          </div>
 
           <!-- QR as backup option for mobile -->
           <div style="margin-top:15px; padding-top:15px; border-top:1px solid #444;">
             <div style="font-size:11px; color:#666; margin-bottom:8px;">Or scan QR code:</div>
             <img id="xummQRMobile" src="" style="width:100px; border:2px solid #ccc; border-radius:6px;" />
+
+            <!-- Debug button for testing -->
+            <div style="margin-top:10px;">
+              <button onclick="testXummResponse()" style="padding: 6px 12px; background: #666; color: white; border: none; border-radius: 4px; font-size: 11px;">
+                🔍 Debug Connection
+              </button>
+            </div>
           </div>
         </div>
 
@@ -142,7 +153,12 @@ let walletReady = false;
 let currentWallet = null;
 let alreadyTried = false;
 
-// 🚀 Initialize on page load
+// � Helper function to detect mobile devices
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// �🚀 Initialize on page load
 window.addEventListener("DOMContentLoaded", () => {
   loadAirdropStatus();
   detectDeviceAndShowTrustline();
@@ -197,6 +213,8 @@ async function connectXummWallet() {
 
     if (!data.qr || !data.uuid) throw new Error("Missing QR/UUID");
 
+    console.log("XUMM Response:", data); // Debug log
+
     // Show QR in both mobile and desktop views
     const mobileQR = document.getElementById("xummQRMobile");
     const desktopQR = document.getElementById("xummQRDesktop");
@@ -204,22 +222,123 @@ async function connectXummWallet() {
     if (mobileQR) mobileQR.src = data.qr;
     if (desktopQR) desktopQR.src = data.qr;
 
-    // Set deep links for both views
-    if (data.refs?.xapp) {
+    // Create proper deep links for mobile wallet connection
+    let deepLink = null;
+
+    // Try different possible deep link sources from XUMM response
+    if (data.refs?.qr_uri) {
+      deepLink = data.refs.qr_uri; // This is usually the xumm:// link
+    } else if (data.refs?.xapp) {
+      deepLink = data.refs.xapp;
+    } else if (data.next?.always) {
+      deepLink = data.next.always;
+    } else if (data.qr) {
+      // Fallback: convert QR PNG URL to deep link
+      deepLink = data.qr.replace('https://xumm.app/sign/', 'xumm://sign/');
+    }
+
+    console.log("XUMM Full Response:", data); // Debug log
+    console.log("Extracted deep link:", deepLink); // Debug log
+
+    if (deepLink) {
       const mobileLink = document.getElementById("xummDeepLink");
       const desktopLink = document.getElementById("xummDeepLinkDesktop");
 
-      if (mobileLink) mobileLink.href = data.refs.xapp;
-      if (desktopLink) desktopLink.href = data.refs.xapp;
+      if (mobileLink) {
+        mobileLink.href = deepLink;
+        // Add click handler for mobile to ensure it works
+        mobileLink.onclick = function(e) {
+          e.preventDefault();
+          console.log("Mobile link clicked:", deepLink);
+
+          // Show loading state
+          mobileLink.innerHTML = "🔄 Opening Xaman...";
+          mobileLink.style.background = "linear-gradient(135deg, #666, #888)";
+
+          // Try multiple methods to open the app
+          if (isMobileDevice()) {
+            // On mobile, try direct navigation first
+            window.location.href = deepLink;
+
+            // Reset button after delay
+            setTimeout(() => {
+              mobileLink.innerHTML = "📲 Open in Xaman App";
+              mobileLink.style.background = "linear-gradient(135deg, #25c2a0, #20a085)";
+            }, 3000);
+          } else {
+            // On desktop, open in new window
+            window.open(deepLink, '_blank');
+
+            // Reset button immediately
+            setTimeout(() => {
+              mobileLink.innerHTML = "📲 Open in Xaman App";
+              mobileLink.style.background = "linear-gradient(135deg, #25c2a0, #20a085)";
+            }, 1000);
+          }
+
+          return false;
+        };
+      }
+
+      if (desktopLink) {
+        desktopLink.href = deepLink;
+        desktopLink.onclick = function(e) {
+          e.preventDefault();
+          window.open(deepLink, '_blank');
+          return false;
+        };
+      }
+    } else {
+      console.warn("No deep link found in response:", data);
+
+      // Fallback: try to construct deep link from QR data
+      if (data.qr) {
+        const fallbackLink = data.qr.replace('https://xumm.app/sign/', 'xumm://sign/');
+        console.log("Trying fallback deep link:", fallbackLink);
+
+        const mobileLink = document.getElementById("xummDeepLink");
+        const desktopLink = document.getElementById("xummDeepLinkDesktop");
+
+        if (mobileLink) {
+          mobileLink.href = fallbackLink;
+          mobileLink.onclick = function(e) {
+            e.preventDefault();
+            console.log("Fallback mobile link clicked:", fallbackLink);
+
+            if (isMobileDevice()) {
+              // Try both the fallback link and the original QR link
+              window.location.href = fallbackLink;
+              setTimeout(() => {
+                window.location.href = data.qr;
+              }, 1000);
+            } else {
+              window.open(fallbackLink, '_blank');
+            }
+
+            return false;
+          };
+        }
+
+        if (desktopLink) {
+          desktopLink.href = fallbackLink;
+        }
+      }
     }
+
+    // Show status message
+    showToast("📱 Waiting for wallet authentication...", "info");
 
     // Poll login status
     const interval = setInterval(async () => {
-      const status = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${data.uuid}`).then(r => r.json());
+      try {
+        const statusResponse = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${data.uuid}`);
+        const status = await statusResponse.json();
 
-      if (status?.signed && status?.account) {
+        console.log("Login status check:", status);
+
+        if (status?.signed && (status?.account || status?.response?.signer)) {
         clearInterval(interval);
-        currentWallet = status.account;
+        currentWallet = status.account || status.response?.signer;
         walletReady = true;
 
         // Close popup and update UI
@@ -231,11 +350,32 @@ async function connectXummWallet() {
         document.getElementById("walletStatus").innerText = `✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}`;
         document.getElementById("walletStatus").style.color = "#0f0";
 
+        // Reset any loading states on mobile/desktop buttons
+        const mobileLink = document.getElementById("xummDeepLink");
+        const desktopLink = document.getElementById("xummDeepLinkDesktop");
+
+        if (mobileLink) {
+          mobileLink.innerHTML = "✅ Connected!";
+          mobileLink.style.background = "linear-gradient(135deg, #27ae60, #2ecc71)";
+        }
+
+        if (desktopLink) {
+          desktopLink.innerHTML = "✅ Connected!";
+        }
+
+        showToast("✅ Wallet authenticated successfully!", "success");
+
         // Check if wallet already claimed before allowing claim
         await checkWalletStatus();
 
         // Check trustline status
         await checkTrustlineStatus();
+      } else if (status?.expired) {
+        clearInterval(interval);
+        showToast("❌ Authentication expired. Please try again.", "error");
+      }
+      } catch (pollError) {
+        console.error("Polling error:", pollError);
       }
     }, 2000);
   } catch (err) {
@@ -468,6 +608,47 @@ async function checkTrustlineStatus() {
       walletStatus.innerHTML = `✅ Wallet: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)} | 🔗 WALDO Trustline: ASSUMED SET`;
       walletStatus.style.color = "#25c2a0";
     }, 2000);
+  }
+}
+
+// 🔍 Debug function to test XUMM response
+async function testXummResponse() {
+  try {
+    console.log("Testing XUMM response...");
+    const res = await fetch("https://waldocoin-backend-api.onrender.com/api/login");
+    const data = await res.json();
+
+    console.log("=== XUMM RESPONSE DEBUG ===");
+    console.log("Full response:", JSON.stringify(data, null, 2));
+    console.log("QR:", data.qr);
+    console.log("UUID:", data.uuid);
+    console.log("Refs:", data.refs);
+    console.log("Next:", data.next);
+
+    if (data.refs) {
+      console.log("Available refs:");
+      Object.keys(data.refs).forEach(key => {
+        console.log(`  ${key}:`, data.refs[key]);
+      });
+    }
+
+    // Try to extract deep link
+    let deepLink = null;
+    if (data.refs?.qr_uri) {
+      deepLink = data.refs.qr_uri;
+    } else if (data.refs?.xapp) {
+      deepLink = data.refs.xapp;
+    } else if (data.qr) {
+      deepLink = data.qr.replace('https://xumm.app/sign/', 'xumm://sign/');
+    }
+
+    console.log("Extracted deep link:", deepLink);
+
+    alert(`XUMM Response logged to console. Check developer tools.\n\nQR: ${data.qr ? 'Available' : 'Missing'}\nRefs: ${data.refs ? Object.keys(data.refs).join(', ') : 'None'}\nDeep Link: ${deepLink || 'None found'}`);
+
+  } catch (error) {
+    console.error("Debug test failed:", error);
+    alert("Debug test failed. Check console for details.");
   }
 }
 </script>
