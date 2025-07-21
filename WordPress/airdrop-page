@@ -211,17 +211,25 @@ async function checkPendingAuth() {
 
         checkWalletStatus();
         checkTrustlineStatus();
+      } else {
+        // Not signed yet, start aggressive background checking
+        console.log("Auth pending, starting background checks...");
+        startBackgroundAuthCheck();
       }
     } catch (error) {
       console.error("Error checking pending auth:", error);
+      // Start background checking even if initial check fails
+      startBackgroundAuthCheck();
     }
   }
 }
 
-// DESKTOP FIX: Continuous background auth checking
+// DESKTOP FIX: Aggressive background auth checking
 function startBackgroundAuthCheck() {
   // Only run if not already connected
   if (walletReady) return;
+
+  console.log("Starting aggressive background auth checking...");
 
   const backgroundCheck = setInterval(async () => {
     const uuid = localStorage.getItem('xumm_uuid');
@@ -230,12 +238,18 @@ function startBackgroundAuthCheck() {
       return;
     }
 
+    console.log("Background checking auth for UUID:", uuid);
+
     try {
       const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
       const status = await response.json();
 
+      console.log("Background auth status:", status);
+
       if (status?.signed && (status?.account || status?.response?.signer)) {
         clearInterval(backgroundCheck);
+
+        console.log("🎉 Background check found signed auth!");
 
         // SUCCESS! Connect wallet
         currentWallet = status.account || status.response?.signer;
@@ -260,11 +274,12 @@ function startBackgroundAuthCheck() {
     } catch (error) {
       console.error("Background auth check error:", error);
     }
-  }, 1000); // Check every 1 second in background
+  }, 500); // Check every 500ms for faster detection
 
   // Stop background checking after 10 minutes
   setTimeout(() => {
     clearInterval(backgroundCheck);
+    console.log("Background auth checking stopped after 10 minutes");
   }, 600000);
 }
 
