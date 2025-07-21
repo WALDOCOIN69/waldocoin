@@ -213,7 +213,7 @@ router.get("/stats", async (_, res) => {
         timestamp: new Date().toISOString()
       });
     }
-  }, 5000); // 5 second global timeout (more aggressive)
+  }, 3000); // 3 second global timeout (very aggressive)
 
   try {
     // Get airdrop statistics
@@ -253,7 +253,7 @@ router.get("/stats", async (_, res) => {
         try {
           console.log(`🔗 Trying XRPL server: ${server}`);
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout (very aggressive)
+          const timeoutId = setTimeout(() => controller.abort(), 1000); // 1 second timeout (extremely aggressive)
 
           response = await fetch(server, {
             method: 'POST',
