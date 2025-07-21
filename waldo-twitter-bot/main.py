@@ -87,6 +87,39 @@ def fetch_author_handle(user_id):
         r.set(cache_key, username, ex=86400)
     return username
 
+def check_daily_meme_limit(handle, wallet):
+    """Check if user has exceeded their daily meme limit"""
+    try:
+        # Get user's WALDO balance to determine tier
+        user_data = r.hgetall(f"user:{wallet}")
+        waldo_balance = int(user_data.get(b'waldoBalance', 0)) if user_data.get(b'waldoBalance') else 0
+
+        # Determine daily limit based on WALDO holdings
+        if waldo_balance >= 50000:  # VIP tier
+            daily_limit = int(r.get("limits:meme_vip") or 50)
+            tier = "VIP"
+        elif waldo_balance >= 10000:  # Premium tier
+            daily_limit = int(r.get("limits:meme_premium") or 25)
+            tier = "Premium"
+        else:  # Standard tier
+            daily_limit = int(r.get("limits:meme_daily") or 10)
+            tier = "Standard"
+
+        # Get today's date for tracking
+        today = datetime.now().strftime('%Y-%m-%d')
+        daily_key = f"meme_count:{handle}:{today}"
+
+        # Get current count for today
+        current_count = int(r.get(daily_key) or 0)
+
+        print(f"📊 @{handle} ({tier}) has posted {current_count}/{daily_limit} memes today")
+
+        return current_count < daily_limit, current_count, daily_limit, tier
+
+    except Exception as e:
+        print(f"❌ Error checking meme limit for @{handle}: {str(e)}")
+        return True, 0, 10, "Standard"  # Default to allowing with standard limit
+
 def store_meme_tweet(tweet):
     key = f"meme:{tweet['id']}"
     if r.exists(key):
@@ -103,6 +136,12 @@ def store_meme_tweet(tweet):
         return False
 
     wallet = wallet.decode()
+
+    # Check daily meme limit
+    can_post, current_count, daily_limit, tier = check_daily_meme_limit(handle, wallet)
+    if not can_post:
+        print(f"🚫 @{handle} has reached daily limit ({current_count}/{daily_limit} memes) - Tweet {tweet['id']} rejected")
+        return False
     metrics = tweet["public_metrics"]
     xp = calculate_xp(metrics["like_count"], metrics["retweet_count"])
     tier, waldo = calculate_rewards(metrics["like_count"], metrics["retweet_count"], DEFAULT_REWARD_TYPE)
@@ -138,6 +177,15 @@ def store_meme_tweet(tweet):
     r.incrby(f"wallet:xp:{wallet}", xp)
     if xp >= NFT_XP_THRESHOLD:
         r.set(f"meme:nft_ready:{tweet['id']}", 1)
+
+    # Increment daily meme count
+    today = datetime.now().strftime('%Y-%m-%d')
+    daily_key = f"meme_count:{handle}:{today}"
+    r.incr(daily_key)
+    r.expire(daily_key, 60*60*24)  # Expire at end of day
+
+    new_count = int(r.get(daily_key) or 0)
+    print(f"✅ Stored meme {tweet['id']} for @{handle} ({tier}) - Daily count: {new_count}/{daily_limit}")
 
     return True
 

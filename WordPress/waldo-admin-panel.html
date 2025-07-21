@@ -1130,6 +1130,109 @@
         </div>
       </div>
 
+      <!-- Daily Meme Limits Control -->
+      <div class="admin-card" style="border: 2px solid #e67e22; background: #2a1f16;">
+        <div class="card-title" style="color: #e67e22;">🎭 Daily Meme Limits Control</div>
+
+        <div class="margin-bottom-20">
+          <h4 style="color: #e67e22; margin-bottom: 10px;">📊 Current Meme Limits</h4>
+          <div id="currentMemeLimits" class="margin-bottom-15">
+            <div style="color: #666; font-style: italic;">Loading current meme limits...</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+          <h4 style="color: #e67e22; margin-bottom: 15px;">⚙️ Update Meme Limits</h4>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Daily Memes per User:</label>
+              <input type="number" id="dailyMemeLimit" class="form-input" min="1" max="100" step="1" placeholder="10">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 10 memes per day</div>
+            </div>
+
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Premium User Limit:</label>
+              <input type="number" id="premiumMemeLimit" class="form-input" min="1" max="200" step="1" placeholder="25">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 25 memes per day (10K+ WALDO holders)</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">VIP User Limit:</label>
+              <input type="number" id="vipMemeLimit" class="form-input" min="1" max="500" step="1" placeholder="50">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 50 memes per day (50K+ WALDO holders)</div>
+            </div>
+
+            <div>
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reset Time (UTC Hour):</label>
+              <input type="number" id="resetHour" class="form-input" min="0" max="23" step="1" placeholder="0">
+              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 0 (midnight UTC)</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for Change:</label>
+            <input type="text" id="memeLimitChangeReason" class="form-input" placeholder="e.g., Spam prevention, Quality control, Event adjustment" maxlength="100">
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button onclick="updateMemeLimits()" class="btn" style="background: #e67e22; color: white;">
+              🎭 Update Limits
+            </button>
+            <button onclick="resetMemeLimits()" class="btn" style="background: #95a5a6; color: white;">
+              🔄 Reset to Defaults
+            </button>
+            <button onclick="viewMemeUsage()" class="btn btn-secondary">
+              📊 View Usage Stats
+            </button>
+          </div>
+
+          <div id="memeLimitResult" class="margin-top-15"></div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #e67e22; margin-bottom: 10px;">🚀 Quick Limit Presets</h4>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="setQuickMemeLimit('strict', 5, 15, 30)" class="btn btn-secondary" style="font-size: 0.9em;">
+              🔒 Strict (5/15/30)
+            </button>
+            <button onclick="setQuickMemeLimit('balanced', 10, 25, 50)" class="btn btn-secondary" style="font-size: 0.9em;">
+              ⚖️ Balanced (10/25/50)
+            </button>
+            <button onclick="setQuickMemeLimit('generous', 20, 50, 100)" class="btn btn-secondary" style="font-size: 0.9em;">
+              🎉 Generous (20/50/100)
+            </button>
+            <button onclick="setQuickMemeLimit('unlimited', 1000, 1000, 1000)" class="btn btn-secondary" style="font-size: 0.9em;">
+              ♾️ Unlimited (1000 each)
+            </button>
+          </div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #e67e22; margin-bottom: 10px;">📈 Recent Limit Changes</h4>
+          <div id="memeLimitHistory" style="max-height: 200px; overflow-y: auto;">
+            <div style="color: #666; font-style: italic;">No limit changes yet</div>
+          </div>
+        </div>
+
+        <div class="margin-bottom-15">
+          <h4 style="color: #e67e22; margin-bottom: 10px;">🔍 User Meme Usage Lookup</h4>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="lookupWallet" class="form-input" placeholder="Enter wallet address" style="flex: 1;">
+            <button onclick="lookupUserMemeUsage()" class="btn btn-secondary">
+              🔍 Check Usage
+            </button>
+          </div>
+          <div id="memeUsageResult" class="margin-top-10"></div>
+        </div>
+
+        <div class="alert alert-info">
+          🎭 <strong>How it works:</strong> Users can post limited memes per day based on their WALDO holdings. Limits reset at midnight UTC. Premium/VIP users get higher limits for holding more WALDO.
+        </div>
+      </div>
+
       <!-- AI Fraud Detection System -->
       <div class="admin-card" style="border: 2px solid #9b59b6; background: #2a1a2a;">
         <div class="card-title" style="color: #9b59b6;">🤖 AI Fraud Detection System</div>
@@ -2643,13 +2746,15 @@
       // Load section data
       loadSectionData(sectionName);
 
-      // Load active bonuses, airdrop config, WALDO requirements, and fraud data if on dashboard
+      // Load active bonuses, airdrop config, WALDO requirements, fraud data, and meme limits if on dashboard
       if (sectionName === 'dashboard') {
         loadActiveBonuses();
         loadAirdropConfig();
         loadConfigHistory();
         loadWaldoRequirements();
         loadRequirementHistory();
+        loadMemeLimits();
+        loadMemeLimitHistory();
         loadFraudAnalytics();
         loadRecentViolations();
         loadSuspiciousActivity();
@@ -4676,6 +4781,303 @@ This action cannot be undone. Continue?`;
 
     function adjustSensitivity() {
       showAlert('🎛️ Fraud detection sensitivity adjustment coming soon! Current settings are optimized for launch.', 'info');
+    }
+
+    // 🎭 Daily Meme Limits Control Functions
+    async function loadMemeLimits() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/meme-limits`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const limitsDiv = document.getElementById('currentMemeLimits');
+
+        if (data.success) {
+          const limits = data.limits;
+          limitsDiv.innerHTML = `
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #e67e22;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                  <div style="color: #e67e22; font-weight: bold;">Standard Users</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${limits.daily} memes/day</div>
+                  <div style="color: #666; font-size: 0.9em;">Default limit</div>
+                </div>
+                <div>
+                  <div style="color: #e67e22; font-weight: bold;">Premium Users</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${limits.premium} memes/day</div>
+                  <div style="color: #666; font-size: 0.9em;">10K+ WALDO holders</div>
+                </div>
+                <div>
+                  <div style="color: #e67e22; font-weight: bold;">VIP Users</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${limits.vip} memes/day</div>
+                  <div style="color: #666; font-size: 0.9em;">50K+ WALDO holders</div>
+                </div>
+                <div>
+                  <div style="color: #e67e22; font-weight: bold;">Reset Time</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${limits.resetHour}:00 UTC</div>
+                  <div style="color: #666; font-size: 0.9em;">Daily reset</div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          // Update form placeholders
+          document.getElementById('dailyMemeLimit').placeholder = limits.daily;
+          document.getElementById('premiumMemeLimit').placeholder = limits.premium;
+          document.getElementById('vipMemeLimit').placeholder = limits.vip;
+          document.getElementById('resetHour').placeholder = limits.resetHour;
+        } else {
+          limitsDiv.innerHTML = '<div style="color: #e74c3c;">Error loading meme limits</div>';
+        }
+      } catch (error) {
+        console.error('Error loading meme limits:', error);
+        document.getElementById('currentMemeLimits').innerHTML = '<div style="color: #e74c3c;">Error loading limits</div>';
+      }
+    }
+
+    async function updateMemeLimits() {
+      const dailyLimit = parseInt(document.getElementById('dailyMemeLimit').value);
+      const premiumLimit = parseInt(document.getElementById('premiumMemeLimit').value);
+      const vipLimit = parseInt(document.getElementById('vipMemeLimit').value);
+      const resetHour = parseInt(document.getElementById('resetHour').value);
+      const reason = document.getElementById('memeLimitChangeReason').value.trim();
+
+      if (!dailyLimit && !premiumLimit && !vipLimit && !resetHour && resetHour !== 0) {
+        showAlert('Please enter at least one value to update', 'warning');
+        return;
+      }
+
+      const resultDiv = document.getElementById('memeLimitResult');
+      resultDiv.innerHTML = '<div style="color: #ffd93d;">🎭 Updating meme limits...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/update-meme-limits`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            daily: dailyLimit || undefined,
+            premium: premiumLimit || undefined,
+            vip: vipLimit || undefined,
+            resetHour: resetHour !== undefined ? resetHour : undefined,
+            reason: reason || 'Admin meme limit update'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ Meme limits updated successfully!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              ${data.changes.join(' • ')}
+            </div>
+          `;
+
+          // Clear form
+          document.getElementById('dailyMemeLimit').value = '';
+          document.getElementById('premiumMemeLimit').value = '';
+          document.getElementById('vipMemeLimit').value = '';
+          document.getElementById('resetHour').value = '';
+          document.getElementById('memeLimitChangeReason').value = '';
+
+          // Refresh displays
+          loadMemeLimits();
+          loadMemeLimitHistory();
+          showAlert('Meme limits updated successfully', 'success');
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed to update: ${data.error}</div>`;
+          showAlert(`Failed to update limits: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Update meme limits error:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error updating limits</div>';
+        showAlert('Network error updating meme limits', 'error');
+      }
+    }
+
+    async function resetMemeLimits() {
+      const confirm = window.confirm('⚠️ Reset meme limits to defaults?\n\n• Standard: 10 memes/day\n• Premium: 25 memes/day (10K+ WALDO)\n• VIP: 50 memes/day (50K+ WALDO)\n• Reset: 0:00 UTC\n\nThis action cannot be undone.');
+      if (!confirm) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/reset-meme-limits`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            reason: 'Reset to default meme limits'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('memeLimitResult').innerHTML = `
+            <div style="color: #27ae60; font-weight: bold;">✅ Meme limits reset to defaults!</div>
+            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+              Standard: 10 • Premium: 25 • VIP: 50 • Reset: 0:00 UTC
+            </div>
+          `;
+
+          loadMemeLimits();
+          loadMemeLimitHistory();
+          showAlert('Meme limits reset to defaults', 'success');
+        } else {
+          showAlert(`Failed to reset: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Reset meme limits error:', error);
+        showAlert('Network error resetting meme limits', 'error');
+      }
+    }
+
+    function setQuickMemeLimit(preset, daily, premium, vip) {
+      let eventName;
+
+      switch(preset) {
+        case 'strict':
+          eventName = 'Strict Quality Control';
+          break;
+        case 'balanced':
+          eventName = 'Balanced Limits';
+          break;
+        case 'generous':
+          eventName = 'Generous Allowance';
+          break;
+        case 'unlimited':
+          eventName = 'Unlimited Mode';
+          break;
+      }
+
+      // Set the form values
+      document.getElementById('dailyMemeLimit').value = daily;
+      document.getElementById('premiumMemeLimit').value = premium;
+      document.getElementById('vipMemeLimit').value = vip;
+      document.getElementById('resetHour').value = 0; // Default to midnight
+      document.getElementById('memeLimitChangeReason').value = eventName;
+
+      // Auto-update
+      updateMemeLimits();
+    }
+
+    async function loadMemeLimitHistory() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/meme-limit-history`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const historyDiv = document.getElementById('memeLimitHistory');
+
+        if (data.success && data.history && data.history.length > 0) {
+          let historyHtml = '';
+          data.history.slice(0, 10).forEach(entry => { // Show last 10 changes
+            const date = new Date(entry.timestamp).toLocaleString();
+            historyHtml += `
+              <div style="background: #2a2a2a; padding: 8px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid #e67e22;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: #e67e22;">${entry.reason}</strong>
+                    <div style="color: #ccc; font-size: 0.9em;">${entry.changes.join(' • ')}</div>
+                  </div>
+                  <div style="color: #666; font-size: 0.8em;">${date}</div>
+                </div>
+              </div>
+            `;
+          });
+          historyDiv.innerHTML = historyHtml;
+        } else {
+          historyDiv.innerHTML = '<div style="color: #666; font-style: italic;">No limit changes yet</div>';
+        }
+      } catch (error) {
+        console.error('Error loading meme limit history:', error);
+        document.getElementById('memeLimitHistory').innerHTML = '<div style="color: #e74c3c;">Error loading history</div>';
+      }
+    }
+
+    async function lookupUserMemeUsage() {
+      const wallet = document.getElementById('lookupWallet').value.trim();
+      if (!wallet) {
+        showAlert('Please enter a wallet address', 'warning');
+        return;
+      }
+
+      const resultDiv = document.getElementById('memeUsageResult');
+      resultDiv.innerHTML = '<div style="color: #ffd93d;">🔍 Looking up meme usage...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/user-meme-usage/${wallet}`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const usage = data.usage;
+          const tierInfo = usage.waldoBalance >= 50000 ? 'VIP' :
+                          usage.waldoBalance >= 10000 ? 'Premium' : 'Standard';
+          const tierColor = usage.waldoBalance >= 50000 ? '#9b59b6' :
+                           usage.waldoBalance >= 10000 ? '#f39c12' : '#3498db';
+
+          resultDiv.innerHTML = `
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid ${tierColor}; margin-top: 10px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                  <div style="color: ${tierColor}; font-weight: bold;">Today's Usage</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${usage.todayCount}/${usage.dailyLimit} memes</div>
+                  <div style="color: #666; font-size: 0.9em;">Remaining: ${usage.dailyLimit - usage.todayCount}</div>
+                </div>
+                <div>
+                  <div style="color: ${tierColor}; font-weight: bold;">User Tier</div>
+                  <div style="color: #27ae60; font-size: 1.2em;">${tierInfo}</div>
+                  <div style="color: #666; font-size: 0.9em;">${usage.waldoBalance.toLocaleString()} WALDO</div>
+                </div>
+              </div>
+              <div style="margin-top: 10px; color: #ccc; font-size: 0.9em;">
+                Last reset: ${new Date(usage.lastReset).toLocaleString()} •
+                Next reset: ${new Date(usage.nextReset).toLocaleString()}
+              </div>
+            </div>
+          `;
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ ${data.error}</div>`;
+        }
+      } catch (error) {
+        console.error('Lookup meme usage error:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Error looking up usage</div>';
+      }
+    }
+
+    async function viewMemeUsage() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/system/meme-usage-stats`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const stats = data.stats;
+          showAlert(`📊 Meme Usage Stats:\n\n• Total users today: ${stats.totalUsers}\n• Average memes per user: ${stats.avgMemesPerUser}\n• Users at limit: ${stats.usersAtLimit}\n• Total memes today: ${stats.totalMemes}`, 'info');
+        } else {
+          showAlert(`Failed to get usage stats: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('View meme usage error:', error);
+        showAlert('Error getting meme usage stats', 'error');
+      }
     }
 
     function blockUser(wallet) {
