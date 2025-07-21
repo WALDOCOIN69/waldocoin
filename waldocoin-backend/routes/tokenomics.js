@@ -183,19 +183,51 @@ router.get("/stats", async (_, res) => {
     try {
       console.log('🔍 Querying XRPL for real-time WLO trustlines...');
 
-      // Query XRPL for all WLO trustlines
-      const response = await fetch('https://xrplcluster.com', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          method: 'account_lines',
-          params: [{
-            account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
-            ledger_index: 'validated'
-          }]
-        }),
-        timeout: 10000
-      });
+      // Try multiple XRPL servers for reliability
+      const servers = [
+        'https://xrplcluster.com',
+        'https://s1.ripple.com:51234',
+        'https://s2.ripple.com:51234'
+      ];
+
+      let response = null;
+      let lastError = null;
+
+      for (const server of servers) {
+        try {
+          console.log(`🔗 Trying XRPL server: ${server}`);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+          response = await fetch(server, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              method: 'account_lines',
+              params: [{
+                account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
+                ledger_index: 'validated'
+              }]
+            }),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            console.log(`✅ Successfully connected to ${server}`);
+            break; // Success, exit loop
+          }
+        } catch (serverError) {
+          console.log(`❌ Failed to connect to ${server}:`, serverError.message);
+          lastError = serverError;
+          continue; // Try next server
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw lastError || new Error('All XRPL servers failed');
+      }
 
       const data = await response.json();
 
