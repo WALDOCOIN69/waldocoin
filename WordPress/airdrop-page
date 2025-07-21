@@ -409,7 +409,7 @@ function startBackgroundAuthCheck() {
     } catch (error) {
       console.error("Background auth check error:", error);
     }
-  }, 500); // Check every 500ms for faster detection
+  }, 2000); // Check every 2 seconds to reduce server load
 
   // Stop background checking after 10 minutes
   setTimeout(() => {
@@ -698,22 +698,23 @@ async function connectXummWallet() {
           await checkTrustlineStatus();
 
 
-        } else if (status?.expired) {
+        } else if (status?.expired || status?.error) {
           clearInterval(interval);
 
-          // Show expired message
+          // Show expired/error message
           const resultDiv = document.getElementById("airdropResult");
           if (resultDiv) {
-            resultDiv.innerText = "❌ Authentication expired. Please try again.";
+            resultDiv.innerText = status?.error ? `❌ ${status.error}` : "❌ Authentication expired. Please try again.";
             resultDiv.style.color = "red";
           }
 
-
+          // Clean up stored UUID
+          localStorage.removeItem('xumm_uuid');
         }
       } catch (pollError) {
         console.error("Polling error:", pollError);
       }
-    }, 200); // Check every 200ms for ultra-fast detection
+    }, 1000); // Check every 1 second to reduce server load
 
     // Add timeout to prevent infinite polling
     setTimeout(() => {
