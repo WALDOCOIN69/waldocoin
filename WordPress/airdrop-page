@@ -115,10 +115,13 @@
             <div style="font-size:11px; color:#666; margin-bottom:8px;">Or scan QR code:</div>
             <img id="xummQRMobile" src="" style="width:100px; border:2px solid #ccc; border-radius:6px;" />
 
-            <!-- Debug button for testing -->
-            <div style="margin-top:10px;">
+            <!-- Debug and manual check buttons -->
+            <div style="margin-top:10px; display: flex; gap: 8px; flex-wrap: wrap;">
               <button onclick="testXummResponse()" style="padding: 6px 12px; background: #666; color: white; border: none; border-radius: 4px; font-size: 11px;">
                 🔍 Debug Connection
+              </button>
+              <button onclick="manualCheckConnection()" style="padding: 6px 12px; background: #e67e22; color: white; border: none; border-radius: 4px; font-size: 11px;">
+                🔄 Check Connection
               </button>
             </div>
           </div>
@@ -163,19 +166,29 @@ window.addEventListener("DOMContentLoaded", () => {
   loadAirdropStatus();
   detectDeviceAndShowTrustline();
 
-  // Check if user returned from XUMM authentication
+  // IMMEDIATE FIX: Always check for pending authentication on page load
+  const storedUuid = localStorage.getItem('xumm_uuid');
+  if (storedUuid) {
+    console.log("🔄 Found pending authentication UUID:", storedUuid);
+    showToast("🔄 Checking wallet connection...", "info");
+
+    // Show pending status immediately
+    document.getElementById("walletStatus").innerText = "🔄 Checking connection...";
+    document.getElementById("walletStatus").style.color = "#ffd93d";
+
+    checkAuthenticationStatus(storedUuid);
+  }
+
+  // Also check URL parameters (backup method)
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('authenticated') === 'true') {
-    console.log("User returned from XUMM authentication");
+    console.log("User returned from XUMM authentication via URL");
     showToast("🔄 Checking authentication status...", "info");
 
     // Clean up URL
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Check if we have a stored UUID to poll
-    const storedUuid = localStorage.getItem('xumm_uuid');
     if (storedUuid) {
-      console.log("Found stored UUID, checking status:", storedUuid);
       checkAuthenticationStatus(storedUuid);
     }
   }
@@ -676,9 +689,9 @@ async function testXummResponse() {
 }
 
 // 🔄 Check authentication status (for when user returns from XUMM)
-async function checkAuthenticationStatus(uuid) {
+async function checkAuthenticationStatus(uuid, retryCount = 0) {
   try {
-    console.log("Checking authentication status for UUID:", uuid);
+    console.log(`Checking authentication status for UUID: ${uuid} (attempt ${retryCount + 1})`);
 
     const statusResponse = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
     const status = await statusResponse.json();
@@ -727,15 +740,39 @@ async function checkAuthenticationStatus(uuid) {
       showToast("❌ Authentication expired. Please try again.", "error");
       localStorage.removeItem('xumm_uuid');
     } else {
-      // Still pending, could poll again or show message
-      console.log("Authentication still pending");
-      showToast("⏳ Authentication pending. Please complete signing in Xaman wallet.", "info");
+      // Still pending - retry up to 30 times (1 minute total)
+      console.log("Authentication still pending, retrying...");
+
+      if (retryCount < 30) {
+        showToast(`⏳ Checking wallet connection... (${retryCount + 1}/30)`, "info");
+
+        // Retry after 2 seconds
+        setTimeout(() => {
+          checkAuthenticationStatus(uuid, retryCount + 1);
+        }, 2000);
+      } else {
+        showToast("⏰ Authentication check timed out. Please try connecting again.", "warning");
+        localStorage.removeItem('xumm_uuid');
+      }
     }
 
   } catch (error) {
     console.error("Error checking authentication status:", error);
     showToast("❌ Error checking authentication status", "error");
     localStorage.removeItem('xumm_uuid');
+  }
+}
+
+// 🔄 Manual connection check (for immediate testing)
+function manualCheckConnection() {
+  const storedUuid = localStorage.getItem('xumm_uuid');
+
+  if (storedUuid) {
+    console.log("🔄 Manual check for UUID:", storedUuid);
+    showToast("🔄 Manually checking connection...", "info");
+    checkAuthenticationStatus(storedUuid, 0);
+  } else {
+    showToast("❌ No pending authentication found. Please connect wallet first.", "warning");
   }
 }
 </script>
