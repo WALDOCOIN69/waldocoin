@@ -19,11 +19,8 @@ router.get("/", async (req, res) => {
       options: {
         submit: true, // Allow submission for SignIn
         multisign: false,
-        expire: 5, // 5 minutes expiry
-        return_url: {
-          web: "https://waldocoin.live",
-          app: "waldocoin://authenticated"
-        }
+        expire: 5 // 5 minutes expiry
+        // No return_url - let user stay in Xaman or manually return to browser
       },
       custom_meta: {
         identifier: "WALDOCOIN-AUTH",

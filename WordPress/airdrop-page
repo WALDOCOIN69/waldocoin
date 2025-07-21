@@ -162,6 +162,23 @@ function isMobileDevice() {
 window.addEventListener("DOMContentLoaded", () => {
   loadAirdropStatus();
   detectDeviceAndShowTrustline();
+
+  // Check if user returned from XUMM authentication
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('authenticated') === 'true') {
+    console.log("User returned from XUMM authentication");
+    showToast("🔄 Checking authentication status...", "info");
+
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Check if we have a stored UUID to poll
+    const storedUuid = localStorage.getItem('xumm_uuid');
+    if (storedUuid) {
+      console.log("Found stored UUID, checking status:", storedUuid);
+      checkAuthenticationStatus(storedUuid);
+    }
+  }
 });
 
 // 📱 Detect device and show appropriate trustline option
@@ -214,6 +231,9 @@ async function connectXummWallet() {
     if (!data.qr || !data.uuid) throw new Error("Missing QR/UUID");
 
     console.log("XUMM Response:", data); // Debug log
+
+    // Store UUID for later status checking (in case user returns from redirect)
+    localStorage.setItem('xumm_uuid', data.uuid);
 
     // Show QR in both mobile and desktop views
     const mobileQR = document.getElementById("xummQRMobile");
@@ -364,6 +384,9 @@ async function connectXummWallet() {
         }
 
         showToast("✅ Wallet authenticated successfully!", "success");
+
+        // Clean up stored UUID
+        localStorage.removeItem('xumm_uuid');
 
         // Check if wallet already claimed before allowing claim
         await checkWalletStatus();
@@ -649,6 +672,70 @@ async function testXummResponse() {
   } catch (error) {
     console.error("Debug test failed:", error);
     alert("Debug test failed. Check console for details.");
+  }
+}
+
+// 🔄 Check authentication status (for when user returns from XUMM)
+async function checkAuthenticationStatus(uuid) {
+  try {
+    console.log("Checking authentication status for UUID:", uuid);
+
+    const statusResponse = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
+    const status = await statusResponse.json();
+
+    console.log("Authentication status:", status);
+
+    if (status?.signed && (status?.account || status?.response?.signer)) {
+      // Authentication successful!
+      currentWallet = status.account || status.response?.signer;
+      walletReady = true;
+
+      // Update UI to show connected state
+      document.getElementById("connectWalletBtn").innerHTML = "✅ Wallet Connected";
+      document.getElementById("connectWalletBtn").style.background = "#27ae60";
+      document.getElementById("connectWalletBtn").disabled = true;
+
+      document.getElementById("walletStatus").innerText = `✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}`;
+      document.getElementById("walletStatus").style.color = "#0f0";
+
+      // Update mobile/desktop buttons
+      const mobileLink = document.getElementById("xummDeepLink");
+      const desktopLink = document.getElementById("xummDeepLinkDesktop");
+
+      if (mobileLink) {
+        mobileLink.innerHTML = "✅ Connected!";
+        mobileLink.style.background = "linear-gradient(135deg, #27ae60, #2ecc71)";
+      }
+
+      if (desktopLink) {
+        desktopLink.innerHTML = "✅ Connected!";
+      }
+
+      showToast("✅ Wallet authenticated successfully!", "success");
+
+      // Clean up stored UUID
+      localStorage.removeItem('xumm_uuid');
+
+      // Close any open popups
+      closeXummQR();
+
+      // Check wallet status and trustline
+      await checkWalletStatus();
+      await checkTrustlineStatus();
+
+    } else if (status?.expired) {
+      showToast("❌ Authentication expired. Please try again.", "error");
+      localStorage.removeItem('xumm_uuid');
+    } else {
+      // Still pending, could poll again or show message
+      console.log("Authentication still pending");
+      showToast("⏳ Authentication pending. Please complete signing in Xaman wallet.", "info");
+    }
+
+  } catch (error) {
+    console.error("Error checking authentication status:", error);
+    showToast("❌ Error checking authentication status", "error");
+    localStorage.removeItem('xumm_uuid');
   }
 }
 </script>
