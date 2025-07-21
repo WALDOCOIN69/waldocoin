@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
   if (isAdminOverride) {
     // Admin override - validate admin wallet and custom amount
     const adminWallet = req.headers['x-admin-wallet'];
-    if (adminWallet !== "rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt") {
+    if (adminWallet !== "rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC") {
       return res.status(403).json({ success: false, error: "Admin access required" });
     }
 
