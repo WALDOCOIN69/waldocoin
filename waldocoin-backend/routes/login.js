@@ -11,14 +11,15 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // SignIn with return to widget
+    // SignIn with return URL to reload widget
     const payload = {
       txjson: {
         TransactionType: "SignIn"
       },
       options: {
         return_url: {
-          web: "https://waldocoin.live/WordPress/airdrop-page?signed=true"
+          web: "https://waldocoin.live/WordPress/airdrop-page?authenticated=true&reload=true",
+          app: "https://waldocoin.live/WordPress/airdrop-page?authenticated=true&reload=true"
         }
       }
     };

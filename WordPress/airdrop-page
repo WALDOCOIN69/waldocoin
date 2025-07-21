@@ -13,7 +13,7 @@
     font-size: 16px !important; /* Prevents zoom on iOS */
   }
   .airdrop-box a, .airdrop-box button {
-    padding: 10px 16px !important;
+    padding: 10px 16px !important
     font-size: 14px !important;
   }
 }
@@ -160,17 +160,17 @@ window.addEventListener("DOMContentLoaded", () => {
   loadAirdropStatus();
   detectDeviceAndShowTrustline();
 
-  // Check if returning from Xaman with signed=true
+  // Check if returning from Xaman with authenticated=true
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('signed') === 'true') {
+  if (urlParams.get('authenticated') === 'true') {
     console.log("Returned from Xaman - checking authentication...");
     showToast("🔄 Checking wallet connection...", "info");
 
     // Clean URL
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Check authentication immediately
-    setTimeout(checkAuthNow, 500);
+    // Check authentication immediately and aggressively
+    checkAuthNow();
   } else {
     // Check if there's a pending authentication
     checkPendingAuth();
@@ -214,12 +214,14 @@ async function checkPendingAuth() {
 }
 
 // Immediate authentication check (when returning from Xaman)
-async function checkAuthNow() {
+async function checkAuthNow(attempt = 1) {
   const uuid = localStorage.getItem('xumm_uuid');
   if (!uuid) {
     showToast("❌ No pending authentication found", "error");
     return;
   }
+
+  console.log(`Checking auth attempt ${attempt}...`);
 
   try {
     const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
@@ -244,14 +246,21 @@ async function checkAuthNow() {
 
       checkWalletStatus();
       checkTrustlineStatus();
+    } else if (attempt < 20) {
+      // Keep trying for up to 20 attempts (40 seconds)
+      showToast(`⏳ Checking connection... (${attempt}/20)`, "info");
+      setTimeout(() => checkAuthNow(attempt + 1), 2000);
     } else {
-      showToast("⏳ Still processing... Checking again...", "info");
-      // Try again in 2 seconds
-      setTimeout(checkAuthNow, 2000);
+      showToast("⏰ Connection check timed out. Please try again.", "warning");
+      localStorage.removeItem('xumm_uuid');
     }
   } catch (error) {
     console.error("Auth check error:", error);
-    showToast("❌ Error checking authentication", "error");
+    if (attempt < 20) {
+      setTimeout(() => checkAuthNow(attempt + 1), 2000);
+    } else {
+      showToast("❌ Error checking authentication", "error");
+    }
   }
 }
 
