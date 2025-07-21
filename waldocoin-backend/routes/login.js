@@ -11,24 +11,14 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // Use SignIn transaction with proper configuration
+    // SignIn with return to widget
     const payload = {
       txjson: {
         TransactionType: "SignIn"
       },
       options: {
-        submit: true, // Allow submission for SignIn
-        multisign: false,
-        expire: 5 // 5 minutes expiry
-        // No return_url - let user stay in Xaman or manually return to browser
-      },
-      custom_meta: {
-        identifier: "WALDOCOIN-AUTH",
-        blob: {
-          purpose: "wallet_authentication",
-          app: "WALDOCOIN Airdrop",
-          description: "Sign in to claim your WALDOCOIN airdrop",
-          timestamp: new Date().toISOString()
+        return_url: {
+          web: "https://waldocoin.live/WordPress/airdrop-page?signed=true"
         }
       }
     };
