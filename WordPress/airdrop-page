@@ -326,7 +326,7 @@ async function checkPendingAuth() {
     document.getElementById("walletStatus").style.color = "#ffd93d";
 
     try {
-      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status/${uuid}?_t=${Date.now()}`);
       const status = await response.json();
 
       if (status?.signed && (status?.account || status?.response?.signer)) {
@@ -376,7 +376,7 @@ function startBackgroundAuthCheck() {
     console.log("Background checking auth for UUID:", uuid);
 
     try {
-      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status/${uuid}?_t=${Date.now()}`);
       const status = await response.json();
 
       console.log("Background auth status:", status);
