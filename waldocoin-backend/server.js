@@ -133,7 +133,7 @@ const app = express();
     res.json({
       status: "OK",
       timestamp: new Date().toISOString(),
-      version: "2025-01-21-v2",
+      version: "2025-01-21-v3",
       endpoints: {
         airdrop: "/api/airdrop",
         trustlineCount: "/api/airdrop/trustline-count",
