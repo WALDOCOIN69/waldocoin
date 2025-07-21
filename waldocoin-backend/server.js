@@ -54,6 +54,10 @@ import daoArchiveRoute from "./routes/dao/archive.js";
 import presaleRoute from "./routes/presale.js";
 import presaleLookup from "./routes/presaleLookup.js";
 
+// 🔐 Admin Routes
+import adminSendWaldoRoute from "./routes/admin/sendWaldo.js";
+import adminTrustlineRoute from "./routes/admin/trustline.js";
+
 
 
 const startServer = async () => {
@@ -115,6 +119,10 @@ const app = express();
   app.use("/api/dao/archive", daoArchiveRoute);
 
 app.use("/api/airdrop", airdropRoute);
+
+  // 🔐 Admin Routes
+  app.use("/api/admin/send-waldo", adminSendWaldoRoute);
+  app.use("/api/admin/trustline", adminTrustlineRoute);
 
   app.use("/api/presale", presaleRoute);
   app.use('/api/presale', presaleLookup);

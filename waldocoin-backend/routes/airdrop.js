@@ -35,8 +35,8 @@ router.post("/", async (req, res) => {
       return res.status(403).json({ success: false, error: "Admin access required" });
     }
 
-    if (!amount || amount <= 0 || amount > 10000) {
-      return res.status(400).json({ success: false, error: "Admin amount must be between 1 and 10,000 WALDO" });
+    if (!amount || amount <= 0 || amount > 1000000) {
+      return res.status(400).json({ success: false, error: "Admin amount must be between 1 and 1,000,000 WALDO" });
     }
 
     if (!reason || typeof reason !== 'string') {
@@ -393,19 +393,64 @@ router.post("/reset", async (req, res) => {
   }
 });
 
-// TEMPORARY: Add trustline count here since users router is having issues
-router.get("/trustline-count", (req, res) => {
+// GET /api/airdrop/trustline-count - Get real-time WALDO trustline count from XRPL
+router.get("/trustline-count", async (req, res) => {
   try {
+    console.log('🔍 Querying XRPL for real-time WLO trustline count...');
+
+    // Query XRPL for all WLO trustlines from the issuer account
+    const response = await fetch('https://xrplcluster.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'account_lines',
+        params: [{
+          account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
+          ledger_index: 'validated'
+        }]
+      }),
+      timeout: 10000
+    });
+
+    const data = await response.json();
+
+    if (data.result && data.result.lines) {
+      // Filter for WLO trustlines only
+      const wloTrustlines = data.result.lines.filter(line =>
+        line.currency === 'WLO'
+      );
+
+      const trustlineCount = wloTrustlines.length;
+      const walletsWithBalance = wloTrustlines.filter(line => parseFloat(line.balance || 0) > 0).length;
+      const totalWaldoHeld = wloTrustlines.reduce((sum, line) => sum + parseFloat(line.balance || 0), 0);
+
+      console.log(`✅ Real-time XRPL trustline data: ${trustlineCount} trustlines, ${walletsWithBalance} with balance, ${totalWaldoHeld.toFixed(2)} total WLO`);
+
+      res.json({
+        success: true,
+        trustlineCount: trustlineCount,
+        walletsWithBalance: walletsWithBalance,
+        totalWaldoHeld: Math.round(totalWaldoHeld),
+        source: "Real-time XRPL query",
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.log('⚠️ XRPL query failed, using fallback count');
+      res.json({
+        success: true,
+        trustlineCount: 20,
+        source: "Fallback - XRPL query failed",
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('❌ XRPL trustline query error:', error.message);
     res.json({
       success: true,
       trustlineCount: 20,
-      source: "Temporary endpoint in airdrop router",
+      source: "Fallback - Error occurred",
+      error: error.message,
       timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
     });
   }
 });

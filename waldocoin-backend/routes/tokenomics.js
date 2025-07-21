@@ -194,7 +194,7 @@ router.get("/stats", async (_, res) => {
             ledger_index: 'validated'
           }]
         }),
-        timeout: 5000
+        timeout: 10000
       });
 
       const data = await response.json();

@@ -39,6 +39,8 @@
       <p id="walletStatus" style="color:#ccc; font-size:12px; margin-top:8px;">Click button to connect your wallet</p>
 
 
+
+
     </div>
   </div>
 
@@ -150,6 +152,140 @@ let walletReady = false;
 let currentWallet = null;
 let alreadyTried = false;
 
+// Simple toast function for airdrop widget
+function showToast(message, type = "info") {
+  console.log(`[${type.toUpperCase()}] ${message}`);
+
+  // Show message in result div for immediate feedback
+  const resultDiv = document.getElementById("airdropResult");
+  if (resultDiv) {
+    if (type === "success") {
+      resultDiv.innerText = message;
+      resultDiv.style.color = "#0f0";
+    } else if (type === "error") {
+      resultDiv.innerText = message;
+      resultDiv.style.color = "red";
+    } else if (type === "info") {
+      resultDiv.innerText = message;
+      resultDiv.style.color = "#ffd93d";
+    }
+  }
+}
+
+// Toast notification function (simple version for airdrop widget)
+function showToast(message, type = "info") {
+  console.log(`[${type.toUpperCase()}] ${message}`);
+
+  // Also show in the result div for immediate feedback
+  const resultDiv = document.getElementById("airdropResult");
+  if (resultDiv && type === "success") {
+    resultDiv.innerText = message;
+    resultDiv.style.color = "#0f0";
+  } else if (resultDiv && type === "error") {
+    resultDiv.innerText = message;
+    resultDiv.style.color = "red";
+  }
+}
+
+// Force check authentication (for debugging)
+async function forceCheckAuth() {
+  const uuid = localStorage.getItem('xumm_uuid');
+  if (!uuid) {
+    showToast("❌ No pending authentication found", "error");
+    return;
+  }
+
+  console.log("🔄 Force checking auth for UUID:", uuid);
+
+  try {
+    const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status/${uuid}?_t=${Date.now()}`);
+    const status = await response.json();
+
+    console.log("Force check result:", status);
+
+    if (status?.signed === true && (status?.wallet || status?.account || status?.response?.signer)) {
+      // SUCCESS! Connect wallet
+      currentWallet = status.wallet || status.account || status.response?.signer;
+      walletReady = true;
+
+      // Close any popups
+      closeXummQR();
+
+      document.getElementById("connectWalletBtn").innerHTML = "✅ Wallet Connected";
+      document.getElementById("connectWalletBtn").style.background = "#27ae60";
+      document.getElementById("connectWalletBtn").disabled = true;
+
+      document.getElementById("walletStatus").innerText = `✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}`;
+      document.getElementById("walletStatus").style.color = "#0f0";
+
+      localStorage.removeItem('xumm_uuid');
+      showToast("✅ Wallet connected successfully!", "success");
+
+      checkWalletStatus();
+      checkTrustlineStatus();
+
+      // Hide force check button
+      document.getElementById("forceCheckBtn").style.display = "none";
+    } else {
+      showToast("⏳ Authentication still pending...", "info");
+    }
+  } catch (error) {
+    console.error("Force check error:", error);
+    showToast("❌ Error checking authentication", "error");
+  }
+}
+
+// Toast notification function
+function showToast(message, type = "info") {
+  console.log(`[${type.toUpperCase()}] ${message}`);
+
+  // Create toast element if it doesn't exist
+  let toast = document.getElementById('airdrop-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'airdrop-toast';
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      z-index: 10000;
+      max-width: 300px;
+      word-wrap: break-word;
+      transition: all 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+  }
+
+  // Set colors based on type
+  const colors = {
+    success: '#27ae60',
+    error: '#e74c3c',
+    warning: '#f39c12',
+    info: '#3498db'
+  };
+
+  toast.style.backgroundColor = colors[type] || colors.info;
+  toast.textContent = message;
+  toast.style.display = 'block';
+  toast.style.opacity = '1';
+
+  // Auto-hide after 4 seconds
+  setTimeout(() => {
+    if (toast) {
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        if (toast && toast.parentNode) {
+          toast.style.display = 'none';
+        }
+      }, 300);
+    }
+  }, 4000);
+}
+
 // � Helper function to detect mobile devices
 function isMobileDevice() {
   return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -178,8 +314,7 @@ window.addEventListener("DOMContentLoaded", () => {
     checkPendingAuth();
   }
 
-  // DESKTOP FIX: Start continuous background checking for pending auth
-  startBackgroundAuthCheck();
+
 });
 
 // Check for pending authentication on page load
@@ -505,59 +640,80 @@ async function connectXummWallet() {
     // Show status message
     showToast("📱 Waiting for wallet authentication...", "info");
 
-    // Poll login status
+    // Poll login status - FIXED VERSION with more aggressive polling
     const interval = setInterval(async () => {
       try {
-        const statusResponse = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${data.uuid}`);
+        // Use the correct endpoint with cache-busting
+        const statusResponse = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status/${data.uuid}?_t=${Date.now()}`);
         const status = await statusResponse.json();
 
         console.log("Login status check:", status);
 
-        if (status?.signed && (status?.account || status?.response?.signer)) {
-        clearInterval(interval);
-        currentWallet = status.account || status.response?.signer;
-        walletReady = true;
+        // Check for successful authentication
+        if (status?.signed === true && (status?.wallet || status?.account || status?.response?.signer)) {
+          clearInterval(interval);
 
-        // Close popup and update UI
-        closeXummQR();
-        document.getElementById("connectWalletBtn").innerHTML = "✅ Wallet Connected";
-        document.getElementById("connectWalletBtn").style.background = "#27ae60";
-        document.getElementById("connectWalletBtn").disabled = true;
+          // Get wallet address from any available property
+          currentWallet = status.wallet || status.account || status.response?.signer;
+          walletReady = true;
 
-        document.getElementById("walletStatus").innerText = `✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}`;
-        document.getElementById("walletStatus").style.color = "#0f0";
+          console.log("🎉 WALLET CONNECTED:", currentWallet);
 
-        // Reset any loading states on mobile/desktop buttons
-        const mobileLink = document.getElementById("xummDeepLink");
-        const desktopLink = document.getElementById("xummDeepLinkDesktop");
+          // Close popup and update UI
+          closeXummQR();
+          document.getElementById("connectWalletBtn").innerHTML = "✅ Wallet Connected";
+          document.getElementById("connectWalletBtn").style.background = "#27ae60";
+          document.getElementById("connectWalletBtn").disabled = true;
 
-        if (mobileLink) {
-          mobileLink.innerHTML = "✅ Connected!";
-          mobileLink.style.background = "linear-gradient(135deg, #27ae60, #2ecc71)";
+          document.getElementById("walletStatus").innerText = `✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}`;
+          document.getElementById("walletStatus").style.color = "#0f0";
+
+          // Reset any loading states on mobile/desktop buttons
+          const mobileLink = document.getElementById("xummDeepLink");
+          const desktopLink = document.getElementById("xummDeepLinkDesktop");
+
+          if (mobileLink) {
+            mobileLink.innerHTML = "✅ Connected!";
+            mobileLink.style.background = "linear-gradient(135deg, #27ae60, #2ecc71)";
+          }
+
+          if (desktopLink) {
+            desktopLink.innerHTML = "✅ Connected!";
+          }
+
+          // Show success message
+          const resultDiv = document.getElementById("airdropResult");
+          if (resultDiv) {
+            resultDiv.innerText = "✅ Wallet connected successfully!";
+            resultDiv.style.color = "#0f0";
+          }
+
+          // Clean up stored UUID
+          localStorage.removeItem('xumm_uuid');
+
+          // Check if wallet already claimed before allowing claim
+          await checkWalletStatus();
+
+          // Check trustline status
+          await checkTrustlineStatus();
+
+
+        } else if (status?.expired) {
+          clearInterval(interval);
+
+          // Show expired message
+          const resultDiv = document.getElementById("airdropResult");
+          if (resultDiv) {
+            resultDiv.innerText = "❌ Authentication expired. Please try again.";
+            resultDiv.style.color = "red";
+          }
+
+
         }
-
-        if (desktopLink) {
-          desktopLink.innerHTML = "✅ Connected!";
-        }
-
-        showToast("✅ Wallet authenticated successfully!", "success");
-
-        // Clean up stored UUID
-        localStorage.removeItem('xumm_uuid');
-
-        // Check if wallet already claimed before allowing claim
-        await checkWalletStatus();
-
-        // Check trustline status
-        await checkTrustlineStatus();
-      } else if (status?.expired) {
-        clearInterval(interval);
-        showToast("❌ Authentication expired. Please try again.", "error");
-      }
       } catch (pollError) {
         console.error("Polling error:", pollError);
       }
-    }, 250); // Check every 250ms for ultra-fast desktop detection
+    }, 200); // Check every 200ms for ultra-fast detection
 
     // Add timeout to prevent infinite polling
     setTimeout(() => {

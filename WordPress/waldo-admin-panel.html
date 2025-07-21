@@ -683,6 +683,7 @@
         <div class="stat-card">
           <div class="stat-value" id="totalUsers">-</div>
           <div class="stat-label">WALDO Trustlines</div>
+          <button onclick="loadTrustlineCount()" style="background: #25c2a0; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; margin-top: 5px; cursor: pointer;">🔄 Refresh</button>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="totalWaldoDistributed">-</div>
@@ -907,7 +908,7 @@
 
             <div class="form-group">
               <label class="form-label">Amount (WALDO)</label>
-              <input type="number" id="airdropAmount" class="form-input" placeholder="1000" min="1" max="10000" required>
+              <input type="number" id="airdropAmount" class="form-input" placeholder="1000" min="1" max="1000000" required>
             </div>
 
             <div class="form-group">
@@ -2776,6 +2777,7 @@
         headers: {
           'Content-Type': 'application/json',
           'x-admin-key': adminKey,
+          'x-admin-wallet': ADMIN_WALLET,
           ...options.headers
         }
       };
@@ -2834,24 +2836,48 @@
       }
     }
 
-    // Load trustline count independently
+    // Load trustline count independently with enhanced error handling
     async function loadTrustlineCount() {
       console.log('🔍 Loading trustline count independently...');
+
+      // Show loading state
+      const totalUsersElement = document.getElementById('totalUsers');
+      totalUsersElement.textContent = '...';
+      totalUsersElement.style.color = '#ffd93d';
+
       try {
+        console.log('📡 Making API call to /api/airdrop/trustline-count');
         const trustlineData = await apiCall('/api/airdrop/trustline-count');
         console.log('✅ Trustline data received:', trustlineData);
+
         if (trustlineData.success) {
           const count = trustlineData.trustlineCount || '0';
+          const walletsWithBalance = trustlineData.walletsWithBalance || '0';
+          const totalWaldo = trustlineData.totalWaldoHeld || '0';
+
           console.log('📊 Setting totalUsers to:', count);
-          document.getElementById('totalUsers').textContent = count;
-          console.log('✅ totalUsers element now shows:', document.getElementById('totalUsers').textContent);
+          console.log('💰 Wallets with balance:', walletsWithBalance);
+          console.log('🪙 Total WALDO held:', totalWaldo);
+
+          totalUsersElement.textContent = count;
+          totalUsersElement.style.color = '#25c2a0';
+
+          // Update tooltip or additional info if available
+          totalUsersElement.title = `${count} trustlines total, ${walletsWithBalance} with balance, ${totalWaldo} WALDO held`;
+
+          console.log('✅ totalUsers element now shows:', totalUsersElement.textContent);
+          showAlert(`✅ Trustline count updated: ${count} trustlines found`, 'success');
         } else {
           console.log('❌ Trustline data not successful:', trustlineData);
-          document.getElementById('totalUsers').textContent = '0';
+          totalUsersElement.textContent = 'Error';
+          totalUsersElement.style.color = '#e74c3c';
+          showAlert('❌ Failed to load trustline count', 'error');
         }
       } catch (trustlineError) {
-        console.log('❌ Trustline count failed:', trustlineError);
-        document.getElementById('totalUsers').textContent = '0';
+        console.error('❌ Trustline count failed:', trustlineError);
+        totalUsersElement.textContent = 'Error';
+        totalUsersElement.style.color = '#e74c3c';
+        showAlert(`❌ Trustline count error: ${trustlineError.message}`, 'error');
       }
     }
 
@@ -3856,8 +3882,8 @@ This action cannot be undone. Continue?`;
         return;
       }
 
-      if (!amount || amount <= 0 || amount > 10000) {
-        showAlert('Amount must be between 1 and 10,000 WALDO', 'error');
+      if (!amount || amount <= 0 || amount > 1000000) {
+        showAlert('Amount must be between 1 and 1,000,000 WALDO', 'error');
         return;
       }
 
