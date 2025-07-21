@@ -38,10 +38,7 @@
       </button>
       <p id="walletStatus" style="color:#ccc; font-size:12px; margin-top:8px;">Click button to connect your wallet</p>
 
-      <!-- SIMPLE CHECK BUTTON -->
-      <button onclick="simpleCheck()" style="margin-top: 10px; padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%;">
-        CHECK CONNECTION
-      </button>
+
     </div>
   </div>
 
@@ -471,7 +468,7 @@ async function connectXummWallet() {
       } catch (pollError) {
         console.error("Polling error:", pollError);
       }
-    }, 2000);
+    }, 1000); // Check every 1 second instead of 2
   } catch (err) {
     document.getElementById("walletStatus").innerText = "❌ Wallet connect failed.";
     console.error("XUMM connect error:", err);
@@ -834,37 +831,5 @@ function manualCheckConnection() {
   }
 }
 
-// SIMPLE FIX FUNCTION
-async function simpleCheck() {
-  const uuid = localStorage.getItem('xumm_uuid');
-  if (!uuid) {
-    alert("No pending connection found. Please connect wallet first.");
-    return;
-  }
 
-  try {
-    const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
-    const status = await response.json();
-
-    if (status?.signed && (status?.account || status?.response?.signer)) {
-      currentWallet = status.account || status.response?.signer;
-      walletReady = true;
-
-      document.getElementById("connectWalletBtn").innerHTML = "✅ Wallet Connected";
-      document.getElementById("connectWalletBtn").style.background = "#27ae60";
-      document.getElementById("walletStatus").innerText = `✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}`;
-      document.getElementById("walletStatus").style.color = "#0f0";
-
-      localStorage.removeItem('xumm_uuid');
-      alert("✅ Wallet connected successfully!");
-
-      checkWalletStatus();
-      checkTrustlineStatus();
-    } else {
-      alert("❌ Not signed yet. Please complete signing in Xaman wallet.");
-    }
-  } catch (error) {
-    alert("❌ Error checking connection: " + error.message);
-  }
-}
 </script>
