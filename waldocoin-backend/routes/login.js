@@ -18,8 +18,8 @@ router.get("/", async (req, res) => {
       },
       options: {
         return_url: {
-          web: "https://waldocoin.live/WordPress/airdrop-page?authenticated=true&reload=true",
-          app: "https://waldocoin.live/WordPress/airdrop-page?authenticated=true&reload=true"
+          web: "https://waldocoin.live?authenticated=true",
+          app: "https://waldocoin.live?authenticated=true"
         }
       }
     };
