@@ -167,9 +167,9 @@ router.get("/stats", async (_, res) => {
         success: true,
         stats: {
           totalUsers: 159,
-          totalWaldoDistributed: 8000,
-          activeBattles: 3,
-          totalStaked: 1500000,
+          totalWaldoDistributed: 0,
+          activeBattles: 0,
+          totalStaked: 0,
           airdrop: {
             totalClaimed: 160,
             totalDistributed: 8000,
@@ -178,18 +178,18 @@ router.get("/stats", async (_, res) => {
             isActive: true
           },
           battles: {
-            active: 2,
-            total: 15,
-            averageParticipation: "8.3",
-            estimatedDailyBurns: { battles: 500 }
+            active: 0,
+            total: 0,
+            averageParticipation: "0.0",
+            estimatedDailyBurns: { battles: 0 }
           },
           staking: {
-            totalStaked: 1500000,
-            activeStakers: 22,
-            averageStake: "68181.82",
-            stakingRate: "68.2"
+            totalStaked: 0,
+            activeStakers: 0,
+            averageStake: "0.00",
+            stakingRate: "0.0"
           },
-          burns: { battles: 500, claims: 145, total: 645 },
+          burns: { battles: 0, claims: 0, total: 0 },
           trustlines: {
             total: 159,
             withBalance: 132,
