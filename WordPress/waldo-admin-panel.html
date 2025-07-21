@@ -3971,7 +3971,14 @@ This action cannot be undone. Continue?`;
         }
       } catch (error) {
         console.log('❌ API Error:', error);
-        alert(`❌ Error sending airdrop: ${error.message}`);
+        console.log('❌ Error details:', error.message);
+
+        // Show detailed error message
+        const errorMsg = error.message || 'Unknown error occurred';
+        alert(`❌ AIRDROP FAILED\n\nError: ${errorMsg}\n\nCheck console for details.`);
+
+        // Also log to console for debugging
+        console.error('Full error object:', error);
       }
     }
 
