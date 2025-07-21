@@ -2903,17 +2903,17 @@
               document.getElementById('totalStaked').textContent = (stats.staking?.totalStaked / 1000 || 0).toFixed(1) + 'K';
             }
           } else {
-            console.log('⚠️ Tokenomics data not available, using fallbacks');
-            document.getElementById('totalWaldoDistributed').textContent = '7.0K';
-            document.getElementById('activeBattles').textContent = '2';
-            document.getElementById('totalStaked').textContent = '1.2K';
+            console.log('⚠️ Tokenomics data not available');
+            document.getElementById('totalWaldoDistributed').textContent = 'Loading...';
+            document.getElementById('activeBattles').textContent = 'Loading...';
+            document.getElementById('totalStaked').textContent = 'Loading...';
           }
         } catch (tokenomicsError) {
           console.error('❌ Tokenomics endpoint error:', tokenomicsError);
-          // Use fallback values
-          document.getElementById('totalWaldoDistributed').textContent = '7.0K';
-          document.getElementById('activeBattles').textContent = '2';
-          document.getElementById('totalStaked').textContent = '1.2K';
+          // Show loading instead of fake data
+          document.getElementById('totalWaldoDistributed').textContent = 'Error';
+          document.getElementById('activeBattles').textContent = 'Error';
+          document.getElementById('totalStaked').textContent = 'Error';
         }
 
         // Load battle status for activity
