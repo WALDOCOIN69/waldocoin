@@ -270,7 +270,6 @@ async function checkAuthNow(attempt = 1) {
 }
 
 
-
 // 📱 Detect device and show appropriate trustline option
 function detectDeviceAndShowTrustline() {
   const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -490,7 +489,17 @@ async function connectXummWallet() {
       } catch (pollError) {
         console.error("Polling error:", pollError);
       }
-    }, 1000); // Check every 1 second instead of 2
+    }, 500); // Check every 500ms for faster detection
+
+    // Add timeout to prevent infinite polling
+    setTimeout(() => {
+      clearInterval(interval);
+      if (!walletReady) {
+        showToast("⏰ Connection timed out. Please try again.", "warning");
+        localStorage.removeItem('xumm_uuid');
+      }
+    }, 300000); // 5 minutes timeout
+
   } catch (err) {
     document.getElementById("walletStatus").innerText = "❌ Wallet connect failed.";
     console.error("XUMM connect error:", err);
