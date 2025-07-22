@@ -47,7 +47,18 @@ router.get("/status", async (req, res) => {
   try {
     const payloadStatus = await xummClient.payload.get(uuid);
 
-    console.log("XUMM Status Check:", {
+    // Check if payloadStatus and meta exist
+    if (!payloadStatus || !payloadStatus.meta) {
+      console.log("❌ Invalid or expired payload:", { uuid, payloadStatus });
+      return res.json({
+        signed: false,
+        expired: true,
+        account: null,
+        error: "Payload not found or expired"
+      });
+    }
+
+    console.log("✅ XUMM Status Check:", {
       uuid,
       signed: payloadStatus.meta.signed,
       expired: payloadStatus.meta.expired,
