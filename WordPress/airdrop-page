@@ -22,7 +22,7 @@
   <h2 style="color:#ffea00;">🎁 WALDO Airdrop</h2>
   <p style="font-size:14px;">Enter the secret password from our Telegram to auto-claim <b>50,000 WALDO</b>.</p>
   <p style="font-size:12px; color:#ffd93d; margin-top:5px;">🔄 <strong>Password changes daily</strong> - Get the latest password from our Telegram channel!</p>
-  <p style="font-size:11px; color:#25c2a0; margin-top:3px;">💡 Current password: <strong></strong> (valid until next update)</p>
+
 
   <!-- Airdrop Status -->
   <div id="airdropStatus" style="background:#222; padding:10px; border-radius:8px; margin:10px 0; font-size:12px;">
@@ -85,7 +85,7 @@
     <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">⚠️ STEP 3: ENTER PASSWORD & CLAIM</div>
     <div style="text-align:center;">
       <input type="password" id="airdropPassword" placeholder="Enter daily password" oninput="handlePassword()" style="padding:10px; width:80%; border-radius:8px; border:none; margin-bottom:8px;" />
-      <div style="font-size:11px; color:#25c2a0; margin-bottom:10px;">🔑 Current password: <strong>WALDOMOON</strong></div>
+
       <div style="font-size:10px; color:#666; margin-bottom:10px;">💡 Password changes daily - check back for updates</div>
 
       <!-- Claim Button -->
