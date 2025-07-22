@@ -19,8 +19,19 @@ const AIRDROP_COUNT_KEY = "airdrop:count"; // Redis counter for total airdrops
 router.post("/", async (req, res) => {
   const { wallet, password, amount, adminOverride, reason } = req.body;
 
+  console.log(`🔍 Airdrop request received:`, {
+    wallet: wallet ? `${wallet.slice(0,8)}...${wallet.slice(-6)}` : 'null',
+    hasPassword: !!password,
+    passwordLength: password ? password.length : 0,
+    amount,
+    adminOverride,
+    hasReason: !!reason,
+    userAgent: req.headers['user-agent']?.slice(0, 50)
+  });
+
   // Input validation
   if (!wallet || typeof wallet !== 'string' || !wallet.startsWith("r") || wallet.length < 25 || wallet.length > 34) {
+    console.log(`❌ Invalid wallet format:`, { wallet, type: typeof wallet, length: wallet?.length });
     return res.status(400).json({ success: false, error: "Invalid wallet address format" });
   }
 
@@ -49,6 +60,7 @@ router.post("/", async (req, res) => {
   } else {
     // Regular airdrop - validate password
     if (!password || typeof password !== 'string') {
+      console.log(`❌ Password validation failed:`, { password, type: typeof password });
       return res.status(400).json({ success: false, error: "Password is required" });
     }
 
