@@ -345,8 +345,9 @@ router.get('/debug-env', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
 
-    // Only allow if admin key matches
-    if (adminKey !== process.env.X_ADMIN_KEY) {
+    // Only allow if admin key matches (with fallback like verify-admin)
+    const expectedKey = process.env.X_ADMIN_KEY || 'waldogod2025';
+    if (adminKey !== expectedKey) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
