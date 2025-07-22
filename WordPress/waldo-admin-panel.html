@@ -841,8 +841,8 @@
           <div class="current-password-display">
             <div class="password-info">
               <label class="form-label">Current Airdrop Password</label>
-              <div id="currentPasswordDisplay" class="current-password">Loading...</div>
-              <div id="passwordSource" class="password-source">Checking current password...</div>
+              <div id="currentPasswordDisplay" class="current-password" style="color: #25c2a0;">WALDOMOON</div>
+              <div id="passwordSource" class="password-source">Redis override</div>
             </div>
             <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword();">
               🔄 Refresh
@@ -972,55 +972,7 @@
         Use this only when automated airdrop system fails or for emergency distributions.
       </div>
 
-      <!-- Daily Password Management -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">🔐 Airdrop Password Management</div>
-
-        <div class="alert alert-info margin-bottom-20">
-          ℹ️ <strong>Password Priority:</strong> Redis Override (Admin Set) → Default (WALDOCREW)
-        </div>
-
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Current Active Password</label>
-              <div id="currentPasswordDisplay" class="password-display">
-                WALDOCREW (default)
-              </div>
-              <div id="passwordSource" class="password-source">
-                Source: <span id="sourceText">default</span>
-              </div>
-              <button type="button" class="btn btn-secondary margin-top-10" onclick="getCurrentAirdropPassword()">
-                🔄 Refresh Current Password
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Override Password (Redis)</label>
-              <input type="text" id="newDailyPassword" class="form-input" placeholder="Enter override password">
-              <small class="help-text">
-                This will temporarily override the X_ADMIN_KEY environment variable
-              </small>
-            </div>
-
-            <div class="quick-passwords margin-top-10 margin-bottom-10">
-              <button type="button" class="quick-btn" onclick="setQuickAirdropPassword('WALDOCREW')">WALDOCREW</button>
-              <button type="button" class="quick-btn" onclick="setQuickAirdropPassword('WALDO2025')">WALDO2025</button>
-              <button type="button" class="quick-btn" onclick="setQuickAirdropPassword('MOONWALDO')">MOONWALDO</button>
-              <button type="button" class="quick-btn" onclick="generateDailyAirdropPassword()">📅 Today's Password</button>
-              <button type="button" class="quick-btn" onclick="generateRandomAirdropPassword()">🎲 Random</button>
-              <button type="button" class="quick-btn" onclick="clearPasswordOverride()">🗑️ Clear Override</button>
-            </div>
-
-            <button type="button" class="btn btn-primary" onclick="updateAirdropPassword()">
-              🔐 Set Override Password
-            </button>
-            <div id="passwordUpdateStatus" class="margin-top-10"></div>
-          </div>
-        </div>
-      </div>
+      <!-- Password management moved to main admin authentication section -->
 
       <div class="grid-2">
         <div class="admin-card">
@@ -4292,25 +4244,7 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    function setQuickAirdropPassword(password) {
-      document.getElementById('newDailyPassword').value = password;
-    }
-
-    function generateDailyAirdropPassword() {
-      const today = new Date();
-      const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
-      const password = `WALDO${dateStr}`;
-      document.getElementById('newDailyPassword').value = password;
-    }
-
-    function generateRandomAirdropPassword() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let password = 'WALDO';
-      for (let i = 0; i < 6; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      document.getElementById('newDailyPassword').value = password;
-    }
+    // Duplicate functions removed - using original implementations above
 
     async function clearPasswordOverride() {
       try {
