@@ -841,8 +841,8 @@
           <div class="current-password-display">
             <div class="password-info">
               <label class="form-label">Current Airdrop Password</label>
-              <div id="currentPasswordDisplay" class="current-password">WALDOCREW</div>
-              <div id="passwordSource" class="password-source">Default fallback</div>
+              <div id="currentPasswordDisplay" class="current-password">Loading...</div>
+              <div id="passwordSource" class="password-source">Checking current password...</div>
             </div>
             <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword(); showAlert('Password refreshed!', 'info');">
               🔄 Refresh
@@ -3927,15 +3927,13 @@ This action cannot be undone. Continue?`;
     // Airdrop Password Management Functions
     async function getCurrentAirdropPassword() {
       try {
-        const adminKey = localStorage.getItem('adminKey');
-        if (!adminKey) {
-          showAlert('Please enter admin key in the authentication section first', 'error');
-          return;
-        }
+        console.log('🔍 Loading current airdrop password...');
 
         // Use the public endpoint that doesn't require authentication
         const response = await fetch(`${API_BASE}/api/airdrop/password-check`);
         const data = await response.json();
+
+        console.log('📡 Password API response:', data);
 
         if (data.success) {
           // Update the display elements
@@ -5270,8 +5268,10 @@ This action cannot be undone. Continue?`;
     // Initialize login check when page loads
     document.addEventListener('DOMContentLoaded', function() {
       checkExistingLogin();
-      // Auto-load current password when page loads
-      getCurrentAirdropPassword();
+      // Auto-load current password when page loads (with small delay to ensure DOM is ready)
+      setTimeout(function() {
+        getCurrentAirdropPassword();
+      }, 1000);
     });
   </script>
 
