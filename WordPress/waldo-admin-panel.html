@@ -615,6 +615,108 @@
         padding: 20px;
       }
     }
+
+    /* New Layout Styles */
+    .auth-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .auth-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-button-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .input-button-row .form-input {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .auth-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      border: 1px solid #444;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .password-control-section {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .current-password-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      border: 1px solid #444;
+    }
+
+    .password-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .current-password {
+      font-size: 24px;
+      font-weight: bold;
+      color: #25c2a0;
+      font-family: monospace;
+      letter-spacing: 2px;
+    }
+
+    .password-source {
+      font-size: 12px;
+      color: #888;
+      font-style: italic;
+    }
+
+    .password-change-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .password-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .result-display {
+      min-height: 40px;
+      padding: 10px;
+      border-radius: 6px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -700,48 +802,72 @@
       </div>
 
       <!-- Admin Key Configuration -->
+      <!-- 🔑 Admin Authentication Section -->
       <div class="admin-card margin-bottom-30">
-        <div class="card-title">🔑 Admin Key Configuration</div>
-        <p class="text-muted margin-bottom-20">Enter your admin key to access advanced features. Current airdrop password is set via X_ADMIN_KEY environment variable.</p>
+        <div class="card-title">🔑 Admin Authentication</div>
+        <p class="text-muted margin-bottom-20">Set your admin key to access all admin functions (from X_ADMIN_KEY environment variable)</p>
 
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Admin Key</label>
-              <input type="password" id="adminKeyInput" class="form-input" placeholder="Enter admin key">
-            </div>
-
-            <button type="button" class="btn btn-primary" onclick="saveAdminKey()">
-              💾 Save Admin Key
-            </button>
-            <button type="button" class="btn btn-secondary" onclick="clearAdminKey()">
-              🗑️ Clear Key
-            </button>
-
-            <div id="adminKeyStatus" class="margin-top-15">
-              <span id="keyStatusText" class="text-muted">No admin key stored</span>
+        <div class="auth-section">
+          <div class="auth-input-group">
+            <label class="form-label">Admin Key</label>
+            <div class="input-button-row">
+              <input type="password" id="adminKeyInput" class="form-input" placeholder="Enter your admin key">
+              <button type="button" class="btn btn-primary" onclick="saveAdminKey()">
+                💾 Save
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="clearAdminKey()">
+                🗑️ Clear
+              </button>
             </div>
           </div>
 
-          <div>
-            <div class="form-group">
-              <label class="form-label">Environment Status</label>
-              <div class="env-status">
-                <div class="env-item">
-                  <span class="env-label">X_ADMIN_KEY (Admin Access):</span>
-                  <span class="env-value" id="envAdminKey">waldogod2025</span>
-                </div>
-                <div class="env-item">
-                  <span class="env-label">ADMIN_KEY (API Access):</span>
-                  <span class="env-value" id="envApiKey">Set in Render</span>
-                </div>
-              </div>
+          <div class="auth-status-row">
+            <div id="adminKeyStatus" class="status-indicator">
+              <span id="keyStatusText" class="text-muted">❌ No admin key stored</span>
             </div>
-
-            <button type="button" class="btn btn-secondary" onclick="testEnvironmentKeys()">
-              🧪 Test Environment Keys
+            <button type="button" class="btn btn-info btn-small" onclick="testEnvironmentKeys()">
+              🧪 Test Connection
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- 🔐 Airdrop Password Control Section -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">🔐 Daily Airdrop Password</div>
+        <p class="text-muted margin-bottom-20">Control the password users need to claim airdrops (separate from admin key)</p>
+
+        <div class="password-control-section">
+          <div class="current-password-display">
+            <div class="password-info">
+              <label class="form-label">Current Airdrop Password</label>
+              <div id="currentPasswordDisplay" class="current-password">WALDOCREW</div>
+              <div id="passwordSource" class="password-source">Default fallback</div>
+            </div>
+            <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword()">
+              🔄 Refresh
+            </button>
+          </div>
+
+          <div class="password-change-group">
+            <label class="form-label">Change Airdrop Password</label>
+            <div class="input-button-row">
+              <input type="text" id="newDailyPassword" class="form-input" placeholder="Enter new password for users">
+              <button type="button" class="btn btn-primary" onclick="updateAirdropPassword()">
+                ✅ Update
+              </button>
+            </div>
+            <div class="password-actions">
+              <button type="button" class="btn btn-secondary btn-small" onclick="generateDailyPassword()">
+                🎲 Generate Random
+              </button>
+              <button type="button" class="btn btn-warning btn-small" onclick="clearPasswordOverride()">
+                🔄 Reset to Default
+              </button>
+            </div>
+          </div>
+
+          <div id="passwordUpdateResult" class="result-display"></div>
         </div>
       </div>
 
@@ -2677,11 +2803,13 @@
       const statusText = document.getElementById('keyStatusText');
 
       if (adminKey) {
-        statusText.textContent = '✅ Admin key is stored and ready';
-        statusText.className = 'text-primary';
+        statusText.textContent = '✅ Admin key stored and ready';
+        statusText.className = 'text-success';
+        statusText.style.color = '#27ae60';
       } else {
         statusText.textContent = '❌ No admin key stored';
         statusText.className = 'text-muted';
+        statusText.style.color = '#e74c3c';
       }
     }
 
@@ -3802,19 +3930,14 @@ This action cannot be undone. Continue?`;
           return;
         }
 
-        const response = await fetch(`${API_BASE}/api/airdrop/current-password`, {
-          headers: {
-            'x-admin-key': adminKey
-          }
-        });
-
+        // Use the public endpoint that doesn't require authentication
+        const response = await fetch(`${API_BASE}/api/airdrop/password-check`);
         const data = await response.json();
 
         if (data.success) {
           document.getElementById('currentPasswordDisplay').textContent = data.currentPassword;
-          document.getElementById('sourceText').textContent = data.source;
-          document.getElementById('passwordSource').style.display = 'block';
-          showAlert('Current password loaded successfully', 'success');
+          document.getElementById('passwordSource').textContent = data.source;
+          showAlert(`Current password refreshed: ${data.currentPassword}`, 'success');
         } else {
           showAlert(`Failed to get current password: ${data.error}`, 'error');
         }
@@ -3853,10 +3976,26 @@ This action cannot be undone. Continue?`;
         const data = await response.json();
 
         if (data.success) {
+          // Update result display
+          document.getElementById('passwordUpdateResult').innerHTML = `
+            <div style="color: #27ae60; padding: 10px;">
+              ✅ Password updated successfully to: <strong>${data.newPassword}</strong>
+            </div>
+          `;
+
+          // Refresh current password display
+          getCurrentAirdropPassword();
+
+          // Clear input
+          document.getElementById('newDailyPassword').value = '';
+
           showAlert(`Password updated successfully to: ${data.newPassword}`, 'success');
-          getCurrentAirdropPassword(); // Refresh current password display
-          document.getElementById('newDailyPassword').value = ''; // Clear input
         } else {
+          document.getElementById('passwordUpdateResult').innerHTML = `
+            <div style="color: #e74c3c; padding: 10px;">
+              ❌ Failed to update password: ${data.error}
+            </div>
+          `;
           showAlert(`Failed to update password: ${data.error}`, 'error');
         }
       } catch (error) {
@@ -3870,6 +4009,16 @@ This action cannot be undone. Continue?`;
     }
 
     function generateRandomAirdropPassword() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let password = 'WALDO';
+      for (let i = 0; i < 4; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      document.getElementById('newDailyPassword').value = password;
+      showAlert(`Generated random password: ${password}`, 'info');
+    }
+
+    function generateDailyPassword() {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       let password = 'WALDO';
       for (let i = 0; i < 4; i++) {
