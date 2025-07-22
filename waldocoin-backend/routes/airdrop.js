@@ -294,8 +294,8 @@ router.get("/current-password", async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
 
-    // Validate admin access using X_ADMIN_KEY (with fallback)
-    const expectedKey = process.env.X_ADMIN_KEY || 'waldogod2025';
+    // Validate admin access using X_ADMIN_KEY (environment variable only)
+    const expectedKey = process.env.X_ADMIN_KEY;
 
     console.log(`🔑 Password endpoint admin key debug: Received="${adminKey}", Expected="${expectedKey}"`);
 
@@ -322,11 +322,32 @@ router.get("/current-password", async (req, res) => {
   }
 });
 
+// GET /api/airdrop/password-check - Public endpoint to check current password (no auth required)
+router.get("/password-check", async (req, res) => {
+  try {
+    // Get current password (same logic as main endpoint)
+    const redisPassword = await redis.get("airdrop:daily_password");
+    const currentPassword = redisPassword || "WALDOCREW";
+
+    console.log(`🔍 Public password check: Current password is "${currentPassword}"`);
+
+    return res.json({
+      success: true,
+      currentPassword: currentPassword,
+      source: redisPassword ? 'Redis override' : 'Default fallback',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("❌ Public password check error:", error);
+    return res.status(500).json({ success: false, error: "Failed to get current password" });
+  }
+});
+
 // Admin login verification endpoint
 router.get('/verify-admin', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    const expectedKey = process.env.X_ADMIN_KEY || 'waldogod2025';
+    const expectedKey = process.env.X_ADMIN_KEY;
 
     if (!adminKey) {
       return res.status(401).json({ success: false, error: "Admin key required" });
@@ -352,8 +373,8 @@ router.get('/debug-env', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
 
-    // Only allow if admin key matches (with fallback like verify-admin)
-    const expectedKey = process.env.X_ADMIN_KEY || 'waldogod2025';
+    // Only allow if admin key matches (environment variable only)
+    const expectedKey = process.env.X_ADMIN_KEY;
 
     console.log(`🔑 Admin key debug: Received="${adminKey}", Expected="${expectedKey}", EnvVar="${process.env.X_ADMIN_KEY}"`);
 
