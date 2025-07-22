@@ -44,39 +44,41 @@
     </div>
   </div>
 
-  <!-- STEP 2: Trustline Instructions -->
+  <!-- STEP 2: Trustline Setup -->
   <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
     <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">⚠️ STEP 2: SET TRUSTLINE</div>
-    <p style="font-size:12px; color:#ccc; margin-bottom:10px;">
+    <p style="font-size:12px; color:#ccc; margin-bottom:15px;">
       <strong>You must set the WALDO trustline in your Xaman wallet.</strong>
     </p>
 
-    <div style="text-align:center;">
-      <!-- Mobile: Direct Link -->
-      <div id="trustlineMobile" style="display:none;">
-        <a href="https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000"
-           target="_blank"
-           style="display:inline-block; background:#25c2a0; color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold; margin:5px;">
-          📲 Set WALDO Trustline
-        </a>
-        <div style="font-size:10px; color:#666; margin-top:8px;">
-          Tap to open Xaman and add WALDO token<br>
-          Currency: <strong>WLO</strong> | Issuer: rstjAWD...TXZyDY
+    <div style="display:flex; gap:20px; align-items:center; justify-content:center; flex-wrap:wrap;">
+      <!-- Button for Direct Link -->
+      <div style="text-align:center;">
+        <button onclick="openTrustlineLink()"
+                style="background:#25c2a0; color:white; padding:12px 20px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:8px;">
+          🔗 Set WALDO Trustline
+        </button>
+        <div style="font-size:10px; color:#666;">
+          Opens XRPL Services<br>
+          Currency: <strong>WLO</strong>
         </div>
       </div>
 
-      <!-- Desktop: Direct Link (same as mobile) -->
-      <div id="trustlineDesktop" style="display:none;">
-        <a href="https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000"
-           target="_blank"
-           style="display:inline-block; background:#25c2a0; color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold; margin:5px;">
-          🔗 Set WALDO Trustline
-        </a>
+      <!-- QR Code for Trustline -->
+      <div style="text-align:center;">
+        <div id="trustlineQR" style="background:white; padding:10px; border-radius:8px; display:inline-block;">
+          <!-- QR Code will be generated here -->
+        </div>
         <div style="font-size:10px; color:#666; margin-top:8px;">
-          Click to open XRPL Services and set trustline<br>
-          Currency: <strong>WLO</strong> | Issuer: rstjAWD...TXZyDY
+          Scan with Xaman<br>
+          to set trustline
         </div>
       </div>
+    </div>
+
+    <div style="font-size:11px; color:#888; margin-top:15px; text-align:center; border-top:1px solid #444; padding-top:10px;">
+      💡 <strong>Issuer:</strong> rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY<br>
+      💡 <strong>Currency:</strong> WLO | <strong>Limit:</strong> 1,000,000,000
     </div>
   </div>
 
@@ -958,6 +960,37 @@ async function checkTrustlineStatus() {
     }, 2000);
   }
 }
+
+// Trustline setup functions
+function openTrustlineLink() {
+  const trustlineUrl = "https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000";
+  window.open(trustlineUrl, '_blank');
+  showToast("🔗 Opening XRPL Services to set trustline", "info");
+}
+
+// Generate trustline QR code when page loads
+function generateTrustlineQR() {
+  const trustlineData = {
+    "TransactionType": "TrustSet",
+    "LimitAmount": {
+      "currency": "WLO",
+      "issuer": "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY",
+      "value": "1000000000"
+    }
+  };
+
+  // Create QR code using a simple QR library or service
+  const qrData = JSON.stringify(trustlineData);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
+
+  const qrContainer = document.getElementById('trustlineQR');
+  qrContainer.innerHTML = `<img src="${qrUrl}" style="width:120px; height:120px; border-radius:6px;" alt="Trustline QR Code" />`;
+}
+
+// Initialize trustline QR when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  generateTrustlineQR();
+});
 
 
 </script>
