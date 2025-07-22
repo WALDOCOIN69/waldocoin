@@ -486,19 +486,19 @@ router.post("/reset", async (req, res) => {
 router.get("/trustline-count", async (req, res) => {
   // Set a global timeout for the entire request
   const globalTimeout = setTimeout(() => {
-    console.log('⏰ Global timeout reached, returning fallback data');
+    console.log('⏰ Global timeout reached, returning updated fallback data');
     if (!res.headersSent) {
       res.json({
         success: true,
-        trustlineCount: 159,
-        walletsWithBalance: 132,
-        totalWaldoHeld: 2500000,
-        dexOffers: 15,
-        source: "Real XRPL data (cached)",
+        trustlineCount: 394,
+        walletsWithBalance: 350,
+        totalWaldoHeld: 5000000,
+        dexOffers: 25,
+        source: "Fallback data (timeout)",
         timestamp: new Date().toISOString()
       });
     }
-  }, 5000); // 5 second global timeout (more aggressive)
+  }, 12000); // 12 second timeout (increased for better XRPL response)
 
   try {
     console.log('🔍 Querying XRPL for real-time WLO trustline count...');
@@ -597,15 +597,15 @@ router.get("/trustline-count", async (req, res) => {
         timestamp: new Date().toISOString()
       });
     } else {
-      console.log('⚠️ XRPL query failed, using fallback count');
+      console.log('⚠️ XRPL query failed, using updated fallback count');
       clearTimeout(globalTimeout);
       res.json({
         success: true,
-        trustlineCount: 159,
-        walletsWithBalance: 132,
-        totalWaldoHeld: 2500000,
-        dexOffers: 15,
-        source: "Real XRPL data (cached)",
+        trustlineCount: 394,
+        walletsWithBalance: 350,
+        totalWaldoHeld: 5000000,
+        dexOffers: 25,
+        source: "Fallback data (XRPL failed)",
         timestamp: new Date().toISOString()
       });
     }
@@ -614,11 +614,11 @@ router.get("/trustline-count", async (req, res) => {
     clearTimeout(globalTimeout);
     res.json({
       success: true,
-      trustlineCount: 159,
-      walletsWithBalance: 132,
-      totalWaldoHeld: 2500000,
-      dexOffers: 15,
-      source: "Real XRPL data (cached)",
+      trustlineCount: 394,
+      walletsWithBalance: 350,
+      totalWaldoHeld: 5000000,
+      dexOffers: 25,
+      source: "Fallback data (error)",
       timestamp: new Date().toISOString()
     });
   }

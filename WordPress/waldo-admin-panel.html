@@ -5222,6 +5222,8 @@ This action cannot be undone. Continue?`;
       // Auto-load current password when page loads (with small delay to ensure DOM is ready)
       setTimeout(function() {
         getCurrentAirdropPassword();
+        // Also auto-refresh trustline count to get latest data
+        loadTrustlineCount();
       }, 1000);
     });
   </script>
