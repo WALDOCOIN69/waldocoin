@@ -289,6 +289,51 @@ router.post("/set-password", async (req, res) => {
   }
 });
 
+// POST /api/airdrop/update-password - Admin endpoint to update daily password (alias for set-password)
+router.post("/update-password", async (req, res) => {
+  try {
+    const { password } = req.body;
+    const adminKey = req.headers['x-admin-key'];
+
+    // Validate admin access using X_ADMIN_KEY
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Handle clearing override (empty password)
+    if (!password || password.trim() === '') {
+      await redis.del("airdrop:daily_password");
+      console.log(`🗑️ Daily airdrop password override cleared - now using default`);
+
+      return res.json({
+        success: true,
+        message: "Password override cleared - now using default password",
+        newPassword: "WALDOCREW"
+      });
+    }
+
+    // Validate password
+    if (typeof password !== 'string' || password.length < 3) {
+      return res.status(400).json({ success: false, error: "Password must be at least 3 characters" });
+    }
+
+    // Store new password in Redis
+    await redis.set("airdrop:daily_password", password);
+
+    console.log(`🔐 Daily airdrop password updated to: ${password}`);
+
+    return res.json({
+      success: true,
+      message: "Daily password updated successfully",
+      newPassword: password
+    });
+
+  } catch (err) {
+    console.error("❌ Update password error:", err);
+    return res.status(500).json({ success: false, error: "Failed to update password" });
+  }
+});
+
 // GET /api/airdrop/current-password - Admin endpoint to check current password
 router.get("/current-password", async (req, res) => {
   try {
