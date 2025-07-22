@@ -844,7 +844,7 @@
               <div id="currentPasswordDisplay" class="current-password">Loading...</div>
               <div id="passwordSource" class="password-source">Checking current password...</div>
             </div>
-            <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword(); showAlert('Password refreshed!', 'info');">
+            <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword();">
               🔄 Refresh
             </button>
           </div>
@@ -3937,24 +3937,41 @@ This action cannot be undone. Continue?`;
 
         if (data.success) {
           // Update the display elements
-          document.getElementById('currentPasswordDisplay').textContent = data.currentPassword;
-          document.getElementById('passwordSource').textContent = data.source;
-
-          // Show different colors based on source
           const passwordDisplay = document.getElementById('currentPasswordDisplay');
-          if (data.source === 'Default fallback') {
-            passwordDisplay.style.color = '#f39c12'; // Orange for default
-          } else {
-            passwordDisplay.style.color = '#25c2a0'; // Green for custom password
-          }
+          const passwordSource = document.getElementById('passwordSource');
 
-          console.log(`🔍 Password loaded: ${data.currentPassword} (${data.source})`);
+          if (passwordDisplay && passwordSource) {
+            passwordDisplay.textContent = data.currentPassword;
+            passwordSource.textContent = data.source;
+
+            // Show different colors based on source
+            if (data.source === 'Default fallback') {
+              passwordDisplay.style.color = '#f39c12'; // Orange for default
+            } else {
+              passwordDisplay.style.color = '#25c2a0'; // Green for custom password
+            }
+
+            console.log(`✅ Password loaded: ${data.currentPassword} (${data.source})`);
+          } else {
+            console.error('❌ Could not find password display elements');
+          }
         } else {
-          showAlert(`Failed to get current password: ${data.error}`, 'error');
+          console.error('❌ API returned error:', data.error);
+          document.getElementById('currentPasswordDisplay').textContent = 'Error loading password';
+          document.getElementById('passwordSource').textContent = data.error || 'Unknown error';
         }
       } catch (error) {
-        console.error('Get password error:', error);
-        showAlert('Failed to get current password', 'error');
+        console.error('❌ Get password error:', error);
+
+        // Update display to show error
+        const passwordDisplay = document.getElementById('currentPasswordDisplay');
+        const passwordSource = document.getElementById('passwordSource');
+
+        if (passwordDisplay && passwordSource) {
+          passwordDisplay.textContent = 'Connection Error';
+          passwordDisplay.style.color = '#e74c3c'; // Red for error
+          passwordSource.textContent = 'Could not connect to server';
+        }
       }
     }
 
