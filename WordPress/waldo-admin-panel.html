@@ -3962,14 +3962,14 @@ This action cannot be undone. Continue?`;
       }
 
       try {
-        const response = await fetch(`${API_BASE}/api/airdrop/set-password`, {
+        const response = await fetch(`${API_BASE}/api/airdrop/update-password`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-admin-key': adminKey
           },
           body: JSON.stringify({
-            newPassword: newPassword
+            password: newPassword
           })
         });
 
@@ -3979,7 +3979,7 @@ This action cannot be undone. Continue?`;
           // Update result display
           document.getElementById('passwordUpdateResult').innerHTML = `
             <div style="color: #27ae60; padding: 10px;">
-              ✅ Password updated successfully to: <strong>${data.newPassword}</strong>
+              ✅ Password updated successfully to: <strong>${newPassword}</strong>
             </div>
           `;
 
@@ -3989,7 +3989,7 @@ This action cannot be undone. Continue?`;
           // Clear input
           document.getElementById('newDailyPassword').value = '';
 
-          showAlert(`Password updated successfully to: ${data.newPassword}`, 'success');
+          showAlert(`Password updated successfully to: ${newPassword}`, 'success');
         } else {
           document.getElementById('passwordUpdateResult').innerHTML = `
             <div style="color: #e74c3c; padding: 10px;">
