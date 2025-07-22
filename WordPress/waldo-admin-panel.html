@@ -844,7 +844,7 @@
               <div id="currentPasswordDisplay" class="current-password">WALDOCREW</div>
               <div id="passwordSource" class="password-source">Default fallback</div>
             </div>
-            <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword()">
+            <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword(); showAlert('Password refreshed!', 'info');">
               🔄 Refresh
             </button>
           </div>
@@ -2790,6 +2790,9 @@
       document.getElementById('adminKeyInput').value = ''; // Clear input for security
       updateAdminKeyStatus();
       showAlert('Admin key saved successfully', 'success');
+
+      // Auto-load current password when admin key is saved
+      getCurrentAirdropPassword();
     }
 
     function clearAdminKey() {
@@ -3935,9 +3938,19 @@ This action cannot be undone. Continue?`;
         const data = await response.json();
 
         if (data.success) {
+          // Update the display elements
           document.getElementById('currentPasswordDisplay').textContent = data.currentPassword;
           document.getElementById('passwordSource').textContent = data.source;
-          showAlert(`Current password refreshed: ${data.currentPassword}`, 'success');
+
+          // Show different colors based on source
+          const passwordDisplay = document.getElementById('currentPasswordDisplay');
+          if (data.source === 'Default fallback') {
+            passwordDisplay.style.color = '#f39c12'; // Orange for default
+          } else {
+            passwordDisplay.style.color = '#25c2a0'; // Green for custom password
+          }
+
+          console.log(`🔍 Password loaded: ${data.currentPassword} (${data.source})`);
         } else {
           showAlert(`Failed to get current password: ${data.error}`, 'error');
         }
@@ -5257,6 +5270,8 @@ This action cannot be undone. Continue?`;
     // Initialize login check when page loads
     document.addEventListener('DOMContentLoaded', function() {
       checkExistingLogin();
+      // Auto-load current password when page loads
+      getCurrentAirdropPassword();
     });
   </script>
 
