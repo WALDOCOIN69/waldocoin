@@ -84,8 +84,9 @@
   <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
     <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">⚠️ STEP 3: ENTER PASSWORD & CLAIM</div>
     <div style="text-align:center;">
-      <input type="password" id="airdropPassword" placeholder="Enter daily password from Telegram" oninput="handlePassword()" style="padding:10px; width:80%; border-radius:8px; border:none; margin-bottom:8px;" />
-      <div style="font-size:11px; color:#666; margin-bottom:10px;">💡 Password changes daily - check Telegram for today's password</div>
+      <input type="password" id="airdropPassword" placeholder="Enter daily password" oninput="handlePassword()" style="padding:10px; width:80%; border-radius:8px; border:none; margin-bottom:8px;" />
+      <div style="font-size:11px; color:#25c2a0; margin-bottom:10px;">🔑 Current password: <strong>WALDOMOON</strong></div>
+      <div style="font-size:10px; color:#666; margin-bottom:10px;">💡 Password changes daily - check back for updates</div>
 
       <!-- Claim Button -->
       <button id="claimButton" onclick="tryAutoClaim()" style="padding:10px 20px; background:#25c2a0; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">

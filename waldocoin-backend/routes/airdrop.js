@@ -56,9 +56,14 @@ router.post("/", async (req, res) => {
     const redisPassword = await redis.get("airdrop:daily_password");
     const dailyPassword = redisPassword || "WALDOCREW";
 
+    console.log(`🔐 Password check: User entered "${password}", Expected "${dailyPassword}", Redis value: "${redisPassword}"`);
+
     if (password !== dailyPassword) {
+      console.log(`❌ Password mismatch: "${password}" !== "${dailyPassword}"`);
       return res.status(401).json({ success: false, error: "Invalid password" });
     }
+
+    console.log(`✅ Password accepted: "${password}"`);
   }
 
   try {
