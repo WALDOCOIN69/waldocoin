@@ -12,22 +12,50 @@
   <span onclick="closeWaldoPresaleModal()" style="position:absolute; top:20px; right:30px; font-size:26px; cursor:pointer; color:white;">✖</span>
 
   <!-- Main Presale Container (Matches Airdrop Style) -->
-  <div class="presale-box" style="background:#111; border:2px solid red; padding:20px; border-radius:18px; max-width:500px; margin:96px auto 0 auto; color:white; font-family:'Arial Black', sans-serif; text-align:center;">
+  <div class="presale-box" style="background:#000; border:2px solid red; padding:20px; border-radius:18px; max-width:500px; margin:96px auto 0 auto; color:white; font-family:'Arial Black', sans-serif; text-align:center;">
 
     <style>
+    .presale-box {
+      background: #000 !important;
+      color: white !important;
+    }
+    .presale-box * {
+      color: white !important;
+    }
+    .presale-box input {
+      background: #333 !important;
+      color: white !important;
+      border: 1px solid #444 !important;
+    }
+    .presale-box button {
+      background: #25c2a0 !important;
+      color: white !important;
+      border: none !important;
+    }
+    .presale-box label {
+      color: #ccc !important;
+    }
+    .presale-box .help-text {
+      color: #666 !important;
+    }
     @media (max-width: 600px) {
       .presale-box {
         margin: 5px !important;
         padding: 15px !important;
         border-radius: 12px !important;
+        background: #000 !important;
       }
       .presale-box input {
         width: 90% !important;
         font-size: 16px !important; /* Prevents zoom on iOS */
+        background: #333 !important;
+        color: white !important;
       }
       .presale-box a, .presale-box button {
         padding: 10px 16px !important;
         font-size: 14px !important;
+        background: #25c2a0 !important;
+        color: white !important;
       }
     }
     </style>

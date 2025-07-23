@@ -73,7 +73,8 @@
 <!-- 💄 Styling -->
 <style>
 .waldo-swap-box {
-  background: #111;
+  background: #000;
+  border: 2px solid red;
   border-radius: 18px;
   padding: 30px 25px;
   font-family: 'Arial Black', sans-serif;
