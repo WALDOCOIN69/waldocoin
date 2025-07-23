@@ -1001,6 +1001,14 @@
                 <span id="totalClaimedCount" class="stat-value">Loading...</span>
               </div>
               <div class="stat-item">
+                <span class="stat-label">Manual Airdrops:</span>
+                <span id="manualCount" class="stat-value">Loading...</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Regular Claims:</span>
+                <span id="regularCount" class="stat-value">Loading...</span>
+              </div>
+              <div class="stat-item">
                 <span class="stat-label">Remaining:</span>
                 <span id="remainingCount" class="stat-value">Loading...</span>
               </div>
@@ -5380,13 +5388,14 @@ This action cannot be undone. Continue?`;
 
       let html = `
         <div style="margin-bottom: 10px; color: #25c2a0; font-weight: bold;">
-          📊 Total: ${data.totalWallets} wallets claimed ${data.totalClaimed} airdrops
+          📊 Total: ${data.totalWallets} wallets | Manual: ${data.manualWallets || 0} | Regular: ${data.regularWallets || 0}
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
           <thead>
             <tr style="background: #333; color: white;">
               <th style="padding: 8px; border: 1px solid #555; text-align: left;">#</th>
               <th style="padding: 8px; border: 1px solid #555; text-align: left;">Wallet Address</th>
+              <th style="padding: 8px; border: 1px solid #555; text-align: center;">Type</th>
               <th style="padding: 8px; border: 1px solid #555; text-align: center;">Amount</th>
               <th style="padding: 8px; border: 1px solid #555; text-align: center;">Status</th>
             </tr>
@@ -5395,10 +5404,15 @@ This action cannot be undone. Continue?`;
       `;
 
       data.wallets.forEach((wallet, index) => {
+        const isManual = wallet.claimType === 'Manual Airdrop';
+        const typeColor = isManual ? '#ff6b6b' : '#25c2a0';
+        const typeIcon = isManual ? '🎯' : '🎁';
+
         html += `
           <tr style="background: ${index % 2 === 0 ? '#222' : '#333'};">
             <td style="padding: 6px; border: 1px solid #555; color: #ccc;">${wallet.claimOrder}</td>
             <td style="padding: 6px; border: 1px solid #555; color: #25c2a0; font-family: monospace;">${wallet.wallet}</td>
+            <td style="padding: 6px; border: 1px solid #555; text-align: center; color: ${typeColor};">${typeIcon} ${wallet.claimType}</td>
             <td style="padding: 6px; border: 1px solid #555; text-align: center; color: #ffd93d;">${parseInt(wallet.amount).toLocaleString()}</td>
             <td style="padding: 6px; border: 1px solid #555; text-align: center; color: #0f0;">✅ ${wallet.status}</td>
           </tr>
@@ -5440,6 +5454,8 @@ This action cannot be undone. Continue?`;
 
       if (data && data.success) {
         document.getElementById('totalClaimedCount').textContent = data.totalWallets;
+        document.getElementById('manualCount').textContent = data.manualWallets || 0;
+        document.getElementById('regularCount').textContent = data.regularWallets || 0;
         document.getElementById('remainingCount').textContent = (1000 - data.totalWallets);
         document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
       }

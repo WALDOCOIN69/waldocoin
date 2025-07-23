@@ -185,10 +185,14 @@ router.post("/", async (req, res) => {
       remaining = AIRDROP_LIMIT - newCount;
       console.log(`✅ Regular airdrop successful! Wallet ${wallet} claimed. Total: ${newCount}/${AIRDROP_LIMIT}`);
     } else {
+      // Track manual airdrops too, but in a separate set for distinction
+      await redis.sAdd("airdrop:manual_wallets", wallet); // Track manual airdrops separately
+      await redis.sAdd(AIRDROP_REDIS_KEY, wallet); // Also add to main claimed set for export
+
       const currentCount = await redis.get(AIRDROP_COUNT_KEY) || 0;
       newCount = parseInt(currentCount);
       remaining = AIRDROP_LIMIT - newCount;
-      console.log(`✅ Admin override successful! Sent ${airdropAmount} WALDO to ${wallet}. Reason: ${reason}`);
+      console.log(`✅ Admin override successful! Sent ${airdropAmount} WALDO to ${wallet}. Reason: ${reason}. Added to tracking.`);
     }
 
     return res.json({
@@ -815,18 +819,20 @@ router.get("/export-claimed", async (req, res) => {
 
     // Get all claimed wallets from Redis set
     const claimedWallets = await redis.sMembers(AIRDROP_REDIS_KEY);
+    const manualWallets = await redis.sMembers("airdrop:manual_wallets");
     const totalClaimed = await redis.get(AIRDROP_COUNT_KEY) || 0;
 
-    console.log(`📊 Exporting ${claimedWallets.length} claimed wallets`);
+    console.log(`📊 Exporting ${claimedWallets.length} claimed wallets (${manualWallets.length} manual)`);
 
     // Create CSV content
-    let csvContent = "Wallet Address,Claim Date,Amount (WALDO),Status\n";
+    let csvContent = "Wallet Address,Claim Type,Amount (WALDO),Status\n";
 
-    // Add each wallet to CSV
+    // Add each wallet to CSV with type distinction
     claimedWallets.forEach((wallet, index) => {
-      // Since we don't store individual claim dates, we'll use index as order
       const claimOrder = index + 1;
-      csvContent += `${wallet},Claim #${claimOrder},50000,Claimed\n`;
+      const isManual = manualWallets.includes(wallet);
+      const claimType = isManual ? `Manual Airdrop #${claimOrder}` : `Regular Claim #${claimOrder}`;
+      csvContent += `${wallet},${claimType},50000,Claimed\n`;
     });
 
     // Set headers for CSV download
@@ -859,18 +865,22 @@ router.get("/claimed-list", async (req, res) => {
 
     // Get all claimed wallets from Redis set
     const claimedWallets = await redis.sMembers(AIRDROP_REDIS_KEY);
+    const manualWallets = await redis.sMembers("airdrop:manual_wallets");
     const totalClaimed = await redis.get(AIRDROP_COUNT_KEY) || 0;
 
-    console.log(`📊 Returning ${claimedWallets.length} claimed wallets`);
+    console.log(`📊 Returning ${claimedWallets.length} claimed wallets (${manualWallets.length} manual)`);
 
     res.json({
       success: true,
       totalClaimed: parseInt(totalClaimed),
       totalWallets: claimedWallets.length,
+      manualWallets: manualWallets.length,
+      regularWallets: claimedWallets.length - manualWallets.length,
       wallets: claimedWallets.map((wallet, index) => ({
         wallet: wallet,
         claimOrder: index + 1,
         amount: "50000",
+        claimType: manualWallets.includes(wallet) ? "Manual Airdrop" : "Regular Claim",
         status: "Claimed"
       })),
       exportedAt: new Date().toISOString()
