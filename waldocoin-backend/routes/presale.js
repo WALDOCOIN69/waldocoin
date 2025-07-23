@@ -185,5 +185,57 @@ router.post("/log", async (req, res) => {
   }
 });
 
+// ✅ GET /api/presale/total-sold - Get total presale statistics
+router.get("/total-sold", async (req, res) => {
+  try {
+    // Get all presale purchases from Redis
+    const presaleKey = "presale:purchases";
+    const purchases = await redis.lRange(presaleKey, 0, -1);
+
+    let totalXRP = 0;
+    let totalWALDO = 0;
+    let totalPurchases = 0;
+
+    // Calculate totals from stored purchases
+    purchases.forEach(purchaseStr => {
+      try {
+        const purchase = JSON.parse(purchaseStr);
+        totalXRP += purchase.amount || 0;
+        totalWALDO += purchase.waldoAmount || 0;
+        totalPurchases++;
+      } catch (error) {
+        console.error('Error parsing purchase:', error);
+      }
+    });
+
+    // Calculate progress towards goals
+    const xrpGoal = 10000; // Example goal
+    const waldoGoal = 100000000; // 100M WALDO goal
+    const xrpProgress = Math.min((totalXRP / xrpGoal) * 100, 100);
+    const waldoProgress = Math.min((totalWALDO / waldoGoal) * 100, 100);
+
+    console.log(`📊 Presale stats: ${totalPurchases} purchases, ${totalXRP} XRP, ${totalWALDO} WALDO`);
+
+    res.json({
+      success: true,
+      totalXRP: totalXRP,
+      totalWALDO: totalWALDO,
+      totalPurchases: totalPurchases,
+      xrpGoal: xrpGoal,
+      waldoGoal: waldoGoal,
+      xrpProgress: Math.round(xrpProgress * 100) / 100,
+      waldoProgress: Math.round(waldoProgress * 100) / 100,
+      lastUpdated: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting presale totals:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get presale statistics"
+    });
+  }
+});
+
 export default router;
 
