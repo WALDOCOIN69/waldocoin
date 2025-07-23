@@ -972,7 +972,53 @@
         Use this only when automated airdrop system fails or for emergency distributions.
       </div>
 
-      <!-- Password management moved to main admin authentication section -->
+      <!-- Claimed Wallets Export -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">📊 Claimed Wallets Export</div>
+
+        <div class="grid-2">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Export Options</label>
+              <div class="button-group">
+                <button type="button" class="btn btn-primary" onclick="exportClaimedWallets()">
+                  📥 Download CSV Spreadsheet
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="viewClaimedWallets()">
+                  👁️ View Claimed List
+                </button>
+              </div>
+              <small class="help-text">
+                Export all wallets that have claimed airdrops for analysis
+              </small>
+            </div>
+          </div>
+
+          <div>
+            <div id="claimedWalletsInfo" class="info-display">
+              <div class="stat-item">
+                <span class="stat-label">Total Claimed:</span>
+                <span id="totalClaimedCount" class="stat-value">Loading...</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Remaining:</span>
+                <span id="remainingCount" class="stat-value">Loading...</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Last Updated:</span>
+                <span id="lastUpdated" class="stat-value">Never</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="claimedWalletsList" style="display:none; margin-top:20px;">
+          <div class="card-title">📋 Claimed Wallets List</div>
+          <div id="walletsTableContainer" style="max-height:300px; overflow-y:auto; border:1px solid #444; border-radius:6px; padding:10px;">
+            <!-- Wallets list will be populated here -->
+          </div>
+        </div>
+      </div>
 
       <div class="grid-2">
         <div class="admin-card">
@@ -5252,6 +5298,153 @@ This action cannot be undone. Continue?`;
       }
     });
 
+    // Claimed Wallets Export Functions
+    async function exportClaimedWallets() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Preparing CSV export...', 'info');
+
+        // Create a temporary link to download the CSV
+        const link = document.createElement('a');
+        link.href = `${API_BASE}/api/airdrop/export-claimed`;
+        link.style.display = 'none';
+
+        // Set headers for the request
+        const response = await fetch(`${API_BASE}/api/airdrop/export-claimed`, {
+          method: 'GET',
+          headers: {
+            'x-admin-key': adminKey
+          }
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          link.href = url;
+          link.download = `waldo-airdrop-claimed-${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+
+          showAlert('✅ CSV file downloaded successfully!', 'success');
+          updateClaimedWalletsInfo(); // Refresh the info
+        } else {
+          throw new Error('Export failed');
+        }
+      } catch (error) {
+        console.error('Export error:', error);
+        showAlert('❌ Failed to export CSV', 'error');
+      }
+    }
+
+    async function viewClaimedWallets() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading claimed wallets...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/claimed-list`, {
+          method: 'GET',
+          headers: {
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          displayClaimedWalletsList(data);
+          showAlert(`✅ Loaded ${data.totalWallets} claimed wallets`, 'success');
+        } else {
+          throw new Error(data.error || 'Failed to load wallets');
+        }
+      } catch (error) {
+        console.error('View wallets error:', error);
+        showAlert('❌ Failed to load claimed wallets', 'error');
+      }
+    }
+
+    function displayClaimedWalletsList(data) {
+      const container = document.getElementById('walletsTableContainer');
+      const listDiv = document.getElementById('claimedWalletsList');
+
+      let html = `
+        <div style="margin-bottom: 10px; color: #25c2a0; font-weight: bold;">
+          📊 Total: ${data.totalWallets} wallets claimed ${data.totalClaimed} airdrops
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="background: #333; color: white;">
+              <th style="padding: 8px; border: 1px solid #555; text-align: left;">#</th>
+              <th style="padding: 8px; border: 1px solid #555; text-align: left;">Wallet Address</th>
+              <th style="padding: 8px; border: 1px solid #555; text-align: center;">Amount</th>
+              <th style="padding: 8px; border: 1px solid #555; text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      data.wallets.forEach((wallet, index) => {
+        html += `
+          <tr style="background: ${index % 2 === 0 ? '#222' : '#333'};">
+            <td style="padding: 6px; border: 1px solid #555; color: #ccc;">${wallet.claimOrder}</td>
+            <td style="padding: 6px; border: 1px solid #555; color: #25c2a0; font-family: monospace;">${wallet.wallet}</td>
+            <td style="padding: 6px; border: 1px solid #555; text-align: center; color: #ffd93d;">${parseInt(wallet.amount).toLocaleString()}</td>
+            <td style="padding: 6px; border: 1px solid #555; text-align: center; color: #0f0;">✅ ${wallet.status}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </tbody>
+        </table>
+        <div style="margin-top: 10px; font-size: 11px; color: #666;">
+          Exported at: ${new Date(data.exportedAt).toLocaleString()}
+        </div>
+      `;
+
+      container.innerHTML = html;
+      listDiv.style.display = 'block';
+
+      // Update info display
+      updateClaimedWalletsInfo(data);
+    }
+
+    async function updateClaimedWalletsInfo(data = null) {
+      if (!data) {
+        // Fetch fresh data
+        const adminKey = localStorage.getItem('adminKey');
+        if (!adminKey) return;
+
+        try {
+          const response = await fetch(`${API_BASE}/api/airdrop/claimed-list`, {
+            method: 'GET',
+            headers: { 'x-admin-key': adminKey }
+          });
+          data = await response.json();
+        } catch (error) {
+          console.error('Failed to update claimed wallets info:', error);
+          return;
+        }
+      }
+
+      if (data && data.success) {
+        document.getElementById('totalClaimedCount').textContent = data.totalWallets;
+        document.getElementById('remainingCount').textContent = (1000 - data.totalWallets);
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+      }
+    }
+
     // Initialize login check when page loads
     document.addEventListener('DOMContentLoaded', function() {
       checkExistingLogin();
@@ -5260,6 +5453,8 @@ This action cannot be undone. Continue?`;
         getCurrentAirdropPassword();
         // Also auto-refresh trustline count to get latest data
         loadTrustlineCount();
+        // Load claimed wallets info
+        updateClaimedWalletsInfo();
       }, 1000);
     });
   </script>

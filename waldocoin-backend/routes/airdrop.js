@@ -803,6 +803,88 @@ router.get("/config-history", async (req, res) => {
   }
 });
 
+// ✅ GET /api/airdrop/export-claimed - Export claimed wallets to CSV
+router.get("/export-claimed", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get all claimed wallets from Redis set
+    const claimedWallets = await redis.sMembers(AIRDROP_REDIS_KEY);
+    const totalClaimed = await redis.get(AIRDROP_COUNT_KEY) || 0;
+
+    console.log(`📊 Exporting ${claimedWallets.length} claimed wallets`);
+
+    // Create CSV content
+    let csvContent = "Wallet Address,Claim Date,Amount (WALDO),Status\n";
+
+    // Add each wallet to CSV
+    claimedWallets.forEach((wallet, index) => {
+      // Since we don't store individual claim dates, we'll use index as order
+      const claimOrder = index + 1;
+      csvContent += `${wallet},Claim #${claimOrder},50000,Claimed\n`;
+    });
+
+    // Set headers for CSV download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="waldo-airdrop-claimed-${new Date().toISOString().split('T')[0]}.csv"`);
+
+    // Send CSV content
+    res.send(csvContent);
+
+    console.log(`✅ CSV export completed: ${claimedWallets.length} wallets exported`);
+
+  } catch (error) {
+    console.error('❌ Error exporting claimed wallets:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to export claimed wallets"
+    });
+  }
+});
+
+// ✅ GET /api/airdrop/claimed-list - Get claimed wallets as JSON
+router.get("/claimed-list", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get all claimed wallets from Redis set
+    const claimedWallets = await redis.sMembers(AIRDROP_REDIS_KEY);
+    const totalClaimed = await redis.get(AIRDROP_COUNT_KEY) || 0;
+
+    console.log(`📊 Returning ${claimedWallets.length} claimed wallets`);
+
+    res.json({
+      success: true,
+      totalClaimed: parseInt(totalClaimed),
+      totalWallets: claimedWallets.length,
+      wallets: claimedWallets.map((wallet, index) => ({
+        wallet: wallet,
+        claimOrder: index + 1,
+        amount: "50000",
+        status: "Claimed"
+      })),
+      exportedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting claimed wallets list:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get claimed wallets list"
+    });
+  }
+});
+
 export default router;
 
 
