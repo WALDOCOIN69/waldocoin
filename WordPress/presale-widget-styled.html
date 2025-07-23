@@ -33,7 +33,7 @@
     </style>
 
     <h2 style="color:#ffea00;">🚀 WALDO Presale</h2>
-    <p style="font-size:14px;">Buy WALDO tokens in <strong>5 XRP increments</strong> with bonus rewards!</p>
+    <p style="font-size:14px;">Buy WALDO tokens in <strong>5 XRP increments</strong> • <strong>1 XRP = 10,000 WALDO</strong></p>
     <p style="font-size:12px; color:#ffd93d; margin-top:5px;">🔥 <strong>Bonus WALDO at 80 XRP and above!</strong></p>
 
     <!-- Presale Status -->
@@ -133,10 +133,10 @@
     <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
       <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">🎁 BONUS STRUCTURE</div>
       <div style="font-size:11px; color:#ccc; text-align:left;">
-        • <strong>5-75 XRP:</strong> 1,000 WALDO per XRP (base rate)<br>
-        • <strong>80 XRP:</strong> 92,000 WALDO (15% bonus = +12,000)<br>
-        • <strong>90 XRP:</strong> 110,000 WALDO (22% bonus = +20,000)<br>
-        • <strong>100 XRP:</strong> 130,000 WALDO (30% bonus = +30,000)
+        • <strong>5-75 XRP:</strong> 10,000 WALDO per XRP (base rate)<br>
+        • <strong>80 XRP:</strong> 920,000 WALDO (15% bonus = +120,000)<br>
+        • <strong>90 XRP:</strong> 1,098,000 WALDO (22% bonus = +198,000)<br>
+        • <strong>100 XRP:</strong> 1,300,000 WALDO (30% bonus = +300,000)
       </div>
       <div style="font-size:10px; color:#888; margin-top:8px; text-align:center; border-top:1px solid #444; padding-top:8px;">
         💡 Bonuses are automatically calculated and added to your base WALDO amount
@@ -199,9 +199,9 @@ async function updateWaldoAmount() {
   } catch (error) {
     console.error('Error calculating WALDO amount:', error);
     // Fallback to frontend calculation
-    const waldoAmount = xrpAmount * 1000; // Backend uses 1k base rate
+    const waldoAmount = xrpAmount * 10000; // Backend uses 10k base rate
     document.getElementById('waldoAmount').textContent = waldoAmount.toLocaleString();
-    bonusInfo.textContent = "Base rate: 1,000 WALDO per XRP";
+    bonusInfo.textContent = "Base rate: 10,000 WALDO per XRP";
     bonusInfo.style.color = '#ffd93d';
   }
 }
