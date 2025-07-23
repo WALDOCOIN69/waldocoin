@@ -841,10 +841,10 @@
           <div class="current-password-display">
             <div class="password-info">
               <label class="form-label">Current Airdrop Password</label>
-              <div id="currentPasswordDisplay" class="current-password" style="color: #25c2a0;">WALDOMOON</div>
+              <div id="currentPasswordDisplay" class="current-password" style="color: #25c2a0;">TODAMOON</div>
               <div id="passwordSource" class="password-source">Redis override</div>
             </div>
-            <button type="button" class="btn btn-info" onclick="getCurrentAirdropPassword();">
+            <button type="button" class="btn btn-info" onclick="forceRefreshPassword();">
               🔄 Refresh
             </button>
           </div>
@@ -3875,6 +3875,52 @@ This action cannot be undone. Continue?`;
     });
 
     // Old logout function removed - using the password-based logout function instead
+
+    // Force refresh password function - bypasses any caching issues
+    async function forceRefreshPassword() {
+      console.log('🔄 Force refresh password called');
+      showAlert('Refreshing password...', 'info');
+
+      try {
+        const url = `https://waldocoin-backend-api.onrender.com/api/airdrop/password-check?_t=${Date.now()}`;
+        console.log('📡 Calling:', url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+
+        console.log('📡 Response status:', response.status);
+        const data = await response.json();
+        console.log('📡 Response data:', data);
+
+        if (data.success) {
+          // Force update display
+          document.getElementById('currentPasswordDisplay').textContent = data.currentPassword;
+          document.getElementById('passwordSource').textContent = data.source;
+
+          // Update color
+          const passwordDisplay = document.getElementById('currentPasswordDisplay');
+          if (data.source === 'Default fallback') {
+            passwordDisplay.style.color = '#f39c12';
+          } else {
+            passwordDisplay.style.color = '#25c2a0';
+          }
+
+          showAlert(`✅ Password refreshed: ${data.currentPassword}`, 'success');
+        } else {
+          showAlert('❌ Failed to refresh password', 'error');
+        }
+      } catch (error) {
+        console.error('❌ Force refresh error:', error);
+        showAlert('❌ Connection error', 'error');
+      }
+    }
 
     // Airdrop Password Management Functions
     async function getCurrentAirdropPassword() {
