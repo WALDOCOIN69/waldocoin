@@ -8,7 +8,7 @@ import { WALDO_ISSUER, WALDO_TOKEN, WALDO_DISTRIBUTOR } from "../config.js";
 const router = express.Router();
 const xrplClient = new Client("wss://xrplcluster.com");
 
-const WALDO_PER_XRP = 100000;
+const WALDO_PER_XRP = 1000;
 
 router.post("/", async (req, res) => {
   const { txId, email } = req.body;
@@ -40,11 +40,11 @@ router.post("/", async (req, res) => {
       return res.json({ success: false, error: "Amount must be in 10 XRP increments (10–100)." });
     }
 
-    // Bonus logic
+    // Bonus logic (updated for 1k base rate)
     let bonus = 0;
-    if (amountXRP === 80) bonus = 2_000_000;
-    if (amountXRP === 90) bonus = 3_000_000;
-    if (amountXRP === 100) bonus = 5_000_000;
+    if (amountXRP === 80) bonus = 12_000; // 15% bonus
+    if (amountXRP === 90) bonus = 20_000; // 22% bonus
+    if (amountXRP === 100) bonus = 30_000; // 30% bonus
 
     const totalWaldo = amountXRP * WALDO_PER_XRP + bonus;
 

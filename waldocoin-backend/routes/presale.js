@@ -4,24 +4,24 @@ import { redis } from "../redisClient.js";
 
 const router = express.Router();
 
-// ✅ WALDO Presale Bonus Calculation - Updated Structure
+// ✅ WALDO Presale Bonus Calculation - Updated Structure (1 XRP = 1,000 WALDO)
 function calculateWaldoBonus(xrpAmount) {
-  const baseWaldo = xrpAmount * 100000; // 1 XRP = 100,000 WALDO base rate
+  const baseWaldo = xrpAmount * 1000; // 1 XRP = 1,000 WALDO base rate
 
   let bonus = 0;
   let bonusTier = null;
   let bonusPercentage = 0;
 
   if (xrpAmount >= 100) {
-    bonus = 3000000; // 3M bonus
+    bonus = 30000; // 30k bonus (30% of 100k base)
     bonusTier = "Tier 3 (100+ XRP)";
     bonusPercentage = 30;
   } else if (xrpAmount >= 90) {
-    bonus = 2000000; // 2M bonus
+    bonus = 20000; // 20k bonus (22% of 90k base)
     bonusTier = "Tier 2 (90+ XRP)";
     bonusPercentage = 22;
   } else if (xrpAmount >= 80) {
-    bonus = 1200000; // 1.2M bonus
+    bonus = 12000; // 12k bonus (15% of 80k base)
     bonusTier = "Tier 1 (80+ XRP)";
     bonusPercentage = 15;
   }

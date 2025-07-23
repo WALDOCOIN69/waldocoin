@@ -133,10 +133,13 @@
     <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
       <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">🎁 BONUS STRUCTURE</div>
       <div style="font-size:11px; color:#ccc; text-align:left;">
-        • <strong>10-70 XRP:</strong> 90,000 WALDO per XRP<br>
-        • <strong>80 XRP:</strong> 9.2M WALDO (15% bonus)<br>
-        • <strong>90 XRP:</strong> 11M WALDO (22% bonus)<br>
-        • <strong>100 XRP:</strong> 13M WALDO (30% bonus)
+        • <strong>10-70 XRP:</strong> 1,000 WALDO per XRP (base rate)<br>
+        • <strong>80 XRP:</strong> 92,000 WALDO (15% bonus = +12,000)<br>
+        • <strong>90 XRP:</strong> 110,000 WALDO (22% bonus = +20,000)<br>
+        • <strong>100 XRP:</strong> 130,000 WALDO (30% bonus = +30,000)
+      </div>
+      <div style="font-size:10px; color:#888; margin-top:8px; text-align:center; border-top:1px solid #444; padding-top:8px;">
+        💡 Bonuses are automatically calculated and added to your base WALDO amount
       </div>
     </div>
 
@@ -169,29 +172,38 @@ function openTrustlineLink() {
   window.open(trustlineUrl, '_blank');
 }
 
-// Update WALDO amount based on XRP input
-function updateWaldoAmount() {
+// Update WALDO amount based on XRP input - Connected to Backend API
+async function updateWaldoAmount() {
   const xrpAmount = parseInt(document.getElementById('xrpAmount').value) || 10;
   const bonusInfo = document.getElementById('bonusInfo');
-  let waldoAmount, bonusText;
 
-  if (xrpAmount >= 100) {
-    waldoAmount = 13000000; // 13M WALDO
-    bonusText = "30% BONUS! (13M WALDO total)";
-  } else if (xrpAmount >= 90) {
-    waldoAmount = 11000000; // 11M WALDO
-    bonusText = "22% BONUS! (11M WALDO total)";
-  } else if (xrpAmount >= 80) {
-    waldoAmount = 9200000; // 9.2M WALDO
-    bonusText = "15% BONUS! (9.2M WALDO total)";
-  } else {
-    waldoAmount = xrpAmount * 90000; // Base rate
-    bonusText = "Base rate: 90,000 WALDO per XRP";
+  try {
+    // Call backend API for accurate calculation
+    const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/presale/calculate?amount=${xrpAmount}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const calc = data.calculation;
+      document.getElementById('waldoAmount').textContent = calc.totalWaldo.toLocaleString();
+
+      if (calc.bonus > 0) {
+        bonusInfo.textContent = `${calc.bonusPercentage}% BONUS! (${calc.bonus.toLocaleString()} bonus WALDO)`;
+        bonusInfo.style.color = '#ffea00';
+      } else {
+        bonusInfo.textContent = `Base rate: ${(calc.baseWaldo / xrpAmount).toLocaleString()} WALDO per XRP`;
+        bonusInfo.style.color = '#ffd93d';
+      }
+    } else {
+      throw new Error(data.error || 'Calculation failed');
+    }
+  } catch (error) {
+    console.error('Error calculating WALDO amount:', error);
+    // Fallback to frontend calculation
+    const waldoAmount = xrpAmount * 1000; // Backend uses 1k base rate
+    document.getElementById('waldoAmount').textContent = waldoAmount.toLocaleString();
+    bonusInfo.textContent = "Base rate: 1,000 WALDO per XRP";
+    bonusInfo.style.color = '#ffd93d';
   }
-
-  document.getElementById('waldoAmount').textContent = waldoAmount.toLocaleString();
-  bonusInfo.textContent = bonusText;
-  bonusInfo.style.color = xrpAmount >= 80 ? '#ffea00' : '#ffd93d';
 }
 
 // XRP amount input listener
@@ -202,12 +214,192 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Placeholder functions (to be implemented)
-function connectXummWallet() {
-  alert('Wallet connection functionality to be implemented');
+// Global variables
+let currentWallet = null;
+const API_BASE = 'https://waldocoin-backend-api.onrender.com';
+
+// Connect XUMM Wallet - Real Implementation
+async function connectXummWallet() {
+  try {
+    const response = await fetch(`${API_BASE}/api/login`);
+    const data = await response.json();
+
+    if (data.qr) {
+      // Show QR code for wallet connection
+      showWalletConnectionQR(data.qr, data.uuid);
+
+      // Poll for connection status
+      pollWalletConnection(data.uuid);
+    } else {
+      throw new Error('Failed to generate wallet connection QR');
+    }
+  } catch (error) {
+    console.error('Wallet connection error:', error);
+    alert('Failed to connect wallet. Please try again.');
+  }
 }
 
-function purchaseWaldo() {
-  alert('Purchase functionality to be implemented');
+// Show wallet connection QR and poll for status
+function showWalletConnectionQR(qrUrl, uuid) {
+  // Update wallet status
+  document.getElementById('connectedWallet').innerHTML = `
+    <div style="color:#ffd93d;">🔄 Scan QR with Xaman to connect...</div>
+    <img src="${qrUrl}" style="width:120px; margin:10px; border-radius:8px;" />
+  `;
+}
+
+// Poll wallet connection status
+async function pollWalletConnection(uuid) {
+  let attempts = 0;
+  const maxAttempts = 60; // 2 minutes
+
+  const interval = setInterval(async () => {
+    attempts++;
+
+    if (attempts > maxAttempts) {
+      clearInterval(interval);
+      document.getElementById('connectedWallet').innerHTML = `
+        <div style="color:#e74c3c;">❌ Connection timeout. Please try again.</div>
+      `;
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/login/status?uuid=${uuid}`);
+      const status = await response.json();
+
+      if (status.signed && status.account) {
+        clearInterval(interval);
+        currentWallet = status.account;
+
+        // Update UI
+        document.getElementById('connectedWallet').innerHTML = `
+          <div style="color:#25c2a0;">✅ Connected: ${currentWallet.slice(0,8)}...${currentWallet.slice(-6)}</div>
+        `;
+
+        // Enable purchase button
+        const purchaseBtn = document.getElementById('purchaseBtn');
+        purchaseBtn.disabled = false;
+        purchaseBtn.style.background = '#25c2a0';
+        purchaseBtn.style.color = 'white';
+        purchaseBtn.style.cursor = 'pointer';
+        purchaseBtn.textContent = '💳 Purchase WALDO';
+      }
+    } catch (error) {
+      console.error('Status check error:', error);
+    }
+  }, 2000);
+}
+
+// Purchase WALDO - Real Implementation
+async function purchaseWaldo() {
+  if (!currentWallet) {
+    alert('Please connect your wallet first');
+    return;
+  }
+
+  const xrpAmount = parseInt(document.getElementById('xrpAmount').value);
+
+  if (xrpAmount < 10 || xrpAmount > 100 || xrpAmount % 10 !== 0) {
+    alert('XRP amount must be in 10 XRP increments (10-100)');
+    return;
+  }
+
+  try {
+    // Create purchase transaction
+    const response = await fetch(`${API_BASE}/api/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        TransactionType: 'Payment',
+        Account: currentWallet,
+        Destination: 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt', // WALDO distributor wallet
+        Amount: (xrpAmount * 1000000).toString(), // Convert to drops
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('presale').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`${xrpAmount} XRP presale purchase`).toString('hex').toUpperCase()
+          }
+        }]
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.qr) {
+      // Show purchase QR
+      document.getElementById('purchaseQR').style.display = 'block';
+      document.getElementById('xummPurchaseQR').src = data.qr;
+
+      // Poll for transaction completion
+      pollPurchaseStatus(data.uuid, xrpAmount);
+    } else {
+      throw new Error('Failed to create purchase transaction');
+    }
+  } catch (error) {
+    console.error('Purchase error:', error);
+    alert('Failed to create purchase transaction. Please try again.');
+  }
+}
+
+// Poll purchase transaction status
+async function pollPurchaseStatus(uuid, xrpAmount) {
+  let attempts = 0;
+  const maxAttempts = 120; // 4 minutes
+
+  const interval = setInterval(async () => {
+    attempts++;
+
+    if (attempts > maxAttempts) {
+      clearInterval(interval);
+      alert('Transaction timeout. Please check your wallet and try again if needed.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/login/status?uuid=${uuid}`);
+      const status = await response.json();
+
+      if (status.signed && status.txid) {
+        clearInterval(interval);
+
+        // Log the purchase to backend
+        await logPurchase(currentWallet, xrpAmount, status.txid);
+
+        // Show success
+        alert(`✅ Purchase successful! You will receive WALDO tokens shortly.\nTransaction ID: ${status.txid}`);
+
+        // Hide QR and reset
+        document.getElementById('purchaseQR').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Purchase status check error:', error);
+    }
+  }, 3000);
+}
+
+// Log purchase to backend
+async function logPurchase(wallet, xrpAmount, txid) {
+  try {
+    const response = await fetch(`${API_BASE}/api/presale/log`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        wallet: wallet,
+        amount: xrpAmount,
+        timestamp: Date.now(),
+        txid: txid
+      })
+    });
+
+    const data = await response.json();
+    console.log('Purchase logged:', data);
+  } catch (error) {
+    console.error('Failed to log purchase:', error);
+  }
 }
 </script>
