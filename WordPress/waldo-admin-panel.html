@@ -3928,20 +3928,32 @@ This action cannot be undone. Continue?`;
     }
 
     async function updateAirdropPassword() {
+      console.log('🔐 Password update function called');
+
       const adminKey = localStorage.getItem('adminKey');
       const newPassword = document.getElementById('newDailyPassword').value.trim();
 
+      console.log('📝 Password update data:', {
+        hasAdminKey: !!adminKey,
+        newPassword: newPassword ? `${newPassword.slice(0,3)}***` : 'empty',
+        passwordLength: newPassword.length
+      });
+
       if (!adminKey) {
+        console.log('❌ No admin key found');
         showAlert('Please enter admin key in the authentication section first', 'error');
         return;
       }
 
       if (!newPassword || newPassword.length < 3) {
+        console.log('❌ Invalid password:', { newPassword, length: newPassword.length });
         showAlert('Password must be at least 3 characters long', 'error');
         return;
       }
 
       try {
+        console.log('📡 Making API call to update password...');
+
         const response = await fetch(`${API_BASE}/api/airdrop/update-password`, {
           method: 'POST',
           headers: {
@@ -3953,7 +3965,9 @@ This action cannot be undone. Continue?`;
           })
         });
 
+        console.log('📡 API response status:', response.status);
         const data = await response.json();
+        console.log('📡 API response data:', data);
 
         if (data.success) {
           // Update result display
@@ -4270,37 +4284,7 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    async function updateAirdropPassword() {
-      const newPassword = document.getElementById('newDailyPassword').value.trim();
-
-      if (!newPassword) {
-        showAlert('Please enter a password', 'warning');
-        return;
-      }
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/airdrop/update-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          },
-          body: JSON.stringify({ password: newPassword })
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          showAlert('Airdrop password updated successfully', 'success');
-          document.getElementById('newDailyPassword').value = '';
-        } else {
-          showAlert(`Failed to update password: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Update password error:', error);
-        showAlert('Error updating password', 'error');
-      }
-    }
+    // Duplicate updateAirdropPassword function removed - using enhanced version above
 
     // Battle Management Functions
     async function endCurrentBattle() {
