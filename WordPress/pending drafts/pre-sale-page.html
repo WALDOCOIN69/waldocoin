@@ -191,6 +191,7 @@
   <header>
     <h1>🚀 Welcome to the WaldoCoin Presale!</h1>
     <p><strong>Presale is LIVE!</strong> Use the WALDO Buy Widget on the homepage to participate instantly with your XUMM wallet.</p>
+    <p style="color: #ffd93d; font-weight: bold;">💰 Buy in 5 XRP increments • 1 XRP = 1,000 WALDO • Bonus rewards at 80+ XRP!</p>
   </header>
 
   <section>
@@ -205,7 +206,7 @@
     <div class="waldo-presale-lookup" style="margin-bottom: 30px;">
       <h2 class="waldo-presale-lookup-title">💰 WALDO Bonus Calculator</h2>
       <p style="color: #ccc; margin-bottom: 20px;">Calculate your WALDO tokens and bonus tier based on your XRP investment:</p>
-      <input type="number" id="xrpAmountInput" placeholder="Enter XRP amount (e.g., 85)" min="1" step="0.1" class="waldo-presale-lookup-input" oninput="showBonusCalculation()">
+      <input type="number" id="xrpAmountInput" placeholder="Enter XRP amount (e.g., 85)" min="5" step="5" class="waldo-presale-lookup-input" oninput="showBonusCalculation()">
       <button type="button" onclick="showBonusCalculation()" class="waldo-presale-lookup-btn">💎 Calculate Bonus</button>
       <div id="bonusCalculationResult" class="waldo-presale-lookup-result"></div>
     </div>
@@ -227,8 +228,8 @@
     <section class="conversion-section">
  <h2>📊 XRP to WALDO Conversion Chart</h2>
 <p style="color: white; text-align: center; font-size: 1.1em; margin-bottom: 20px;">
-  ⚠️ WALDO is only available in <strong>fixed increments of 10 XRP</strong>.<br>
-  Each 10 XRP = <strong>1,000,000 WALDO</strong>.<br>
+  ⚠️ WALDO is available in <strong>5 XRP increments</strong>.<br>
+  Base rate: <strong>1 XRP = 1,000 WALDO</strong>.<br>
   Bonus tiers apply starting at <strong>80 XRP</strong> and up.
 </p>
 
@@ -240,24 +241,28 @@
     </thead>
     <tbody>
       <tr>
+        <td>5 XRP</td>
+        <td>5,000 WALDO</td>
+      </tr>
+      <tr>
         <td>10 XRP</td>
-        <td>1,000,000 WALDO</td>
+        <td>10,000 WALDO</td>
       </tr>
       <tr>
         <td>50 XRP</td>
-        <td>5,000,000 WALDO</td>
+        <td>50,000 WALDO</td>
       </tr>
       <tr>
         <td>80 XRP</td>
-        <td>8,000,000 WALDO + <span class="bonus">1.2M Bonus (15%) = 9,200,000</span></td>
+        <td>80,000 WALDO + <span class="bonus">12,000 Bonus (15%) = 92,000</span></td>
       </tr>
       <tr>
         <td>90 XRP</td>
-        <td>9,000,000 WALDO + <span class="bonus">2M Bonus (22%) = 11,000,000</span></td>
+        <td>90,000 WALDO + <span class="bonus">20,000 Bonus (22%) = 110,000</span></td>
       </tr>
       <tr>
         <td>100 XRP</td>
-        <td>10,000,000 WALDO + <span class="bonus">3M Bonus (30%) = 13,000,000</span></td>
+        <td>100,000 WALDO + <span class="bonus">30,000 Bonus (30%) = 130,000</span></td>
       </tr>
     </tbody>
   </table>
