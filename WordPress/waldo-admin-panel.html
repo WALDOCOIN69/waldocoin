@@ -3881,8 +3881,14 @@ This action cannot be undone. Continue?`;
       try {
         console.log('🔍 Loading current airdrop password...');
 
-        // Use the public endpoint that doesn't require authentication
-        const response = await fetch(`${API_BASE}/api/airdrop/password-check`);
+        // Use the public endpoint that doesn't require authentication (with cache busting)
+        const response = await fetch(`${API_BASE}/api/airdrop/password-check?_t=${Date.now()}`, {
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const data = await response.json();
 
         console.log('📡 Password API response:', data);
