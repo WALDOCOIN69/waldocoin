@@ -29,7 +29,7 @@
      <!-- 💬 Info Text -->
 <div style="margin-top: 20px; text-align: center;">
   <h2 style="color: #ffea00; font-size: 22px;">WALDO Presale:</h2>
-  <p style="font-size: 15px;">Buy in <strong>10 XRP increments only</strong><br>🔥 Bonus WALDO at 80 XRP and above!</p>
+  <p style="font-size: 15px;">Buy in <strong>5 XRP increments only</strong><br>🔥 Bonus WALDO at 80 XRP and above!</p>
   <p style="font-size: 14px;">Wallet: <span id="connectedWallet" style="color:#ff0;">Not connected</span><br>
     <a href="javascript:void(0);" onclick="connectXummWallet()" style="color: yellow; font-weight: bold;">🔌 Connect XUMM Wallet</a>
   </p>
@@ -47,9 +47,9 @@
     <div class="waldo-swap-box">
       <h2>Buy WALDO</h2>
       <div class="swap-panel">
-        <label>XRP (10–100 Only)</label>
+        <label>XRP (5–100 in 5 XRP increments)</label>
         <div class="panel-row">
-          <input type="number" id="xrpInput" value="10" min="10" max="100" step="10" oninput="updateWaldoAmount()">
+          <input type="number" id="xrpInput" value="5" min="5" max="100" step="5" oninput="updateWaldoAmount()">
           <span>Max</span>
         </div>
       </div>

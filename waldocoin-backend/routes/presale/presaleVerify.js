@@ -36,8 +36,8 @@ router.post("/", async (req, res) => {
     const amountXRP = parseFloat(txData.Amount) / 1_000_000;
 
     // Validate min
-    if (amountXRP < 10 || amountXRP > 100 || amountXRP % 10 !== 0) {
-      return res.json({ success: false, error: "Amount must be in 10 XRP increments (10–100)." });
+    if (amountXRP < 5 || amountXRP > 100 || amountXRP % 5 !== 0) {
+      return res.json({ success: false, error: "Amount must be in 5 XRP increments (5–100)." });
     }
 
     // Bonus logic (updated for 1k base rate)
