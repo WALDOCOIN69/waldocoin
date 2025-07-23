@@ -1,7 +1,7 @@
 <!-- 🚀 WALDO Presale Button -->
 <div style="text-align:center; margin: 40px 0;">
-  <button onclick="openWaldoSliderModal()" style="background: #ffea00; font-weight: bold; font-size: 20px; padding: 12px 30px; border: none; border-radius: 12px; cursor: pointer; color: black;">
-    Buy WALDO PRESALE
+  <button onclick="openWaldoSliderModal()" style="background:#25c2a0; color:white; font-weight:bold; font-size:20px; padding:12px 30px; border:none; border-radius:8px; cursor:pointer;">
+    🚀 Buy WALDO PRESALE
   </button>
 </div>
 

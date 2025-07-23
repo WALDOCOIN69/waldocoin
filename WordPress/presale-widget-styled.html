@@ -1,0 +1,213 @@
+<!-- 🚀 WALDO Presale Button -->
+<div style="text-align:center; margin: 40px 0;">
+  <button onclick="openWaldoPresaleModal()" style="background:#25c2a0; color:white; font-weight:bold; font-size:20px; padding:12px 30px; border:none; border-radius:8px; cursor:pointer;">
+    🚀 Buy WALDO PRESALE
+  </button>
+</div>
+
+<!-- 🧨 Modal Wrapper -->
+<div id="waldoPresaleModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.9); backdrop-filter:blur(4px); overflow-y:auto;">
+
+  <!-- Close Button -->
+  <span onclick="closeWaldoPresaleModal()" style="position:absolute; top:20px; right:30px; font-size:26px; cursor:pointer; color:white;">✖</span>
+
+  <!-- Main Presale Container (Matches Airdrop Style) -->
+  <div class="presale-box" style="background:#111; border:2px solid red; padding:20px; border-radius:18px; max-width:500px; margin:96px auto 0 auto; color:white; font-family:'Arial Black', sans-serif; text-align:center;">
+
+    <style>
+    @media (max-width: 600px) {
+      .presale-box {
+        margin: 5px !important;
+        padding: 15px !important;
+        border-radius: 12px !important;
+      }
+      .presale-box input {
+        width: 90% !important;
+        font-size: 16px !important; /* Prevents zoom on iOS */
+      }
+      .presale-box a, .presale-box button {
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+      }
+    }
+    </style>
+
+    <h2 style="color:#ffea00;">🚀 WALDO Presale</h2>
+    <p style="font-size:14px;">Buy WALDO tokens in <strong>10 XRP increments</strong> with bonus rewards!</p>
+    <p style="font-size:12px; color:#ffd93d; margin-top:5px;">🔥 <strong>Bonus WALDO at 80 XRP and above!</strong></p>
+
+    <!-- Presale Status -->
+    <div id="presaleStatus" style="background:#222; padding:10px; border-radius:8px; margin:10px 0; font-size:12px;">
+      <div style="color:#25c2a0;">📊 Loading presale status...</div>
+    </div>
+
+    <!-- STEP 1: Connect Wallet -->
+    <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
+      <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">⚠️ STEP 1: CONNECT WALLET</div>
+      <div style="text-align:center;">
+        <button onclick="connectXummWallet()" style="background:#25c2a0; color:white; padding:12px 20px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin:5px;">
+          📱 Connect Xaman Wallet
+        </button>
+        <p id="connectedWallet" style="color:#ccc; font-size:12px; margin-top:8px;">Click button to connect your wallet</p>
+      </div>
+    </div>
+
+    <!-- STEP 2: Trustline Setup -->
+    <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
+      <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">⚠️ STEP 2: SET TRUSTLINE</div>
+      <p style="font-size:12px; color:#ccc; margin-bottom:15px;">
+        <strong>You must set the WALDO trustline in your Xaman wallet.</strong>
+      </p>
+
+      <div style="display:flex; gap:20px; align-items:center; justify-content:center; flex-wrap:wrap;">
+        <!-- Button for Direct Link -->
+        <div style="text-align:center;">
+          <button onclick="openTrustlineLink()" 
+                  style="background:#25c2a0; color:white; padding:12px 20px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:8px;">
+            🔗 Set WALDO Trustline
+          </button>
+          <div style="font-size:10px; color:#666;">
+            Opens XRPL Services<br>
+            Currency: <strong>WLO</strong>
+          </div>
+        </div>
+
+        <!-- QR Code for Trustline -->
+        <div style="text-align:center;">
+          <div style="background:white; padding:10px; border-radius:8px; display:inline-block;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000"
+                 style="width:100px; height:100px; border-radius:6px;" alt="Trustline QR Code" />
+          </div>
+          <div style="font-size:10px; color:#666; margin-top:8px;">
+            Scan with Xaman<br>
+            to set trustline
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:11px; color:#888; margin-top:15px; text-align:center; border-top:1px solid #444; padding-top:10px;">
+        💡 <strong>Issuer:</strong> rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY<br>
+        💡 <strong>Currency:</strong> WLO | <strong>Limit:</strong> 1,000,000,000
+      </div>
+    </div>
+
+    <!-- STEP 3: Purchase WALDO -->
+    <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
+      <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">⚠️ STEP 3: PURCHASE WALDO</div>
+      
+      <!-- XRP Amount Input -->
+      <div style="margin-bottom:15px;">
+        <label style="color:#ccc; font-size:12px; display:block; margin-bottom:5px;">XRP Amount (10-100 only)</label>
+        <input type="number" id="xrpAmount" min="10" max="100" step="10" value="10" 
+               style="width:100%; padding:10px; border:1px solid #444; border-radius:6px; background:#333; color:white; font-size:16px; text-align:center;">
+      </div>
+
+      <!-- WALDO Amount Display -->
+      <div style="margin-bottom:15px; padding:10px; background:#333; border-radius:6px;">
+        <div style="color:#25c2a0; font-size:14px; font-weight:bold;">
+          You will receive: <span id="waldoAmount">900,000</span> WALDO
+        </div>
+        <div id="bonusInfo" style="color:#ffd93d; font-size:11px; margin-top:5px;">
+          Base rate: 90,000 WALDO per XRP
+        </div>
+      </div>
+
+      <!-- Purchase Button -->
+      <button onclick="purchaseWaldo()" id="purchaseBtn" disabled
+              style="width:100%; background:#666; color:#ccc; padding:12px; border:none; border-radius:8px; font-weight:bold; cursor:not-allowed; margin-bottom:10px;">
+        💳 Purchase WALDO (Connect Wallet First)
+      </button>
+
+      <!-- Purchase QR Code -->
+      <div id="purchaseQR" style="display:none; text-align:center; margin-top:15px;">
+        <div style="background:white; padding:10px; border-radius:8px; display:inline-block;">
+          <img id="xummPurchaseQR" src="" style="width:120px; height:120px; border-radius:6px;" alt="Purchase QR Code" />
+        </div>
+        <div style="font-size:10px; color:#666; margin-top:8px;">
+          Scan with Xaman to complete purchase
+        </div>
+      </div>
+    </div>
+
+    <!-- Bonus Structure Info -->
+    <div style="background:#222; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #444;">
+      <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">🎁 BONUS STRUCTURE</div>
+      <div style="font-size:11px; color:#ccc; text-align:left;">
+        • <strong>10-70 XRP:</strong> 90,000 WALDO per XRP<br>
+        • <strong>80 XRP:</strong> 9.2M WALDO (15% bonus)<br>
+        • <strong>90 XRP:</strong> 11M WALDO (22% bonus)<br>
+        • <strong>100 XRP:</strong> 13M WALDO (30% bonus)
+      </div>
+    </div>
+
+    <!-- Info Link -->
+    <div style="margin-top:15px;">
+      <a href="https://waldocoin.live/presale/" target="_blank" style="color:#25c2a0; font-size:12px; text-decoration:none;">
+        📄 View Full Presale Information
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Modal functions
+function openWaldoPresaleModal() {
+  document.getElementById('waldoPresaleModal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  updateWaldoAmount(); // Calculate initial amount
+}
+
+function closeWaldoPresaleModal() {
+  document.getElementById('waldoPresaleModal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+// Trustline setup function (matches airdrop widget)
+function openTrustlineLink() {
+  const trustlineUrl = "https://xrpl.services/?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO&limit=1000000000";
+  window.open(trustlineUrl, '_blank');
+}
+
+// Update WALDO amount based on XRP input
+function updateWaldoAmount() {
+  const xrpAmount = parseInt(document.getElementById('xrpAmount').value) || 10;
+  const bonusInfo = document.getElementById('bonusInfo');
+  let waldoAmount, bonusText;
+
+  if (xrpAmount >= 100) {
+    waldoAmount = 13000000; // 13M WALDO
+    bonusText = "30% BONUS! (13M WALDO total)";
+  } else if (xrpAmount >= 90) {
+    waldoAmount = 11000000; // 11M WALDO
+    bonusText = "22% BONUS! (11M WALDO total)";
+  } else if (xrpAmount >= 80) {
+    waldoAmount = 9200000; // 9.2M WALDO
+    bonusText = "15% BONUS! (9.2M WALDO total)";
+  } else {
+    waldoAmount = xrpAmount * 90000; // Base rate
+    bonusText = "Base rate: 90,000 WALDO per XRP";
+  }
+
+  document.getElementById('waldoAmount').textContent = waldoAmount.toLocaleString();
+  bonusInfo.textContent = bonusText;
+  bonusInfo.style.color = xrpAmount >= 80 ? '#ffea00' : '#ffd93d';
+}
+
+// XRP amount input listener
+document.addEventListener('DOMContentLoaded', function() {
+  const xrpInput = document.getElementById('xrpAmount');
+  if (xrpInput) {
+    xrpInput.addEventListener('input', updateWaldoAmount);
+  }
+});
+
+// Placeholder functions (to be implemented)
+function connectXummWallet() {
+  alert('Wallet connection functionality to be implemented');
+}
+
+function purchaseWaldo() {
+  alert('Purchase functionality to be implemented');
+}
+</script>
