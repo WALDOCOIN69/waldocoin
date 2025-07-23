@@ -13,7 +13,7 @@
     font-size: 16px !important; /* Prevents zoom on iOS */
   }
   .airdrop-box a, .airdrop-box button {
-    padding: 10px 16px !important
+    padding: 10px 16px !important;
     font-size: 14px !important;
   }
 }
@@ -775,10 +775,20 @@ function handlePassword() {
 
 // 🎯 Main claim function
 async function tryAutoClaim() {
-  if (alreadyTried) return;
+  console.log('🎯 Claim attempt:', { alreadyTried, walletReady, currentWallet: currentWallet ? 'set' : 'null' });
+
+  if (alreadyTried) {
+    console.log('❌ Already tried claiming');
+    return;
+  }
 
   const pw = document.getElementById("airdropPassword").value.trim();
-  if (!pw || !walletReady || !currentWallet) return;
+  console.log('🔐 Password check:', { hasPassword: !!pw, length: pw.length, walletReady, hasWallet: !!currentWallet });
+
+  if (!pw || !walletReady || !currentWallet) {
+    console.log('❌ Missing requirements:', { password: !!pw, walletReady, currentWallet: !!currentWallet });
+    return;
+  }
 
   alreadyTried = true;
 
@@ -791,13 +801,17 @@ async function tryAutoClaim() {
   result.innerText = "⏳ Claiming airdrop...";
 
   try {
+    console.log('📡 Making airdrop API call:', { wallet: currentWallet, password: pw });
+
     const res = await fetch("https://waldocoin-backend-api.onrender.com/api/airdrop", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wallet: currentWallet, password: pw })
     });
 
+    console.log('📡 API response status:', res.status);
     const data = await res.json();
+    console.log('📡 API response data:', data);
 
     if (data.success) {
       result.style.color = "#0f0";
