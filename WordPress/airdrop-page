@@ -984,18 +984,12 @@ function openTrustlineLink() {
 
 // Generate trustline QR code when page loads
 function generateTrustlineQR() {
-  const trustlineData = {
-    "TransactionType": "TrustSet",
-    "LimitAmount": {
-      "currency": "WLO",
-      "issuer": "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY",
-      "value": "1000000000"
-    }
-  };
+  // Create proper Xaman-compatible trustline URL
+  const xamanTrustlineUrl = 'https://xumm.app/detect/request:{"TransactionType":"TrustSet","Account":"","LimitAmount":{"currency":"WLO","issuer":"rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY","value":"1000000000"}}';
 
-  // Create QR code using a simple QR library or service
-  const qrData = JSON.stringify(trustlineData);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
+  // URL encode for QR generation
+  const encodedUrl = encodeURIComponent(xamanTrustlineUrl);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodedUrl}`;
 
   const qrContainer = document.getElementById('trustlineQR');
   qrContainer.innerHTML = `<img src="${qrUrl}" style="width:120px; height:120px; border-radius:6px;" alt="Trustline QR Code" />`;
