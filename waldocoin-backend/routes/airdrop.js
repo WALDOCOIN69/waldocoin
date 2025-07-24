@@ -953,6 +953,52 @@ router.get("/trustline-qr", async (req, res) => {
   }
 });
 
+// ✅ POST /api/airdrop/add-missing-wallet - Add wallet to tracking (admin only)
+router.post("/add-missing-wallet", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const { wallet, reason } = req.body;
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    if (!wallet || !wallet.startsWith('r') || wallet.length < 25) {
+      return res.status(400).json({ success: false, error: "Invalid wallet address" });
+    }
+
+    // Check if wallet is already tracked
+    const alreadyTracked = await redis.sIsMember(AIRDROP_REDIS_KEY, wallet);
+    if (alreadyTracked) {
+      return res.json({ success: false, error: "Wallet already in tracking system" });
+    }
+
+    // Add wallet to tracking set
+    await redis.sAdd(AIRDROP_REDIS_KEY, wallet);
+
+    // Get updated counts
+    const totalWallets = await redis.sCard(AIRDROP_REDIS_KEY);
+
+    console.log(`✅ Admin added missing wallet to tracking: ${wallet}. Reason: ${reason || 'No reason provided'}`);
+
+    res.json({
+      success: true,
+      message: "Wallet added to tracking system",
+      wallet: wallet,
+      totalTracked: totalWallets,
+      reason: reason || 'Missing from tracking'
+    });
+
+  } catch (error) {
+    console.error('❌ Error adding missing wallet:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to add wallet to tracking"
+    });
+  }
+});
+
 export default router;
 
 

@@ -1022,6 +1022,25 @@
 
         <div id="claimedWalletsList" style="display:none; margin-top:20px;">
           <div class="card-title">📋 Claimed Wallets List</div>
+
+          <!-- Add Missing Wallet Section -->
+          <div style="margin-bottom:15px; padding:10px; background:#333; border-radius:6px;">
+            <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">➕ Add Missing Wallet</div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="text" id="missingWalletAddress" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                     style="flex:1; padding:6px; background:#222; border:1px solid #555; color:white; border-radius:4px; font-family:monospace; font-size:12px;">
+              <input type="text" id="missingWalletReason" placeholder="Reason (e.g., tracking failed yesterday)"
+                     style="flex:1; padding:6px; background:#222; border:1px solid #555; color:white; border-radius:4px; font-size:12px;">
+              <button type="button" onclick="addMissingWallet()"
+                      style="padding:6px 12px; background:#25c2a0; color:white; border:none; border-radius:4px; font-size:12px; cursor:pointer;">
+                Add to Tracking
+              </button>
+            </div>
+            <div style="font-size:10px; color:#666; margin-top:5px;">
+              Use this to add wallets that received airdrops but aren't in the tracking system
+            </div>
+          </div>
+
           <div id="walletsTableContainer" style="max-height:300px; overflow-y:auto; border:1px solid #444; border-radius:6px; padding:10px;">
             <!-- Wallets list will be populated here -->
           </div>
@@ -5458,6 +5477,68 @@ This action cannot be undone. Continue?`;
         document.getElementById('regularCount').textContent = data.regularWallets || 0;
         document.getElementById('remainingCount').textContent = (1000 - data.totalWallets);
         document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+      }
+    }
+
+    async function addMissingWallet() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      const walletAddress = document.getElementById('missingWalletAddress').value.trim();
+      const reason = document.getElementById('missingWalletReason').value.trim();
+
+      if (!walletAddress) {
+        showAlert('Please enter wallet address', 'error');
+        return;
+      }
+
+      if (!walletAddress.startsWith('r') || walletAddress.length < 25) {
+        showAlert('Invalid wallet address format', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Adding wallet to tracking...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/add-missing-wallet`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            wallet: walletAddress,
+            reason: reason || 'Added via admin panel'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`✅ Wallet added to tracking! Total tracked: ${data.totalTracked}`, 'success');
+
+          // Clear inputs
+          document.getElementById('missingWalletAddress').value = '';
+          document.getElementById('missingWalletReason').value = '';
+
+          // Refresh the claimed wallets list
+          updateClaimedWalletsInfo();
+
+          // If the list is currently visible, refresh it
+          const listDiv = document.getElementById('claimedWalletsList');
+          if (listDiv.style.display !== 'none') {
+            viewClaimedWallets();
+          }
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Add missing wallet error:', error);
+        showAlert('❌ Failed to add wallet to tracking', 'error');
       }
     }
 
