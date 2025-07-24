@@ -237,5 +237,85 @@ router.get("/total-sold", async (req, res) => {
   }
 });
 
+// ✅ POST /api/presale/buy - Create presale purchase transaction
+router.post("/buy", async (req, res) => {
+  try {
+    const { wallet, xrpAmount } = req.body;
+
+    if (!wallet || !xrpAmount) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing wallet or XRP amount"
+      });
+    }
+
+    // Validate XRP amount (5 XRP increments, 5-100 range)
+    if (xrpAmount < 5 || xrpAmount > 100 || xrpAmount % 5 !== 0) {
+      return res.status(400).json({
+        success: false,
+        error: "XRP amount must be in 5 XRP increments (5-100)"
+      });
+    }
+
+    // Calculate WALDO amount using the same logic as /calculate
+    const calculation = calculateWaldoBonus(xrpAmount);
+
+    // Create XUMM payload for presale purchase
+    const payload = {
+      TransactionType: 'Payment',
+      Destination: 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt', // WALDO distributor wallet
+      Amount: (xrpAmount * 1000000).toString(), // Convert XRP to drops
+      Memos: [{
+        Memo: {
+          MemoType: Buffer.from('PRESALE').toString('hex').toUpperCase(),
+          MemoData: Buffer.from(`${xrpAmount}XRP=${calculation.totalWaldo}WALDO`).toString('hex').toUpperCase()
+        }
+      }]
+    };
+
+    console.log(`🚀 Creating presale purchase: ${xrpAmount} XRP = ${calculation.totalWaldo} WALDO for ${wallet}`);
+
+    // Create XUMM sign request
+    const xummResponse = await fetch('https://xumm.app/api/v1/platform/payload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': process.env.XUMM_API_KEY,
+        'X-API-Secret': process.env.XUMM_API_SECRET
+      },
+      body: JSON.stringify({
+        txjson: payload,
+        options: {
+          submit: true,
+          multisign: false,
+          expire: 1440 // 24 hours
+        }
+      })
+    });
+
+    const xummData = await xummResponse.json();
+
+    if (xummData.uuid) {
+      res.json({
+        success: true,
+        qr: xummData.refs.qr_png,
+        uuid: xummData.uuid,
+        deeplink: xummData.next.always,
+        calculation: calculation,
+        message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
+      });
+    } else {
+      throw new Error('Failed to create XUMM payload');
+    }
+
+  } catch (error) {
+    console.error('❌ Presale buy error:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to create presale purchase"
+    });
+  }
+});
+
 export default router;
 
