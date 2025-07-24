@@ -895,6 +895,66 @@ router.get("/claimed-list", async (req, res) => {
   }
 });
 
+// ✅ POST /api/airdrop/trustline/qr - Generate XUMM trustline QR code
+router.post("/trustline/qr", async (req, res) => {
+  try {
+    // Create XUMM payload for WALDO trustline setup
+    const payload = {
+      TransactionType: 'TrustSet',
+      LimitAmount: {
+        currency: 'WLO',
+        issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY',
+        value: '1000000000'
+      }
+    };
+
+    console.log('🔗 Creating XUMM trustline QR for WALDO');
+
+    // Create XUMM sign request
+    const xummResponse = await fetch('https://xumm.app/api/v1/platform/payload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': process.env.XUMM_API_KEY,
+        'X-API-Secret': process.env.XUMM_API_SECRET
+      },
+      body: JSON.stringify({
+        txjson: payload,
+        options: {
+          submit: false, // Don't auto-submit, just set trustline
+          multisign: false,
+          expire: 1440 // 24 hours
+        }
+      })
+    });
+
+    const xummData = await xummResponse.json();
+    console.log('XUMM Response:', xummData);
+
+    if (xummData.uuid && xummData.refs && xummData.refs.qr_png) {
+      console.log('✅ XUMM trustline QR created successfully');
+      res.json({
+        success: true,
+        qr: xummData.refs.qr_png,
+        uuid: xummData.uuid,
+        deeplink: xummData.next.always,
+        message: 'Scan with Xaman to set WALDO trustline'
+      });
+    } else {
+      console.error('❌ XUMM API error:', xummData);
+      throw new Error('Failed to create XUMM trustline payload');
+    }
+
+  } catch (error) {
+    console.error('❌ Trustline QR error:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to create trustline QR code",
+      detail: error.message
+    });
+  }
+});
+
 export default router;
 
 
