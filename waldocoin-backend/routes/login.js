@@ -79,6 +79,42 @@ router.get("/status", async (req, res) => {
   }
 });
 
+// Create trustline QR code (same as login but for trustline)
+router.get("/trustline", async (req, res) => {
+  try {
+    // TrustSet transaction for WALDO trustline
+    const payload = {
+      txjson: {
+        TransactionType: "TrustSet",
+        LimitAmount: {
+          currency: "WLO",
+          issuer: "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY",
+          value: "1000000000"
+        }
+      }
+    };
+
+    const created = await xummClient.payload.create(payload);
+
+    console.log("XUMM Trustline Payload Created:", {
+      uuid: created.uuid,
+      qr_png: created.refs.qr_png,
+      qr_uri: created.refs.qr_uri
+    });
+
+    // Return QR with Xaman logo
+    res.json({
+      qr: created.refs.qr_png,
+      uuid: created.uuid,
+      refs: created.refs,
+      next: created.next
+    });
+  } catch (err) {
+    console.error("❌ Error creating trustline QR:", err.message);
+    res.status(500).json({ error: "Failed to create XUMM trustline payload", details: err.message });
+  }
+});
+
 export default router;
 
 

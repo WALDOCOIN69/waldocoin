@@ -982,36 +982,22 @@ function openTrustlineLink() {
   showToast("🔗 Opening XRPL Services to set trustline", "info");
 }
 
-// Generate XUMM trustline QR using working login endpoint
+// Generate XUMM trustline QR using dedicated trustline endpoint
 async function generateTrustlineQR() {
   const qrContainer = document.getElementById('trustlineQR');
 
   try {
-    console.log('🔗 Using login endpoint for trustline QR...');
+    console.log('🔗 Getting XUMM trustline QR...');
 
-    // Use the working login endpoint to generate XUMM QR
-    const response = await fetch('https://waldocoin-backend-api.onrender.com/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        TransactionType: 'TrustSet',
-        LimitAmount: {
-          currency: 'WLO',
-          issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY',
-          value: '1000000000'
-        }
-      })
-    });
-
+    // Use the new trustline endpoint (same as login but for trustlines)
+    const response = await fetch('https://waldocoin-backend-api.onrender.com/api/login/trustline');
     const data = await response.json();
 
     if (data.qr) {
       console.log('✅ Got XUMM trustline QR with Xaman logo!');
       qrContainer.innerHTML = `<img src="${data.qr}" style="width:120px; height:120px; border-radius:6px;" alt="XUMM Trustline QR" />`;
     } else {
-      throw new Error('No QR returned from login endpoint');
+      throw new Error('No QR returned from trustline endpoint');
     }
 
   } catch (error) {
