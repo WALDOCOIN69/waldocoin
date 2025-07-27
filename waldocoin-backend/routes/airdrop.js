@@ -37,7 +37,10 @@ router.post("/", async (req, res) => {
 
   // Admin override handling
   const isAdminOverride = adminOverride === true;
-  let airdropAmount = AIRDROP_AMOUNT;
+
+  // Get dynamic airdrop amount from Redis
+  const storedAmount = await redis.get("airdrop:amount");
+  let airdropAmount = storedAmount || AIRDROP_AMOUNT;
 
   if (isAdminOverride) {
     // Admin override - validate admin wallet and custom amount
@@ -995,6 +998,72 @@ router.post("/add-missing-wallet", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to add wallet to tracking"
+    });
+  }
+});
+
+// ✅ POST /api/airdrop/set-amount - Change airdrop amount (admin only)
+router.post("/set-amount", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const { amount } = req.body;
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Validate amount
+    if (!amount || amount <= 0 || amount > 1000000) {
+      return res.status(400).json({
+        success: false,
+        error: "Amount must be between 1 and 1,000,000 WALDO"
+      });
+    }
+
+    // Convert to proper format (6 decimal places)
+    const formattedAmount = parseFloat(amount).toFixed(6);
+
+    // Store in Redis
+    await redis.set("airdrop:amount", formattedAmount);
+
+    console.log(`✅ Admin changed airdrop amount to: ${formattedAmount} WALDO`);
+
+    res.json({
+      success: true,
+      message: "Airdrop amount updated successfully",
+      newAmount: formattedAmount,
+      previousAmount: "50000.000000"
+    });
+
+  } catch (error) {
+    console.error('❌ Error setting airdrop amount:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to update airdrop amount"
+    });
+  }
+});
+
+// ✅ GET /api/airdrop/get-amount - Get current airdrop amount
+router.get("/get-amount", async (req, res) => {
+  try {
+    // Get amount from Redis, fallback to default
+    const storedAmount = await redis.get("airdrop:amount");
+    const currentAmount = storedAmount || "50000.000000";
+
+    res.json({
+      success: true,
+      amount: currentAmount,
+      source: storedAmount ? "Redis override" : "Default fallback"
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting airdrop amount:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get airdrop amount",
+      amount: "50000.000000"
     });
   }
 });

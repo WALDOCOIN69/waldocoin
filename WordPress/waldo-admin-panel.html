@@ -972,6 +972,46 @@
         Use this only when automated airdrop system fails or for emergency distributions.
       </div>
 
+      <!-- Airdrop Amount Control -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">💰 Airdrop Amount Control</div>
+
+        <div class="grid-2">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Current Airdrop Amount</label>
+              <div id="currentAirdropAmount" class="info-display" style="color: #25c2a0; font-size: 18px; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Amount of WALDO tokens per airdrop claim</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Set New Amount</label>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="number" id="newAirdropAmount" placeholder="20000" min="1" max="1000000"
+                       style="flex: 1; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                <button type="button" class="btn btn-primary" onclick="updateAirdropAmount()">
+                  💰 Update Amount
+                </button>
+              </div>
+              <small class="help-text">
+                Enter new amount (1 - 1,000,000 WALDO). Current claims will use new amount.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-display" style="margin-top: 15px;">
+          <div class="stat-item">
+            <span class="stat-label">⚠️ Important:</span>
+            <span class="stat-value" style="color: #ffd93d;">Changes apply to all future airdrops immediately</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Claimed Wallets Export -->
       <div class="admin-card margin-bottom-30">
         <div class="card-title">📊 Claimed Wallets Export</div>
@@ -5542,6 +5582,73 @@ This action cannot be undone. Continue?`;
       }
     }
 
+    // Airdrop Amount Management Functions
+    async function getCurrentAirdropAmount() {
+      try {
+        const response = await fetch(`${API_BASE}/api/airdrop/get-amount`);
+        const data = await response.json();
+
+        if (data.success) {
+          const amount = parseFloat(data.amount).toLocaleString();
+          document.getElementById('currentAirdropAmount').textContent = `${amount} WALDO`;
+          console.log(`✅ Current airdrop amount: ${amount} WALDO`);
+        } else {
+          document.getElementById('currentAirdropAmount').textContent = '50,000 WALDO (default)';
+        }
+      } catch (error) {
+        console.error('Failed to get current airdrop amount:', error);
+        document.getElementById('currentAirdropAmount').textContent = '50,000 WALDO (default)';
+      }
+    }
+
+    async function updateAirdropAmount() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      const newAmount = document.getElementById('newAirdropAmount').value.trim();
+
+      if (!newAmount || isNaN(newAmount) || newAmount <= 0 || newAmount > 1000000) {
+        showAlert('Please enter a valid amount between 1 and 1,000,000', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Updating airdrop amount...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/set-amount`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            amount: parseFloat(newAmount)
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`✅ Airdrop amount updated to ${parseFloat(data.newAmount).toLocaleString()} WALDO!`, 'success');
+
+          // Clear input
+          document.getElementById('newAirdropAmount').value = '';
+
+          // Refresh current amount display
+          getCurrentAirdropAmount();
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Update airdrop amount error:', error);
+        showAlert('❌ Failed to update airdrop amount', 'error');
+      }
+    }
+
     // Initialize login check when page loads
     document.addEventListener('DOMContentLoaded', function() {
       checkExistingLogin();
@@ -5552,6 +5659,8 @@ This action cannot be undone. Continue?`;
         loadTrustlineCount();
         // Load claimed wallets info
         updateClaimedWalletsInfo();
+        // Load current airdrop amount
+        getCurrentAirdropAmount();
       }, 1000);
     });
   </script>
