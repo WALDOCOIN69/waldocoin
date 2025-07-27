@@ -827,11 +827,7 @@ router.get("/export-claimed", async (req, res) => {
 
     console.log(`📊 Exporting ${claimedWallets.length} claimed wallets (${manualWallets.length} manual)`);
 
-    // Get current airdrop amount for display
-    const storedAmount = await redis.get("airdrop:amount");
-    const displayAmount = storedAmount ? parseFloat(storedAmount).toFixed(0) : "50000";
-
-    // Create CSV content
+    // Create CSV content - NOTE: Historical amounts not tracked, showing 50k for all
     let csvContent = "Wallet Address,Claim Type,Amount (WALDO),Status\n";
 
     // Add each wallet to CSV with type distinction
@@ -839,7 +835,8 @@ router.get("/export-claimed", async (req, res) => {
       const claimOrder = index + 1;
       const isManual = manualWallets.includes(wallet);
       const claimType = isManual ? `Manual Airdrop #${claimOrder}` : `Regular Claim #${claimOrder}`;
-      csvContent += `${wallet},${claimType},${displayAmount},Claimed\n`;
+      // NOTE: We don't have historical amount data, so showing 50k for all historical claims
+      csvContent += `${wallet},${claimType},50000,Claimed\n`;
     });
 
     // Set headers for CSV download
@@ -875,10 +872,6 @@ router.get("/claimed-list", async (req, res) => {
     const manualWallets = await redis.sMembers("airdrop:manual_wallets");
     const totalClaimed = await redis.get(AIRDROP_COUNT_KEY) || 0;
 
-    // Get current airdrop amount for display
-    const storedAmount = await redis.get("airdrop:amount");
-    const displayAmount = storedAmount ? parseFloat(storedAmount).toFixed(0) : "50000";
-
     console.log(`📊 Returning ${claimedWallets.length} claimed wallets (${manualWallets.length} manual)`);
 
     res.json({
@@ -890,7 +883,7 @@ router.get("/claimed-list", async (req, res) => {
       wallets: claimedWallets.map((wallet, index) => ({
         wallet: wallet,
         claimOrder: index + 1,
-        amount: displayAmount,
+        amount: "50000", // NOTE: Historical amounts not tracked, showing 50k for all
         claimType: manualWallets.includes(wallet) ? "Manual Airdrop" : "Regular Claim",
         status: "Claimed"
       })),
