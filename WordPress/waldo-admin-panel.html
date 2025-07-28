@@ -1114,6 +1114,126 @@
         </div>
       </div>
 
+      <!-- Business Intelligence & ROI Analytics -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">📈 Business Intelligence & ROI Analytics</div>
+
+        <div class="grid-4">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Conversion Rate</label>
+              <div id="conversionRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Trustline to claim conversion</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Cost Per User</label>
+              <div id="costPerUser" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Average WALDO cost per user</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Growth Rate</label>
+              <div id="growthRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">7-day growth trend</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">ROI Score</label>
+              <div id="roiScore" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Return on investment</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn btn-primary" onclick="loadROIAnalytics()">
+            📈 Load ROI Analytics
+          </button>
+          <button type="button" class="btn btn-info" onclick="loadTokenDistribution()">
+            🪙 Token Distribution
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="loadMarketingPerformance()">
+            📢 Marketing Performance
+          </button>
+        </div>
+
+        <div id="roiDetails" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+          <!-- ROI analytics details will appear here -->
+        </div>
+      </div>
+
+      <!-- Advanced Reports & Executive Dashboard -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">📋 Advanced Reports & Executive Dashboard</div>
+
+        <div class="grid-3">
+          <div>
+            <div class="form-group">
+              <label class="form-label">System Health</label>
+              <div id="executiveSystemHealth" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Overall system status</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Performance Score</label>
+              <div id="performanceScore" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Overall performance rating</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Risk Level</label>
+              <div id="riskLevel" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Current risk assessment</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn btn-primary" onclick="loadAdvancedReports()">
+            📋 Generate Executive Report
+          </button>
+          <button type="button" class="btn btn-info" onclick="exportExecutiveReport()">
+            📄 Export Executive Summary
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="toggleExecutiveView()">
+            👁️ Toggle Executive View
+          </button>
+        </div>
+
+        <div id="executiveReportContainer" style="display: none; margin-top: 15px;">
+          <div id="executiveReport" style="max-height: 500px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 15px; background: #222;">
+            <div style="color: #666; text-align: center; padding: 20px;">
+              Click "Generate Executive Report" to view comprehensive analytics
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Enhanced Analytics Dashboard -->
       <div class="admin-card margin-bottom-30">
         <div class="card-title">📊 Enhanced Analytics Dashboard</div>
@@ -6417,24 +6537,378 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    // Initialize login check when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      checkExistingLogin();
-      // Auto-load current password when page loads (with small delay to ensure DOM is ready)
-      setTimeout(function() {
-        getCurrentAirdropPassword();
-        // Also auto-refresh trustline count to get latest data
-        loadTrustlineCount();
-        // Load claimed wallets info
-        updateClaimedWalletsInfo();
-        // Load current airdrop amount
-        getCurrentAirdropAmount();
-        // Load system health
-        refreshSystemHealth();
-        // Load enhanced analytics
-        loadEnhancedAnalytics();
-      }, 1000);
-    });
+    // Business Intelligence Functions
+    async function loadROIAnalytics() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading ROI analytics...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/roi-analytics`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update dashboard elements
+          document.getElementById('conversionRate').textContent = `${data.overview.conversionRate}%`;
+          document.getElementById('costPerUser').textContent = `${data.overview.averageCostPerUser.toLocaleString()} WALDO`;
+          document.getElementById('growthRate').textContent = `${data.growthMetrics.weeklyGrowthRate} claims/week`;
+          document.getElementById('roiScore').textContent = `${data.campaignEffectiveness.roi}%`;
+
+          // Show detailed ROI analytics
+          const roiDiv = document.getElementById('roiDetails');
+          let roiHTML = `
+            <div class="grid-3" style="margin-bottom: 15px;">
+              <div>
+                <strong>📊 Financial Metrics</strong><br>
+                <span style="color: #25c2a0;">Total Value: $${data.financialMetrics.totalValueDistributed.toFixed(2)}</span><br>
+                <span style="color: #ffd93d;">Cost/Acquisition: $${data.financialMetrics.costPerAcquisition}</span><br>
+                <span style="color: #25c2a0;">Monthly Projection: $${data.financialMetrics.projectedMonthlyCost.toFixed(2)}</span>
+              </div>
+              <div>
+                <strong>📈 Growth Metrics</strong><br>
+                <span style="color: #25c2a0;">24h Claims: ${data.growthMetrics.claims24h}</span><br>
+                <span style="color: #25c2a0;">7d Claims: ${data.growthMetrics.claims7d}</span><br>
+                <span style="color: #ffd93d;">Daily Average: ${data.growthMetrics.dailyGrowthRate.toFixed(1)}</span>
+              </div>
+              <div>
+                <strong>🎯 Campaign Performance</strong><br>
+                <span style="color: #25c2a0;">Reach: ${data.campaignEffectiveness.reach.toLocaleString()}</span><br>
+                <span style="color: #25c2a0;">Engagement: ${data.campaignEffectiveness.engagement}</span><br>
+                <span style="color: #ffd93d;">Conversion: ${data.campaignEffectiveness.conversionRate}%</span>
+              </div>
+            </div>
+          `;
+
+          if (data.recommendations) {
+            roiHTML += '<div style="background: #333; padding: 10px; border-radius: 4px; margin-bottom: 10px;"><strong>💡 Recommendations:</strong><br>';
+            Object.entries(data.recommendations).forEach(([key, value]) => {
+              if (value === true) {
+                const recommendation = key.replace(/([A-Z])/g, ' $1').toLowerCase();
+                roiHTML += `<span style="color: #ffd93d;">• ${recommendation}</span><br>`;
+              }
+            });
+            roiHTML += '</div>';
+          }
+
+          roiDiv.innerHTML = roiHTML;
+          roiDiv.style.display = 'block';
+
+          showAlert('✅ ROI analytics loaded', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('ROI analytics error:', error);
+        showAlert('❌ Failed to load ROI analytics', 'error');
+      }
+    }
+
+    async function loadTokenDistribution() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading token distribution analysis...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/token-distribution`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const roiDiv = document.getElementById('roiDetails');
+          let distributionHTML = `
+            <div class="grid-2" style="margin-bottom: 15px;">
+              <div>
+                <strong>🪙 Distribution Overview</strong><br>
+                <span style="color: #25c2a0;">Total Wallets: ${data.distributionOverview.totalWallets}</span><br>
+                <span style="color: #25c2a0;">Total Distributed: ${data.distributionOverview.totalDistributedFormatted}</span><br>
+                <span style="color: #ffd93d;">Average Amount: ${data.distributionOverview.averageAmount.toLocaleString()}</span><br>
+                <span style="color: #25c2a0;">Amount Levels: ${data.distributionOverview.uniqueAmountLevels}</span>
+              </div>
+              <div>
+                <strong>📊 Wallet Analysis</strong><br>
+                <span style="color: #25c2a0;">Current Balance: ${data.walletAnalysis.currentBalanceFormatted}</span><br>
+                <span style="color: #ffd93d;">Remaining Capacity: ${data.walletAnalysis.remainingCapacity}</span><br>
+                <span style="color: #25c2a0;">Projected Distribution: ${data.walletAnalysis.projectedDistributionFormatted}</span><br>
+                <span style="color: #ffd93d;">Efficiency: ${data.insights.distributionEfficiency}%</span>
+              </div>
+            </div>
+          `;
+
+          if (data.concentrationMetrics.mostCommonAmount) {
+            distributionHTML += `
+              <div style="background: #333; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                <strong>📈 Most Common Amount:</strong>
+                ${data.concentrationMetrics.mostCommonAmount.amount.toLocaleString()} WALDO
+                (${data.concentrationMetrics.mostCommonAmount.count} wallets, ${data.concentrationMetrics.mostCommonAmount.percentage}%)
+              </div>
+            `;
+          }
+
+          distributionHTML += `
+            <div style="background: #222; padding: 10px; border-radius: 4px;">
+              <strong>💡 Insights:</strong><br>
+              <span style="color: #ffd93d;">• ${data.insights.recommendedOptimization}</span><br>
+              <span style="color: #ffd93d;">• ${data.insights.concentrationRisk}</span>
+            </div>
+          `;
+
+          roiDiv.innerHTML = distributionHTML;
+          roiDiv.style.display = 'block';
+
+          showAlert('✅ Token distribution analysis loaded', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Token distribution error:', error);
+        showAlert('❌ Failed to load token distribution', 'error');
+      }
+    }
+
+    async function loadMarketingPerformance() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading marketing performance...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/marketing-performance`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const roiDiv = document.getElementById('roiDetails');
+          let marketingHTML = `
+            <div class="grid-3" style="margin-bottom: 15px;">
+              <div>
+                <strong>📊 Funnel Analysis</strong><br>
+                <span style="color: #25c2a0;">Awareness: ${data.funnelAnalysis.awareness.toLocaleString()}</span><br>
+                <span style="color: #25c2a0;">Interest: ${data.funnelAnalysis.interest}</span><br>
+                <span style="color: #ffd93d;">Conversion: ${data.funnelAnalysis.conversionRate}%</span><br>
+                <span style="color: #e74c3c;">Dropoff: ${data.funnelAnalysis.dropoffRate}%</span>
+              </div>
+              <div>
+                <strong>📈 Growth Analysis</strong><br>
+                <span style="color: #25c2a0;">Daily Average: ${data.growthAnalysis.dailyAverage}</span><br>
+                <span style="color: #25c2a0;">Weekly Average: ${data.growthAnalysis.weeklyAverage}</span><br>
+                <span style="color: ${data.growthAnalysis.growthTrend === 'increasing' ? '#25c2a0' : '#e74c3c'};">
+                  Trend: ${data.growthAnalysis.growthTrend}
+                </span><br>
+                <span style="color: #ffd93d;">Velocity: ${data.growthAnalysis.velocityScore}</span>
+              </div>
+              <div>
+                <strong>🎯 KPIs</strong><br>
+                <span style="color: #25c2a0;">Total Reach: ${data.kpis.totalReach.toLocaleString()}</span><br>
+                <span style="color: #25c2a0;">Engagement: ${data.kpis.totalEngagement}</span><br>
+                <span style="color: #ffd93d;">Engagement Rate: ${data.kpis.engagementRate}%</span><br>
+                <span style="color: #25c2a0;">Avg Value: ${data.kpis.averageClaimValue.toLocaleString()}</span>
+              </div>
+            </div>
+          `;
+
+          // Channel performance
+          marketingHTML += '<div style="background: #333; padding: 10px; border-radius: 4px; margin-bottom: 10px;"><strong>📢 Channel Performance (Estimated):</strong><br>';
+          Object.entries(data.channelPerformance).forEach(([channel, metrics]) => {
+            marketingHTML += `
+              <span style="color: #25c2a0;">${channel.toUpperCase()}:</span>
+              ${metrics.estimated_conversions} conversions,
+              $${metrics.estimated_cost_per_acquisition} CPA<br>
+            `;
+          });
+          marketingHTML += '</div>';
+
+          // Recommendations
+          if (data.recommendations.length > 0) {
+            marketingHTML += '<div style="background: #222; padding: 10px; border-radius: 4px;"><strong>💡 Recommendations:</strong><br>';
+            data.recommendations.forEach(rec => {
+              marketingHTML += `<span style="color: #ffd93d;">• ${rec}</span><br>`;
+            });
+            marketingHTML += '</div>';
+          }
+
+          roiDiv.innerHTML = marketingHTML;
+          roiDiv.style.display = 'block';
+
+          showAlert('✅ Marketing performance loaded', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Marketing performance error:', error);
+        showAlert('❌ Failed to load marketing performance', 'error');
+      }
+    }
+
+    // Executive Reporting Functions
+    async function loadAdvancedReports() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Generating executive report...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/advanced-reports`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update executive dashboard elements
+          const healthColor = data.executiveSummary.systemHealth === 'healthy' ? '#25c2a0' :
+                              data.executiveSummary.systemHealth === 'warning' ? '#ffd93d' : '#e74c3c';
+          document.getElementById('executiveSystemHealth').style.color = healthColor;
+          document.getElementById('executiveSystemHealth').textContent = data.executiveSummary.systemHealth.toUpperCase();
+
+          const performanceColor = data.executiveSummary.overallPerformance >= 80 ? '#25c2a0' :
+                                   data.executiveSummary.overallPerformance >= 60 ? '#ffd93d' : '#e74c3c';
+          document.getElementById('performanceScore').style.color = performanceColor;
+          document.getElementById('performanceScore').textContent = `${data.executiveSummary.overallPerformance}%`;
+
+          const riskColor = data.executiveSummary.riskLevel === 'low' ? '#25c2a0' :
+                           data.executiveSummary.riskLevel === 'medium' ? '#ffd93d' : '#e74c3c';
+          document.getElementById('riskLevel').style.color = riskColor;
+          document.getElementById('riskLevel').textContent = data.executiveSummary.riskLevel.toUpperCase();
+
+          // Generate comprehensive executive report
+          const reportDiv = document.getElementById('executiveReport');
+          let reportHTML = `
+            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 15px;">
+              <h2 style="color: #25c2a0; margin: 0;">WALDOCOIN Airdrop System</h2>
+              <h3 style="color: #ffd93d; margin: 5px 0;">Executive Report</h3>
+              <p style="color: #666; margin: 0; font-size: 12px;">Generated: ${new Date().toLocaleString()}</p>
+            </div>
+
+            <div class="grid-3" style="margin-bottom: 20px;">
+              <div style="background: #333; padding: 15px; border-radius: 6px;">
+                <h4 style="color: #25c2a0; margin-top: 0;">📊 Executive Summary</h4>
+                <p><strong>Total Claims:</strong> ${data.executiveSummary.totalClaims.toLocaleString()}</p>
+                <p><strong>Remaining Capacity:</strong> ${data.executiveSummary.remainingCapacity}</p>
+                <p><strong>System Health:</strong> <span style="color: ${healthColor};">${data.executiveSummary.systemHealth.toUpperCase()}</span></p>
+                <p><strong>Reliability:</strong> ${data.executiveSummary.reliabilityScore}%</p>
+                <p><strong>Risk Level:</strong> <span style="color: ${riskColor};">${data.executiveSummary.riskLevel.toUpperCase()}</span></p>
+              </div>
+
+              <div style="background: #333; padding: 15px; border-radius: 6px;">
+                <h4 style="color: #25c2a0; margin-top: 0;">⚙️ Operational Metrics</h4>
+                <p><strong>Capacity Utilization:</strong> ${data.operationalMetrics.capacityUtilization}%</p>
+                <p><strong>Processing Cost:</strong> $${data.operationalMetrics.averageProcessingCost.toFixed(3)}</p>
+                <p><strong>Distributor Balance:</strong> ${data.operationalMetrics.distributorBalanceFormatted}</p>
+                <p><strong>Failure Rate:</strong> ${data.operationalMetrics.failureRate}%</p>
+              </div>
+
+              <div style="background: #333; padding: 15px; border-radius: 6px;">
+                <h4 style="color: #25c2a0; margin-top: 0;">🔒 Security Metrics</h4>
+                <p><strong>Blacklisted Wallets:</strong> ${data.securityMetrics.blacklistedWallets}</p>
+                <p><strong>Whitelisted Wallets:</strong> ${data.securityMetrics.whitelistedWallets}</p>
+                <p><strong>Manual Interventions:</strong> ${data.securityMetrics.manualInterventions}</p>
+                <p><strong>Security Score:</strong> ${data.securityMetrics.securityScore}%</p>
+              </div>
+            </div>
+          `;
+
+          // Add recommendations if available
+          if (data.performanceBenchmarks.recommendations.length > 0) {
+            reportHTML += `
+              <div style="background: #222; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <h4 style="color: #ffd93d; margin-top: 0;">💡 Strategic Recommendations</h4>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                  ${data.performanceBenchmarks.recommendations.map(rec => `<li style="color: #ffd93d;">${rec}</li>`).join('')}
+                </ul>
+              </div>
+            `;
+          }
+
+          reportDiv.innerHTML = reportHTML;
+
+          showAlert('✅ Executive report generated', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Advanced reports error:', error);
+        showAlert('❌ Failed to generate executive report', 'error');
+      }
+    }
+
+    function toggleExecutiveView() {
+      const container = document.getElementById('executiveReportContainer');
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    function exportExecutiveReport() {
+      const reportContent = document.getElementById('executiveReport').innerHTML;
+      if (!reportContent || reportContent.includes('Click "Generate Executive Report"')) {
+        showAlert('Please generate the executive report first', 'error');
+        return;
+      }
+
+      // Create a simple HTML export
+      const exportHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>WALDOCOIN Executive Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+            h2, h3, h4 { color: #25c2a0; }
+            p { margin: 8px 0; }
+            ul { margin: 5px 0; padding-left: 20px; }
+          </style>
+        </head>
+        <body>
+          ${reportContent}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([exportHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `WALDOCOIN_Executive_Report_${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showAlert('✅ Executive report exported', 'success');
+    }
   </script>
 
   </div> <!-- Close adminPanel -->
