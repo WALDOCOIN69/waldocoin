@@ -19,8 +19,33 @@ const AIRDROP_COUNT_KEY = "airdrop:count"; // Redis counter for total airdrops
 router.post("/", async (req, res) => {
   const { wallet, password, amount, adminOverride, reason } = req.body;
 
+  // Track user behavior for analytics
+  const userIP = req.ip || req.connection.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+
+  // Log attempt for behavior tracking
+  const attemptData = {
+    wallet: wallet,
+    ip: userIP,
+    userAgent: userAgent,
+    timestamp: new Date().toISOString(),
+    hasPassword: !!password,
+    passwordLength: password ? password.length : 0,
+    isAdmin: !!adminOverride
+  };
+
+  // Store attempt (keep for 7 days for analytics)
+  const attemptKey = `attempt:${wallet}:${Date.now()}`;
+  await redis.hSet(attemptKey, attemptData);
+  await redis.expire(attemptKey, 7 * 24 * 60 * 60); // 7 days
+
+  // Track attempts per IP (rate limiting data)
+  await redis.incr(`ip_attempts:${userIP}`);
+  await redis.expire(`ip_attempts:${userIP}`, 60 * 60); // 1 hour window
+
   console.log(`🔍 Airdrop request received:`, {
     wallet: wallet ? `${wallet.slice(0,8)}...${wallet.slice(-6)}` : 'null',
+    ip: userIP,
     hasPassword: !!password,
     passwordLength: password ? password.length : 0,
     amount,
@@ -45,6 +70,33 @@ router.post("/", async (req, res) => {
   if (!wallet || typeof wallet !== 'string' || !wallet.startsWith("r") || wallet.length < 25 || wallet.length > 34) {
     console.log(`❌ Invalid wallet format:`, { wallet, type: typeof wallet, length: wallet?.length });
     return res.status(400).json({ success: false, error: "Invalid wallet address format" });
+  }
+
+  // Check blacklist/whitelist (skip for admin overrides)
+  if (!isAdminOverride) {
+    const isBlacklisted = await redis.sIsMember('airdrop:blacklist', wallet);
+    if (isBlacklisted) {
+      console.log(`❌ Wallet blacklisted: ${wallet}`);
+      return res.status(403).json({
+        success: false,
+        error: "❌ Wallet is blacklisted",
+        blacklisted: true
+      });
+    }
+
+    // Optional: If whitelist exists and has members, only allow whitelisted wallets
+    const whitelistSize = await redis.sCard('airdrop:whitelist');
+    if (whitelistSize > 0) {
+      const isWhitelisted = await redis.sIsMember('airdrop:whitelist', wallet);
+      if (!isWhitelisted) {
+        console.log(`❌ Wallet not whitelisted: ${wallet}`);
+        return res.status(403).json({
+          success: false,
+          error: "❌ Wallet not on whitelist",
+          whitelisted: false
+        });
+      }
+    }
   }
 
   // Admin override handling
@@ -184,10 +236,28 @@ router.post("/", async (req, res) => {
 
     if (result.result.meta.TransactionResult !== "tesSUCCESS") {
       console.error("❌ TX failed:", result.result.meta);
+
+      // Log failed transaction for retry system
+      const failedTx = {
+        wallet: wallet,
+        amount: airdropAmount,
+        timestamp: new Date().toISOString(),
+        error: result.result.meta.TransactionResult,
+        txBlob: signed.tx_blob,
+        retryCount: 0,
+        type: isAdminOverride ? 'admin' : 'regular',
+        reason: isAdminOverride ? reason : 'regular_claim'
+      };
+
+      await redis.hSet(`failed_tx:${wallet}:${Date.now()}`, failedTx);
+      await redis.lPush('failed_transactions', `${wallet}:${Date.now()}`);
+      await redis.lTrim('failed_transactions', 0, 999); // Keep last 1000 failed TXs
+
       return res.status(500).json({
         success: false,
         error: "Transaction failed",
-        detail: result.result.meta.TransactionResult
+        detail: result.result.meta.TransactionResult,
+        retryable: true
       });
     }
 
@@ -1455,6 +1525,466 @@ router.get("/system-health", async (req, res) => {
       success: false,
       error: "Failed to check system health",
       timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ✅ GET /api/airdrop/failed-transactions - Get failed transactions for retry
+router.get("/failed-transactions", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get failed transaction IDs
+    const failedTxIds = await redis.lRange('failed_transactions', 0, 49); // Last 50 failed TXs
+
+    // Get detailed failed transaction data
+    const failedTxs = await Promise.all(
+      failedTxIds.map(async (id) => {
+        try {
+          const txData = await redis.hGetAll(`failed_tx:${id}`);
+          return txData.timestamp ? {
+            id: id,
+            ...txData,
+            retryCount: parseInt(txData.retryCount) || 0
+          } : null;
+        } catch (error) {
+          console.error(`Error getting failed TX ${id}:`, error);
+          return null;
+        }
+      })
+    );
+
+    // Filter out null entries and sort by timestamp
+    const validFailedTxs = failedTxs.filter(tx => tx !== null)
+                                   .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({
+      success: true,
+      failedTransactions: validFailedTxs,
+      totalFailed: validFailedTxs.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting failed transactions:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get failed transactions"
+    });
+  }
+});
+
+// ✅ POST /api/airdrop/retry-transaction - Retry a failed transaction
+router.post("/retry-transaction", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const { transactionId } = req.body;
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    if (!transactionId) {
+      return res.status(400).json({ success: false, error: "Transaction ID required" });
+    }
+
+    // Get failed transaction data
+    const txData = await redis.hGetAll(`failed_tx:${transactionId}`);
+
+    if (!txData.wallet) {
+      return res.status(404).json({ success: false, error: "Failed transaction not found" });
+    }
+
+    // Check retry limit
+    const retryCount = parseInt(txData.retryCount) || 0;
+    if (retryCount >= 3) {
+      return res.status(400).json({
+        success: false,
+        error: "Maximum retry attempts reached (3)"
+      });
+    }
+
+    // Attempt to resubmit transaction
+    const client = new xrpl.Client("wss://s1.ripple.com");
+    await client.connect();
+
+    try {
+      const result = await client.submitAndWait(txData.txBlob);
+
+      if (result.result.meta.TransactionResult === "tesSUCCESS") {
+        // Success! Remove from failed list and add to successful claims
+        await redis.del(`failed_tx:${transactionId}`);
+        await redis.lRem('failed_transactions', 1, transactionId);
+
+        // Add to successful claims tracking
+        await redis.sAdd(AIRDROP_REDIS_KEY, txData.wallet);
+        if (txData.type !== 'admin') {
+          await redis.incr(AIRDROP_COUNT_KEY);
+        }
+
+        // Store successful claim data
+        const claimData = {
+          wallet: txData.wallet,
+          amount: txData.amount,
+          timestamp: new Date().toISOString(),
+          txHash: result.result.hash,
+          type: txData.type,
+          reason: txData.reason,
+          retried: true,
+          originalFailure: txData.error
+        };
+        await redis.hSet(`airdrop:claim:${txData.wallet}`, claimData);
+
+        // Log admin activity
+        await logAdminActivity('TRANSACTION_RETRY_SUCCESS', {
+          ip: req.ip,
+          userAgent: req.headers['user-agent']
+        }, {
+          wallet: txData.wallet,
+          amount: txData.amount,
+          originalError: txData.error,
+          retryCount: retryCount + 1,
+          txHash: result.result.hash
+        });
+
+        await client.disconnect();
+
+        res.json({
+          success: true,
+          message: "Transaction retry successful",
+          txHash: result.result.hash,
+          wallet: txData.wallet,
+          amount: txData.amount
+        });
+
+      } else {
+        // Still failed, increment retry count
+        await redis.hSet(`failed_tx:${transactionId}`, 'retryCount', retryCount + 1);
+        await redis.hSet(`failed_tx:${transactionId}`, 'lastRetry', new Date().toISOString());
+        await redis.hSet(`failed_tx:${transactionId}`, 'lastError', result.result.meta.TransactionResult);
+
+        await client.disconnect();
+
+        res.json({
+          success: false,
+          error: "Transaction retry failed",
+          detail: result.result.meta.TransactionResult,
+          retryCount: retryCount + 1,
+          canRetry: retryCount + 1 < 3
+        });
+      }
+
+    } catch (submitError) {
+      await client.disconnect();
+
+      // Update retry count and error
+      await redis.hSet(`failed_tx:${transactionId}`, 'retryCount', retryCount + 1);
+      await redis.hSet(`failed_tx:${transactionId}`, 'lastRetry', new Date().toISOString());
+      await redis.hSet(`failed_tx:${transactionId}`, 'lastError', submitError.message);
+
+      res.json({
+        success: false,
+        error: "Transaction retry failed",
+        detail: submitError.message,
+        retryCount: retryCount + 1,
+        canRetry: retryCount + 1 < 3
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error retrying transaction:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to retry transaction"
+    });
+  }
+});
+
+// ✅ Bulk Wallet Operations
+router.post("/bulk-wallet-operation", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const { operation, wallets, reason } = req.body;
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    if (!operation || !wallets || !Array.isArray(wallets)) {
+      return res.status(400).json({
+        success: false,
+        error: "Operation and wallets array required"
+      });
+    }
+
+    const validOperations = ['blacklist', 'whitelist', 'remove_blacklist', 'remove_whitelist'];
+    if (!validOperations.includes(operation)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid operation. Must be: blacklist, whitelist, remove_blacklist, remove_whitelist"
+      });
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+    const results = [];
+
+    for (const wallet of wallets) {
+      try {
+        // Validate wallet format
+        if (!wallet || !wallet.startsWith('r') || wallet.length < 25) {
+          results.push({ wallet, success: false, error: 'Invalid wallet format' });
+          errorCount++;
+          continue;
+        }
+
+        switch (operation) {
+          case 'blacklist':
+            await redis.sAdd('airdrop:blacklist', wallet);
+            await redis.sRem('airdrop:whitelist', wallet); // Remove from whitelist if exists
+            break;
+          case 'whitelist':
+            await redis.sAdd('airdrop:whitelist', wallet);
+            await redis.sRem('airdrop:blacklist', wallet); // Remove from blacklist if exists
+            break;
+          case 'remove_blacklist':
+            await redis.sRem('airdrop:blacklist', wallet);
+            break;
+          case 'remove_whitelist':
+            await redis.sRem('airdrop:whitelist', wallet);
+            break;
+        }
+
+        results.push({ wallet, success: true });
+        successCount++;
+
+      } catch (walletError) {
+        results.push({ wallet, success: false, error: walletError.message });
+        errorCount++;
+      }
+    }
+
+    // Log admin activity
+    await logAdminActivity('BULK_WALLET_OPERATION', {
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    }, {
+      operation: operation,
+      totalWallets: wallets.length,
+      successCount: successCount,
+      errorCount: errorCount,
+      reason: reason || 'No reason provided'
+    });
+
+    res.json({
+      success: true,
+      message: `Bulk ${operation} operation completed`,
+      totalWallets: wallets.length,
+      successCount: successCount,
+      errorCount: errorCount,
+      results: results
+    });
+
+  } catch (error) {
+    console.error('❌ Error in bulk wallet operation:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to perform bulk wallet operation"
+    });
+  }
+});
+
+// ✅ GET /api/airdrop/analytics - Enhanced analytics dashboard
+router.get("/analytics", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Get basic stats
+    const totalClaims = await redis.get("airdrop:count") || 0;
+    const claimedWallets = await redis.sMembers(AIRDROP_REDIS_KEY);
+    const manualWallets = await redis.sMembers("airdrop:manual_wallets");
+    const blacklistedWallets = await redis.sCard('airdrop:blacklist');
+    const whitelistedWallets = await redis.sCard('airdrop:whitelist');
+
+    // Get failed transactions
+    const failedTxIds = await redis.lRange('failed_transactions', 0, -1);
+    const failedTxCount = failedTxIds.length;
+
+    // Calculate success rate
+    const totalAttempts = parseInt(totalClaims) + failedTxCount;
+    const successRate = totalAttempts > 0 ? ((parseInt(totalClaims) / totalAttempts) * 100).toFixed(2) : 100;
+
+    // Get recent activity (last 24h claims)
+    let recentClaims = 0;
+    for (const wallet of claimedWallets) {
+      try {
+        const claimData = await redis.hGetAll(`airdrop:claim:${wallet}`);
+        if (claimData.timestamp) {
+          const claimTime = new Date(claimData.timestamp);
+          if (claimTime > last24h) {
+            recentClaims++;
+          }
+        }
+      } catch (error) {
+        // Skip if no detailed data
+      }
+    }
+
+    // Get distributor wallet balance
+    let distributorBalance = 'Unknown';
+    try {
+      const balanceResponse = await fetch('https://s1.ripple.com:51234', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: 'account_lines',
+          params: [{
+            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            ledger_index: 'validated'
+          }]
+        }),
+        signal: AbortSignal.timeout(5000)
+      });
+
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json();
+        const waldoLine = balanceData.result?.lines?.find(line =>
+          line.currency === 'WLO' && line.account === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+        );
+
+        if (waldoLine) {
+          distributorBalance = parseFloat(waldoLine.balance).toLocaleString();
+        }
+      }
+    } catch (error) {
+      // Keep as 'Unknown'
+    }
+
+    // Get current airdrop amount
+    const currentAmount = await redis.get("airdrop:amount") || "50000.000000";
+    const amountPerClaim = parseFloat(currentAmount);
+
+    // Calculate total distributed
+    const totalDistributed = parseInt(totalClaims) * amountPerClaim;
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      overview: {
+        totalClaims: parseInt(totalClaims),
+        totalDistributed: totalDistributed,
+        totalDistributedFormatted: totalDistributed.toLocaleString(),
+        remainingClaims: 1000 - parseInt(totalClaims),
+        currentAmountPerClaim: amountPerClaim,
+        distributorBalance: distributorBalance,
+        successRate: parseFloat(successRate)
+      },
+      activity: {
+        recentClaims24h: recentClaims,
+        failedTransactions: failedTxCount,
+        totalAttempts: totalAttempts
+      },
+      walletManagement: {
+        regularClaims: claimedWallets.length - manualWallets.length,
+        manualAirdrops: manualWallets.length,
+        blacklistedWallets: blacklistedWallets,
+        whitelistedWallets: whitelistedWallets
+      },
+      system: {
+        emergencyStop: await redis.get("airdrop:emergency_stop") === "true",
+        emergencyReason: await redis.get("airdrop:emergency_reason")
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get analytics data"
+    });
+  }
+});
+
+// ✅ GET /api/airdrop/user-behavior - User behavior analytics
+router.get("/user-behavior", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get IP attempt data (top IPs by attempts)
+    const ipKeys = await redis.keys('ip_attempts:*');
+    const ipData = [];
+
+    for (const key of ipKeys.slice(0, 20)) { // Top 20 IPs
+      const ip = key.replace('ip_attempts:', '');
+      const attempts = await redis.get(key);
+      if (attempts && parseInt(attempts) > 1) {
+        ipData.push({
+          ip: ip,
+          attempts: parseInt(attempts),
+          suspicious: parseInt(attempts) > 10
+        });
+      }
+    }
+
+    // Sort by attempts
+    ipData.sort((a, b) => b.attempts - a.attempts);
+
+    // Get recent failed attempts patterns
+    const failedTxIds = await redis.lRange('failed_transactions', 0, 19); // Last 20 failed
+    const failedPatterns = {};
+
+    for (const id of failedTxIds) {
+      try {
+        const txData = await redis.hGetAll(`failed_tx:${id}`);
+        if (txData.error) {
+          failedPatterns[txData.error] = (failedPatterns[txData.error] || 0) + 1;
+        }
+      } catch (error) {
+        // Skip
+      }
+    }
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      ipAnalytics: {
+        topIPs: ipData,
+        suspiciousIPs: ipData.filter(ip => ip.suspicious),
+        totalUniqueIPs: ipKeys.length
+      },
+      failurePatterns: failedPatterns,
+      recommendations: {
+        highVolumeIPs: ipData.filter(ip => ip.attempts > 5).length,
+        shouldImplementRateLimit: ipData.some(ip => ip.attempts > 20),
+        commonFailures: Object.keys(failedPatterns).slice(0, 3)
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting user behavior analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get user behavior analytics"
     });
   }
 });

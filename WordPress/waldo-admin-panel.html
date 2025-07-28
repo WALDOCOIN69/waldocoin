@@ -1021,6 +1021,149 @@
         </div>
       </div>
 
+      <!-- Failed Transactions & Retry System -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">🔄 Failed Transactions & Retry System</div>
+
+        <div class="grid-2">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Failed Transactions</label>
+              <div id="failedTxCount" class="info-display" style="color: #e74c3c; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Transactions that failed and need retry</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Success Rate</label>
+              <div id="successRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Overall transaction success rate</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn btn-warning" onclick="loadFailedTransactions()">
+            🔄 Load Failed Transactions
+          </button>
+          <button type="button" class="btn btn-info" onclick="toggleFailedTxView()">
+            👁️ Toggle Failed TX View
+          </button>
+        </div>
+
+        <div id="failedTxContainer" style="display: none; margin-top: 15px;">
+          <div id="failedTxList" style="max-height: 300px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 10px; background: #222;">
+            <div style="color: #666; text-align: center; padding: 20px;">
+              Click "Load Failed Transactions" to view failed transactions
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Wallet Operations -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">👥 Bulk Wallet Operations</div>
+
+        <div class="grid-2">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Operation Type</label>
+              <select id="bulkOperation" style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                <option value="blacklist">Blacklist Wallets</option>
+                <option value="whitelist">Whitelist Wallets</option>
+                <option value="remove_blacklist">Remove from Blacklist</option>
+                <option value="remove_whitelist">Remove from Whitelist</option>
+              </select>
+              <small class="help-text">Choose the operation to perform</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Reason</label>
+              <input type="text" id="bulkReason" placeholder="Reason for bulk operation"
+                     style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+              <small class="help-text">Reason for this bulk operation</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Wallet Addresses (one per line)</label>
+          <textarea id="bulkWallets" rows="5" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&#10;rYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY&#10;rZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+                    style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
+          <small class="help-text">Enter wallet addresses, one per line</small>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn btn-primary" onclick="performBulkOperation()">
+            👥 Perform Bulk Operation
+          </button>
+          <button type="button" class="btn btn-info" onclick="showWalletLists()">
+            📋 Show Current Lists
+          </button>
+        </div>
+
+        <div id="bulkResults" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+          <!-- Bulk operation results will appear here -->
+        </div>
+      </div>
+
+      <!-- Enhanced Analytics Dashboard -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">📊 Enhanced Analytics Dashboard</div>
+
+        <div class="grid-3">
+          <div>
+            <div class="form-group">
+              <label class="form-label">24h Activity</label>
+              <div id="recentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Claims in last 24 hours</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Total Distributed</label>
+              <div id="totalDistributed" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Total WALDO distributed</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Wallet Management</label>
+              <div id="walletStats" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Blacklisted/Whitelisted counts</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn btn-info" onclick="loadEnhancedAnalytics()">
+            📊 Load Enhanced Analytics
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="loadUserBehavior()">
+            👤 Load User Behavior
+          </button>
+        </div>
+
+        <div id="analyticsDetails" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+          <!-- Enhanced analytics details will appear here -->
+        </div>
+      </div>
+
       <!-- Admin Activity Logs -->
       <div class="admin-card margin-bottom-30">
         <div class="card-title">📝 Admin Activity Logs</div>
@@ -5905,6 +6048,375 @@ This action cannot be undone. Continue?`;
       }
     }
 
+    // Failed Transactions Management
+    async function loadFailedTransactions() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading failed transactions...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/failed-transactions`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const failedTxList = document.getElementById('failedTxList');
+
+          if (data.failedTransactions.length === 0) {
+            failedTxList.innerHTML = '<div style="color: #25c2a0; text-align: center; padding: 20px;">✅ No failed transactions found!</div>';
+          } else {
+            let txHTML = '<div style="font-size: 12px;">';
+
+            data.failedTransactions.forEach(tx => {
+              const timestamp = new Date(tx.timestamp).toLocaleString();
+              const canRetry = parseInt(tx.retryCount) < 3;
+
+              txHTML += `
+                <div style="border-bottom: 1px solid #333; padding: 8px 0; margin-bottom: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ffd93d; font-weight: bold;">${tx.wallet.slice(0,8)}...${tx.wallet.slice(-6)}</span>
+                    <span style="color: #666; font-size: 10px;">${timestamp}</span>
+                  </div>
+                  <div style="color: #ccc; font-size: 11px; margin-top: 4px;">
+                    Amount: ${parseFloat(tx.amount).toLocaleString()} WALDO | Error: ${tx.error} | Retries: ${tx.retryCount}/3
+                  </div>
+                  ${canRetry ? `
+                    <button onclick="retryTransaction('${tx.id}')" style="background: #25c2a0; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; margin-top: 4px; cursor: pointer;">
+                      🔄 Retry
+                    </button>
+                  ` : '<span style="color: #e74c3c; font-size: 10px;">Max retries reached</span>'}
+                </div>
+              `;
+            });
+
+            txHTML += '</div>';
+            failedTxList.innerHTML = txHTML;
+          }
+
+          // Update failed TX count
+          document.getElementById('failedTxCount').textContent = data.failedTransactions.length;
+
+          showAlert(`✅ Loaded ${data.failedTransactions.length} failed transactions`, 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Load failed transactions error:', error);
+        showAlert('❌ Failed to load failed transactions', 'error');
+      }
+    }
+
+    async function retryTransaction(transactionId) {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Retrying transaction...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/retry-transaction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ transactionId: transactionId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`✅ Transaction retry successful! TX: ${data.txHash}`, 'success');
+          // Reload failed transactions to update the list
+          loadFailedTransactions();
+        } else {
+          showAlert(`❌ Retry failed: ${data.error}`, 'error');
+          if (data.canRetry) {
+            showAlert(`Retry count: ${data.retryCount}/3`, 'info');
+          }
+        }
+
+      } catch (error) {
+        console.error('Retry transaction error:', error);
+        showAlert('❌ Failed to retry transaction', 'error');
+      }
+    }
+
+    function toggleFailedTxView() {
+      const container = document.getElementById('failedTxContainer');
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    // Bulk Wallet Operations
+    async function performBulkOperation() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      const operation = document.getElementById('bulkOperation').value;
+      const reason = document.getElementById('bulkReason').value.trim();
+      const walletsText = document.getElementById('bulkWallets').value.trim();
+
+      if (!walletsText) {
+        showAlert('Please enter wallet addresses', 'error');
+        return;
+      }
+
+      if (!reason) {
+        showAlert('Please enter a reason for this operation', 'error');
+        return;
+      }
+
+      // Parse wallets (one per line)
+      const wallets = walletsText.split('\n')
+                                 .map(w => w.trim())
+                                 .filter(w => w.length > 0);
+
+      if (wallets.length === 0) {
+        showAlert('No valid wallet addresses found', 'error');
+        return;
+      }
+
+      try {
+        showAlert(`Performing ${operation} on ${wallets.length} wallets...`, 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/bulk-wallet-operation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            operation: operation,
+            wallets: wallets,
+            reason: reason
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`✅ Bulk operation completed! Success: ${data.successCount}, Errors: ${data.errorCount}`, 'success');
+
+          // Show detailed results
+          const resultsDiv = document.getElementById('bulkResults');
+          let resultsHTML = `
+            <div style="margin-bottom: 10px;">
+              <strong>Operation: ${operation.toUpperCase()}</strong><br>
+              <span style="color: #25c2a0;">✅ Success: ${data.successCount}</span> |
+              <span style="color: #e74c3c;">❌ Errors: ${data.errorCount}</span>
+            </div>
+          `;
+
+          if (data.errorCount > 0) {
+            resultsHTML += '<div style="font-size: 12px; max-height: 200px; overflow-y: auto;">';
+            data.results.forEach(result => {
+              if (!result.success) {
+                resultsHTML += `<div style="color: #e74c3c; margin-bottom: 4px;">${result.wallet}: ${result.error}</div>`;
+              }
+            });
+            resultsHTML += '</div>';
+          }
+
+          resultsDiv.innerHTML = resultsHTML;
+          resultsDiv.style.display = 'block';
+
+          // Clear form
+          document.getElementById('bulkWallets').value = '';
+          document.getElementById('bulkReason').value = '';
+
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Bulk operation error:', error);
+        showAlert('❌ Failed to perform bulk operation', 'error');
+      }
+    }
+
+    // Enhanced Analytics Functions
+    async function loadEnhancedAnalytics() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading enhanced analytics...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/analytics`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update dashboard elements
+          document.getElementById('recentActivity').textContent = `${data.activity.recentClaims24h} claims`;
+          document.getElementById('totalDistributed').textContent = data.overview.totalDistributedFormatted;
+          document.getElementById('walletStats').textContent = `B:${data.walletManagement.blacklistedWallets} W:${data.walletManagement.whitelistedWallets}`;
+          document.getElementById('successRate').textContent = `${data.overview.successRate}%`;
+          document.getElementById('failedTxCount').textContent = data.activity.failedTransactions;
+
+          // Show detailed analytics
+          const analyticsDiv = document.getElementById('analyticsDetails');
+          let analyticsHTML = `
+            <div class="grid-3" style="margin-bottom: 15px;">
+              <div>
+                <strong>Distribution Overview</strong><br>
+                <span style="color: #25c2a0;">Total Claims: ${data.overview.totalClaims}</span><br>
+                <span style="color: #ffd93d;">Remaining: ${data.overview.remainingClaims}</span><br>
+                <span style="color: #25c2a0;">Per Claim: ${data.overview.currentAmountPerClaim.toLocaleString()}</span>
+              </div>
+              <div>
+                <strong>Wallet Management</strong><br>
+                <span style="color: #25c2a0;">Regular: ${data.walletManagement.regularClaims}</span><br>
+                <span style="color: #ffd93d;">Manual: ${data.walletManagement.manualAirdrops}</span><br>
+                <span style="color: #e74c3c;">Blacklisted: ${data.walletManagement.blacklistedWallets}</span>
+              </div>
+              <div>
+                <strong>System Status</strong><br>
+                <span style="color: ${data.system.emergencyStop ? '#e74c3c' : '#25c2a0'};">
+                  Emergency: ${data.system.emergencyStop ? 'ACTIVE' : 'Normal'}
+                </span><br>
+                <span style="color: #25c2a0;">Balance: ${data.overview.distributorBalance}</span><br>
+                <span style="color: #25c2a0;">Success Rate: ${data.overview.successRate}%</span>
+              </div>
+            </div>
+          `;
+
+          if (data.system.emergencyStop) {
+            analyticsHTML += `<div style="background: #e74c3c; color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+              🚨 Emergency Stop Active: ${data.system.emergencyReason}
+            </div>`;
+          }
+
+          analyticsDiv.innerHTML = analyticsHTML;
+          analyticsDiv.style.display = 'block';
+
+          showAlert('✅ Enhanced analytics loaded', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Enhanced analytics error:', error);
+        showAlert('❌ Failed to load enhanced analytics', 'error');
+      }
+    }
+
+    async function loadUserBehavior() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading user behavior analytics...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/user-behavior`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const analyticsDiv = document.getElementById('analyticsDetails');
+          let behaviorHTML = `
+            <div style="margin-bottom: 15px;">
+              <strong>🌐 IP Analytics</strong><br>
+              <span style="color: #25c2a0;">Total Unique IPs: ${data.ipAnalytics.totalUniqueIPs}</span><br>
+              <span style="color: ${data.ipAnalytics.suspiciousIPs.length > 0 ? '#e74c3c' : '#25c2a0'};">
+                Suspicious IPs: ${data.ipAnalytics.suspiciousIPs.length}
+              </span>
+            </div>
+          `;
+
+          if (data.ipAnalytics.topIPs.length > 0) {
+            behaviorHTML += '<div style="margin-bottom: 15px;"><strong>Top IPs by Attempts:</strong><br>';
+            data.ipAnalytics.topIPs.slice(0, 5).forEach(ip => {
+              const color = ip.suspicious ? '#e74c3c' : '#25c2a0';
+              behaviorHTML += `<span style="color: ${color}; font-size: 12px;">${ip.ip}: ${ip.attempts} attempts${ip.suspicious ? ' (SUSPICIOUS)' : ''}</span><br>`;
+            });
+            behaviorHTML += '</div>';
+          }
+
+          if (Object.keys(data.failurePatterns).length > 0) {
+            behaviorHTML += '<div style="margin-bottom: 15px;"><strong>Common Failure Patterns:</strong><br>';
+            Object.entries(data.failurePatterns).forEach(([error, count]) => {
+              behaviorHTML += `<span style="color: #ffd93d; font-size: 12px;">${error}: ${count} occurrences</span><br>`;
+            });
+            behaviorHTML += '</div>';
+          }
+
+          // Recommendations
+          if (data.recommendations.shouldImplementRateLimit) {
+            behaviorHTML += `<div style="background: #e74c3c; color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+              ⚠️ Recommendation: Implement rate limiting (${data.recommendations.highVolumeIPs} high-volume IPs detected)
+            </div>`;
+          }
+
+          analyticsDiv.innerHTML = behaviorHTML;
+          analyticsDiv.style.display = 'block';
+
+          showAlert('✅ User behavior analytics loaded', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('User behavior analytics error:', error);
+        showAlert('❌ Failed to load user behavior analytics', 'error');
+      }
+    }
+
+    async function showWalletLists() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        // This would require additional endpoints to get blacklist/whitelist
+        // For now, show a placeholder
+        const resultsDiv = document.getElementById('bulkResults');
+        resultsDiv.innerHTML = `
+          <div>
+            <strong>Wallet Lists Status</strong><br>
+            <span style="color: #ffd93d;">Feature coming soon - will show current blacklist and whitelist</span><br>
+            <small style="color: #666;">This will display all blacklisted and whitelisted wallets</small>
+          </div>
+        `;
+        resultsDiv.style.display = 'block';
+
+        showAlert('Wallet lists feature coming soon', 'info');
+      } catch (error) {
+        showAlert('❌ Failed to load wallet lists', 'error');
+      }
+    }
+
     // Initialize login check when page loads
     document.addEventListener('DOMContentLoaded', function() {
       checkExistingLogin();
@@ -5919,6 +6431,8 @@ This action cannot be undone. Continue?`;
         getCurrentAirdropAmount();
         // Load system health
         refreshSystemHealth();
+        // Load enhanced analytics
+        loadEnhancedAnalytics();
       }, 1000);
     });
   </script>
