@@ -972,6 +972,77 @@
         Use this only when automated airdrop system fails or for emergency distributions.
       </div>
 
+      <!-- System Health & Security -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">🚨 System Health & Emergency Controls</div>
+
+        <div class="grid-3">
+          <div>
+            <div class="form-group">
+              <label class="form-label">System Status</label>
+              <div id="systemStatus" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Overall system health status</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">WALDO Balance</label>
+              <div id="distributorBalance" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Distributor wallet WALDO balance</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Emergency Controls</label>
+              <div style="display: flex; gap: 10px; flex-direction: column;">
+                <button type="button" id="emergencyStopBtn" class="btn btn-danger" onclick="toggleEmergencyStop()">
+                  🚨 Emergency Stop
+                </button>
+                <button type="button" class="btn btn-info" onclick="refreshSystemHealth()">
+                  🔄 Refresh Status
+                </button>
+              </div>
+              <small class="help-text">Emergency stop disables all airdrops</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-display" style="margin-top: 15px;">
+          <div class="stat-item">
+            <span class="stat-label">⚡ Response Times:</span>
+            <span id="responseTimes" class="stat-value">Redis: -ms, XRPL: -ms</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Activity Logs -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">📝 Admin Activity Logs</div>
+
+        <div style="margin-bottom: 15px;">
+          <button type="button" class="btn btn-secondary" onclick="loadAdminLogs()">
+            📋 Load Recent Activity
+          </button>
+          <button type="button" class="btn btn-info" onclick="toggleLogsView()">
+            👁️ Toggle Logs View
+          </button>
+        </div>
+
+        <div id="adminLogsContainer" style="display: none;">
+          <div id="adminLogsList" style="max-height: 400px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 10px; background: #222;">
+            <div style="color: #666; text-align: center; padding: 20px;">
+              Click "Load Recent Activity" to view admin logs
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Airdrop Amount Control -->
       <div class="admin-card margin-bottom-30">
         <div class="card-title">💰 Airdrop Amount Control</div>
@@ -5649,6 +5720,191 @@ This action cannot be undone. Continue?`;
       }
     }
 
+    // System Health & Security Functions
+    let emergencyStopActive = false;
+
+    async function refreshSystemHealth() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Checking system health...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/system-health`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update system status
+          const statusElement = document.getElementById('systemStatus');
+          const balanceElement = document.getElementById('distributorBalance');
+          const responseTimesElement = document.getElementById('responseTimes');
+          const emergencyBtn = document.getElementById('emergencyStopBtn');
+
+          // System status with color coding
+          const statusColor = data.overallStatus === 'healthy' ? '#25c2a0' :
+                             data.overallStatus === 'degraded' ? '#ffd93d' : '#e74c3c';
+          statusElement.style.color = statusColor;
+          statusElement.textContent = `${data.overallStatus.toUpperCase()} (${data.responseTime}ms)`;
+
+          // Distributor balance with color coding
+          const balanceStatus = data.services.distributorWallet.status;
+          const balanceColor = balanceStatus === 'healthy' ? '#25c2a0' :
+                              balanceStatus === 'warning' ? '#ffd93d' : '#e74c3c';
+          balanceElement.style.color = balanceColor;
+          balanceElement.textContent = `${data.services.distributorWallet.balanceFormatted} WALDO`;
+
+          // Response times
+          responseTimesElement.textContent =
+            `Redis: ${data.services.redis.responseTime}ms, XRPL: ${data.services.xrpl.responseTime}ms`;
+
+          // Emergency stop button
+          emergencyStopActive = data.airdropSystem.emergencyStop;
+          if (emergencyStopActive) {
+            emergencyBtn.textContent = '✅ Resume Airdrops';
+            emergencyBtn.className = 'btn btn-success';
+            showAlert(`🚨 Emergency stop is ACTIVE: ${data.airdropSystem.emergencyReason}`, 'warning');
+          } else {
+            emergencyBtn.textContent = '🚨 Emergency Stop';
+            emergencyBtn.className = 'btn btn-danger';
+          }
+
+          showAlert('✅ System health updated', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('System health check error:', error);
+        showAlert('❌ Failed to check system health', 'error');
+      }
+    }
+
+    async function toggleEmergencyStop() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      const action = emergencyStopActive ? 'emergency-resume' : 'emergency-stop';
+      const reason = prompt(emergencyStopActive ?
+        'Enter reason for resuming airdrops:' :
+        'Enter reason for emergency stop:'
+      );
+
+      if (!reason) return;
+
+      try {
+        showAlert(emergencyStopActive ? 'Resuming airdrops...' : 'Activating emergency stop...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/${action}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ reason: reason })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`✅ ${data.message}`, 'success');
+          emergencyStopActive = !emergencyStopActive;
+
+          // Update button
+          const emergencyBtn = document.getElementById('emergencyStopBtn');
+          if (emergencyStopActive) {
+            emergencyBtn.textContent = '✅ Resume Airdrops';
+            emergencyBtn.className = 'btn btn-success';
+          } else {
+            emergencyBtn.textContent = '🚨 Emergency Stop';
+            emergencyBtn.className = 'btn btn-danger';
+          }
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Emergency stop toggle error:', error);
+        showAlert('❌ Failed to toggle emergency stop', 'error');
+      }
+    }
+
+    async function loadAdminLogs() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading admin logs...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/airdrop/admin-logs`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const logsList = document.getElementById('adminLogsList');
+
+          if (data.logs.length === 0) {
+            logsList.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No admin activity logs found</div>';
+          } else {
+            let logsHTML = '<div style="font-size: 12px;">';
+
+            data.logs.forEach(log => {
+              const timestamp = new Date(log.timestamp).toLocaleString();
+              const actionColor = log.action === 'EMERGENCY_STOP' ? '#e74c3c' :
+                                 log.action === 'EMERGENCY_RESUME' ? '#25c2a0' : '#ffd93d';
+
+              logsHTML += `
+                <div style="border-bottom: 1px solid #333; padding: 8px 0; margin-bottom: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: ${actionColor}; font-weight: bold;">${log.action}</span>
+                    <span style="color: #666; font-size: 10px;">${timestamp}</span>
+                  </div>
+                  <div style="color: #ccc; font-size: 11px; margin-top: 4px;">
+                    IP: ${log.adminIP} | ${JSON.stringify(log.details)}
+                  </div>
+                </div>
+              `;
+            });
+
+            logsHTML += '</div>';
+            logsList.innerHTML = logsHTML;
+          }
+
+          showAlert(`✅ Loaded ${data.logs.length} admin logs`, 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Load admin logs error:', error);
+        showAlert('❌ Failed to load admin logs', 'error');
+      }
+    }
+
+    function toggleLogsView() {
+      const container = document.getElementById('adminLogsContainer');
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
     // Initialize login check when page loads
     document.addEventListener('DOMContentLoaded', function() {
       checkExistingLogin();
@@ -5661,6 +5917,8 @@ This action cannot be undone. Continue?`;
         updateClaimedWalletsInfo();
         // Load current airdrop amount
         getCurrentAirdropAmount();
+        // Load system health
+        refreshSystemHealth();
       }, 1000);
     });
   </script>

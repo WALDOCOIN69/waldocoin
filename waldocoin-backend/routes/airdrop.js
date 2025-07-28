@@ -29,6 +29,18 @@ router.post("/", async (req, res) => {
     userAgent: req.headers['user-agent']?.slice(0, 50)
   });
 
+  // Check for emergency stop
+  const emergencyStop = await redis.get("airdrop:emergency_stop");
+  if (emergencyStop === "true") {
+    const emergencyReason = await redis.get("airdrop:emergency_reason") || "System maintenance";
+    console.log(`🚨 Airdrop blocked - Emergency stop active: ${emergencyReason}`);
+    return res.status(503).json({
+      success: false,
+      error: "🚨 Airdrops temporarily disabled",
+      reason: emergencyReason
+    });
+  }
+
   // Input validation
   if (!wallet || typeof wallet !== 'string' || !wallet.startsWith("r") || wallet.length < 25 || wallet.length > 34) {
     console.log(`❌ Invalid wallet format:`, { wallet, type: typeof wallet, length: wallet?.length });
@@ -306,6 +318,14 @@ router.post("/set-password", async (req, res) => {
 
     // Store new password in Redis
     await redis.set("airdrop:daily_password", newPassword);
+
+    // Log admin activity
+    await logAdminActivity('PASSWORD_CHANGE', {
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    }, {
+      newPassword: newPassword
+    });
 
     console.log(`🔐 Daily airdrop password updated to: ${newPassword}`);
 
@@ -1106,6 +1126,15 @@ router.post("/set-amount", async (req, res) => {
     // Store in Redis
     await redis.set("airdrop:amount", formattedAmount);
 
+    // Log admin activity
+    await logAdminActivity('AMOUNT_CHANGE', {
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    }, {
+      newAmount: formattedAmount,
+      previousAmount: "50000.000000"
+    });
+
     console.log(`✅ Admin changed airdrop amount to: ${formattedAmount} WALDO`);
 
     res.json({
@@ -1143,6 +1172,289 @@ router.get("/get-amount", async (req, res) => {
       success: false,
       error: "Failed to get airdrop amount",
       amount: "50000.000000"
+    });
+  }
+});
+
+// ✅ Admin Activity Logging Function
+async function logAdminActivity(action, adminInfo, details = {}) {
+  try {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      action: action,
+      adminIP: adminInfo.ip || 'Unknown',
+      adminUserAgent: adminInfo.userAgent || 'Unknown',
+      details: details,
+      id: Date.now().toString()
+    };
+
+    // Store in Redis with expiration (keep logs for 30 days)
+    await redis.hSet(`admin:log:${logEntry.id}`, logEntry);
+    await redis.expire(`admin:log:${logEntry.id}`, 30 * 24 * 60 * 60); // 30 days
+
+    // Add to activity list (most recent first)
+    await redis.lPush('admin:activity_log', logEntry.id);
+    await redis.lTrim('admin:activity_log', 0, 999); // Keep last 1000 activities
+
+    console.log(`📝 Admin activity logged: ${action} by ${adminInfo.ip}`);
+  } catch (error) {
+    console.error('❌ Failed to log admin activity:', error);
+  }
+}
+
+// ✅ GET /api/airdrop/admin-logs - Get admin activity logs
+router.get("/admin-logs", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get recent activity IDs
+    const activityIds = await redis.lRange('admin:activity_log', 0, 49); // Last 50 activities
+
+    // Get detailed log entries
+    const logs = await Promise.all(
+      activityIds.map(async (id) => {
+        try {
+          const logData = await redis.hGetAll(`admin:log:${id}`);
+          return logData.timestamp ? {
+            ...logData,
+            details: JSON.parse(logData.details || '{}')
+          } : null;
+        } catch (error) {
+          console.error(`Error getting log ${id}:`, error);
+          return null;
+        }
+      })
+    );
+
+    // Filter out null entries and sort by timestamp
+    const validLogs = logs.filter(log => log !== null)
+                          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({
+      success: true,
+      logs: validLogs,
+      totalLogs: validLogs.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting admin logs:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get admin logs"
+    });
+  }
+});
+
+// ✅ POST /api/airdrop/emergency-stop - Emergency stop all airdrops
+router.post("/emergency-stop", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const { reason } = req.body;
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Set emergency stop flag
+    await redis.set("airdrop:emergency_stop", "true");
+    await redis.set("airdrop:emergency_reason", reason || "Emergency stop activated");
+    await redis.set("airdrop:emergency_timestamp", new Date().toISOString());
+
+    // Log admin activity
+    await logAdminActivity('EMERGENCY_STOP', {
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    }, {
+      reason: reason || "No reason provided"
+    });
+
+    console.log(`🚨 EMERGENCY STOP activated by admin: ${reason}`);
+
+    res.json({
+      success: true,
+      message: "Emergency stop activated - all airdrops are now disabled",
+      reason: reason || "Emergency stop activated"
+    });
+
+  } catch (error) {
+    console.error('❌ Error activating emergency stop:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to activate emergency stop"
+    });
+  }
+});
+
+// ✅ POST /api/airdrop/emergency-resume - Resume airdrops after emergency stop
+router.post("/emergency-resume", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const { reason } = req.body;
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Remove emergency stop flag
+    await redis.del("airdrop:emergency_stop");
+    await redis.del("airdrop:emergency_reason");
+    await redis.del("airdrop:emergency_timestamp");
+
+    // Log admin activity
+    await logAdminActivity('EMERGENCY_RESUME', {
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    }, {
+      reason: reason || "No reason provided"
+    });
+
+    console.log(`✅ Emergency stop lifted by admin: ${reason}`);
+
+    res.json({
+      success: true,
+      message: "Emergency stop lifted - airdrops are now enabled",
+      reason: reason || "Emergency stop lifted"
+    });
+
+  } catch (error) {
+    console.error('❌ Error lifting emergency stop:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to lift emergency stop"
+    });
+  }
+});
+
+// ✅ GET /api/airdrop/system-health - System health monitoring
+router.get("/system-health", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const startTime = Date.now();
+
+    // Check Redis connection
+    let redisStatus = 'healthy';
+    let redisResponseTime = 0;
+    try {
+      const redisStart = Date.now();
+      await redis.ping();
+      redisResponseTime = Date.now() - redisStart;
+    } catch (error) {
+      redisStatus = 'unhealthy';
+      redisResponseTime = -1;
+    }
+
+    // Check XRPL connection
+    let xrplStatus = 'healthy';
+    let xrplResponseTime = 0;
+    try {
+      const xrplStart = Date.now();
+      const response = await fetch('https://s1.ripple.com:51234', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: 'server_info',
+          params: [{}]
+        }),
+        signal: AbortSignal.timeout(5000)
+      });
+      xrplResponseTime = Date.now() - xrplStart;
+      if (!response.ok) xrplStatus = 'degraded';
+    } catch (error) {
+      xrplStatus = 'unhealthy';
+      xrplResponseTime = -1;
+    }
+
+    // Check distributor wallet balance
+    let walletBalance = 'unknown';
+    let walletStatus = 'unknown';
+    try {
+      const balanceResponse = await fetch('https://s1.ripple.com:51234', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: 'account_lines',
+          params: [{
+            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            ledger_index: 'validated'
+          }]
+        }),
+        signal: AbortSignal.timeout(5000)
+      });
+
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json();
+        const waldoLine = balanceData.result?.lines?.find(line =>
+          line.currency === 'WLO' && line.account === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+        );
+
+        if (waldoLine) {
+          walletBalance = parseFloat(waldoLine.balance);
+          walletStatus = walletBalance > 1000000 ? 'healthy' :
+                        walletBalance > 100000 ? 'warning' : 'critical';
+        }
+      }
+    } catch (error) {
+      walletStatus = 'error';
+    }
+
+    // Check emergency stop status
+    const emergencyStop = await redis.get("airdrop:emergency_stop");
+    const emergencyReason = await redis.get("airdrop:emergency_reason");
+
+    // Get system metrics
+    const totalClaims = await redis.get("airdrop:count") || 0;
+    const currentAmount = await redis.get("airdrop:amount") || "50000.000000";
+
+    const totalResponseTime = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      overallStatus: (redisStatus === 'healthy' && xrplStatus !== 'unhealthy' && walletStatus !== 'critical') ? 'healthy' : 'degraded',
+      responseTime: totalResponseTime,
+      services: {
+        redis: {
+          status: redisStatus,
+          responseTime: redisResponseTime
+        },
+        xrpl: {
+          status: xrplStatus,
+          responseTime: xrplResponseTime
+        },
+        distributorWallet: {
+          status: walletStatus,
+          balance: walletBalance,
+          balanceFormatted: typeof walletBalance === 'number' ? walletBalance.toLocaleString() : 'Unknown'
+        }
+      },
+      airdropSystem: {
+        emergencyStop: emergencyStop === 'true',
+        emergencyReason: emergencyReason || null,
+        totalClaims: parseInt(totalClaims),
+        currentAmount: currentAmount,
+        remainingClaims: 1000 - parseInt(totalClaims)
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error checking system health:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to check system health",
+      timestamp: new Date().toISOString()
     });
   }
 });
