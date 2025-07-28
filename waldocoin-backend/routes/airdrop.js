@@ -179,14 +179,27 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Transaction successful - Track in Redis (only for regular airdrops)
+    // ✅ Transaction successful - Track in Redis with amount details
     let newCount, remaining;
+
+    // Store claim details with amount and timestamp
+    const claimData = {
+      wallet: wallet,
+      amount: airdropAmount,
+      timestamp: new Date().toISOString(),
+      txHash: result.result.hash,
+      type: isAdminOverride ? 'admin' : 'regular',
+      reason: isAdminOverride ? reason : 'regular_claim'
+    };
+
+    // Store detailed claim data
+    await redis.hSet(`airdrop:claim:${wallet}`, claimData);
 
     if (!isAdminOverride) {
       await redis.sAdd(AIRDROP_REDIS_KEY, wallet); // Add wallet to claimed set
       newCount = await redis.incr(AIRDROP_COUNT_KEY); // Increment counter
       remaining = AIRDROP_LIMIT - newCount;
-      console.log(`✅ Regular airdrop successful! Wallet ${wallet} claimed. Total: ${newCount}/${AIRDROP_LIMIT}`);
+      console.log(`✅ Regular airdrop successful! Wallet ${wallet} claimed ${airdropAmount} WALDO. Total: ${newCount}/${AIRDROP_LIMIT}`);
     } else {
       // Track manual airdrops too, but in a separate set for distinction
       await redis.sAdd("airdrop:manual_wallets", wallet); // Track manual airdrops separately
@@ -827,17 +840,42 @@ router.get("/export-claimed", async (req, res) => {
 
     console.log(`📊 Exporting ${claimedWallets.length} claimed wallets (${manualWallets.length} manual)`);
 
-    // Create CSV content - NOTE: Historical amounts not tracked, showing 50k for all
-    let csvContent = "Wallet Address,Claim Type,Amount (WALDO),Status\n";
+    // Create CSV content with detailed claim data
+    let csvContent = "Wallet Address,Claim Type,Amount (WALDO),Status,Timestamp,TX Hash\n";
 
-    // Add each wallet to CSV with type distinction
-    claimedWallets.forEach((wallet, index) => {
-      const claimOrder = index + 1;
-      const isManual = manualWallets.includes(wallet);
-      const claimType = isManual ? `Manual Airdrop #${claimOrder}` : `Regular Claim #${claimOrder}`;
-      // NOTE: We don't have historical amount data, so showing 50k for all historical claims
-      csvContent += `${wallet},${claimType},50000,Claimed\n`;
-    });
+    // Add each wallet to CSV with detailed information
+    for (let i = 0; i < claimedWallets.length; i++) {
+      const wallet = claimedWallets[i];
+      const claimOrder = i + 1;
+
+      try {
+        // Try to get detailed claim data
+        const claimData = await redis.hGetAll(`airdrop:claim:${wallet}`);
+
+        if (claimData && claimData.amount) {
+          // We have detailed data - use actual amount
+          const amount = parseFloat(claimData.amount).toFixed(0);
+          const claimType = claimData.type === 'admin' ? `Manual Airdrop #${claimOrder}` : `Regular Claim #${claimOrder}`;
+          const timestamp = claimData.timestamp || 'Unknown';
+          const txHash = claimData.txHash || 'Unknown';
+
+          csvContent += `${wallet},${claimType},${amount},Claimed,${timestamp},${txHash}\n`;
+        } else {
+          // No detailed data - historical claim, assume 50k
+          const isManual = manualWallets.includes(wallet);
+          const claimType = isManual ? `Manual Airdrop #${claimOrder}` : `Regular Claim #${claimOrder}`;
+
+          csvContent += `${wallet},${claimType},50000,Claimed,Historical,Unknown\n`;
+        }
+      } catch (error) {
+        console.error(`Error getting claim data for ${wallet}:`, error);
+        // Fallback to historical format
+        const isManual = manualWallets.includes(wallet);
+        const claimType = isManual ? `Manual Airdrop #${claimOrder}` : `Regular Claim #${claimOrder}`;
+
+        csvContent += `${wallet},${claimType},50000,Claimed,Historical,Unknown\n`;
+      }
+    }
 
     // Set headers for CSV download
     res.setHeader('Content-Type', 'text/csv');
@@ -874,19 +912,59 @@ router.get("/claimed-list", async (req, res) => {
 
     console.log(`📊 Returning ${claimedWallets.length} claimed wallets (${manualWallets.length} manual)`);
 
+    // Get detailed claim data for each wallet
+    const walletsWithDetails = await Promise.all(
+      claimedWallets.map(async (wallet, index) => {
+        try {
+          // Try to get detailed claim data
+          const claimData = await redis.hGetAll(`airdrop:claim:${wallet}`);
+
+          if (claimData && claimData.amount) {
+            // We have detailed data - use actual amount
+            return {
+              wallet: wallet,
+              claimOrder: index + 1,
+              amount: parseFloat(claimData.amount).toFixed(0),
+              claimType: claimData.type === 'admin' ? "Manual Airdrop" : "Regular Claim",
+              status: "Claimed",
+              timestamp: claimData.timestamp || 'Unknown',
+              txHash: claimData.txHash || 'Unknown'
+            };
+          } else {
+            // No detailed data - historical claim, assume 50k
+            return {
+              wallet: wallet,
+              claimOrder: index + 1,
+              amount: "50000", // Historical claim - assume 50k
+              claimType: manualWallets.includes(wallet) ? "Manual Airdrop" : "Regular Claim",
+              status: "Claimed",
+              timestamp: 'Historical',
+              txHash: 'Unknown'
+            };
+          }
+        } catch (error) {
+          console.error(`Error getting claim data for ${wallet}:`, error);
+          // Fallback to historical format
+          return {
+            wallet: wallet,
+            claimOrder: index + 1,
+            amount: "50000",
+            claimType: manualWallets.includes(wallet) ? "Manual Airdrop" : "Regular Claim",
+            status: "Claimed",
+            timestamp: 'Historical',
+            txHash: 'Unknown'
+          };
+        }
+      })
+    );
+
     res.json({
       success: true,
       totalClaimed: parseInt(totalClaimed),
       totalWallets: claimedWallets.length,
       manualWallets: manualWallets.length,
       regularWallets: claimedWallets.length - manualWallets.length,
-      wallets: claimedWallets.map((wallet, index) => ({
-        wallet: wallet,
-        claimOrder: index + 1,
-        amount: "50000", // NOTE: Historical amounts not tracked, showing 50k for all
-        claimType: manualWallets.includes(wallet) ? "Manual Airdrop" : "Regular Claim",
-        status: "Claimed"
-      })),
+      wallets: walletsWithDetails,
       exportedAt: new Date().toISOString()
     });
 
