@@ -179,7 +179,17 @@ const waldoBonusTable = {
 function initializePresaleWidget() {
   updateWaldoAmount();
   const wallet = localStorage.getItem("xummWallet");
-  document.getElementById("connectedWallet").innerText = wallet ? wallet : "Not connected";
+
+  if (wallet) {
+    document.getElementById("connectedWallet").innerText = `${wallet.slice(0,8)}...${wallet.slice(-6)} ✅`;
+    document.getElementById("connectedWallet").style.color = '#25c2a0';
+    // Hide the XUMM QR since wallet is already connected
+    document.getElementById('xummQR').style.display = 'none';
+  } else {
+    document.getElementById("connectedWallet").innerText = "Not connected";
+    document.getElementById("connectedWallet").style.color = '#e74c3c';
+  }
+
   document.getElementById("buySuccessMsg").style.display = "none";
   document.getElementById("buyWaldoBtn").disabled = false;
   document.getElementById("buyWaldoBtn").innerText = "🔐 Buy Now with XUMM";
@@ -228,23 +238,60 @@ async function buyWaldoSlider() {
   if (!wallet) return alert("Please connect your XUMM wallet first.");
 
   const btn = document.getElementById("buyWaldoBtn");
-  btn.innerText = "⏳ Sending...";
+  btn.innerText = "⏳ Creating transaction...";
   btn.disabled = true;
 
-  const res = await fetch("https://waldocoin-backend-api.onrender.com/api/presale/buy", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ wallet, xrpAmount: amount })
-  });
+  try {
+    const res = await fetch("https://waldocoin-backend-api.onrender.com/api/presale/buy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet, xrpAmount: amount })
+    });
 
-  const data = await res.json();
-  if (data && data.redirect) {
-    window.location.href = data.redirect;
-  } else if (data && data.success) {
-    document.getElementById("buySuccessMsg").style.display = "block";
-    btn.innerText = "✅ WALDO Sent!";
-  } else {
-    alert("Failed to create XUMM sign request.");
+    const data = await res.json();
+
+    if (data && data.success && data.qr) {
+      // Show QR code for presale purchase
+      const qrWindow = window.open('', '_blank', 'width=450,height=600');
+      qrWindow.document.write(`
+        <html>
+          <head><title>Complete WALDO Purchase</title></head>
+          <body style="text-align:center; padding:20px; background:#0d2818; color:white; font-family: Arial, sans-serif;">
+            <h2 style="color: #25c2a0;">🚀 Complete Your WALDO Purchase</h2>
+            <div style="background: #0f2d17; padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid #25c2a0;">
+              <p><strong>Amount:</strong> ${amount} XRP</p>
+              <p><strong>You'll receive:</strong> ${data.calculation ? data.calculation.totalWaldo.toLocaleString() : 'Calculating...'} WALDO</p>
+              ${data.calculation && data.calculation.bonusPercentage > 0 ?
+                `<p style="color: #ffd93d;"><strong>🎁 Bonus:</strong> ${data.calculation.bonusPercentage}% (${data.calculation.bonus.toLocaleString()} WALDO)</p>` :
+                ''
+              }
+            </div>
+            <img src="${data.qr}" style="width:300px; border-radius:10px; border: 2px solid #25c2a0;" />
+            <p style="margin-top: 15px;">Scan this QR code with your XUMM wallet to complete the purchase</p>
+            ${data.deeplink ? `<p><a href="${data.deeplink}" style="color: #25c2a0; font-weight: bold;">📱 Open in XUMM App</a></p>` : ''}
+            <button onclick="window.close()" style="background: #25c2a0; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">Close</button>
+          </body>
+        </html>
+      `);
+
+      btn.innerText = "✅ QR Code Opened";
+      btn.disabled = false;
+
+      // Reset button after 10 seconds
+      setTimeout(() => {
+        btn.innerText = "🔐 Buy Now with XUMM";
+      }, 10000);
+
+    } else if (data && data.redirect) {
+      // Fallback to redirect if no QR
+      window.location.href = data.redirect;
+    } else {
+      throw new Error(data.error || "Failed to create purchase request");
+    }
+
+  } catch (error) {
+    console.error('Purchase error:', error);
+    alert(`Failed to create purchase: ${error.message}`);
     btn.innerText = "🔐 Buy Now with XUMM";
     btn.disabled = false;
   }
@@ -298,28 +345,58 @@ async function connectXummWallet() {
     const data = await res.json();
 
     if (data.qr) {
-      // Show QR code for wallet connection
-      const qrWindow = window.open('', '_blank', 'width=400,height=500');
-      qrWindow.document.write(`
-        <html>
-          <head><title>Connect XUMM Wallet</title></head>
-          <body style="text-align:center; padding:20px; background:#1a1a1a; color:white;">
-            <h2>Scan with XUMM</h2>
-            <img src="${data.qr}" style="width:300px; border-radius:10px;" />
-            <p>Scan this QR code with your XUMM wallet to connect</p>
-          </body>
-        </html>
-      `);
+      // Update the XUMM QR code in the widget
+      document.getElementById('xummQR').src = data.qr;
 
-      // Simplified connection feedback
-      setTimeout(() => {
-        document.getElementById('connectedWallet').textContent = 'Connected ✅';
-        if (qrWindow && !qrWindow.closed) qrWindow.close();
-      }, 10000);
+      // Show deep link if on mobile
+      if (/Mobi|Android/i.test(navigator.userAgent) && data.refs?.xapp) {
+        const deepLink = document.getElementById("xummDeepLink");
+        deepLink.href = data.refs.xapp;
+        deepLink.style.display = "inline-block";
+      }
+
+      // Store UUID for checking connection status
+      if (data.uuid) {
+        localStorage.setItem("xummUUID", data.uuid);
+
+        // Check connection status periodically
+        const checkConnection = setInterval(async () => {
+          try {
+            const statusRes = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${data.uuid}`);
+            const statusData = await statusRes.json();
+
+            if (statusData.connected && statusData.wallet) {
+              localStorage.setItem("xummWallet", statusData.wallet);
+              document.getElementById('connectedWallet').textContent = `${statusData.wallet.slice(0,8)}...${statusData.wallet.slice(-6)} ✅`;
+              document.getElementById('connectedWallet').style.color = '#25c2a0';
+              clearInterval(checkConnection);
+
+              // Hide the connection QR and show a success message
+              document.getElementById('xummQR').style.display = 'none';
+              document.getElementById('xummDeepLink').style.display = 'none';
+            }
+          } catch (error) {
+            console.error('Status check error:', error);
+          }
+        }, 2000); // Check every 2 seconds
+
+        // Stop checking after 2 minutes
+        setTimeout(() => {
+          clearInterval(checkConnection);
+          if (document.getElementById('connectedWallet').textContent === 'Connecting...') {
+            document.getElementById('connectedWallet').textContent = 'Connection timeout ⏰';
+            document.getElementById('connectedWallet').style.color = '#ffd93d';
+          }
+        }, 120000);
+      }
+
+    } else {
+      throw new Error('No QR code received');
     }
   } catch (error) {
     console.error('Wallet connection error:', error);
     document.getElementById('connectedWallet').textContent = 'Connection failed ❌';
+    document.getElementById('connectedWallet').style.color = '#e74c3c';
   }
 }
 
