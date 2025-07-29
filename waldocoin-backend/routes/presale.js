@@ -317,5 +317,203 @@ router.post("/buy", async (req, res) => {
   }
 });
 
+// ✅ GET /api/presale/analytics - Comprehensive presale analytics for admin
+router.get("/analytics", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get all presale purchases
+    const purchaseKeys = await redis.keys("presale:purchase:*");
+    const purchases = [];
+    let totalXRP = 0;
+    let totalWALDO = 0;
+    let totalPurchases = 0;
+
+    for (const key of purchaseKeys) {
+      try {
+        const purchaseData = await redis.hGetAll(key);
+        if (purchaseData.xrpAmount) {
+          const purchase = {
+            wallet: purchaseData.wallet,
+            xrpAmount: parseFloat(purchaseData.xrpAmount),
+            waldoAmount: parseFloat(purchaseData.waldoAmount),
+            timestamp: purchaseData.timestamp,
+            txHash: purchaseData.txHash,
+            bonusPercent: parseFloat(purchaseData.bonusPercent || 0)
+          };
+
+          purchases.push(purchase);
+          totalXRP += purchase.xrpAmount;
+          totalWALDO += purchase.waldoAmount;
+          totalPurchases++;
+        }
+      } catch (error) {
+        console.error(`Error processing purchase ${key}:`, error);
+      }
+    }
+
+    // Calculate analytics
+    const averageXRPPerPurchase = totalPurchases > 0 ? totalXRP / totalPurchases : 0;
+    const averageWALDOPerPurchase = totalPurchases > 0 ? totalWALDO / totalPurchases : 0;
+
+    // Time-based analytics
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    let purchases24h = 0;
+    let purchases7d = 0;
+    let xrp24h = 0;
+    let xrp7d = 0;
+
+    purchases.forEach(purchase => {
+      if (purchase.timestamp) {
+        const purchaseTime = new Date(purchase.timestamp);
+        if (purchaseTime > last24h) {
+          purchases24h++;
+          xrp24h += purchase.xrpAmount;
+        }
+        if (purchaseTime > last7d) {
+          purchases7d++;
+          xrp7d += purchase.xrpAmount;
+        }
+      }
+    });
+
+    // Bonus tier analysis
+    const bonusTiers = {
+      'no_bonus': purchases.filter(p => p.bonusPercent === 0).length,
+      'tier_15': purchases.filter(p => p.bonusPercent === 15).length,
+      'tier_22': purchases.filter(p => p.bonusPercent === 22).length,
+      'tier_30': purchases.filter(p => p.bonusPercent === 30).length
+    };
+
+    // Top purchasers
+    const walletTotals = {};
+    purchases.forEach(purchase => {
+      if (!walletTotals[purchase.wallet]) {
+        walletTotals[purchase.wallet] = { xrp: 0, waldo: 0, count: 0 };
+      }
+      walletTotals[purchase.wallet].xrp += purchase.xrpAmount;
+      walletTotals[purchase.wallet].waldo += purchase.waldoAmount;
+      walletTotals[purchase.wallet].count++;
+    });
+
+    const topPurchasers = Object.entries(walletTotals)
+      .sort(([,a], [,b]) => b.xrp - a.xrp)
+      .slice(0, 10)
+      .map(([wallet, data]) => ({
+        wallet: `${wallet.slice(0,8)}...${wallet.slice(-6)}`,
+        xrpTotal: data.xrp,
+        waldoTotal: data.waldo,
+        purchaseCount: data.count
+      }));
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      overview: {
+        totalPurchases: totalPurchases,
+        totalXRP: totalXRP,
+        totalWALDO: totalWALDO,
+        averageXRPPerPurchase: Math.round(averageXRPPerPurchase * 100) / 100,
+        averageWALDOPerPurchase: Math.round(averageWALDOPerPurchase)
+      },
+      timeBasedMetrics: {
+        purchases24h: purchases24h,
+        purchases7d: purchases7d,
+        xrp24h: xrp24h,
+        xrp7d: xrp7d,
+        dailyAverage: Math.round((purchases7d / 7) * 10) / 10,
+        weeklyTrend: purchases7d > purchases24h * 7 ? 'increasing' : 'stable'
+      },
+      bonusAnalysis: bonusTiers,
+      topPurchasers: topPurchasers,
+      recentPurchases: purchases
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 20)
+        .map(p => ({
+          ...p,
+          wallet: `${p.wallet.slice(0,8)}...${p.wallet.slice(-6)}`
+        }))
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting presale analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get presale analytics"
+    });
+  }
+});
+
+// ✅ GET /api/presale/admin-summary - Quick presale summary for admin dashboard
+router.get("/admin-summary", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get basic presale metrics
+    const totalSold = await redis.get("presale:total_sold") || 0;
+    const totalXRP = await redis.get("presale:total_xrp") || 0;
+    const totalPurchases = await redis.get("presale:total_purchases") || 0;
+
+    // Get recent activity (last 24h)
+    const purchaseKeys = await redis.keys("presale:purchase:*");
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    let recentPurchases = 0;
+    let recentXRP = 0;
+
+    for (const key of purchaseKeys.slice(0, 50)) { // Check last 50 purchases
+      try {
+        const purchaseData = await redis.hGetAll(key);
+        if (purchaseData.timestamp) {
+          const purchaseTime = new Date(purchaseData.timestamp);
+          if (purchaseTime > last24h) {
+            recentPurchases++;
+            recentXRP += parseFloat(purchaseData.xrpAmount || 0);
+          }
+        }
+      } catch (error) {
+        // Skip failed entries
+      }
+    }
+
+    res.json({
+      success: true,
+      totalSold: parseInt(totalSold),
+      totalXRP: parseFloat(totalXRP),
+      totalPurchases: parseInt(totalPurchases),
+      recentActivity: {
+        purchases24h: recentPurchases,
+        xrp24h: recentXRP
+      },
+      formatted: {
+        totalSold: parseInt(totalSold).toLocaleString(),
+        totalXRP: parseFloat(totalXRP).toLocaleString(),
+        totalPurchases: parseInt(totalPurchases).toLocaleString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting presale admin summary:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get presale admin summary"
+    });
+  }
+});
+
 export default router;
 

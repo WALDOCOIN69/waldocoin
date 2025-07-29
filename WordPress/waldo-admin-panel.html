@@ -1234,6 +1234,69 @@
         </div>
       </div>
 
+      <!-- Presale Analytics & Tracking -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">🚀 Presale Analytics & Tracking</div>
+
+        <div class="grid-4">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Total WALDO Sold</label>
+              <div id="presaleTotalSold" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Total WALDO tokens sold in presale</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Total XRP Raised</label>
+              <div id="presaleTotalXRP" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Total XRP raised from presale</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Total Purchases</label>
+              <div id="presaleTotalPurchases" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Number of presale purchases</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">24h Activity</label>
+              <div id="presaleRecentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Recent presale activity</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn btn-primary" onclick="loadPresaleAnalytics()">
+            🚀 Load Presale Analytics
+          </button>
+          <button type="button" class="btn btn-info" onclick="loadPresalePurchases()">
+            📋 View Recent Purchases
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="exportPresaleData()">
+            📄 Export Presale Data
+          </button>
+        </div>
+
+        <div id="presaleDetails" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+          <!-- Presale analytics details will appear here -->
+        </div>
+      </div>
+
       <!-- Enhanced Analytics Dashboard -->
       <div class="admin-card margin-bottom-30">
         <div class="card-title">📊 Enhanced Analytics Dashboard</div>
@@ -6908,6 +6971,175 @@ This action cannot be undone. Continue?`;
       URL.revokeObjectURL(url);
 
       showAlert('✅ Executive report exported', 'success');
+    }
+
+    // Presale Analytics Functions
+    async function loadPresaleAnalytics() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading presale analytics...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/presale/analytics`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update dashboard elements
+          document.getElementById('presaleTotalSold').textContent = data.overview.totalWALDO.toLocaleString();
+          document.getElementById('presaleTotalXRP').textContent = `${data.overview.totalXRP.toLocaleString()} XRP`;
+          document.getElementById('presaleTotalPurchases').textContent = data.overview.totalPurchases.toLocaleString();
+          document.getElementById('presaleRecentActivity').textContent = `${data.timeBasedMetrics.purchases24h} purchases`;
+
+          // Show detailed presale analytics
+          const presaleDiv = document.getElementById('presaleDetails');
+          let presaleHTML = `
+            <div class="grid-3" style="margin-bottom: 15px;">
+              <div>
+                <strong>📊 Purchase Metrics</strong><br>
+                <span style="color: #25c2a0;">Avg XRP/Purchase: ${data.overview.averageXRPPerPurchase}</span><br>
+                <span style="color: #25c2a0;">Avg WALDO/Purchase: ${data.overview.averageWALDOPerPurchase.toLocaleString()}</span><br>
+                <span style="color: #ffd93d;">Daily Average: ${data.timeBasedMetrics.dailyAverage}</span>
+              </div>
+              <div>
+                <strong>🎁 Bonus Tier Analysis</strong><br>
+                <span style="color: #25c2a0;">No Bonus: ${data.bonusAnalysis.no_bonus}</span><br>
+                <span style="color: #ffd93d;">15% Bonus: ${data.bonusAnalysis.tier_15}</span><br>
+                <span style="color: #ff6b6b;">22% Bonus: ${data.bonusAnalysis.tier_22}</span><br>
+                <span style="color: #e74c3c;">30% Bonus: ${data.bonusAnalysis.tier_30}</span>
+              </div>
+              <div>
+                <strong>📈 Recent Activity</strong><br>
+                <span style="color: #25c2a0;">24h Purchases: ${data.timeBasedMetrics.purchases24h}</span><br>
+                <span style="color: #25c2a0;">24h XRP: ${data.timeBasedMetrics.xrp24h.toFixed(2)}</span><br>
+                <span style="color: #ffd93d;">7d Purchases: ${data.timeBasedMetrics.purchases7d}</span><br>
+                <span style="color: ${data.timeBasedMetrics.weeklyTrend === 'increasing' ? '#25c2a0' : '#ffd93d'};">
+                  Trend: ${data.timeBasedMetrics.weeklyTrend}
+                </span>
+              </div>
+            </div>
+          `;
+
+          // Top purchasers
+          if (data.topPurchasers.length > 0) {
+            presaleHTML += '<div style="background: #333; padding: 10px; border-radius: 4px; margin-bottom: 10px;"><strong>🏆 Top Purchasers:</strong><br>';
+            data.topPurchasers.slice(0, 5).forEach((purchaser, index) => {
+              presaleHTML += `
+                <span style="color: #25c2a0; font-size: 12px;">
+                  ${index + 1}. ${purchaser.wallet}: ${purchaser.xrpTotal} XRP (${purchaser.purchaseCount} purchases)
+                </span><br>
+              `;
+            });
+            presaleHTML += '</div>';
+          }
+
+          presaleDiv.innerHTML = presaleHTML;
+          presaleDiv.style.display = 'block';
+
+          showAlert('✅ Presale analytics loaded', 'success');
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Presale analytics error:', error);
+        showAlert('❌ Failed to load presale analytics', 'error');
+      }
+    }
+
+    async function loadPresalePurchases() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Loading recent presale purchases...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/presale/analytics`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.recentPurchases) {
+          const presaleDiv = document.getElementById('presaleDetails');
+          let purchasesHTML = '<div style="margin-bottom: 15px;"><strong>📋 Recent Purchases (Last 20):</strong></div>';
+
+          if (data.recentPurchases.length === 0) {
+            purchasesHTML += '<div style="color: #666; text-align: center; padding: 20px;">No recent purchases found</div>';
+          } else {
+            purchasesHTML += '<div style="max-height: 400px; overflow-y: auto; font-size: 12px;">';
+
+            data.recentPurchases.forEach(purchase => {
+              const timestamp = new Date(purchase.timestamp).toLocaleString();
+              const bonusText = purchase.bonusPercent > 0 ? ` (+${purchase.bonusPercent}% bonus)` : '';
+
+              purchasesHTML += `
+                <div style="border-bottom: 1px solid #333; padding: 8px 0; margin-bottom: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #25c2a0; font-weight: bold;">${purchase.wallet}</span>
+                    <span style="color: #666; font-size: 10px;">${timestamp}</span>
+                  </div>
+                  <div style="color: #ccc; margin-top: 4px;">
+                    ${purchase.xrpAmount} XRP → ${purchase.waldoAmount.toLocaleString()} WALDO${bonusText}
+                  </div>
+                  ${purchase.txHash ? `<div style="color: #666; font-size: 10px; margin-top: 2px;">TX: ${purchase.txHash}</div>` : ''}
+                </div>
+              `;
+            });
+
+            purchasesHTML += '</div>';
+          }
+
+          presaleDiv.innerHTML = purchasesHTML;
+          presaleDiv.style.display = 'block';
+
+          showAlert(`✅ Loaded ${data.recentPurchases.length} recent purchases`, 'success');
+        } else {
+          showAlert(`❌ ${data.error || 'No purchase data available'}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Load presale purchases error:', error);
+        showAlert('❌ Failed to load presale purchases', 'error');
+      }
+    }
+
+    async function loadPresaleSummary() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/api/presale/admin-summary`, {
+          method: 'GET',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('presaleTotalSold').textContent = data.formatted.totalSold;
+          document.getElementById('presaleTotalXRP').textContent = `${data.formatted.totalXRP} XRP`;
+          document.getElementById('presaleTotalPurchases').textContent = data.formatted.totalPurchases;
+          document.getElementById('presaleRecentActivity').textContent = `${data.recentActivity.purchases24h} purchases`;
+        }
+      } catch (error) {
+        console.error('Failed to load presale summary:', error);
+      }
+    }
+
+    function exportPresaleData() {
+      showAlert('Presale data export feature coming soon', 'info');
     }
   </script>
 
