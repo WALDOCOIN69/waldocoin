@@ -1,18 +1,18 @@
-<!-- 🚀 WALDO Presale Button -->
-<div style="text-align:center; margin: 40px 0;">
-  <button onclick="openWaldoSliderModal()" style="background:#25c2a0; color:white; font-weight:bold; font-size:20px; padding:12px 30px; border:none; border-radius:8px; cursor:pointer;">
-    🚀 Buy WALDO PRESALE
-  </button>
-</div>
+<!-- 🚀 WALDO Presale Widget - Direct Display -->
+<div style="background:#0d2818; padding: 40px 20px; border-radius: 18px; margin: 20px 0; border: 2px solid #25c2a0;">
 
-<!-- 🧨 Modal Wrapper -->
-<div id="waldoSliderModal" style="display:none; position:fixed; inset:0; z-index:9999; background:#0d2818; overflow-y:auto;">
-
-  <!-- Close Button -->
-  <span onclick="closeWaldoSliderModal()" style="position:absolute; top:20px; right:30px; font-size:26px; cursor:pointer; color:white;">✖</span>
+  <!-- Widget Title -->
+  <div style="text-align: center; margin-bottom: 30px;">
+    <h1 style="color: #25c2a0; font-size: 28px; margin: 0; font-family: 'Arial Black', sans-serif;">
+      🚀 WALDO PRESALE
+    </h1>
+    <p style="color: #ccc; font-size: 14px; margin: 5px 0 0 0;">
+      Buy WALDO tokens with XRP • Bonus tiers available
+    </p>
+  </div>
 
   <!-- Layout Wrapper -->
-<div style="display: flex; justify-content: center; gap: 40px; align-items: flex-start; padding: 40px 20px; max-width: 1200px; margin: 96px auto 0 auto; flex-wrap: wrap;">
+  <div style="display: flex; justify-content: center; gap: 40px; align-items: flex-start; max-width: 1200px; margin: 0 auto; flex-wrap: wrap;">
 
     <!-- 📎 Left Side: QR + Info -->
     <div style="flex: 1; min-width: 280px; max-width: 500px; color: white; font-family: 'Arial Black', sans-serif;">
@@ -173,19 +173,14 @@ const waldoBonusTable = {
   100: 1300000  // 1M base + 30% bonus (300k) = 1.3M
 };
 
-function openWaldoSliderModal() {
-  document.getElementById('waldoSliderModal').style.display = 'block';
+// Widget initialization function (no modal needed)
+function initializePresaleWidget() {
   updateWaldoAmount();
   const wallet = localStorage.getItem("xummWallet");
   document.getElementById("connectedWallet").innerText = wallet ? wallet : "Not connected";
   document.getElementById("buySuccessMsg").style.display = "none";
   document.getElementById("buyWaldoBtn").disabled = false;
   document.getElementById("buyWaldoBtn").innerText = "🔐 Buy Now with XUMM";
-  if (!wallet) connectXummWallet();
-}
-
-function closeWaldoSliderModal() {
-  document.getElementById('waldoSliderModal').style.display = 'none';
 }
 
 function updateWaldoAmount() {
@@ -326,9 +321,9 @@ async function connectXummWallet() {
   }
 }
 
-// Initialize on page load
+// Initialize widget on page load
 document.addEventListener('DOMContentLoaded', function() {
-  updateWaldoAmount();
+  initializePresaleWidget();
   loadTrustlineQR();
   loadPresaleProgress();
 
