@@ -6,7 +6,7 @@
     <h1 style="color: #25c2a0; font-size: 28px; margin: 0; font-family: 'Arial Black', sans-serif;">
       🚀 WALDO PRESALE
     </h1>
-    <p style="color: #ccc; font-size: 14px; margin: 5px 0 0 0;">
+    <p style="color: white; font-size: 14px; margin: 5px 0 0 0; font-weight: bold;">
       Buy WALDO tokens with XRP • Bonus tiers available
     </p>
   </div>
@@ -33,23 +33,23 @@
 
   <!-- Presale Progress -->
   <div id="presaleProgress" style="margin: 15px 0; padding: 10px; background: #0f2d17; border: 1px solid #1a4d2e; border-radius: 8px;">
-    <div style="font-size: 12px; color: #ccc;">Presale Progress:</div>
-    <div id="progressText" style="color: #25c2a0; font-weight: bold;">Loading...</div>
-    <div style="background: #0a1f0f; height: 6px; border-radius: 3px; margin: 5px 0; border: 1px solid #1a4d2e;">
-      <div id="progressBar" style="background: #25c2a0; height: 100%; border-radius: 3px; width: 0%; transition: width 0.3s;"></div>
+    <div style="font-size: 12px; color: white; font-weight: bold;">Presale Progress:</div>
+    <div id="progressText" style="color: white; font-weight: bold; font-size: 14px;">Loading...</div>
+    <div style="background: #0a1f0f; height: 8px; border-radius: 4px; margin: 8px 0; border: 1px solid #1a4d2e;">
+      <div id="progressBar" style="background: #25c2a0; height: 100%; border-radius: 4px; width: 0%; transition: width 0.3s;"></div>
     </div>
   </div>
 
-  <p style="font-size: 14px;">Wallet: <span id="connectedWallet" style="color:#ff0;">Not connected</span><br>
-    <a href="javascript:void(0);" onclick="connectXummWallet()" style="color: yellow; font-weight: bold;">🔌 Connect XUMM Wallet</a>
+  <p style="font-size: 14px; color: white; font-weight: bold;">Wallet: <span id="connectedWallet" style="color:#25c2a0; font-weight: bold;">Not connected</span><br>
+    <a href="javascript:void(0);" onclick="connectXummWallet()" style="color: #25c2a0; font-weight: bold; text-decoration: underline;">🔌 Connect XUMM Wallet</a>
   </p>
-  <a href="https://waldocoin.live/presale/" target="_blank" style="color: #00ffff; font-size: 13px;">📄 View Presale Info Page</a>
+  <a href="https://waldocoin.live/presale/" target="_blank" style="color: #25c2a0; font-size: 13px; font-weight: bold; text-decoration: underline;">📄 View Presale Info Page</a>
 </div>
       <!-- 📲 XUMM QR -->
       <div style="margin-top: 25px; text-align: center;">
         <img id="xummQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="width:90px; border-radius:10px; border:2px solid #25c2a0; background:#0a1f0f;">
-        <div style="color:#ccc; font-size:11px;">Scan with XAMAN</div>
-        <a id="xummDeepLink" href="#" style="color:#00ffff; font-size:12px; margin-top:6px; display:none;">📲 Tap here for XAMAN App</a>
+        <div style="color: white; font-size: 12px; font-weight: bold;">Scan with XAMAN</div>
+        <a id="xummDeepLink" href="#" style="color: #25c2a0; font-size: 12px; margin-top: 6px; display: none; font-weight: bold; text-decoration: underline;">📲 Tap here for XAMAN App</a>
       </div>
     </div>
 
@@ -62,7 +62,7 @@
           <input type="number" id="xrpInput" value="5" min="5" max="100" step="5" oninput="updateWaldoAmount()">
           <span>Max</span>
         </div>
-        <div style="font-size: 11px; color: #888; text-align: center; margin-top: 5px;">
+        <div style="font-size: 11px; color: white; text-align: center; margin-top: 5px; font-weight: bold;">
           🎁 Bonus Tiers: 15% at 80+ XRP | 22% at 90+ XRP | 30% at 100 XRP
         </div>
       </div>
@@ -109,7 +109,8 @@
 
 .swap-panel label {
   font-size: 14px;
-  color: #aaa;
+  color: white;
+  font-weight: bold;
   margin-bottom: 8px;
   display: block;
 }
@@ -139,7 +140,8 @@
 
 .panel-row span {
   font-size: 14px;
-  color: #ccc;
+  color: white;
+  font-weight: bold;
 }
 
 #buyWaldoBtn {
@@ -270,7 +272,7 @@ async function loadPresaleProgress() {
 
     if (data.success) {
       const totalSold = data.totalSold || 0;
-      const totalTarget = 100000000; // 100M WALDO target
+      const totalTarget = 40000000; // 40M WALDO target
       const progressPercent = Math.min((totalSold / totalTarget) * 100, 100);
 
       document.getElementById('progressText').textContent =
