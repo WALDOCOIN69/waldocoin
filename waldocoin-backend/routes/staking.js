@@ -34,7 +34,6 @@ function getUserLevel(xp) {
   }
   return { level: 1, title: "Waldo Watcher", xp: 0, stakingBonus: LEVEL_STAKING_BONUSES[1] };
 }
-import getWaldoBalance from '../utils/getWaldoBalance.js';
 
 const router = express.Router();
 
