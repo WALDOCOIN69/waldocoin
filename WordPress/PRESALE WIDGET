@@ -47,15 +47,21 @@
 </div>
       <!-- 📲 XUMM QR -->
       <div style="margin-top: 25px; text-align: center;">
-        <img id="xummQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="width:90px; border-radius:10px; border:2px solid #25c2a0; background:#0a1f0f;">
-        <div style="color: white; font-size: 12px; font-weight: bold;">Scan with XAMAN</div>
+        <div id="qrContainer" style="min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <img id="xummQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+               style="width:90px; height:90px; border-radius:10px; border:2px solid #25c2a0; background:#0a1f0f; display: none;">
+          <div id="qrPlaceholder" style="width:90px; height:90px; border-radius:10px; border:2px solid #25c2a0; background:#0a1f0f; display: flex; align-items: center; justify-content: center; color: #666; font-size: 10px;">
+            Click Connect
+          </div>
+        </div>
+        <div style="color: white; font-size: 12px; font-weight: bold; margin-top: 8px;">Scan with XAMAN</div>
         <a id="xummDeepLink" href="#" style="color: #25c2a0; font-size: 12px; margin-top: 6px; display: none; font-weight: bold; text-decoration: underline;">📲 Tap here for XAMAN App</a>
       </div>
     </div>
 
     <!-- 💳 Right Side: Widget -->
     <div class="waldo-swap-box">
-      <h2>Buy WALDO</h2>
+      <h2 style="color: white; font-weight: bold;">Buy WALDO</h2>
       <div class="swap-panel">
         <label>XRP (5–100 in 5 XRP increments) <span id="bonusTier" style="color: #ffd93d; font-size: 12px;"></span></label>
         <div class="panel-row">
@@ -96,6 +102,12 @@
   text-align: center;
   width: 100%;
   max-width: 400px;
+}
+
+.waldo-swap-box h2 {
+  color: white !important;
+  font-weight: bold !important;
+  margin-bottom: 20px;
 }
 
 .swap-panel {
@@ -185,9 +197,13 @@ function initializePresaleWidget() {
     document.getElementById("connectedWallet").style.color = '#25c2a0';
     // Hide the XUMM QR since wallet is already connected
     document.getElementById('xummQR').style.display = 'none';
+    document.getElementById('qrPlaceholder').style.display = 'none';
   } else {
     document.getElementById("connectedWallet").innerText = "Not connected";
     document.getElementById("connectedWallet").style.color = '#e74c3c';
+    // Show the placeholder, hide the QR
+    document.getElementById('xummQR').style.display = 'none';
+    document.getElementById('qrPlaceholder').style.display = 'flex';
   }
 
   document.getElementById("buySuccessMsg").style.display = "none";
@@ -345,8 +361,13 @@ async function connectXummWallet() {
     const data = await res.json();
 
     if (data.qr) {
-      // Update the XUMM QR code in the widget
-      document.getElementById('xummQR').src = data.qr;
+      // Update the XUMM QR code in the widget and make sure it's visible
+      const qrElement = document.getElementById('xummQR');
+      const placeholder = document.getElementById('qrPlaceholder');
+
+      qrElement.src = data.qr;
+      qrElement.style.display = 'block';
+      placeholder.style.display = 'none';
 
       // Show deep link if on mobile
       if (/Mobi|Android/i.test(navigator.userAgent) && data.refs?.xapp) {
