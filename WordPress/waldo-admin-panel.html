@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,43 +11,43 @@
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
       color: #fff;
       min-height: 100vh;
     }
-    
+
     .admin-header {
       background: linear-gradient(90deg, #25c2a0, #1ea085);
       padding: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
-    
+
     .admin-title {
       font-size: 2em;
       font-weight: bold;
       margin-bottom: 5px;
     }
-    
+
     .admin-subtitle {
       opacity: 0.9;
       font-size: 1.1em;
     }
-    
+
     .admin-nav {
       background: #111;
       padding: 15px 20px;
       border-bottom: 1px solid #333;
     }
-    
+
     .nav-buttons {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
     }
-    
+
     .nav-btn {
       background: #333;
       color: #fff;
@@ -57,44 +58,51 @@
       font-weight: 500;
       transition: all 0.3s ease;
     }
-    
+
     .nav-btn:hover {
       background: #25c2a0;
       transform: translateY(-2px);
     }
-    
+
     .nav-btn.active {
       background: #25c2a0;
       box-shadow: 0 0 10px rgba(37, 194, 160, 0.3);
     }
-    
+
     .admin-content {
       padding: 30px;
       max-width: 1400px;
       margin: 0 auto;
     }
-    
+
     .admin-section {
       display: none;
       animation: fadeIn 0.3s ease;
     }
-    
+
     .admin-section.active {
       display: block;
     }
-    
+
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
       margin-bottom: 30px;
     }
-    
+
     .stat-card {
       background: linear-gradient(135deg, #222 0%, #333 100%);
       padding: 25px;
@@ -103,33 +111,33 @@
       text-align: center;
       transition: transform 0.3s ease;
     }
-    
+
     .stat-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     }
-    
+
     .stat-value {
       font-size: 2.5em;
       font-weight: bold;
       color: #25c2a0;
       margin-bottom: 10px;
     }
-    
+
     .stat-label {
       font-size: 1.1em;
       opacity: 0.8;
     }
-    
+
     .admin-card {
       background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
       border-radius: 15px;
       padding: 25px;
       margin-bottom: 25px;
       border: 1px solid #333;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }
-    
+
     .card-title {
       font-size: 1.5em;
       font-weight: bold;
@@ -139,18 +147,18 @@
       align-items: center;
       gap: 10px;
     }
-    
+
     .form-group {
       margin-bottom: 20px;
     }
-    
+
     .form-label {
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
       color: #ccc;
     }
-    
+
     .form-input {
       width: 100%;
       padding: 12px 15px;
@@ -161,18 +169,18 @@
       font-size: 1em;
       transition: border-color 0.3s ease;
     }
-    
+
     .form-input:focus {
       outline: none;
       border-color: #25c2a0;
       box-shadow: 0 0 0 2px rgba(37, 194, 160, 0.2);
     }
-    
+
     .form-textarea {
       min-height: 100px;
       resize: vertical;
     }
-    
+
     .btn {
       background: linear-gradient(135deg, #25c2a0, #1ea085);
       color: #000;
@@ -187,17 +195,17 @@
       align-items: center;
       gap: 8px;
     }
-    
+
     .btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(37, 194, 160, 0.3);
     }
-    
+
     .btn-danger {
       background: linear-gradient(135deg, #e74c3c, #c0392b);
       color: #fff;
     }
-    
+
     .btn-warning {
       background: linear-gradient(135deg, #f39c12, #e67e22);
       color: #fff;
@@ -365,24 +373,77 @@
     }
 
     /* Utility Classes */
-    .hidden { display: none !important; }
-    .margin-bottom-30 { margin-bottom: 30px; }
-    .margin-bottom-20 { margin-bottom: 20px; }
-    .margin-bottom-15 { margin-bottom: 15px; }
-    .margin-bottom-10 { margin-bottom: 10px; }
-    .margin-top-15 { margin-top: 15px; }
-    .margin-top-10 { margin-top: 10px; }
-    .text-center { text-align: center; }
-    .text-muted { color: #666; }
-    .text-success { color: #27ae60; }
-    .text-error { color: #e74c3c; }
-    .text-warning { color: #f39c12; }
-    .text-primary { color: #25c2a0; }
-    .padding-20 { padding: 20px; }
-    .width-100 { width: 100%; }
-    .font-small { font-size: 0.9em; }
-    .font-bold { font-weight: bold; }
-    .opacity-80 { opacity: 0.8; }
+    .hidden {
+      display: none !important;
+    }
+
+    .margin-bottom-30 {
+      margin-bottom: 30px;
+    }
+
+    .margin-bottom-20 {
+      margin-bottom: 20px;
+    }
+
+    .margin-bottom-15 {
+      margin-bottom: 15px;
+    }
+
+    .margin-bottom-10 {
+      margin-bottom: 10px;
+    }
+
+    .margin-top-15 {
+      margin-top: 15px;
+    }
+
+    .margin-top-10 {
+      margin-top: 10px;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-muted {
+      color: #666;
+    }
+
+    .text-success {
+      color: #27ae60;
+    }
+
+    .text-error {
+      color: #e74c3c;
+    }
+
+    .text-warning {
+      color: #f39c12;
+    }
+
+    .text-primary {
+      color: #25c2a0;
+    }
+
+    .padding-20 {
+      padding: 20px;
+    }
+
+    .width-100 {
+      width: 100%;
+    }
+
+    .font-small {
+      font-size: 0.9em;
+    }
+
+    .font-bold {
+      font-weight: bold;
+    }
+
+    .opacity-80 {
+      opacity: 0.8;
+    }
 
     .status-container {
       background: #333;
@@ -450,7 +511,7 @@
       margin-bottom: 15px;
       font-size: 0.9em;
     }
-    
+
     .data-table {
       width: 100%;
       background: #222;
@@ -458,7 +519,7 @@
       overflow: hidden;
       border: 1px solid #333;
     }
-    
+
     .data-table th {
       background: #333;
       padding: 15px;
@@ -467,69 +528,69 @@
       color: #25c2a0;
       border-bottom: 1px solid #444;
     }
-    
+
     .data-table td {
       padding: 12px 15px;
       border-bottom: 1px solid #333;
     }
-    
+
     .data-table tr:hover {
       background: #2a2a2a;
     }
-    
+
     .status-badge {
       padding: 4px 12px;
       border-radius: 20px;
       font-size: 0.85em;
       font-weight: bold;
     }
-    
+
     .status-active {
       background: #27ae60;
       color: #fff;
     }
-    
+
     .status-blocked {
       background: #e74c3c;
       color: #fff;
     }
-    
+
     .status-flagged {
       background: #f39c12;
       color: #fff;
     }
-    
+
     .alert {
       padding: 15px 20px;
       border-radius: 8px;
       margin-bottom: 20px;
       font-weight: 500;
     }
-    
+
     .alert-success {
       background: rgba(39, 174, 96, 0.2);
       border: 1px solid #27ae60;
       color: #2ecc71;
     }
-    
+
     .alert-error {
       background: rgba(231, 76, 60, 0.2);
       border: 1px solid #e74c3c;
       color: #e74c3c;
     }
-    
+
     .alert-warning {
       background: rgba(243, 156, 18, 0.2);
       border: 1px solid #f39c12;
       color: #f39c12;
     }
-    
+
     .loading {
       text-align: center;
       padding: 40px;
       color: #666;
     }
-    
+
     .spinner {
       display: inline-block;
       width: 20px;
@@ -539,23 +600,25 @@
       border-top-color: #25c2a0;
       animation: spin 1s ease-in-out infinite;
     }
-    
+
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
-    
+
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
     }
-    
+
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 20px;
     }
-    
+
     /* Staking Admin Styles */
     .stake-detail-row {
       display: flex;
@@ -603,7 +666,9 @@
     }
 
     @media (max-width: 768px) {
-      .grid-2, .grid-3 {
+
+      .grid-2,
+      .grid-3 {
         grid-template-columns: 1fr;
       }
 
@@ -719,6 +784,7 @@
     }
   </style>
 </head>
+
 <body>
   <!-- Login Screen -->
   <div id="loginScreen" class="login-screen">
@@ -731,7 +797,8 @@
       <div class="login-form">
         <div class="form-group">
           <label class="form-label">Admin Password</label>
-          <input type="password" id="loginPassword" class="form-input" placeholder="Enter admin password" onkeypress="handleLoginKeypress(event)">
+          <input type="password" id="loginPassword" class="form-input" placeholder="Enter admin password"
+            onkeypress="handleLoginKeypress(event)">
         </div>
 
         <button type="button" class="btn btn-primary" onclick="attemptLogin()">
@@ -763,1575 +830,1576 @@
       </div>
     </div>
 
-  <!-- Navigation -->
-  <div class="admin-nav">
-    <div class="nav-buttons">
-      <button type="button" class="nav-btn active" onclick="showSection('dashboard')">📊 System Status</button>
-      <button type="button" class="nav-btn" onclick="showSection('users')">👥 User Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('airdrops')">🎁 Airdrop/Presale</button>
-      <button type="button" class="nav-btn" onclick="showSection('battles')">⚔️ Battle Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('staking')">🏦 Staking Monitor</button>
-      <button type="button" class="nav-btn" onclick="showSection('security')">🛡️ Security Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
-      <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="admin-content">
-    <!-- Dashboard Section -->
-    <div id="dashboard" class="admin-section active">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value" id="totalUsers">-</div>
-          <div class="stat-label">WALDO Trustlines</div>
-          <button onclick="loadTrustlineCount()" style="background: #25c2a0; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; margin-top: 5px; cursor: pointer;">🔄 Refresh</button>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="totalWaldoDistributed">-</div>
-          <div class="stat-label">WALDO Distributed</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="activeBattles">-</div>
-          <div class="stat-label">Active Battles</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="totalStaked">-</div>
-          <div class="stat-label">Total Staked</div>
-        </div>
-      </div>
-
-      <!-- Admin Key Configuration -->
-      <!-- 🔑 Admin Authentication Section -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">🔑 Admin Authentication</div>
-        <p class="text-muted margin-bottom-20">Set your admin key to access all admin functions (from X_ADMIN_KEY environment variable)</p>
-
-        <div class="auth-section">
-          <div class="auth-input-group">
-            <label class="form-label">Admin Key</label>
-            <div class="input-button-row">
-              <input type="password" id="adminKeyInput" class="form-input" placeholder="Enter your admin key">
-              <button type="button" class="btn btn-primary" onclick="saveAdminKey()">
-                💾 Save
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="clearAdminKey()">
-                🗑️ Clear
-              </button>
-            </div>
-          </div>
-
-          <div class="auth-status-row">
-            <div id="adminKeyStatus" class="status-indicator">
-              <span id="keyStatusText" class="text-muted">❌ No admin key stored</span>
-            </div>
-            <button type="button" class="btn btn-info btn-small" onclick="testEnvironmentKeys()">
-              🧪 Test Connection
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 🔐 Airdrop Password Control Section -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">🔐 Daily Airdrop Password</div>
-        <p class="text-muted margin-bottom-20">Control the password users need to claim airdrops (separate from admin key)</p>
-
-        <div class="password-control-section">
-          <div class="current-password-display">
-            <div class="password-info">
-              <label class="form-label">Current Airdrop Password</label>
-              <div id="currentPasswordDisplay" class="current-password" style="color: #25c2a0;">Loading...</div>
-              <div id="passwordSource" class="password-source">Redis override</div>
-            </div>
-            <button type="button" class="btn btn-info" onclick="forceRefreshPassword();">
-              🔄 Refresh
-            </button>
-          </div>
-
-          <div class="password-change-group">
-            <label class="form-label">Change Airdrop Password</label>
-            <div class="input-button-row">
-              <input type="text" id="newDailyPassword" class="form-input" placeholder="Enter new password for users">
-              <button type="button" class="btn btn-primary" onclick="updateAirdropPassword()">
-                ✅ Update
-              </button>
-            </div>
-            <div class="password-actions">
-              <button type="button" class="btn btn-secondary btn-small" onclick="generateDailyPassword()">
-                🎲 Generate Random
-              </button>
-              <button type="button" class="btn btn-warning btn-small" onclick="clearPasswordOverride()">
-                🔄 Reset to Default
-              </button>
-            </div>
-          </div>
-
-          <div id="passwordUpdateResult" class="result-display"></div>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="admin-card">
-          <div class="card-title">📈 Recent Activity</div>
-          <div id="recentActivity" class="loading">
-            <div class="spinner"></div> Loading...
-          </div>
-        </div>
-        <div class="admin-card">
-          <div class="card-title">🚨 System Alerts</div>
-          <div id="systemAlerts" class="loading">
-            <div class="spinner"></div> Loading...
-          </div>
-        </div>
+    <!-- Navigation -->
+    <div class="admin-nav">
+      <div class="nav-buttons">
+        <button type="button" class="nav-btn active" onclick="showSection('dashboard')">📊 System Status</button>
+        <button type="button" class="nav-btn" onclick="showSection('users')">👥 User Override</button>
+        <button type="button" class="nav-btn" onclick="showSection('airdrops')">🎁 Airdrop/Presale</button>
+        <button type="button" class="nav-btn" onclick="showSection('battles')">⚔️ Battle Override</button>
+        <button type="button" class="nav-btn" onclick="showSection('staking')">🏦 Staking Monitor</button>
+        <button type="button" class="nav-btn" onclick="showSection('security')">🛡️ Security Override</button>
+        <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
+        <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
       </div>
     </div>
 
-    <!-- Users Section -->
-    <div id="users" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
-        ⚠️ <strong>User Security Override</strong><br>
-        Manual user blocking/unblocking for when automated fraud detection needs intervention.
-      </div>
-
-      <div class="admin-card">
-        <div class="card-title">👥 User Security Controls</div>
-
-        <!-- Export Users Section -->
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #25c2a0; margin-bottom: 10px;">📊 Export User Data</h4>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button onclick="exportUsersCSV()" class="btn btn-secondary">
-              📥 Download CSV
-            </button>
-            <button onclick="exportUsersJSON()" class="btn btn-secondary">
-              📥 Download JSON
-            </button>
-            <span style="color: #666; font-size: 0.9em;">Export all user data before reset</span>
+    <!-- Main Content -->
+    <div class="admin-content">
+      <!-- Dashboard Section -->
+      <div id="dashboard" class="admin-section active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="totalUsers">-</div>
+            <div class="stat-label">WALDO Trustlines</div>
+            <button onclick="loadTrustlineCount()"
+              style="background: #25c2a0; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; margin-top: 5px; cursor: pointer;">🔄
+              Refresh</button>
           </div>
-          <div id="exportResult" class="margin-top-10"></div>
-        </div>
-
-        <div class="form-group">
-          <input type="text" id="userSearch" class="form-input" placeholder="Search by wallet address or Twitter handle...">
-        </div>
-
-        <div id="usersList" class="loading">
-          <div class="spinner"></div> Loading users...
-        </div>
-      </div>
-
-      <!-- Manual Security Actions -->
-      <div class="admin-card margin-top-20">
-        <div class="card-title">🛡️ Manual Security Actions</div>
-
-        <div class="grid-2">
-          <!-- Block User -->
-          <div>
-            <h4 style="color: #e74c3c; margin-bottom: 15px;">🚫 Block User</h4>
-            <div class="form-group">
-              <input type="text" id="blockWallet" class="form-input" placeholder="Wallet address to block">
-            </div>
-            <div class="form-group">
-              <input type="text" id="blockReason" class="form-input" placeholder="Reason for blocking">
-            </div>
-            <button onclick="blockUser()" class="btn btn-danger">Block User</button>
-            <div id="blockResult" class="result-message"></div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalWaldoDistributed">-</div>
+            <div class="stat-label">WALDO Distributed</div>
           </div>
-
-          <!-- Unblock User -->
-          <div>
-            <h4 style="color: #27ae60; margin-bottom: 15px;">✅ Unblock User</h4>
-            <div class="form-group">
-              <input type="text" id="unblockWallet" class="form-input" placeholder="Wallet address to unblock">
-            </div>
-            <div class="form-group">
-              <input type="text" id="unblockReason" class="form-input" placeholder="Reason for unblocking">
-            </div>
-            <button onclick="unblockUser()" class="btn btn-success">Unblock User</button>
-            <div id="unblockResult" class="result-message"></div>
+          <div class="stat-card">
+            <div class="stat-value" id="activeBattles">-</div>
+            <div class="stat-label">Active Battles</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalStaked">-</div>
+            <div class="stat-label">Total Staked</div>
           </div>
         </div>
 
-        <!-- Security Check -->
-        <div class="margin-top-20">
-          <h4 style="color: #f39c12; margin-bottom: 15px;">🔍 Security Check</h4>
-          <div class="form-group">
-            <input type="text" id="checkWallet" class="form-input" placeholder="Wallet address to check">
-          </div>
-          <button onclick="checkUserSecurity()" class="btn btn-warning">Check Security Status</button>
-          <div id="securityCheckResult" class="result-message"></div>
-        </div>
-      </div>
-    </div>
+        <!-- Admin Key Configuration -->
+        <!-- 🔑 Admin Authentication Section -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">🔑 Admin Authentication</div>
+          <p class="text-muted margin-bottom-20">Set your admin key to access all admin functions (from X_ADMIN_KEY
+            environment variable)</p>
 
-    <!-- Airdrops Section -->
-    <div id="airdrops" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
-        ⚠️ <strong>Airdrop &amp; Presale Management</strong><br>
-        Manage manual airdrops, presale countdown, and presale analytics from this section.
-      </div>
-
-      <!-- System Health & Security -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">🚨 System Health & Emergency Controls</div>
-
-        <div class="grid-3">
-          <div>
-            <div class="form-group">
-              <label class="form-label">System Status</label>
-              <div id="systemStatus" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Overall system health status</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">WALDO Balance</label>
-              <div id="distributorBalance" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Distributor wallet WALDO balance</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Emergency Controls</label>
-              <div style="display: flex; gap: 10px; flex-direction: column;">
-                <button type="button" id="emergencyStopBtn" class="btn btn-danger" onclick="toggleEmergencyStop()">
-                  🚨 Emergency Stop
+          <div class="auth-section">
+            <div class="auth-input-group">
+              <label class="form-label">Admin Key</label>
+              <div class="input-button-row">
+                <input type="password" id="adminKeyInput" class="form-input" placeholder="Enter your admin key">
+                <button type="button" class="btn btn-primary" onclick="saveAdminKey()">
+                  💾 Save
                 </button>
-                <button type="button" class="btn btn-info" onclick="refreshSystemHealth()">
-                  🔄 Refresh Status
-                </button>
-              </div>
-              <small class="help-text">Emergency stop disables all airdrops</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="info-display" style="margin-top: 15px;">
-          <div class="stat-item">
-            <span class="stat-label">⚡ Response Times:</span>
-            <span id="responseTimes" class="stat-value">Redis: -ms, XRPL: -ms</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Failed Transactions & Retry System -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">🔄 Failed Transactions & Retry System</div>
-
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Failed Transactions</label>
-              <div id="failedTxCount" class="info-display" style="color: #e74c3c; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Transactions that failed and need retry</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Success Rate</label>
-              <div id="successRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Overall transaction success rate</small>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn btn-warning" onclick="loadFailedTransactions()">
-            🔄 Load Failed Transactions
-          </button>
-          <button type="button" class="btn btn-info" onclick="toggleFailedTxView()">
-            👁️ Toggle Failed TX View
-          </button>
-        </div>
-
-        <div id="failedTxContainer" style="display: none; margin-top: 15px;">
-          <div id="failedTxList" style="max-height: 300px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 10px; background: #222;">
-            <div style="color: #666; text-align: center; padding: 20px;">
-              Click "Load Failed Transactions" to view failed transactions
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bulk Wallet Operations -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">👥 Bulk Wallet Operations</div>
-
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Operation Type</label>
-              <select id="bulkOperation" style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
-                <option value="blacklist">Blacklist Wallets</option>
-                <option value="whitelist">Whitelist Wallets</option>
-                <option value="remove_blacklist">Remove from Blacklist</option>
-                <option value="remove_whitelist">Remove from Whitelist</option>
-              </select>
-              <small class="help-text">Choose the operation to perform</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Reason</label>
-              <input type="text" id="bulkReason" placeholder="Reason for bulk operation"
-                     style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
-              <small class="help-text">Reason for this bulk operation</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Wallet Addresses (one per line)</label>
-          <textarea id="bulkWallets" rows="5" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&#10;rYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY&#10;rZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
-                    style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
-          <small class="help-text">Enter wallet addresses, one per line</small>
-        </div>
-
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn btn-primary" onclick="performBulkOperation()">
-            👥 Perform Bulk Operation
-          </button>
-          <button type="button" class="btn btn-info" onclick="showWalletLists()">
-            📋 Show Current Lists
-          </button>
-        </div>
-
-        <div id="bulkResults" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
-          <!-- Bulk operation results will appear here -->
-        </div>
-      </div>
-
-      <!-- Business Intelligence & ROI Analytics -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">📈 Business Intelligence & ROI Analytics</div>
-
-        <div class="grid-4">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Conversion Rate</label>
-              <div id="conversionRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Trustline to claim conversion</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Cost Per User</label>
-              <div id="costPerUser" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Average WALDO cost per user</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Growth Rate</label>
-              <div id="growthRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">7-day growth trend</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">ROI Score</label>
-              <div id="roiScore" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Return on investment</small>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn btn-primary" onclick="loadROIAnalytics()">
-            📈 Load ROI Analytics
-          </button>
-          <button type="button" class="btn btn-info" onclick="loadTokenDistribution()">
-            🪙 Token Distribution
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="loadMarketingPerformance()">
-            📢 Marketing Performance
-          </button>
-        </div>
-
-        <div id="roiDetails" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
-          <!-- ROI analytics details will appear here -->
-        </div>
-      </div>
-
-      <!-- Advanced Reports & Executive Dashboard -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">📋 Advanced Reports & Executive Dashboard</div>
-
-        <div class="grid-3">
-          <div>
-            <div class="form-group">
-              <label class="form-label">System Health</label>
-              <div id="executiveSystemHealth" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Overall system status</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Performance Score</label>
-              <div id="performanceScore" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Overall performance rating</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Risk Level</label>
-              <div id="riskLevel" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Current risk assessment</small>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn btn-primary" onclick="loadAdvancedReports()">
-            📋 Generate Executive Report
-          </button>
-          <button type="button" class="btn btn-info" onclick="exportExecutiveReport()">
-            📄 Export Executive Summary
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="toggleExecutiveView()">
-            👁️ Toggle Executive View
-          </button>
-        </div>
-
-        <div id="executiveReportContainer" style="display: none; margin-top: 15px;">
-          <div id="executiveReport" style="max-height: 500px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 15px; background: #222;">
-            <div style="color: #666; text-align: center; padding: 20px;">
-              Click "Generate Executive Report" to view comprehensive analytics
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Presale Countdown Management -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">⏱️ Presale Countdown Management</div>
-
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Current End Date</label>
-              <div id="currentEndDate" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Current presale countdown end date</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Time Remaining</label>
-              <div id="timeRemaining" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Time left until presale ends</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid-2" style="margin-top: 15px;">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Set New End Date & Time</label>
-              <input type="datetime-local" id="newEndDate" class="form-input" style="width: 100%;">
-              <small class="help-text">Select when the presale should end</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Quick Actions</label>
-              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(24)">
-                  +24 Hours
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(168)">
-                  +7 Days
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(720)">
-                  +30 Days
+                <button type="button" class="btn btn-secondary" onclick="clearAdminKey()">
+                  🗑️ Clear
                 </button>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn btn-primary" onclick="updatePresaleCountdown()">
-            ⏱️ Update Countdown
-          </button>
-          <button type="button" class="btn btn-info" onclick="loadCurrentCountdown()">
-            🔄 Refresh Status
-          </button>
-          <button type="button" class="btn btn-danger" onclick="clearPresaleCountdown()">
-            🗑️ Clear Countdown
-          </button>
-        </div>
-
-        <div id="countdownStatus" style="margin-top: 15px; padding: 10px; background: #222; border-radius: 6px; display: none;">
-          <!-- Countdown status messages will appear here -->
-        </div>
-      </div>
-
-      <!-- Presale Analytics & Tracking -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">🚀 Presale Analytics & Tracking</div>
-
-        <div class="grid-4">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Total WALDO Sold</label>
-              <div id="presaleTotalSold" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
+            <div class="auth-status-row">
+              <div id="adminKeyStatus" class="status-indicator">
+                <span id="keyStatusText" class="text-muted">❌ No admin key stored</span>
               </div>
-              <small class="help-text">Total WALDO tokens sold in presale</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Total XRP Raised</label>
-              <div id="presaleTotalXRP" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Total XRP raised from presale</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Total Purchases</label>
-              <div id="presaleTotalPurchases" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Number of presale purchases</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">24h Activity</label>
-              <div id="presaleRecentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Recent presale activity</small>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn btn-primary" onclick="loadPresaleAnalytics()">
-            🚀 Load Presale Analytics
-          </button>
-          <button type="button" class="btn btn-info" onclick="loadPresalePurchases()">
-            📋 View Recent Purchases
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="exportPresaleData()">
-            📄 Export Presale Data
-          </button>
-        </div>
-
-        <div id="presaleDetails" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
-          <!-- Presale analytics details will appear here -->
-        </div>
-      </div>
-
-      <!-- Enhanced Analytics Dashboard -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">📊 Enhanced Analytics Dashboard</div>
-
-        <div class="grid-3">
-          <div>
-            <div class="form-group">
-              <label class="form-label">24h Activity</label>
-              <div id="recentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Claims in last 24 hours</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Total Distributed</label>
-              <div id="totalDistributed" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Total WALDO distributed</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Wallet Management</label>
-              <div id="walletStats" class="info-display" style="color: #25c2a0; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Blacklisted/Whitelisted counts</small>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn btn-info" onclick="loadEnhancedAnalytics()">
-            📊 Load Enhanced Analytics
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="loadUserBehavior()">
-            👤 Load User Behavior
-          </button>
-        </div>
-
-        <div id="analyticsDetails" style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
-          <!-- Enhanced analytics details will appear here -->
-        </div>
-      </div>
-
-      <!-- Admin Activity Logs -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">📝 Admin Activity Logs</div>
-
-        <div style="margin-bottom: 15px;">
-          <button type="button" class="btn btn-secondary" onclick="loadAdminLogs()">
-            📋 Load Recent Activity
-          </button>
-          <button type="button" class="btn btn-info" onclick="toggleLogsView()">
-            👁️ Toggle Logs View
-          </button>
-        </div>
-
-        <div id="adminLogsContainer" style="display: none;">
-          <div id="adminLogsList" style="max-height: 400px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 10px; background: #222;">
-            <div style="color: #666; text-align: center; padding: 20px;">
-              Click "Load Recent Activity" to view admin logs
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Airdrop Amount Control -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">💰 Airdrop Amount Control</div>
-
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Current Airdrop Amount</label>
-              <div id="currentAirdropAmount" class="info-display" style="color: #25c2a0; font-size: 18px; font-weight: bold;">
-                Loading...
-              </div>
-              <small class="help-text">Amount of WALDO tokens per airdrop claim</small>
-            </div>
-          </div>
-
-          <div>
-            <div class="form-group">
-              <label class="form-label">Set New Amount</label>
-              <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="number" id="newAirdropAmount" placeholder="20000" min="1" max="1000000"
-                       style="flex: 1; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
-                <button type="button" class="btn btn-primary" onclick="updateAirdropAmount()">
-                  💰 Update Amount
-                </button>
-              </div>
-              <small class="help-text">
-                Enter new amount (1 - 1,000,000 WALDO). Current claims will use new amount.
-              </small>
-            </div>
-          </div>
-        </div>
-
-        <div class="info-display" style="margin-top: 15px;">
-          <div class="stat-item">
-            <span class="stat-label">⚠️ Important:</span>
-            <span class="stat-value" style="color: #ffd93d;">Changes apply to all future airdrops immediately</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Claimed Wallets Export -->
-      <div class="admin-card margin-bottom-30">
-        <div class="card-title">📊 Claimed Wallets Export</div>
-
-        <div class="grid-2">
-          <div>
-            <div class="form-group">
-              <label class="form-label">Export Options</label>
-              <div class="button-group">
-                <button type="button" class="btn btn-primary" onclick="exportClaimedWallets()">
-                  📥 Download CSV Spreadsheet
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="viewClaimedWallets()">
-                  👁️ View Claimed List
-                </button>
-              </div>
-              <small class="help-text">
-                Export all wallets that have claimed airdrops for analysis
-              </small>
-            </div>
-          </div>
-
-          <div>
-            <div id="claimedWalletsInfo" class="info-display">
-              <div class="stat-item">
-                <span class="stat-label">Total Claimed:</span>
-                <span id="totalClaimedCount" class="stat-value">Loading...</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Manual Airdrops:</span>
-                <span id="manualCount" class="stat-value">Loading...</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Regular Claims:</span>
-                <span id="regularCount" class="stat-value">Loading...</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Remaining:</span>
-                <span id="remainingCount" class="stat-value">Loading...</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Last Updated:</span>
-                <span id="lastUpdated" class="stat-value">Never</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="claimedWalletsList" style="display:none; margin-top:20px;">
-          <div class="card-title">📋 Claimed Wallets List</div>
-
-          <!-- Add Missing Wallet Section -->
-          <div style="margin-bottom:15px; padding:10px; background:#333; border-radius:6px;">
-            <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">➕ Add Missing Wallet</div>
-            <div style="display:flex; gap:10px; align-items:center;">
-              <input type="text" id="missingWalletAddress" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-                     style="flex:1; padding:6px; background:#222; border:1px solid #555; color:white; border-radius:4px; font-family:monospace; font-size:12px;">
-              <input type="text" id="missingWalletReason" placeholder="Reason (e.g., tracking failed yesterday)"
-                     style="flex:1; padding:6px; background:#222; border:1px solid #555; color:white; border-radius:4px; font-size:12px;">
-              <button type="button" onclick="addMissingWallet()"
-                      style="padding:6px 12px; background:#25c2a0; color:white; border:none; border-radius:4px; font-size:12px; cursor:pointer;">
-                Add to Tracking
+              <button type="button" class="btn btn-info btn-small" onclick="testEnvironmentKeys()">
+                🧪 Test Connection
               </button>
             </div>
-            <div style="font-size:10px; color:#666; margin-top:5px;">
-              Use this to add wallets that received airdrops but aren't in the tracking system
-            </div>
-          </div>
-
-          <div id="walletsTableContainer" style="max-height:300px; overflow-y:auto; border:1px solid #444; border-radius:6px; padding:10px;">
-            <!-- Wallets list will be populated here -->
           </div>
         </div>
-      </div>
 
-      <div class="grid-2">
-        <div class="admin-card">
-          <div class="card-title">🎁 Emergency Airdrop</div>
+        <!-- 🔐 Airdrop Password Control Section -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">🔐 Daily Airdrop Password</div>
+          <p class="text-muted margin-bottom-20">Control the password users need to claim airdrops (separate from admin
+            key)</p>
 
-          <form id="airdropForm">
-            <div class="form-group">
-              <label class="form-label">Wallet Address</label>
-              <input type="text" id="airdropWallet" class="form-input" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Amount (WALDO)</label>
-              <input type="number" id="airdropAmount" class="form-input" placeholder="1000" min="1" max="1000000" required>
+          <div class="password-control-section">
+            <div class="current-password-display">
+              <div class="password-info">
+                <label class="form-label">Current Airdrop Password</label>
+                <div id="currentPasswordDisplay" class="current-password" style="color: #25c2a0;">Loading...</div>
+                <div id="passwordSource" class="password-source">Redis override</div>
+              </div>
+              <button type="button" class="btn btn-info" onclick="forceRefreshPassword();">
+                🔄 Refresh
+              </button>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Reason (Required for manual override)</label>
-              <input type="text" id="airdropReason" class="form-input" placeholder="e.g., Automated system failed, emergency distribution" required>
+            <div class="password-change-group">
+              <label class="form-label">Change Airdrop Password</label>
+              <div class="input-button-row">
+                <input type="text" id="newDailyPassword" class="form-input" placeholder="Enter new password for users">
+                <button type="button" class="btn btn-primary" onclick="updateAirdropPassword()">
+                  ✅ Update
+                </button>
+              </div>
+              <div class="password-actions">
+                <button type="button" class="btn btn-secondary btn-small" onclick="generateDailyPassword()">
+                  🎲 Generate Random
+                </button>
+                <button type="button" class="btn btn-warning btn-small" onclick="clearPasswordOverride()">
+                  🔄 Reset to Default
+                </button>
+              </div>
             </div>
 
-            <button type="submit" class="btn btn-warning">⚠️ Manual Override Send</button>
-          </form>
-        </div>
-
-        <div class="admin-card">
-          <div class="card-title">📊 Airdrop Statistics</div>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value" id="airdropsClaimed">-</div>
-              <div class="stat-label">Claims / 1000</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="airdropsRemaining">-</div>
-              <div class="stat-label">Remaining</div>
-            </div>
-          </div>
-
-          <div id="airdropHistory" class="loading">
-            <div class="spinner"></div> Loading history...
+            <div id="passwordUpdateResult" class="result-display"></div>
           </div>
         </div>
-      </div>
-
-      <!-- Reset Airdrop Section -->
-      <div class="admin-card" style="border: 2px solid #e74c3c; background: #2a1f1f;">
-        <div class="card-title" style="color: #e74c3c;">🔄 Reset Airdrop System</div>
-
-        <div class="alert alert-warning margin-bottom-15">
-          ⚠️ <strong>DANGER:</strong> This will reset the airdrop counter to 0/1000 and clear all claimed wallets. Use only for testing or official launch preparation.
-        </div>
-
-        <div class="margin-bottom-15">
-          <strong>What gets reset:</strong>
-          <ul style="margin: 10px 0; padding-left: 20px; color: #ccc;">
-            <li>Airdrop counter: Reset to 0/1000</li>
-            <li>Claimed wallets: All cleared</li>
-            <li>Password override: Cleared (back to WALDOCREW)</li>
-          </ul>
-        </div>
-
-        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-          <button onclick="resetAirdropSystem()" class="btn" style="background: #e74c3c; color: white; border: none;">
-            🔄 Reset Airdrop System
-          </button>
-          <span style="color: #ff6b6b; font-size: 0.9em; font-weight: bold;">⚠️ This action cannot be undone!</span>
-        </div>
-
-        <div id="resetResult" class="margin-top-15"></div>
-      </div>
-
-      <!-- Airdrop Configuration Controls -->
-      <div class="admin-card" style="border: 2px solid #3498db; background: #1a2332;">
-        <div class="card-title" style="color: #3498db;">⚙️ Airdrop Configuration Controls</div>
-
-        <div class="margin-bottom-20">
-          <h4 style="color: #3498db; margin-bottom: 10px;">📊 Current Airdrop Settings</h4>
-          <div id="currentAirdropConfig" class="margin-bottom-15">
-            <div style="color: #666; font-style: italic;">Loading current configuration...</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #3498db; margin-bottom: 15px;">🔧 Update Airdrop Limits</h4>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Maximum Wallets:</label>
-              <input type="number" id="maxWallets" class="form-input" min="100" max="100000" step="100" placeholder="1000">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 1000 wallets</div>
-            </div>
-
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Duration (days):</label>
-              <input type="number" id="airdropDays" class="form-input" min="1" max="365" step="1" placeholder="5">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 5 days</div>
-            </div>
-          </div>
-
-          <div class="margin-bottom-15">
-            <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for Change:</label>
-            <input type="text" id="configChangeReason" class="form-input" placeholder="e.g., High demand, Extended promotion, Contest event" maxlength="100">
-          </div>
-
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button onclick="updateAirdropConfig()" class="btn" style="background: #3498db; color: white;">
-              ⚙️ Update Configuration
-            </button>
-            <button onclick="resetToDefaults()" class="btn" style="background: #95a5a6; color: white;">
-              🔄 Reset to Defaults
-            </button>
-          </div>
-
-          <div id="configResult" class="margin-top-15"></div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #3498db; margin-bottom: 10px;">🚀 Quick Configuration Presets</h4>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="setQuickConfig(2000, 10, 'Extended Launch')" class="btn btn-secondary" style="font-size: 0.9em;">
-              🚀 Extended Launch (2K wallets, 10 days)
-            </button>
-            <button onclick="setQuickConfig(5000, 14, 'Major Promotion')" class="btn btn-secondary" style="font-size: 0.9em;">
-              🎯 Major Promo (5K wallets, 14 days)
-            </button>
-            <button onclick="setQuickConfig(10000, 30, 'Mega Campaign')" class="btn btn-secondary" style="font-size: 0.9em;">
-              💎 Mega Campaign (10K wallets, 30 days)
-            </button>
-            <button onclick="setQuickConfig(500, 3, 'Limited Flash')" class="btn btn-secondary" style="font-size: 0.9em;">
-              ⚡ Flash Drop (500 wallets, 3 days)
-            </button>
-          </div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #3498db; margin-bottom: 10px;">📈 Configuration History</h4>
-          <div id="configHistory" style="max-height: 200px; overflow-y: auto;">
-            <div style="color: #666; font-style: italic;">No configuration changes yet</div>
-          </div>
-        </div>
-
-        <div class="alert alert-info">
-          💡 <strong>Note:</strong> Configuration changes take effect immediately. Users will see updated limits in real-time. All changes are logged for audit purposes.
-        </div>
-      </div>
-
-      <!-- Minimum WALDO Requirements Control -->
-      <div class="admin-card" style="border: 2px solid #e74c3c; background: #2a1616;">
-        <div class="card-title" style="color: #e74c3c;">💰 Minimum WALDO Requirements</div>
-
-        <div class="margin-bottom-20">
-          <h4 style="color: #e74c3c; margin-bottom: 10px;">📊 Current Requirements</h4>
-          <div id="currentWaldoRequirements" class="margin-bottom-15">
-            <div style="color: #666; font-style: italic;">Loading current requirements...</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #e74c3c; margin-bottom: 15px;">⚙️ Update Minimum Requirements</h4>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for Meme Rewards:</label>
-              <input type="number" id="minWaldoMemes" class="form-input" min="0" max="100000" step="100" placeholder="6000">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 6000 WALDO (6 XRP worth)</div>
-            </div>
-
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for Battles:</label>
-              <input type="number" id="minWaldoBattles" class="form-input" min="0" max="100000" step="100" placeholder="6000">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 6000 WALDO (6 XRP worth)</div>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for DAO Voting:</label>
-              <input type="number" id="minWaldoDAO" class="form-input" min="0" max="100000" step="100" placeholder="100">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 100 WALDO</div>
-            </div>
-
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">WALDO per XRP Rate:</label>
-              <input type="number" id="waldoPerXrp" class="form-input" min="1" max="10000" step="1" placeholder="1000">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 1000 WALDO per XRP</div>
-            </div>
-          </div>
-
-          <div class="margin-bottom-15">
-            <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for Change:</label>
-            <input type="text" id="requirementChangeReason" class="form-input" placeholder="e.g., Market adjustment, Anti-spam measure, Economic rebalancing" maxlength="100">
-          </div>
-
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button onclick="updateWaldoRequirements()" class="btn" style="background: #e74c3c; color: white;">
-              💰 Update Requirements
-            </button>
-            <button onclick="resetWaldoRequirements()" class="btn" style="background: #95a5a6; color: white;">
-              🔄 Reset to Defaults
-            </button>
-          </div>
-
-          <div id="requirementResult" class="margin-top-15"></div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #e74c3c; margin-bottom: 10px;">🚀 Quick Requirement Presets</h4>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="setQuickRequirement('launch', 6000, 6000, 100)" class="btn btn-secondary" style="font-size: 0.9em;">
-              🚀 Launch (6K WALDO)
-            </button>
-            <button onclick="setQuickRequirement('growth', 3000, 3000, 50)" class="btn btn-secondary" style="font-size: 0.9em;">
-              📈 Growth (3K WALDO)
-            </button>
-            <button onclick="setQuickRequirement('premium', 10000, 10000, 500)" class="btn btn-secondary" style="font-size: 0.9em;">
-              💎 Premium (10K WALDO)
-            </button>
-            <button onclick="setQuickRequirement('open', 0, 0, 0)" class="btn btn-secondary" style="font-size: 0.9em;">
-              🌍 Open Access (No Min)
-            </button>
-          </div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #e74c3c; margin-bottom: 10px;">📈 Requirement History</h4>
-          <div id="requirementHistory" style="max-height: 200px; overflow-y: auto;">
-            <div style="color: #666; font-style: italic;">No requirement changes yet</div>
-          </div>
-        </div>
-
-        <div class="alert alert-info">
-          💡 <strong>How it works:</strong> Users need minimum WALDO balance to claim meme rewards, start battles, and vote in DAO. Airdrop users get 50,000 WALDO (well above minimums). Changes apply immediately.
-        </div>
-      </div>
-
-      <!-- Daily Meme Limits Control -->
-      <div class="admin-card" style="border: 2px solid #e67e22; background: #2a1f16;">
-        <div class="card-title" style="color: #e67e22;">🎭 Daily Meme Limits Control</div>
-
-        <div class="margin-bottom-20">
-          <h4 style="color: #e67e22; margin-bottom: 10px;">📊 Current Meme Limits</h4>
-          <div id="currentMemeLimits" class="margin-bottom-15">
-            <div style="color: #666; font-style: italic;">Loading current meme limits...</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #e67e22; margin-bottom: 15px;">⚙️ Update Meme Limits</h4>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Daily Memes per User:</label>
-              <input type="number" id="dailyMemeLimit" class="form-input" min="1" max="100" step="1" placeholder="10">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 10 memes per day</div>
-            </div>
-
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Premium User Limit:</label>
-              <input type="number" id="premiumMemeLimit" class="form-input" min="1" max="200" step="1" placeholder="25">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 25 memes per day (10K+ WALDO holders)</div>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">VIP User Limit:</label>
-              <input type="number" id="vipMemeLimit" class="form-input" min="1" max="500" step="1" placeholder="50">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 50 memes per day (50K+ WALDO holders)</div>
-            </div>
-
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reset Time (UTC Hour):</label>
-              <input type="number" id="resetHour" class="form-input" min="0" max="23" step="1" placeholder="0">
-              <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 0 (midnight UTC)</div>
-            </div>
-          </div>
-
-          <div class="margin-bottom-15">
-            <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for Change:</label>
-            <input type="text" id="memeLimitChangeReason" class="form-input" placeholder="e.g., Spam prevention, Quality control, Event adjustment" maxlength="100">
-          </div>
-
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button onclick="updateMemeLimits()" class="btn" style="background: #e67e22; color: white;">
-              🎭 Update Limits
-            </button>
-            <button onclick="resetMemeLimits()" class="btn" style="background: #95a5a6; color: white;">
-              🔄 Reset to Defaults
-            </button>
-            <button onclick="viewMemeUsage()" class="btn btn-secondary">
-              📊 View Usage Stats
-            </button>
-          </div>
-
-          <div id="memeLimitResult" class="margin-top-15"></div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #e67e22; margin-bottom: 10px;">🚀 Quick Limit Presets</h4>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="setQuickMemeLimit('strict', 5, 15, 30)" class="btn btn-secondary" style="font-size: 0.9em;">
-              🔒 Strict (5/15/30)
-            </button>
-            <button onclick="setQuickMemeLimit('balanced', 10, 25, 50)" class="btn btn-secondary" style="font-size: 0.9em;">
-              ⚖️ Balanced (10/25/50)
-            </button>
-            <button onclick="setQuickMemeLimit('generous', 20, 50, 100)" class="btn btn-secondary" style="font-size: 0.9em;">
-              🎉 Generous (20/50/100)
-            </button>
-            <button onclick="setQuickMemeLimit('unlimited', 1000, 1000, 1000)" class="btn btn-secondary" style="font-size: 0.9em;">
-              ♾️ Unlimited (1000 each)
-            </button>
-          </div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #e67e22; margin-bottom: 10px;">📈 Recent Limit Changes</h4>
-          <div id="memeLimitHistory" style="max-height: 200px; overflow-y: auto;">
-            <div style="color: #666; font-style: italic;">No limit changes yet</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #e67e22; margin-bottom: 10px;">🔍 User Meme Usage Lookup</h4>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="lookupWallet" class="form-input" placeholder="Enter wallet address" style="flex: 1;">
-            <button onclick="lookupUserMemeUsage()" class="btn btn-secondary">
-              🔍 Check Usage
-            </button>
-          </div>
-          <div id="memeUsageResult" class="margin-top-10"></div>
-        </div>
-
-        <div class="alert alert-info">
-          🎭 <strong>How it works:</strong> Users can post limited memes per day based on their WALDO holdings. Limits reset at midnight UTC. Premium/VIP users get higher limits for holding more WALDO.
-        </div>
-      </div>
-
-      <!-- AI Fraud Detection System -->
-      <div class="admin-card" style="border: 2px solid #9b59b6; background: #2a1a2a;">
-        <div class="card-title" style="color: #9b59b6;">🤖 AI Fraud Detection System</div>
-
-        <div class="margin-bottom-20">
-          <h4 style="color: #9b59b6; margin-bottom: 10px;">📊 Real-Time Fraud Analytics</h4>
-          <div id="fraudAnalytics" class="margin-bottom-15">
-            <div style="color: #666; font-style: italic;">Loading fraud detection analytics...</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #9b59b6; margin-bottom: 15px;">🚨 Recent Violations</h4>
-          <div id="recentViolations" style="max-height: 300px; overflow-y: auto;">
-            <div style="color: #666; font-style: italic;">Loading recent violations...</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #9b59b6; margin-bottom: 15px;">🔍 Suspicious Activity Monitor</h4>
-          <div id="suspiciousActivity" style="max-height: 250px; overflow-y: auto;">
-            <div style="color: #666; font-style: italic;">Loading suspicious activity...</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #9b59b6; margin-bottom: 10px;">⚙️ Fraud Detection Controls</h4>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="refreshFraudData()" class="btn" style="background: #9b59b6; color: white;">
-              🔄 Refresh Data
-            </button>
-            <button onclick="exportViolations()" class="btn btn-secondary">
-              📥 Export Violations
-            </button>
-            <button onclick="clearOldViolations()" class="btn" style="background: #e67e22; color: white;">
-              🗑️ Clear Old Data
-            </button>
-            <button onclick="adjustSensitivity()" class="btn btn-secondary">
-              🎛️ Adjust Sensitivity
-            </button>
-          </div>
-        </div>
-
-        <div class="alert alert-info">
-          🤖 <strong>AI System Active:</strong> Advanced bot detection, behavioral analysis, timing patterns, IP reputation, and automated blocking. 3 violations = 7-day auto-block.
-        </div>
-      </div>
-
-      <!-- Bonus Control System -->
-      <div class="admin-card" style="border: 2px solid #f39c12; background: #2a2416;">
-        <div class="card-title" style="color: #f39c12;">🎁 Reward Bonus Control System</div>
-
-        <div class="margin-bottom-20">
-          <h4 style="color: #f39c12; margin-bottom: 10px;">🚀 Active Bonus Multipliers</h4>
-          <div id="activeBonuses" class="margin-bottom-15">
-            <div style="color: #666; font-style: italic;">No active bonuses - all rewards at base rates</div>
-          </div>
-        </div>
-
-        <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-          <h4 style="color: #f39c12; margin-bottom: 15px;">⚡ Set New Bonus</h4>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Bonus Type:</label>
-              <select id="bonusType" class="form-input">
-                <option value="all">All Rewards (Global)</option>
-                <option value="meme">Meme Rewards Only</option>
-                <option value="battle">Battle Rewards Only</option>
-                <option value="referral">Referral Rewards Only</option>
-                <option value="staking">Staking Rewards Only</option>
-              </select>
-            </div>
-
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Multiplier:</label>
-              <select id="bonusMultiplier" class="form-input">
-                <option value="1.5">1.5x (50% bonus)</option>
-                <option value="2">2x (Double rewards)</option>
-                <option value="2.5">2.5x (150% bonus)</option>
-                <option value="3">3x (Triple rewards)</option>
-                <option value="5">5x (500% bonus)</option>
-                <option value="10">10x (1000% bonus)</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Duration (hours):</label>
-              <select id="bonusDuration" class="form-input">
-                <option value="1">1 Hour</option>
-                <option value="6">6 Hours</option>
-                <option value="12">12 Hours</option>
-                <option value="24">24 Hours (1 Day)</option>
-                <option value="48">48 Hours (2 Days)</option>
-                <option value="72">72 Hours (3 Days)</option>
-                <option value="168">168 Hours (1 Week)</option>
-                <option value="0">Permanent (until manually removed)</option>
-              </select>
-            </div>
-
-            <div>
-              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Event Name:</label>
-              <input type="text" id="bonusName" class="form-input" placeholder="e.g., Weekend Bonus, Contest Event" maxlength="50">
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="setBonusMultiplier()" class="btn" style="background: #f39c12; color: white;">
-              🚀 Activate Bonus
-            </button>
-            <button onclick="clearAllBonuses()" class="btn" style="background: #e74c3c; color: white;">
-              🗑️ Clear All Bonuses
-            </button>
-          </div>
-
-          <div id="bonusResult" class="margin-top-15"></div>
-        </div>
-
-        <div class="margin-bottom-15">
-          <h4 style="color: #f39c12; margin-bottom: 10px;">📊 Quick Bonus Presets</h4>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="setQuickBonus('weekend', 2, 48)" class="btn btn-secondary" style="font-size: 0.9em;">
-              🌟 Weekend 2x (48h)
-            </button>
-            <button onclick="setQuickBonus('contest', 5, 24)" class="btn btn-secondary" style="font-size: 0.9em;">
-              🏆 Contest 5x (24h)
-            </button>
-            <button onclick="setQuickBonus('flash', 10, 1)" class="btn btn-secondary" style="font-size: 0.9em;">
-              ⚡ Flash 10x (1h)
-            </button>
-            <button onclick="setQuickBonus('launch', 3, 72)" class="btn btn-secondary" style="font-size: 0.9em;">
-              🚀 Launch 3x (72h)
-            </button>
-          </div>
-        </div>
-
-        <div class="alert alert-info">
-          💡 <strong>How it works:</strong> Bonuses multiply the base reward amounts. Users will see the bonus in their reward notifications. All bonuses are logged and can be reverted instantly.
-        </div>
-      </div>
-    </div>
-
-    <!-- Battles Section -->
-    <div id="battles" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
-        ⚠️ <strong>Battle Emergency Controls</strong><br>
-        Use these controls only when automated battle system malfunctions or requires manual intervention.
-      </div>
-
-      <div class="admin-card">
-        <div class="card-title">⚔️ Battle Override Controls</div>
 
         <div class="grid-2">
-          <div>
-            <h3 class="section-title">Current Battle Status</h3>
-            <div id="currentBattle" class="loading">
+          <div class="admin-card">
+            <div class="card-title">📈 Recent Activity</div>
+            <div id="recentActivity" class="loading">
               <div class="spinner"></div> Loading...
             </div>
           </div>
-
-          <div>
-            <h3 class="section-title">Emergency Controls</h3>
-            <div class="alert alert-error alert-small">
-              ⚠️ These actions cannot be undone and will affect active users
+          <div class="admin-card">
+            <div class="card-title">🚨 System Alerts</div>
+            <div id="systemAlerts" class="loading">
+              <div class="spinner"></div> Loading...
             </div>
-            <button type="button" class="btn btn-warning" onclick="endCurrentBattle()">⏹️ Force End Battle</button>
-            <button type="button" class="btn btn-danger" onclick="cancelCurrentBattle()">❌ Emergency Cancel</button>
           </div>
-        </div>
-
-        <h3 class="section-title-spaced">Recent Battles</h3>
-        <div id="battleHistory" class="loading">
-          <div class="spinner"></div> Loading battle history...
         </div>
       </div>
-    </div>
 
-    <!-- Staking Section -->
-    <div id="staking" class="admin-section">
-      <div class="alert alert-warning margin-bottom-20">
-        ⚠️ <strong>Staking Emergency Controls</strong><br>
-        Manual unstaking is a backup mechanism for when automated functions fail. Use with caution.
-      </div>
+      <!-- Users Section -->
+      <div id="users" class="admin-section">
+        <div class="alert alert-warning margin-bottom-20">
+          ⚠️ <strong>User Security Override</strong><br>
+          Manual user blocking/unblocking for when automated fraud detection needs intervention.
+        </div>
 
-      <div class="grid-2">
-        <!-- Staking Overview -->
         <div class="admin-card">
-          <div class="card-title">🏦 Staking Overview</div>
+          <div class="card-title">👥 User Security Controls</div>
 
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value" id="totalStakingPositions">-</div>
-              <div class="stat-label">Active Stakes</div>
+          <!-- Export Users Section -->
+          <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h4 style="color: #25c2a0; margin-bottom: 10px;">📊 Export User Data</h4>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button onclick="exportUsersCSV()" class="btn btn-secondary">
+                📥 Download CSV
+              </button>
+              <button onclick="exportUsersJSON()" class="btn btn-secondary">
+                📥 Download JSON
+              </button>
+              <span style="color: #666; font-size: 0.9em;">Export all user data before reset</span>
             </div>
-            <div class="stat-card">
-              <div class="stat-value" id="totalStakingValue">-</div>
-              <div class="stat-label">Total Value</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="totalStakingRewards">-</div>
-              <div class="stat-label">Total Rewards</div>
-            </div>
+            <div id="exportResult" class="margin-top-10"></div>
           </div>
 
-          <div id="stakingPositions" class="loading">
-            <div class="spinner"></div> Loading staking positions...
+          <div class="form-group">
+            <input type="text" id="userSearch" class="form-input"
+              placeholder="Search by wallet address or Twitter handle...">
+          </div>
+
+          <div id="usersList" class="loading">
+            <div class="spinner"></div> Loading users...
           </div>
         </div>
 
-        <!-- Manual Unstaking Controls -->
-        <div class="admin-card">
-          <div class="card-title">🔓 Manual Unstaking</div>
+        <!-- Manual Security Actions -->
+        <div class="admin-card margin-top-20">
+          <div class="card-title">🛡️ Manual Security Actions</div>
+
+          <div class="grid-2">
+            <!-- Block User -->
+            <div>
+              <h4 style="color: #e74c3c; margin-bottom: 15px;">🚫 Block User</h4>
+              <div class="form-group">
+                <input type="text" id="blockWallet" class="form-input" placeholder="Wallet address to block">
+              </div>
+              <div class="form-group">
+                <input type="text" id="blockReason" class="form-input" placeholder="Reason for blocking">
+              </div>
+              <button onclick="blockUser()" class="btn btn-danger">Block User</button>
+              <div id="blockResult" class="result-message"></div>
+            </div>
+
+            <!-- Unblock User -->
+            <div>
+              <h4 style="color: #27ae60; margin-bottom: 15px;">✅ Unblock User</h4>
+              <div class="form-group">
+                <input type="text" id="unblockWallet" class="form-input" placeholder="Wallet address to unblock">
+              </div>
+              <div class="form-group">
+                <input type="text" id="unblockReason" class="form-input" placeholder="Reason for unblocking">
+              </div>
+              <button onclick="unblockUser()" class="btn btn-success">Unblock User</button>
+              <div id="unblockResult" class="result-message"></div>
+            </div>
+          </div>
+
+          <!-- Security Check -->
+          <div class="margin-top-20">
+            <h4 style="color: #f39c12; margin-bottom: 15px;">🔍 Security Check</h4>
+            <div class="form-group">
+              <input type="text" id="checkWallet" class="form-input" placeholder="Wallet address to check">
+            </div>
+            <button onclick="checkUserSecurity()" class="btn btn-warning">Check Security Status</button>
+            <div id="securityCheckResult" class="result-message"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Airdrops Section -->
+      <div id="airdrops" class="admin-section">
+        <div class="alert alert-warning margin-bottom-20">
+          ⚠️ <strong>Airdrop &amp; Presale Management</strong><br>
+          Manage manual airdrops, presale countdown, and presale analytics from this section.
+        </div>
+
+        <!-- System Health & Security -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">🚨 System Health & Emergency Controls</div>
+
+          <div class="grid-3">
+            <div>
+              <div class="form-group">
+                <label class="form-label">System Status</label>
+                <div id="systemStatus" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Overall system health status</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">WALDO Balance</label>
+                <div id="distributorBalance" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Distributor wallet WALDO balance</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Emergency Controls</label>
+                <div style="display: flex; gap: 10px; flex-direction: column;">
+                  <button type="button" id="emergencyStopBtn" class="btn btn-danger" onclick="toggleEmergencyStop()">
+                    🚨 Emergency Stop
+                  </button>
+                  <button type="button" class="btn btn-info" onclick="refreshSystemHealth()">
+                    🔄 Refresh Status
+                  </button>
+                </div>
+                <small class="help-text">Emergency stop disables all airdrops</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-display" style="margin-top: 15px;">
+            <div class="stat-item">
+              <span class="stat-label">⚡ Response Times:</span>
+              <span id="responseTimes" class="stat-value">Redis: -ms, XRPL: -ms</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Failed Transactions & Retry System -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">🔄 Failed Transactions & Retry System</div>
+
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Failed Transactions</label>
+                <div id="failedTxCount" class="info-display" style="color: #e74c3c; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Transactions that failed and need retry</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Success Rate</label>
+                <div id="successRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Overall transaction success rate</small>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-warning" onclick="loadFailedTransactions()">
+              🔄 Load Failed Transactions
+            </button>
+            <button type="button" class="btn btn-info" onclick="toggleFailedTxView()">
+              👁️ Toggle Failed TX View
+            </button>
+          </div>
+
+          <div id="failedTxContainer" style="display: none; margin-top: 15px;">
+            <div id="failedTxList"
+              style="max-height: 300px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 10px; background: #222;">
+              <div style="color: #666; text-align: center; padding: 20px;">
+                Click "Load Failed Transactions" to view failed transactions
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bulk Wallet Operations -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">👥 Bulk Wallet Operations</div>
+
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Operation Type</label>
+                <select id="bulkOperation"
+                  style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                  <option value="blacklist">Blacklist Wallets</option>
+                  <option value="whitelist">Whitelist Wallets</option>
+                  <option value="remove_blacklist">Remove from Blacklist</option>
+                  <option value="remove_whitelist">Remove from Whitelist</option>
+                </select>
+                <small class="help-text">Choose the operation to perform</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Reason</label>
+                <input type="text" id="bulkReason" placeholder="Reason for bulk operation"
+                  style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                <small class="help-text">Reason for this bulk operation</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Wallet Addresses (one per line)</label>
+            <textarea id="bulkWallets" rows="5"
+              placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&#10;rYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY&#10;rZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+              style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
+            <small class="help-text">Enter wallet addresses, one per line</small>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-primary" onclick="performBulkOperation()">
+              👥 Perform Bulk Operation
+            </button>
+            <button type="button" class="btn btn-info" onclick="showWalletLists()">
+              📋 Show Current Lists
+            </button>
+          </div>
+
+          <div id="bulkResults"
+            style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+            <!-- Bulk operation results will appear here -->
+          </div>
+        </div>
+
+        <!-- Business Intelligence & ROI Analytics -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">📈 Business Intelligence & ROI Analytics</div>
+
+          <div class="grid-4">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Conversion Rate</label>
+                <div id="conversionRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Trustline to claim conversion</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Cost Per User</label>
+                <div id="costPerUser" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Average WALDO cost per user</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Growth Rate</label>
+                <div id="growthRate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">7-day growth trend</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">ROI Score</label>
+                <div id="roiScore" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Return on investment</small>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-primary" onclick="loadROIAnalytics()">
+              📈 Load ROI Analytics
+            </button>
+            <button type="button" class="btn btn-info" onclick="loadTokenDistribution()">
+              🪙 Token Distribution
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="loadMarketingPerformance()">
+              📢 Marketing Performance
+            </button>
+          </div>
+
+          <div id="roiDetails"
+            style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+            <!-- ROI analytics details will appear here -->
+          </div>
+        </div>
+
+        <!-- Advanced Reports & Executive Dashboard -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">📋 Advanced Reports & Executive Dashboard</div>
+
+          <div class="grid-3">
+            <div>
+              <div class="form-group">
+                <label class="form-label">System Health</label>
+                <div id="executiveSystemHealth" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Overall system status</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Performance Score</label>
+                <div id="performanceScore" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Overall performance rating</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Risk Level</label>
+                <div id="riskLevel" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Current risk assessment</small>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-primary" onclick="loadAdvancedReports()">
+              📋 Generate Executive Report
+            </button>
+            <button type="button" class="btn btn-info" onclick="exportExecutiveReport()">
+              📄 Export Executive Summary
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="toggleExecutiveView()">
+              👁️ Toggle Executive View
+            </button>
+          </div>
+
+          <div id="executiveReportContainer" style="display: none; margin-top: 15px;">
+            <div id="executiveReport"
+              style="max-height: 500px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 15px; background: #222;">
+              <div style="color: #666; text-align: center; padding: 20px;">
+                Click "Generate Executive Report" to view comprehensive analytics
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Presale Countdown Management -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">⏱️ Presale Countdown Management</div>
+
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Current End Date</label>
+                <div id="currentEndDate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Current presale countdown end date</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Time Remaining</label>
+                <div id="timeRemaining" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Time left until presale ends</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2" style="margin-top: 15px;">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Set New End Date & Time</label>
+                <input type="datetime-local" id="newEndDate" class="form-input" style="width: 100%;">
+                <small class="help-text">Select when the presale should end</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Quick Actions</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(24)">
+                    +24 Hours
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(168)">
+                    +7 Days
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(720)">
+                    +30 Days
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-primary" onclick="updatePresaleCountdown()">
+              ⏱️ Update Countdown
+            </button>
+            <button type="button" class="btn btn-info" onclick="loadCurrentCountdown()">
+              🔄 Refresh Status
+            </button>
+            <button type="button" class="btn btn-danger" onclick="clearPresaleCountdown()">
+              🗑️ Clear Countdown
+            </button>
+          </div>
+
+          <div id="countdownStatus"
+            style="margin-top: 15px; padding: 10px; background: #222; border-radius: 6px; display: none;">
+            <!-- Countdown status messages will appear here -->
+          </div>
+        </div>
+
+        <!-- Presale Analytics & Tracking -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">🚀 Presale Analytics & Tracking</div>
+
+          <div class="grid-4">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Total WALDO Sold</label>
+                <div id="presaleTotalSold" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Total WALDO tokens sold in presale</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Total XRP Raised</label>
+                <div id="presaleTotalXRP" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Total XRP raised from presale</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Total Purchases</label>
+                <div id="presaleTotalPurchases" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Number of presale purchases</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">24h Activity</label>
+                <div id="presaleRecentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Recent presale activity</small>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-primary" onclick="loadPresaleAnalytics()">
+              🚀 Load Presale Analytics
+            </button>
+            <button type="button" class="btn btn-info" onclick="loadPresalePurchases()">
+              📋 View Recent Purchases
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="exportPresaleData()">
+              📄 Export Presale Data
+            </button>
+          </div>
+
+          <div id="presaleDetails"
+            style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+            <!-- Presale analytics details will appear here -->
+          </div>
+        </div>
+
+        <!-- Enhanced Analytics Dashboard -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">📊 Enhanced Analytics Dashboard</div>
+
+          <div class="grid-3">
+            <div>
+              <div class="form-group">
+                <label class="form-label">24h Activity</label>
+                <div id="recentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Claims in last 24 hours</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Total Distributed</label>
+                <div id="totalDistributed" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Total WALDO distributed</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Wallet Management</label>
+                <div id="walletStats" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Blacklisted/Whitelisted counts</small>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-info" onclick="loadEnhancedAnalytics()">
+              📊 Load Enhanced Analytics
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="loadUserBehavior()">
+              👤 Load User Behavior
+            </button>
+          </div>
+
+          <div id="analyticsDetails"
+            style="display: none; margin-top: 15px; padding: 10px; background: #222; border-radius: 6px;">
+            <!-- Enhanced analytics details will appear here -->
+          </div>
+        </div>
+
+        <!-- Admin Activity Logs -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">📝 Admin Activity Logs</div>
+
+          <div style="margin-bottom: 15px;">
+            <button type="button" class="btn btn-secondary" onclick="loadAdminLogs()">
+              📋 Load Recent Activity
+            </button>
+            <button type="button" class="btn btn-info" onclick="toggleLogsView()">
+              👁️ Toggle Logs View
+            </button>
+          </div>
+
+          <div id="adminLogsContainer" style="display: none;">
+            <div id="adminLogsList"
+              style="max-height: 400px; overflow-y: auto; border: 1px solid #444; border-radius: 6px; padding: 10px; background: #222;">
+              <div style="color: #666; text-align: center; padding: 20px;">
+                Click "Load Recent Activity" to view admin logs
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Airdrop Amount Control -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">💰 Airdrop Amount Control</div>
+
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Current Airdrop Amount</label>
+                <div id="currentAirdropAmount" class="info-display"
+                  style="color: #25c2a0; font-size: 18px; font-weight: bold;">
+                  Loading...
+                </div>
+                <small class="help-text">Amount of WALDO tokens per airdrop claim</small>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">Set New Amount</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <input type="number" id="newAirdropAmount" placeholder="20000" min="1" max="1000000"
+                    style="flex: 1; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                  <button type="button" class="btn btn-primary" onclick="updateAirdropAmount()">
+                    💰 Update Amount
+                  </button>
+                </div>
+                <small class="help-text">
+                  Enter new amount (1 - 1,000,000 WALDO). Current claims will use new amount.
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-display" style="margin-top: 15px;">
+            <div class="stat-item">
+              <span class="stat-label">⚠️ Important:</span>
+              <span class="stat-value" style="color: #ffd93d;">Changes apply to all future airdrops immediately</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Claimed Wallets Export -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">📊 Claimed Wallets Export</div>
+
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Export Options</label>
+                <div class="button-group">
+                  <button type="button" class="btn btn-primary" onclick="exportClaimedWallets()">
+                    📥 Download CSV Spreadsheet
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="viewClaimedWallets()">
+                    👁️ View Claimed List
+                  </button>
+                </div>
+                <small class="help-text">
+                  Export all wallets that have claimed airdrops for analysis
+                </small>
+              </div>
+            </div>
+
+            <div>
+              <div id="claimedWalletsInfo" class="info-display">
+                <div class="stat-item">
+                  <span class="stat-label">Total Claimed:</span>
+                  <span id="totalClaimedCount" class="stat-value">Loading...</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Manual Airdrops:</span>
+                  <span id="manualCount" class="stat-value">Loading...</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Regular Claims:</span>
+                  <span id="regularCount" class="stat-value">Loading...</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Remaining:</span>
+                  <span id="remainingCount" class="stat-value">Loading...</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Last Updated:</span>
+                  <span id="lastUpdated" class="stat-value">Never</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="claimedWalletsList" style="display:none; margin-top:20px;">
+            <div class="card-title">📋 Claimed Wallets List</div>
+
+            <!-- Add Missing Wallet Section -->
+            <div style="margin-bottom:15px; padding:10px; background:#333; border-radius:6px;">
+              <div style="color:#ffd93d; font-weight:bold; margin-bottom:8px;">➕ Add Missing Wallet</div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="missingWalletAddress" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                  style="flex:1; padding:6px; background:#222; border:1px solid #555; color:white; border-radius:4px; font-family:monospace; font-size:12px;">
+                <input type="text" id="missingWalletReason" placeholder="Reason (e.g., tracking failed yesterday)"
+                  style="flex:1; padding:6px; background:#222; border:1px solid #555; color:white; border-radius:4px; font-size:12px;">
+                <button type="button" onclick="addMissingWallet()"
+                  style="padding:6px 12px; background:#25c2a0; color:white; border:none; border-radius:4px; font-size:12px; cursor:pointer;">
+                  Add to Tracking
+                </button>
+              </div>
+              <div style="font-size:10px; color:#666; margin-top:5px;">
+                Use this to add wallets that received airdrops but aren't in the tracking system
+              </div>
+            </div>
+
+            <div id="walletsTableContainer"
+              style="max-height:300px; overflow-y:auto; border:1px solid #444; border-radius:6px; padding:10px;">
+              <!-- Wallets list will be populated here -->
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="admin-card">
+            <div class="card-title">🎁 Emergency Airdrop</div>
+
+            <form id="airdropForm">
+              <div class="form-group">
+                <label class="form-label">Wallet Address</label>
+                <input type="text" id="airdropWallet" class="form-input" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                  required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Amount (WALDO)</label>
+                <input type="number" id="airdropAmount" class="form-input" placeholder="1000" min="1" max="1000000"
+                  required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Reason (Required for manual override)</label>
+                <input type="text" id="airdropReason" class="form-input"
+                  placeholder="e.g., Automated system failed, emergency distribution" required>
+              </div>
+
+              <button type="submit" class="btn btn-warning">⚠️ Manual Override Send</button>
+            </form>
+          </div>
+
+          <div class="admin-card">
+            <div class="card-title">📊 Airdrop Statistics</div>
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-value" id="airdropsClaimed">-</div>
+                <div class="stat-label">Claims / 1000</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="airdropsRemaining">-</div>
+                <div class="stat-label">Remaining</div>
+              </div>
+            </div>
+
+            <div id="airdropHistory" class="loading">
+              <div class="spinner"></div> Loading history...
+            </div>
+          </div>
+        </div>
+
+        <!-- Reset Airdrop Section -->
+        <div class="admin-card" style="border: 2px solid #e74c3c; background: #2a1f1f;">
+          <div class="card-title" style="color: #e74c3c;">🔄 Reset Airdrop System</div>
+
+          <div class="alert alert-warning margin-bottom-15">
+            ⚠️ <strong>DANGER:</strong> This will reset the airdrop counter to 0/1000 and clear all claimed wallets. Use
+            only for testing or official launch preparation.
+          </div>
+
+          <div class="margin-bottom-15">
+            <strong>What gets reset:</strong>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #ccc;">
+              <li>Airdrop counter: Reset to 0/1000</li>
+              <li>Claimed wallets: All cleared</li>
+              <li>Password override: Cleared (back to WALDOCREW)</li>
+            </ul>
+          </div>
+
+          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <button onclick="resetAirdropSystem()" class="btn" style="background: #e74c3c; color: white; border: none;">
+              🔄 Reset Airdrop System
+            </button>
+            <span style="color: #ff6b6b; font-size: 0.9em; font-weight: bold;">⚠️ This action cannot be undone!</span>
+          </div>
+
+          <div id="resetResult" class="margin-top-15"></div>
+        </div>
+
+        <!-- Airdrop Configuration Controls -->
+        <div class="admin-card" style="border: 2px solid #3498db; background: #1a2332;">
+          <div class="card-title" style="color: #3498db;">⚙️ Airdrop Configuration Controls</div>
 
           <div class="margin-bottom-20">
-            <label class="form-label">User Wallet Address</label>
-            <input type="text" id="unstakeWalletAddress" class="form-input margin-bottom-10"
-                   placeholder="rWalletAddress...">
-            <button type="button" onclick="loadUserStakes()" class="btn btn-secondary width-100">
-              🔍 Load User Stakes
-            </button>
+            <h4 style="color: #3498db; margin-bottom: 10px;">📊 Current Airdrop Settings</h4>
+            <div id="currentAirdropConfig" class="margin-bottom-15">
+              <div style="color: #666; font-style: italic;">Loading current configuration...</div>
+            </div>
           </div>
 
-          <div id="userStakesContainer" style="display: none;">
-            <div class="form-group">
-              <label class="form-label">Select Stake to Unstake</label>
-              <select id="stakeSelector" class="form-input">
-                <option value="">Select a stake...</option>
-              </select>
-            </div>
+          <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h4 style="color: #3498db; margin-bottom: 15px;">🔧 Update Airdrop Limits</h4>
 
-            <div id="stakeDetails" class="stake-details">
-              <div class="stake-detail-row">
-                <span>Amount:</span>
-                <span id="stakeAmount">-</span>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Maximum
+                  Wallets:</label>
+                <input type="number" id="maxWallets" class="form-input" min="100" max="100000" step="100"
+                  placeholder="1000">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 1000 wallets</div>
               </div>
-              <div class="stake-detail-row">
-                <span>Duration:</span>
-                <span id="stakeDuration">-</span>
-              </div>
-              <div class="stake-detail-row">
-                <span>APY:</span>
-                <span id="stakeAPY">-</span>
-              </div>
-              <div class="stake-detail-row">
-                <span>Unlock Date:</span>
-                <span id="stakeUnlockDate">-</span>
-              </div>
-              <div class="stake-detail-row">
-                <span>Current Rewards:</span>
-                <span id="stakeRewards">-</span>
-              </div>
-              <div class="stake-detail-row">
-                <span>Status:</span>
-                <span id="stakeStatus">-</span>
+
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Duration
+                  (days):</label>
+                <input type="number" id="airdropDays" class="form-input" min="1" max="365" step="1" placeholder="5">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 5 days</div>
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <input type="checkbox" id="forceUnstake" class="checkbox-margin">
-                Force Early Unstaking (15% penalty will apply)
-              </label>
+            <div class="margin-bottom-15">
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for
+                Change:</label>
+              <input type="text" id="configChangeReason" class="form-input"
+                placeholder="e.g., High demand, Extended promotion, Contest event" maxlength="100">
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Admin Reason (Required)</label>
-              <textarea id="unstakeReason" class="form-input" rows="3"
-                        placeholder="Explain why manual unstaking is necessary..."></textarea>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button onclick="updateAirdropConfig()" class="btn" style="background: #3498db; color: white;">
+                ⚙️ Update Configuration
+              </button>
+              <button onclick="resetToDefaults()" class="btn" style="background: #95a5a6; color: white;">
+                🔄 Reset to Defaults
+              </button>
             </div>
 
-            <button type="button" onclick="executeManualUnstake()" class="btn btn-danger width-100">
-              🔓 Execute Manual Unstake
-            </button>
+            <div id="configResult" class="margin-top-15"></div>
           </div>
 
-          <div id="unstakeResult" class="margin-top-15"></div>
+          <div class="margin-bottom-15">
+            <h4 style="color: #3498db; margin-bottom: 10px;">🚀 Quick Configuration Presets</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button onclick="setQuickConfig(2000, 10, 'Extended Launch')" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                🚀 Extended Launch (2K wallets, 10 days)
+              </button>
+              <button onclick="setQuickConfig(5000, 14, 'Major Promotion')" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                🎯 Major Promo (5K wallets, 14 days)
+              </button>
+              <button onclick="setQuickConfig(10000, 30, 'Mega Campaign')" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                💎 Mega Campaign (10K wallets, 30 days)
+              </button>
+              <button onclick="setQuickConfig(500, 3, 'Limited Flash')" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                ⚡ Flash Drop (500 wallets, 3 days)
+              </button>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #3498db; margin-bottom: 10px;">📈 Configuration History</h4>
+            <div id="configHistory" style="max-height: 200px; overflow-y: auto;">
+              <div style="color: #666; font-style: italic;">No configuration changes yet</div>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            💡 <strong>Note:</strong> Configuration changes take effect immediately. Users will see updated limits in
+            real-time. All changes are logged for audit purposes.
+          </div>
+        </div>
+
+        <!-- Minimum WALDO Requirements Control -->
+        <div class="admin-card" style="border: 2px solid #e74c3c; background: #2a1616;">
+          <div class="card-title" style="color: #e74c3c;">💰 Minimum WALDO Requirements</div>
+
+          <div class="margin-bottom-20">
+            <h4 style="color: #e74c3c; margin-bottom: 10px;">📊 Current Requirements</h4>
+            <div id="currentWaldoRequirements" class="margin-bottom-15">
+              <div style="color: #666; font-style: italic;">Loading current requirements...</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h4 style="color: #e74c3c; margin-bottom: 15px;">⚙️ Update Minimum Requirements</h4>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for Meme
+                  Rewards:</label>
+                <input type="number" id="minWaldoMemes" class="form-input" min="0" max="100000" step="100"
+                  placeholder="6000">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 6000 WALDO (6 XRP worth)</div>
+              </div>
+
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for
+                  Battles:</label>
+                <input type="number" id="minWaldoBattles" class="form-input" min="0" max="100000" step="100"
+                  placeholder="6000">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 6000 WALDO (6 XRP worth)</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Minimum WALDO for DAO
+                  Voting:</label>
+                <input type="number" id="minWaldoDAO" class="form-input" min="0" max="100000" step="100"
+                  placeholder="100">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 100 WALDO</div>
+              </div>
+
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">WALDO per XRP
+                  Rate:</label>
+                <input type="number" id="waldoPerXrp" class="form-input" min="1" max="10000" step="1"
+                  placeholder="1000">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 1000 WALDO per XRP</div>
+              </div>
+            </div>
+
+            <div class="margin-bottom-15">
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for
+                Change:</label>
+              <input type="text" id="requirementChangeReason" class="form-input"
+                placeholder="e.g., Market adjustment, Anti-spam measure, Economic rebalancing" maxlength="100">
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button onclick="updateWaldoRequirements()" class="btn" style="background: #e74c3c; color: white;">
+                💰 Update Requirements
+              </button>
+              <button onclick="resetWaldoRequirements()" class="btn" style="background: #95a5a6; color: white;">
+                🔄 Reset to Defaults
+              </button>
+            </div>
+
+            <div id="requirementResult" class="margin-top-15"></div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #e74c3c; margin-bottom: 10px;">🚀 Quick Requirement Presets</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button onclick="setQuickRequirement('launch', 6000, 6000, 100)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                🚀 Launch (6K WALDO)
+              </button>
+              <button onclick="setQuickRequirement('growth', 3000, 3000, 50)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                📈 Growth (3K WALDO)
+              </button>
+              <button onclick="setQuickRequirement('premium', 10000, 10000, 500)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                💎 Premium (10K WALDO)
+              </button>
+              <button onclick="setQuickRequirement('open', 0, 0, 0)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                🌍 Open Access (No Min)
+              </button>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #e74c3c; margin-bottom: 10px;">📈 Requirement History</h4>
+            <div id="requirementHistory" style="max-height: 200px; overflow-y: auto;">
+              <div style="color: #666; font-style: italic;">No requirement changes yet</div>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            💡 <strong>How it works:</strong> Users need minimum WALDO balance to claim meme rewards, start battles, and
+            vote in DAO. Airdrop users get 50,000 WALDO (well above minimums). Changes apply immediately.
+          </div>
+        </div>
+
+        <!-- Daily Meme Limits Control -->
+        <div class="admin-card" style="border: 2px solid #e67e22; background: #2a1f16;">
+          <div class="card-title" style="color: #e67e22;">🎭 Daily Meme Limits Control</div>
+
+          <div class="margin-bottom-20">
+            <h4 style="color: #e67e22; margin-bottom: 10px;">📊 Current Meme Limits</h4>
+            <div id="currentMemeLimits" class="margin-bottom-15">
+              <div style="color: #666; font-style: italic;">Loading current meme limits...</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h4 style="color: #e67e22; margin-bottom: 15px;">⚙️ Update Meme Limits</h4>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Daily Memes per
+                  User:</label>
+                <input type="number" id="dailyMemeLimit" class="form-input" min="1" max="100" step="1" placeholder="10">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 10 memes per day</div>
+              </div>
+
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Premium User
+                  Limit:</label>
+                <input type="number" id="premiumMemeLimit" class="form-input" min="1" max="200" step="1"
+                  placeholder="25">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 25 memes per day (10K+ WALDO
+                  holders)</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">VIP User
+                  Limit:</label>
+                <input type="number" id="vipMemeLimit" class="form-input" min="1" max="500" step="1" placeholder="50">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 50 memes per day (50K+ WALDO
+                  holders)</div>
+              </div>
+
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reset Time (UTC
+                  Hour):</label>
+                <input type="number" id="resetHour" class="form-input" min="0" max="23" step="1" placeholder="0">
+                <div style="color: #666; font-size: 0.8em; margin-top: 3px;">Current: 0 (midnight UTC)</div>
+              </div>
+            </div>
+
+            <div class="margin-bottom-15">
+              <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Reason for
+                Change:</label>
+              <input type="text" id="memeLimitChangeReason" class="form-input"
+                placeholder="e.g., Spam prevention, Quality control, Event adjustment" maxlength="100">
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button onclick="updateMemeLimits()" class="btn" style="background: #e67e22; color: white;">
+                🎭 Update Limits
+              </button>
+              <button onclick="resetMemeLimits()" class="btn" style="background: #95a5a6; color: white;">
+                🔄 Reset to Defaults
+              </button>
+              <button onclick="viewMemeUsage()" class="btn btn-secondary">
+                📊 View Usage Stats
+              </button>
+            </div>
+
+            <div id="memeLimitResult" class="margin-top-15"></div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #e67e22; margin-bottom: 10px;">🚀 Quick Limit Presets</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button onclick="setQuickMemeLimit('strict', 5, 15, 30)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                🔒 Strict (5/15/30)
+              </button>
+              <button onclick="setQuickMemeLimit('balanced', 10, 25, 50)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                ⚖️ Balanced (10/25/50)
+              </button>
+              <button onclick="setQuickMemeLimit('generous', 20, 50, 100)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                🎉 Generous (20/50/100)
+              </button>
+              <button onclick="setQuickMemeLimit('unlimited', 1000, 1000, 1000)" class="btn btn-secondary"
+                style="font-size: 0.9em;">
+                ♾️ Unlimited (1000 each)
+              </button>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #e67e22; margin-bottom: 10px;">📈 Recent Limit Changes</h4>
+            <div id="memeLimitHistory" style="max-height: 200px; overflow-y: auto;">
+              <div style="color: #666; font-style: italic;">No limit changes yet</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #e67e22; margin-bottom: 10px;">🔍 User Meme Usage Lookup</h4>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="text" id="lookupWallet" class="form-input" placeholder="Enter wallet address"
+                style="flex: 1;">
+              <button onclick="lookupUserMemeUsage()" class="btn btn-secondary">
+                🔍 Check Usage
+              </button>
+            </div>
+            <div id="memeUsageResult" class="margin-top-10"></div>
+          </div>
+
+          <div class="alert alert-info">
+            🎭 <strong>How it works:</strong> Users can post limited memes per day based on their WALDO holdings. Limits
+            reset at midnight UTC. Premium/VIP users get higher limits for holding more WALDO.
+          </div>
+        </div>
+
+        <!-- AI Fraud Detection System -->
+        <div class="admin-card" style="border: 2px solid #9b59b6; background: #2a1a2a;">
+          <div class="card-title" style="color: #9b59b6;">🤖 AI Fraud Detection System</div>
+
+          <div class="margin-bottom-20">
+            <h4 style="color: #9b59b6; margin-bottom: 10px;">📊 Real-Time Fraud Analytics</h4>
+            <div id="fraudAnalytics" class="margin-bottom-15">
+              <div style="color: #666; font-style: italic;">Loading fraud detection analytics...</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h4 style="color: #9b59b6; margin-bottom: 15px;">🚨 Recent Violations</h4>
+            <div id="recentViolations" style="max-height: 300px; overflow-y: auto;">
+              <div style="color: #666; font-style: italic;">Loading recent violations...</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h4 style="color: #9b59b6; margin-bottom: 15px;">🔍 Suspicious Activity Monitor</h4>
+            <div id="suspiciousActivity" style="max-height: 250px; overflow-y: auto;">
+              <div style="color: #666; font-style: italic;">Loading suspicious activity...</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #9b59b6; margin-bottom: 10px;">⚙️ Fraud Detection Controls</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button onclick="refreshFraudData()" class="btn" style="background: #9b59b6; color: white;">
+                🔄 Refresh Data
+              </button>
+              <button onclick="exportViolations()" class="btn btn-secondary">
+                📥 Export Violations
+              </button>
+              <button onclick="clearOldViolations()" class="btn" style="background: #e67e22; color: white;">
+                🗑️ Clear Old Data
+              </button>
+              <button onclick="adjustSensitivity()" class="btn btn-secondary">
+                🎛️ Adjust Sensitivity
+              </button>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            🤖 <strong>AI System Active:</strong> Advanced bot detection, behavioral analysis, timing patterns, IP
+            reputation, and automated blocking. 3 violations = 7-day auto-block.
+          </div>
+        </div>
+
+        <!-- Bonus Control System -->
+        <div class="admin-card" style="border: 2px solid #f39c12; background: #2a2416;">
+          <div class="card-title" style="color: #f39c12;">🎁 Reward Bonus Control System</div>
+
+          <div class="margin-bottom-20">
+            <h4 style="color: #f39c12; margin-bottom: 10px;">🚀 Active Bonus Multipliers</h4>
+            <div id="activeBonuses" class="margin-bottom-15">
+              <div style="color: #666; font-style: italic;">No active bonuses - all rewards at base rates</div>
+            </div>
+          </div>
+
+          <div class="margin-bottom-20" style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h4 style="color: #f39c12; margin-bottom: 15px;">⚡ Set New Bonus</h4>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Bonus Type:</label>
+                <select id="bonusType" class="form-input">
+                  <option value="all">All Rewards (Global)</option>
+                  <option value="meme">Meme Rewards Only</option>
+                  <option value="battle">Battle Rewards Only</option>
+                  <option value="referral">Referral Rewards Only</option>
+                  <option value="staking">Staking Rewards Only</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Multiplier:</label>
+                <select id="bonusMultiplier" class="form-input">
+                  <option value="1.5">1.5x (50% bonus)</option>
+                  <option value="2">2x (Double rewards)</option>
+                  <option value="2.5">2.5x (150% bonus)</option>
+                  <option value="3">3x (Triple rewards)</option>
+                  <option value="5">5x (500% bonus)</option>
+                  <option value="10">10x (1000% bonus)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Duration
+                  (hours):</label>
+                <select id="bonusDuration" class="form-input">
+                  <option value="1">1 Hour</option>
+                  <option value="6">6 Hours</option>
+                  <option value="12">12 Hours</option>
+                  <option value="24">24 Hours (1 Day)</option>
+                  <option value="48">48 Hours (2 Days)</option>
+                  <option value="72">72 Hours (3 Days)</option>
+                  <option value="168">168 Hours (1 Week)</option>
+                  <option value="0">Permanent (until manually removed)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="color: #ccc; font-size: 0.9em; margin-bottom: 5px; display: block;">Event Name:</label>
+                <input type="text" id="bonusName" class="form-input" placeholder="e.g., Weekend Bonus, Contest Event"
+                  maxlength="50">
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button onclick="setBonusMultiplier()" class="btn" style="background: #f39c12; color: white;">
+                🚀 Activate Bonus
+              </button>
+              <button onclick="clearAllBonuses()" class="btn" style="background: #e74c3c; color: white;">
+                🗑️ Clear All Bonuses
+              </button>
+            </div>
+
+            <div id="bonusResult" class="margin-top-15"></div>
+          </div>
+
+          <div class="margin-bottom-15">
+            <h4 style="color: #f39c12; margin-bottom: 10px;">📊 Quick Bonus Presets</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button onclick="setQuickBonus('weekend', 2, 48)" class="btn btn-secondary" style="font-size: 0.9em;">
+                🌟 Weekend 2x (48h)
+              </button>
+              <button onclick="setQuickBonus('contest', 5, 24)" class="btn btn-secondary" style="font-size: 0.9em;">
+                🏆 Contest 5x (24h)
+              </button>
+              <button onclick="setQuickBonus('flash', 10, 1)" class="btn btn-secondary" style="font-size: 0.9em;">
+                ⚡ Flash 10x (1h)
+              </button>
+              <button onclick="setQuickBonus('launch', 3, 72)" class="btn btn-secondary" style="font-size: 0.9em;">
+                🚀 Launch 3x (72h)
+              </button>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            💡 <strong>How it works:</strong> Bonuses multiply the base reward amounts. Users will see the bonus in
+            their reward notifications. All bonuses are logged and can be reverted instantly.
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Security Section -->
-    <div id="security" class="admin-section">
-      <div class="grid-2">
+      <!-- Battles Section -->
+      <div id="battles" class="admin-section">
+        <div class="alert alert-warning margin-bottom-20">
+          ⚠️ <strong>Battle Emergency Controls</strong><br>
+          Use these controls only when automated battle system malfunctions or requires manual intervention.
+        </div>
+
         <div class="admin-card">
-          <div class="card-title">🛡️ Security Monitoring</div>
+          <div class="card-title">⚔️ Battle Override Controls</div>
 
-          <div id="securityAlerts" class="loading">
-            <div class="spinner"></div> Loading security data...
+          <div class="grid-2">
+            <div>
+              <h3 class="section-title">Current Battle Status</h3>
+              <div id="currentBattle" class="loading">
+                <div class="spinner"></div> Loading...
+              </div>
+            </div>
+
+            <div>
+              <h3 class="section-title">Emergency Controls</h3>
+              <div class="alert alert-error alert-small">
+                ⚠️ These actions cannot be undone and will affect active users
+              </div>
+              <button type="button" class="btn btn-warning" onclick="endCurrentBattle()">⏹️ Force End Battle</button>
+              <button type="button" class="btn btn-danger" onclick="cancelCurrentBattle()">❌ Emergency Cancel</button>
+            </div>
           </div>
-        </div>
 
-        <div class="admin-card">
-          <div class="card-title">🚨 Fraud Detection</div>
-
-          <div class="form-group">
-            <label class="form-label">Check Wallet</label>
-            <input type="text" id="securityWallet" class="form-input" placeholder="Enter wallet address">
-            <button type="button" class="btn margin-top-10" onclick="checkWalletSecurity()">🔍 Check Security</button>
-          </div>
-
-          <div id="securityResults"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DAO Section -->
-    <div id="dao" class="admin-section">
-      <div class="grid-2">
-        <div class="admin-card">
-          <div class="card-title">🗳️ Create DAO Proposal</div>
-
-          <form id="daoForm">
-            <div class="form-group">
-              <label class="form-label">Proposal Title</label>
-              <input type="text" id="daoTitle" class="form-input" placeholder="Enter proposal title" required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Description</label>
-              <textarea id="daoDescription" class="form-input form-textarea" placeholder="Describe the proposal..."></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Options (comma-separated)</label>
-              <input type="text" id="daoOptions" class="form-input" placeholder="Yes, No" required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Duration (hours)</label>
-              <input type="number" id="daoDuration" class="form-input" placeholder="72" min="1" required>
-            </div>
-
-            <button type="submit" class="btn">📨 Create Proposal</button>
-          </form>
-        </div>
-
-        <div class="admin-card">
-          <div class="card-title">📋 Active Proposals</div>
-
-          <div id="daoProposals" class="loading">
-            <div class="spinner"></div> Loading proposals...
+          <h3 class="section-title-spaced">Recent Battles</h3>
+          <div id="battleHistory" class="loading">
+            <div class="spinner"></div> Loading battle history...
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- System Section -->
-    <div id="system" class="admin-section">
-      <div class="alert alert-error margin-bottom-20">
-        🚨 <strong>EMERGENCY SYSTEM CONTROLS</strong><br>
-        These controls can affect the entire WALDOCOIN system. Use only in critical situations.
+      <!-- Staking Section -->
+      <div id="staking" class="admin-section">
+        <div class="alert alert-warning margin-bottom-20">
+          ⚠️ <strong>Staking Emergency Controls</strong><br>
+          Manual unstaking is a backup mechanism for when automated functions fail. Use with caution.
+        </div>
+
+        <div class="grid-2">
+          <!-- Staking Overview -->
+          <div class="admin-card">
+            <div class="card-title">🏦 Staking Overview</div>
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-value" id="totalStakingPositions">-</div>
+                <div class="stat-label">Active Stakes</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="totalStakingValue">-</div>
+                <div class="stat-label">Total Value</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="totalStakingRewards">-</div>
+                <div class="stat-label">Total Rewards</div>
+              </div>
+            </div>
+
+            <div id="stakingPositions" class="loading">
+              <div class="spinner"></div> Loading staking positions...
+            </div>
+          </div>
+
+          <!-- Manual Unstaking Controls -->
+          <div class="admin-card">
+            <div class="card-title">🔓 Manual Unstaking</div>
+
+            <div class="margin-bottom-20">
+              <label class="form-label">User Wallet Address</label>
+              <input type="text" id="unstakeWalletAddress" class="form-input margin-bottom-10"
+                placeholder="rWalletAddress...">
+              <button type="button" onclick="loadUserStakes()" class="btn btn-secondary width-100">
+                🔍 Load User Stakes
+              </button>
+            </div>
+
+            <div id="userStakesContainer" style="display: none;">
+              <div class="form-group">
+                <label class="form-label">Select Stake to Unstake</label>
+                <select id="stakeSelector" class="form-input">
+                  <option value="">Select a stake...</option>
+                </select>
+              </div>
+
+              <div id="stakeDetails" class="stake-details">
+                <div class="stake-detail-row">
+                  <span>Amount:</span>
+                  <span id="stakeAmount">-</span>
+                </div>
+                <div class="stake-detail-row">
+                  <span>Duration:</span>
+                  <span id="stakeDuration">-</span>
+                </div>
+                <div class="stake-detail-row">
+                  <span>APY:</span>
+                  <span id="stakeAPY">-</span>
+                </div>
+                <div class="stake-detail-row">
+                  <span>Unlock Date:</span>
+                  <span id="stakeUnlockDate">-</span>
+                </div>
+                <div class="stake-detail-row">
+                  <span>Current Rewards:</span>
+                  <span id="stakeRewards">-</span>
+                </div>
+                <div class="stake-detail-row">
+                  <span>Status:</span>
+                  <span id="stakeStatus">-</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" id="forceUnstake" class="checkbox-margin">
+                  Force Early Unstaking (15% penalty will apply)
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Admin Reason (Required)</label>
+                <textarea id="unstakeReason" class="form-input" rows="3"
+                  placeholder="Explain why manual unstaking is necessary..."></textarea>
+              </div>
+
+              <button type="button" onclick="executeManualUnstake()" class="btn btn-danger width-100">
+                🔓 Execute Manual Unstake
+              </button>
+            </div>
+
+            <div id="unstakeResult" class="margin-top-15"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="grid-2">
-        <div class="admin-card">
-          <div class="card-title">⚙️ System Health Monitor</div>
+      <!-- Security Section -->
+      <div id="security" class="admin-section">
+        <div class="grid-2">
+          <div class="admin-card">
+            <div class="card-title">🛡️ Security Monitoring</div>
 
-          <div id="systemHealth" class="loading">
-            <div class="spinner"></div> Checking system health...
-          </div>
-        </div>
-
-        <div class="admin-card">
-          <div class="card-title">🚨 Emergency Controls</div>
-
-          <div class="alert alert-warning alert-small">
-            ⚠️ These actions affect all users and cannot be easily undone
-          </div>
-
-          <div class="emergency-controls">
-            <button type="button" class="btn" onclick="refreshAllData()">🔄 Force Data Refresh</button>
-            <button type="button" class="btn btn-warning" onclick="clearCache()">🗑️ Emergency Cache Clear</button>
-            <button type="button" class="btn btn-danger" onclick="emergencyStop()">🛑 SYSTEM EMERGENCY STOP</button>
-          </div>
-        </div>
-
-        <!-- Token Burning Controls -->
-        <div class="admin-card">
-          <div class="card-title">🔥 Token Burning Controls</div>
-
-          <div class="alert alert-error alert-small">
-            ⚠️ Token burning is IRREVERSIBLE and permanently removes tokens from circulation
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Burn Amount (WLO Tokens):</label>
-            <input type="number" id="burnAmount" class="form-input" placeholder="Enter amount to burn" min="1" step="0.01">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Burn Reason:</label>
-            <input type="text" id="burnReason" class="form-input" placeholder="Enter reason for token burn">
-          </div>
-
-          <!-- Quick Burn Buttons -->
-          <div class="form-group">
-            <label class="form-label">Quick Burn Options:</label>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-              <button type="button" class="btn btn-info" onclick="setQuickBurn(1000000)">1M WLO</button>
-              <button type="button" class="btn btn-info" onclick="setQuickBurn(5000000)">5M WLO</button>
-              <button type="button" class="btn btn-info" onclick="setQuickBurn(10000000)">10M WLO</button>
-              <button type="button" class="btn btn-warning" onclick="setQuickBurn(23100000)">23.1M WLO</button>
-              <button type="button" class="btn btn-danger" onclick="setQuickBurn(50000000)">50M WLO</button>
+            <div id="securityAlerts" class="loading">
+              <div class="spinner"></div> Loading security data...
             </div>
           </div>
 
-          <!-- Burn Confirmation -->
-          <div id="burnConfirmationSection" style="display: none;">
-            <div class="alert alert-error alert-small">
-              <strong>CONFIRMATION REQUIRED:</strong><br>
-              Type the following confirmation text to proceed:<br>
-              <code id="burnConfirmationText" style="background: #333; padding: 5px; border-radius: 3px; color: #ffd700;"></code>
-            </div>
+          <div class="admin-card">
+            <div class="card-title">🚨 Fraud Detection</div>
+
             <div class="form-group">
-              <input type="text" id="burnConfirmation" class="form-input" placeholder="Enter confirmation text">
+              <label class="form-label">Check Wallet</label>
+              <input type="text" id="securityWallet" class="form-input" placeholder="Enter wallet address">
+              <button type="button" class="btn margin-top-10" onclick="checkWalletSecurity()">🔍 Check Security</button>
+            </div>
+
+            <div id="securityResults"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAO Section -->
+      <div id="dao" class="admin-section">
+        <div class="grid-2">
+          <div class="admin-card">
+            <div class="card-title">🗳️ Create DAO Proposal</div>
+
+            <form id="daoForm">
+              <div class="form-group">
+                <label class="form-label">Proposal Title</label>
+                <input type="text" id="daoTitle" class="form-input" placeholder="Enter proposal title" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="daoDescription" class="form-input form-textarea"
+                  placeholder="Describe the proposal..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Options (comma-separated)</label>
+                <input type="text" id="daoOptions" class="form-input" placeholder="Yes, No" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Duration (hours)</label>
+                <input type="number" id="daoDuration" class="form-input" placeholder="72" min="1" required>
+              </div>
+
+              <button type="submit" class="btn">📨 Create Proposal</button>
+            </form>
+          </div>
+
+          <div class="admin-card">
+            <div class="card-title">📋 Active Proposals</div>
+
+            <div id="daoProposals" class="loading">
+              <div class="spinner"></div> Loading proposals...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Section -->
+      <div id="system" class="admin-section">
+        <div class="alert alert-error margin-bottom-20">
+          🚨 <strong>EMERGENCY SYSTEM CONTROLS</strong><br>
+          These controls can affect the entire WALDOCOIN system. Use only in critical situations.
+        </div>
+
+        <div class="grid-2">
+          <div class="admin-card">
+            <div class="card-title">⚙️ System Health Monitor</div>
+
+            <div id="systemHealth" class="loading">
+              <div class="spinner"></div> Checking system health...
             </div>
           </div>
 
-          <!-- Burn Actions -->
-          <div class="emergency-controls">
-            <button type="button" class="btn btn-warning" onclick="prepareBurn()" id="prepareBurnBtn">🔥 Prepare Token Burn</button>
-            <button type="button" class="btn btn-danger" onclick="executeBurn()" id="executeBurnBtn" style="display: none;">🔥 EXECUTE BURN</button>
-            <button type="button" class="btn" onclick="cancelBurn()" id="cancelBurnBtn" style="display: none;">❌ Cancel</button>
-          </div>
+          <div class="admin-card">
+            <div class="card-title">🚨 Emergency Controls</div>
 
-          <!-- Burn Statistics -->
-          <div class="form-group" style="margin-top: 20px;">
-            <label class="form-label">Burn Statistics:</label>
-            <div id="burnStats" style="background: #222; padding: 15px; border-radius: 6px; margin-top: 10px;">
-              <div class="spinner"></div> Loading burn statistics...
+            <div class="alert alert-warning alert-small">
+              ⚠️ These actions affect all users and cannot be easily undone
             </div>
-          </div>
 
-          <!-- Recent Burns -->
-          <div class="form-group">
-            <label class="form-label">Recent Burns:</label>
-            <div id="recentBurns" style="background: #222; padding: 15px; border-radius: 6px; margin-top: 10px; max-height: 200px; overflow-y: auto;">
-              <div class="spinner"></div> Loading recent burns...
+            <div class="emergency-controls">
+              <button type="button" class="btn" onclick="refreshAllData()">🔄 Force Data Refresh</button>
+              <button type="button" class="btn btn-warning" onclick="clearCache()">🗑️ Emergency Cache Clear</button>
+              <button type="button" class="btn btn-danger" onclick="emergencyStop()">🛑 SYSTEM EMERGENCY STOP</button>
             </div>
           </div>
         </div>
@@ -2575,7 +2643,7 @@
     function setQuickRequirement(preset, memes, battles, dao) {
       let eventName, waldoPerXrp = 1000;
 
-      switch(preset) {
+      switch (preset) {
         case 'launch':
           eventName = 'Launch Configuration';
           break;
@@ -2930,7 +2998,7 @@
     function setQuickBonus(preset, multiplier, duration) {
       let eventName, bonusType;
 
-      switch(preset) {
+      switch (preset) {
         case 'weekend':
           eventName = 'Weekend Bonus';
           bonusType = 'all';
@@ -3489,12 +3557,6 @@
         loadRecentViolations();
         loadSuspiciousActivity();
       }
-
-      // Load burn statistics and recent burns if on system section
-      if (sectionName === 'system') {
-        loadBurnStatistics();
-        loadRecentBurns();
-      }
     }
 
     // Production-ready API call wrapper
@@ -3543,7 +3605,7 @@
       if (!checkAdminAuth()) return;
 
       try {
-        switch(section) {
+        switch (section) {
           case 'dashboard':
             await loadDashboardData();
             break;
@@ -3827,9 +3889,9 @@
 
           usersData.users.forEach(user => {
             const statusColor = user.security.isBlocked ? '#e74c3c' :
-                               user.security.isSuspicious ? '#f39c12' : '#27ae60';
+              user.security.isSuspicious ? '#f39c12' : '#27ae60';
             const statusText = user.security.isBlocked ? 'Blocked' :
-                              user.security.isSuspicious ? 'Suspicious' : 'Active';
+              user.security.isSuspicious ? 'Suspicious' : 'Active';
 
             usersHtml += `
               <tr style="border-bottom: 1px solid #333;">
@@ -3883,10 +3945,10 @@
               </thead>
               <tbody>
                 ${users.map(user => {
-                  const isBlocked = securityData.status === 'fulfilled' &&
-                    securityData.value.blockedUsers?.includes(user.wallet);
+            const isBlocked = securityData.status === 'fulfilled' &&
+              securityData.value.blockedUsers?.includes(user.wallet);
 
-                  return `
+            return `
                     <tr>
                       <td><code>${user.wallet.slice(0, 8)}...${user.wallet.slice(-6)}</code></td>
                       <td>${user.twitter ? `@${user.twitter}` : '-'}</td>
@@ -3898,7 +3960,7 @@
                       </td>
                     </tr>
                   `;
-                }).join('')}
+          }).join('')}
               </tbody>
             </table>
           `;
@@ -3936,7 +3998,7 @@
 
           if (tokenomicsData.success && tokenomicsData.stats && tokenomicsData.stats.airdrop) {
             const stats = tokenomicsData.stats;
-          historyDiv.innerHTML = `
+            historyDiv.innerHTML = `
             <div style="background: #333; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
               <h4 style="color: #25c2a0; margin-bottom: 10px;">📊 Airdrop Statistics</h4>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -4250,7 +4312,7 @@ This action cannot be undone. Continue?`;
 
             data.overview.recentEvents.forEach(event => {
               const eventColor = event.type === 'user_blocked' ? '#e74c3c' :
-                                event.type === 'user_unblocked' ? '#27ae60' : '#f39c12';
+                event.type === 'user_unblocked' ? '#27ae60' : '#f39c12';
 
               alertsHtml += `
                 <div style="padding: 10px; margin-bottom: 8px; background: #333; border-radius: 5px; border-left: 3px solid ${eventColor};">
@@ -4425,7 +4487,7 @@ This action cannot be undone. Continue?`;
         if (response.success) {
           const security = response.security;
           const riskColor = security.riskLevel === 'HIGH' ? '#e74c3c' :
-                           security.riskLevel === 'MEDIUM' ? '#f39c12' : '#27ae60';
+            security.riskLevel === 'MEDIUM' ? '#f39c12' : '#27ae60';
 
           resultDiv.className = 'info';
           resultDiv.innerHTML = `
@@ -4639,7 +4701,7 @@ This action cannot be undone. Continue?`;
 
       console.log('📝 Password update data:', {
         hasAdminKey: !!adminKey,
-        newPassword: newPassword ? `${newPassword.slice(0,3)}***` : 'empty',
+        newPassword: newPassword ? `${newPassword.slice(0, 3)}***` : 'empty',
         passwordLength: newPassword.length
       });
 
@@ -4880,7 +4942,7 @@ This action cannot be undone. Continue?`;
 
           data.proposals.forEach(proposal => {
             const statusColor = proposal.status === 'active' ? '#25c2a0' :
-                               proposal.status === 'passed' ? '#27ae60' : '#e74c3c';
+              proposal.status === 'passed' ? '#27ae60' : '#e74c3c';
             const timeRemaining = proposal.timeRemaining > 0 ?
               Math.ceil(proposal.timeRemaining / (24 * 60 * 60 * 1000)) + ' days' : 'Expired';
 
@@ -5380,7 +5442,7 @@ This action cannot be undone. Continue?`;
           data.violations.forEach(violation => {
             const time = new Date(violation.timestamp).toLocaleString();
             const severityColor = violation.reason.includes('BOT') ? '#e74c3c' :
-                                 violation.reason.includes('SUSPICIOUS') ? '#f39c12' : '#95a5a6';
+              violation.reason.includes('SUSPICIOUS') ? '#f39c12' : '#95a5a6';
 
             violationsHtml += `
               <div style="background: #2a2a2a; padding: 10px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid ${severityColor};">
@@ -5420,7 +5482,7 @@ This action cannot be undone. Continue?`;
           data.activity.forEach(activity => {
             const time = new Date(activity.timestamp).toLocaleString();
             const riskColor = activity.riskScore >= 80 ? '#e74c3c' :
-                             activity.riskScore >= 60 ? '#f39c12' : '#3498db';
+              activity.riskScore >= 60 ? '#f39c12' : '#3498db';
 
             activityHtml += `
               <div style="background: #2a2a2a; padding: 8px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid ${riskColor};">
@@ -5671,7 +5733,7 @@ This action cannot be undone. Continue?`;
     function setQuickMemeLimit(preset, daily, premium, vip) {
       let eventName;
 
-      switch(preset) {
+      switch (preset) {
         case 'strict':
           eventName = 'Strict Quality Control';
           break;
@@ -5754,9 +5816,9 @@ This action cannot be undone. Continue?`;
         if (data.success) {
           const usage = data.usage;
           const tierInfo = usage.waldoBalance >= 50000 ? 'VIP' :
-                          usage.waldoBalance >= 10000 ? 'Premium' : 'Standard';
+            usage.waldoBalance >= 10000 ? 'Premium' : 'Standard';
           const tierColor = usage.waldoBalance >= 50000 ? '#9b59b6' :
-                           usage.waldoBalance >= 10000 ? '#f39c12' : '#3498db';
+            usage.waldoBalance >= 10000 ? '#f39c12' : '#3498db';
 
           resultDiv.innerHTML = `
             <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid ${tierColor}; margin-top: 10px;">
@@ -5861,222 +5923,10 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    // ===== TOKEN BURNING FUNCTIONS =====
 
-    // Set quick burn amount
-    function setQuickBurn(amount) {
-      document.getElementById('burnAmount').value = amount;
-      document.getElementById('burnReason').value = `Strategic token burn - ${amount.toLocaleString()} WLO tokens`;
-      showAlert(`Set burn amount to ${amount.toLocaleString()} WLO tokens`, 'info');
-    }
-
-    // Prepare burn (show confirmation)
-    function prepareBurn() {
-      const amount = parseFloat(document.getElementById('burnAmount').value);
-      const reason = document.getElementById('burnReason').value;
-
-      if (!amount || amount <= 0) {
-        showAlert('Please enter a valid burn amount', 'error');
-        return;
-      }
-
-      if (!reason.trim()) {
-        showAlert('Please enter a reason for the burn', 'error');
-        return;
-      }
-
-      // Show confirmation section
-      const confirmationSection = document.getElementById('burnConfirmationSection');
-      const confirmationText = document.getElementById('burnConfirmationText');
-      const prepareBurnBtn = document.getElementById('prepareBurnBtn');
-      const executeBurnBtn = document.getElementById('executeBurnBtn');
-      const cancelBurnBtn = document.getElementById('cancelBurnBtn');
-
-      const confirmText = `BURN_${Math.floor(amount)}_WLO_TOKENS`;
-      confirmationText.textContent = confirmText;
-
-      confirmationSection.style.display = 'block';
-      prepareBurnBtn.style.display = 'none';
-      executeBurnBtn.style.display = 'inline-block';
-      cancelBurnBtn.style.display = 'inline-block';
-
-      showAlert(`⚠️ Burn prepared for ${amount.toLocaleString()} WLO tokens. Enter confirmation to proceed.`, 'warning');
-    }
-
-    // Cancel burn
-    function cancelBurn() {
-      const confirmationSection = document.getElementById('burnConfirmationSection');
-      const prepareBurnBtn = document.getElementById('prepareBurnBtn');
-      const executeBurnBtn = document.getElementById('executeBurnBtn');
-      const cancelBurnBtn = document.getElementById('cancelBurnBtn');
-
-      confirmationSection.style.display = 'none';
-      prepareBurnBtn.style.display = 'inline-block';
-      executeBurnBtn.style.display = 'none';
-      cancelBurnBtn.style.display = 'none';
-
-      document.getElementById('burnConfirmation').value = '';
-      showAlert('Token burn cancelled', 'info');
-    }
-
-    // Execute burn
-    async function executeBurn() {
-      const adminKey = localStorage.getItem('adminKey');
-      if (!adminKey) {
-        showAlert('Please enter admin key first', 'error');
-        return;
-      }
-
-      const amount = parseFloat(document.getElementById('burnAmount').value);
-      const reason = document.getElementById('burnReason').value;
-      const confirmation = document.getElementById('burnConfirmation').value;
-      const expectedConfirmation = `BURN_${Math.floor(amount)}_WLO_TOKENS`;
-
-      if (confirmation !== expectedConfirmation) {
-        showAlert('Incorrect confirmation text. Please enter the exact text shown.', 'error');
-        return;
-      }
-
-      if (!window.confirm(`🔥 FINAL WARNING: You are about to burn ${amount.toLocaleString()} WLO tokens.\n\nThis action is IRREVERSIBLE and will permanently remove tokens from circulation.\n\nAre you absolutely sure?`)) {
-        return;
-      }
-
-      const executeBurnBtn = document.getElementById('executeBurnBtn');
-      executeBurnBtn.disabled = true;
-      executeBurnBtn.textContent = '🔥 Burning tokens...';
-
-      try {
-        const endpoint = amount >= 1000000 ? '/api/burn/massive' : '/api/burn/tokens';
-        const payload = {
-          amount: amount,
-          adminKey: adminKey,
-          reason: reason
-        };
-
-        if (amount >= 1000000) {
-          payload.confirmation = expectedConfirmation;
-        }
-
-        const response = await fetch(`${baseURL}${endpoint}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          showAlert(`✅ SUCCESS: Burned ${amount.toLocaleString()} WLO tokens!\nTX Hash: ${data.burnEvent.txHash}`, 'success');
-
-          // Reset form
-          cancelBurn();
-          document.getElementById('burnAmount').value = '';
-          document.getElementById('burnReason').value = '';
-
-          // Refresh burn statistics
-          loadBurnStatistics();
-          loadRecentBurns();
-
-        } else {
-          showAlert(`❌ Burn failed: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Burn error:', error);
-        showAlert('❌ Burn failed: Network error', 'error');
-      } finally {
-        executeBurnBtn.disabled = false;
-        executeBurnBtn.textContent = '🔥 EXECUTE BURN';
-      }
-    }
-
-    // Load burn statistics
-    async function loadBurnStatistics() {
-      const adminKey = localStorage.getItem('adminKey');
-      if (!adminKey) return;
-
-      try {
-        const response = await fetch(`${baseURL}/api/burn/stats`, {
-          headers: {
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          const burnStats = document.getElementById('burnStats');
-          burnStats.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
-              <div style="text-align: center;">
-                <div style="font-size: 1.5rem; font-weight: bold; color: #ff5252;">${data.stats.totalBurned.toLocaleString()}</div>
-                <div style="color: #ccc; font-size: 0.9rem;">Total Burned</div>
-              </div>
-              <div style="text-align: center;">
-                <div style="font-size: 1.5rem; font-weight: bold; color: #25c2a0;">${data.stats.totalBurnEvents}</div>
-                <div style="color: #ccc; font-size: 0.9rem;">Burn Events</div>
-              </div>
-              <div style="text-align: center;">
-                <div style="font-size: 1.5rem; font-weight: bold; color: #ffd700;">${new Date(data.stats.lastUpdated).toLocaleDateString()}</div>
-                <div style="color: #ccc; font-size: 0.9rem;">Last Updated</div>
-              </div>
-            </div>
-          `;
-        } else {
-          document.getElementById('burnStats').innerHTML = '<div style="color: #ff5252;">Failed to load burn statistics</div>';
-        }
-      } catch (error) {
-        console.error('Error loading burn statistics:', error);
-        document.getElementById('burnStats').innerHTML = '<div style="color: #ff5252;">Error loading burn statistics</div>';
-      }
-    }
-
-    // Load recent burns
-    async function loadRecentBurns() {
-      const adminKey = localStorage.getItem('adminKey');
-      if (!adminKey) return;
-
-      try {
-        const response = await fetch(`${baseURL}/api/burn/history`, {
-          headers: {
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          const recentBurns = document.getElementById('recentBurns');
-
-          if (data.burnHistory.length === 0) {
-            recentBurns.innerHTML = '<div style="color: #ccc;">No burn history found</div>';
-            return;
-          }
-
-          recentBurns.innerHTML = data.burnHistory.slice(0, 5).map(burn => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 10px;">
-              <div>
-                <div style="font-weight: bold; color: #ff5252;">${parseFloat(burn.amount).toLocaleString()} WLO</div>
-                <div style="font-size: 0.9rem; color: #ccc;">${new Date(burn.timestamp).toLocaleString()}</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-family: monospace; color: #25c2a0; font-size: 0.8rem;">${burn.txHash.substring(0, 16)}...</div>
-                <div style="font-size: 0.8rem; color: #ccc;">${burn.reason.substring(0, 30)}${burn.reason.length > 30 ? '...' : ''}</div>
-              </div>
-            </div>
-          `).join('');
-        } else {
-          document.getElementById('recentBurns').innerHTML = '<div style="color: #ff5252;">Failed to load recent burns</div>';
-        }
-      } catch (error) {
-        console.error('Error loading recent burns:', error);
-        document.getElementById('recentBurns').innerHTML = '<div style="color: #ff5252;">Error loading recent burns</div>';
-      }
-    }
 
     // Initialize admin panel
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       if (checkAdminAuth()) {
         loadSectionData('dashboard');
       }
@@ -6084,7 +5934,7 @@ This action cannot be undone. Continue?`;
       // Initialize stake selector event listener
       const stakeSelector = document.getElementById('stakeSelector');
       if (stakeSelector) {
-        stakeSelector.addEventListener('change', function() {
+        stakeSelector.addEventListener('change', function () {
           const stakeDetails = document.getElementById('stakeDetails');
 
           if (this.value) {
@@ -6431,14 +6281,14 @@ This action cannot be undone. Continue?`;
 
           // System status with color coding
           const statusColor = data.overallStatus === 'healthy' ? '#25c2a0' :
-                             data.overallStatus === 'degraded' ? '#ffd93d' : '#e74c3c';
+            data.overallStatus === 'degraded' ? '#ffd93d' : '#e74c3c';
           statusElement.style.color = statusColor;
           statusElement.textContent = `${data.overallStatus.toUpperCase()} (${data.responseTime}ms)`;
 
           // Distributor balance with color coding
           const balanceStatus = data.services.distributorWallet.status;
           const balanceColor = balanceStatus === 'healthy' ? '#25c2a0' :
-                              balanceStatus === 'warning' ? '#ffd93d' : '#e74c3c';
+            balanceStatus === 'warning' ? '#ffd93d' : '#e74c3c';
           balanceElement.style.color = balanceColor;
           balanceElement.textContent = `${data.services.distributorWallet.balanceFormatted} WALDO`;
 
@@ -6548,7 +6398,7 @@ This action cannot be undone. Continue?`;
             data.logs.forEach(log => {
               const timestamp = new Date(log.timestamp).toLocaleString();
               const actionColor = log.action === 'EMERGENCY_STOP' ? '#e74c3c' :
-                                 log.action === 'EMERGENCY_RESUME' ? '#25c2a0' : '#ffd93d';
+                log.action === 'EMERGENCY_RESUME' ? '#25c2a0' : '#ffd93d';
 
               logsHTML += `
                 <div style="border-bottom: 1px solid #333; padding: 8px 0; margin-bottom: 8px;">
@@ -6620,7 +6470,7 @@ This action cannot be undone. Continue?`;
               txHTML += `
                 <div style="border-bottom: 1px solid #333; padding: 8px 0; margin-bottom: 8px;">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #ffd93d; font-weight: bold;">${tx.wallet.slice(0,8)}...${tx.wallet.slice(-6)}</span>
+                    <span style="color: #ffd93d; font-weight: bold;">${tx.wallet.slice(0, 8)}...${tx.wallet.slice(-6)}</span>
                     <span style="color: #666; font-size: 10px;">${timestamp}</span>
                   </div>
                   <div style="color: #ccc; font-size: 11px; margin-top: 4px;">
@@ -6724,8 +6574,8 @@ This action cannot be undone. Continue?`;
 
       // Parse wallets (one per line)
       const wallets = walletsText.split('\n')
-                                 .map(w => w.trim())
-                                 .filter(w => w.length > 0);
+        .map(w => w.trim())
+        .filter(w => w.length > 0);
 
       if (wallets.length === 0) {
         showAlert('No valid wallet addresses found', 'error');
@@ -7203,17 +7053,17 @@ This action cannot be undone. Continue?`;
         if (data.success) {
           // Update executive dashboard elements
           const healthColor = data.executiveSummary.systemHealth === 'healthy' ? '#25c2a0' :
-                              data.executiveSummary.systemHealth === 'warning' ? '#ffd93d' : '#e74c3c';
+            data.executiveSummary.systemHealth === 'warning' ? '#ffd93d' : '#e74c3c';
           document.getElementById('executiveSystemHealth').style.color = healthColor;
           document.getElementById('executiveSystemHealth').textContent = data.executiveSummary.systemHealth.toUpperCase();
 
           const performanceColor = data.executiveSummary.overallPerformance >= 80 ? '#25c2a0' :
-                                   data.executiveSummary.overallPerformance >= 60 ? '#ffd93d' : '#e74c3c';
+            data.executiveSummary.overallPerformance >= 60 ? '#ffd93d' : '#e74c3c';
           document.getElementById('performanceScore').style.color = performanceColor;
           document.getElementById('performanceScore').textContent = `${data.executiveSummary.overallPerformance}%`;
 
           const riskColor = data.executiveSummary.riskLevel === 'low' ? '#25c2a0' :
-                           data.executiveSummary.riskLevel === 'medium' ? '#ffd93d' : '#e74c3c';
+            data.executiveSummary.riskLevel === 'medium' ? '#ffd93d' : '#e74c3c';
           document.getElementById('riskLevel').style.color = riskColor;
           document.getElementById('riskLevel').textContent = data.executiveSummary.riskLevel.toUpperCase();
 
@@ -7678,4 +7528,5 @@ This action cannot be undone. Continue?`;
 
   </div> <!-- Close adminPanel -->
 </body>
+
 </html>
