@@ -8,7 +8,9 @@ const router = express.Router();
 // XRPL Configuration
 const XRPL_SERVER = process.env.XRPL_NODE || 'wss://xrplcluster.com';
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
-const DISTRIBUTOR_SECRET = process.env.DISTRIBUTOR_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
+// Correct WALDO distributor wallet that has the tokens to burn
+const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET || 'sEd7ZQstcsCgQ1fxqMYZxBgEpZz5KUK';
+const DISTRIBUTOR_WALLET = 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC';
 
 console.log("🔥 Loaded: routes/burn.js");
 
