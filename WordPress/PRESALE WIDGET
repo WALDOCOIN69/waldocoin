@@ -40,8 +40,8 @@
     </div>
   </div>
 
-  <p style="font-size: 14px; color: white; font-weight: bold;">Wallet: <span id="connectedWallet" style="color:#25c2a0; font-weight: bold;">Not connected</span><br>
-    <a href="javascript:void(0);" onclick="connectXummWallet()" style="color: #25c2a0; font-weight: bold; text-decoration: underline;">🔌 Connect XUMM Wallet</a>
+  <p style="font-size: 14px; color: white; font-weight: bold;">Wallet: <span id="connectedWallet" style="color:#25c2a0; font-weight: bold;">Loading...</span><br>
+    <span id="connectionStatus" style="color: #666; font-size: 12px;">Generating connection QR...</span>
   </p>
   <a href="https://waldocoin.live/presale/" target="_blank" style="color: #25c2a0; font-size: 13px; font-weight: bold; text-decoration: underline;">📄 View Presale Info Page</a>
 </div>
@@ -50,8 +50,8 @@
         <div id="qrContainer" style="min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
           <img id="xummQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
                style="width:90px; height:90px; border-radius:10px; border:2px solid #25c2a0; background:#0a1f0f; display: none;">
-          <div id="qrPlaceholder" style="width:90px; height:90px; border-radius:10px; border:2px solid #25c2a0; background:#0a1f0f; display: flex; align-items: center; justify-content: center; color: #666; font-size: 10px;">
-            Click Connect
+          <div id="qrPlaceholder" style="width:90px; height:90px; border-radius:10px; border:2px solid #25c2a0; background:#0a1f0f; display: flex; align-items: center; justify-content: center; color: #25c2a0; font-size: 10px; font-weight: bold;">
+            Loading...
           </div>
         </div>
         <div style="color: white; font-size: 12px; font-weight: bold; margin-top: 8px;">Scan with XAMAN</div>
@@ -195,15 +195,22 @@ function initializePresaleWidget() {
   if (wallet) {
     document.getElementById("connectedWallet").innerText = `${wallet.slice(0,8)}...${wallet.slice(-6)} ✅`;
     document.getElementById("connectedWallet").style.color = '#25c2a0';
+    document.getElementById("connectionStatus").innerText = "Wallet connected";
+    document.getElementById("connectionStatus").style.color = '#25c2a0';
     // Hide the XUMM QR since wallet is already connected
     document.getElementById('xummQR').style.display = 'none';
     document.getElementById('qrPlaceholder').style.display = 'none';
   } else {
     document.getElementById("connectedWallet").innerText = "Not connected";
     document.getElementById("connectedWallet").style.color = '#e74c3c';
-    // Show the placeholder, hide the QR
+    document.getElementById("connectionStatus").innerText = "Generating connection QR...";
+    document.getElementById("connectionStatus").style.color = '#ffd93d';
+    // Show the placeholder, hide the QR initially
     document.getElementById('xummQR').style.display = 'none';
     document.getElementById('qrPlaceholder').style.display = 'flex';
+
+    // Automatically load connection QR
+    connectXummWallet();
   }
 
   document.getElementById("buySuccessMsg").style.display = "none";
@@ -350,7 +357,13 @@ async function loadPresaleProgress() {
 
 async function connectXummWallet() {
   try {
+    // Don't change wallet status if already connected
+    const existingWallet = localStorage.getItem("xummWallet");
+    if (existingWallet) return;
+
     document.getElementById('connectedWallet').textContent = 'Connecting...';
+    document.getElementById('connectionStatus').textContent = 'Loading connection QR...';
+    document.getElementById('connectionStatus').style.color = '#ffd93d';
 
     const res = await fetch("https://waldocoin-backend-api.onrender.com/api/login", {
       method: 'GET',
@@ -364,16 +377,35 @@ async function connectXummWallet() {
       // Update the XUMM QR code in the widget and make sure it's visible
       const qrElement = document.getElementById('xummQR');
       const placeholder = document.getElementById('qrPlaceholder');
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
       qrElement.src = data.qr;
       qrElement.style.display = 'block';
       placeholder.style.display = 'none';
 
-      // Show deep link if on mobile or if next.always is available
-      if (/Mobi|Android/i.test(navigator.userAgent) && (data.refs?.xapp || data.next?.always)) {
+      // Update status based on device type
+      if (isMobile) {
+        document.getElementById('connectionStatus').innerHTML = 'Tap the button below to open XUMM app';
+        document.getElementById('connectionStatus').style.color = '#25c2a0';
+      } else {
+        document.getElementById('connectionStatus').innerHTML = 'Scan QR code with XUMM mobile app';
+        document.getElementById('connectionStatus').style.color = '#25c2a0';
+      }
+
+      // Show deep link for mobile users
+      if (isMobile && (data.refs?.xapp || data.next?.always)) {
         const deepLink = document.getElementById("xummDeepLink");
         deepLink.href = data.refs?.xapp || data.next?.always;
         deepLink.style.display = "inline-block";
+        deepLink.innerHTML = "🚀 Open XUMM App";
+        deepLink.style.background = "#25c2a0";
+        deepLink.style.color = "white";
+        deepLink.style.padding = "8px 16px";
+        deepLink.style.borderRadius = "6px";
+        deepLink.style.textDecoration = "none";
+        deepLink.style.fontWeight = "bold";
+        deepLink.style.display = "inline-block";
+        deepLink.style.marginTop = "10px";
       }
 
       // Store UUID for checking connection status
@@ -391,6 +423,8 @@ async function connectXummWallet() {
               localStorage.setItem("xummWallet", statusData.account);
               document.getElementById('connectedWallet').textContent = `${statusData.account.slice(0,8)}...${statusData.account.slice(-6)} ✅`;
               document.getElementById('connectedWallet').style.color = '#25c2a0';
+              document.getElementById('connectionStatus').textContent = 'Wallet connected successfully!';
+              document.getElementById('connectionStatus').style.color = '#25c2a0';
               clearInterval(checkConnection);
 
               // Hide the connection QR and show placeholder
@@ -400,10 +434,15 @@ async function connectXummWallet() {
 
               console.log('Wallet connected successfully:', statusData.account);
             } else if (statusData.expired) {
-              console.log('QR code expired, stopping checks');
+              console.log('QR code expired, generating new one');
               clearInterval(checkConnection);
-              document.getElementById('connectedWallet').textContent = 'QR expired - click connect again';
-              document.getElementById('connectedWallet').style.color = '#ffd93d';
+              document.getElementById('connectionStatus').textContent = 'QR expired - generating new one...';
+              document.getElementById('connectionStatus').style.color = '#ffd93d';
+
+              // Auto-generate new QR code
+              setTimeout(() => {
+                connectXummWallet();
+              }, 1000);
             }
           } catch (error) {
             console.error('Status check error:', error);
@@ -428,12 +467,19 @@ async function connectXummWallet() {
     console.error('Wallet connection error:', error);
     document.getElementById('connectedWallet').textContent = 'Connection failed ❌';
     document.getElementById('connectedWallet').style.color = '#e74c3c';
+    document.getElementById('connectionStatus').textContent = 'Failed to load QR - retrying...';
+    document.getElementById('connectionStatus').style.color = '#e74c3c';
 
     // Show error details in console for debugging
     console.log('Full error details:', {
       error: error.message,
       timestamp: new Date().toISOString()
     });
+
+    // Auto-retry after 3 seconds
+    setTimeout(() => {
+      connectXummWallet();
+    }, 3000);
   }
 }
 
