@@ -363,7 +363,7 @@ router.post('/start', async (req, res) => {
   }
 });
 
-// POST /api/battle/accept - Accept a battle challenge
+// POST /api/battle/accept - Accept a battle challenge (50 WALDO fee)
 router.post('/accept', async (req, res) => {
   try {
     const { wallet, tweetId } = req.body;
@@ -400,20 +400,77 @@ router.post('/accept', async (req, res) => {
       });
     }
 
-    // Update battle with opponent
-    await redis.hSet(`battle:${currentBattleId}`, {
-      opponent: wallet,
-      opponentTweetId: tweetId,
-      status: 'active',
-      acceptedAt: new Date().toISOString()
+    // Create XUMM payment for 50 WALDO acceptor fee (whitepaper compliant)
+    const payload = {
+      TransactionType: 'Payment',
+      Destination: process.env.DISTRIBUTOR_WALLET,
+      Amount: {
+        currency: 'WLO',
+        issuer: process.env.WALDO_ISSUER,
+        value: '50'
+      },
+      Memos: [{
+        Memo: {
+          MemoType: Buffer.from('BATTLE_ACCEPT').toString('hex').toUpperCase(),
+          MemoData: Buffer.from(`Accept battle ${currentBattleId}`).toString('hex').toUpperCase()
+        }
+      }]
+    };
+
+    const xummResponse = await fetch('https://xumm.app/api/v1/platform/payload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': process.env.XUMM_API_KEY,
+        'X-API-Secret': process.env.XUMM_API_SECRET
+      },
+      body: JSON.stringify({
+        txjson: payload,
+        options: {
+          submit: true,
+          multisign: false,
+          expire: 60, // 1 hour
+          return_url: {
+            web: 'https://waldocoin.live/battle-accepted'
+          }
+        },
+        custom_meta: {
+          identifier: `battle-accept-${currentBattleId}`,
+          blob: {
+            wallet,
+            battleId: currentBattleId,
+            tweetId,
+            fee: 50
+          }
+        }
+      })
     });
 
-    console.log(`⚔️ Battle accepted: ${currentBattleId} by ${wallet}`);
+    const xummData = await xummResponse.json();
+
+    if (!xummData.uuid) {
+      return res.status(500).json({
+        success: false,
+        error: "Failed to create payment request"
+      });
+    }
+
+    // Store pending acceptance
+    await redis.hSet(`battle:accept_pending:${currentBattleId}`, {
+      wallet,
+      tweetId,
+      paymentUuid: xummData.uuid,
+      timestamp: new Date().toISOString()
+    });
 
     return res.json({
       success: true,
-      message: "Battle accepted! Voting is now open.",
-      battleId: currentBattleId
+      message: "Pay 50 WALDO to accept battle",
+      battleId: currentBattleId,
+      paymentUuid: xummData.uuid,
+      qr: xummData.refs.qr_png,
+      deepLink: xummData.next.always,
+      fee: 50
     });
 
   } catch (error) {

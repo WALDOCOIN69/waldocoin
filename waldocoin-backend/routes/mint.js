@@ -19,16 +19,13 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing tweetId or wallet." });
     }
 
-    const xp = parseInt(await redis.get(`meme:xp:${tweetId}`)) || 0;
     const alreadyMinted = await redis.get(`meme:nft_minted:${tweetId}`);
-
-    if (xp < 60) {
-      return res.status(403).json({ success: false, error: "Meme not eligible for NFT. Requires 60+ XP." });
-    }
 
     if (alreadyMinted) {
       return res.status(409).json({ success: false, error: "NFT already minted for this meme." });
     }
+
+    // Note: Whitepaper doesn't specify XP requirement for NFT minting, only 50 WALDO cost
 
     const paymentPayload = {
       txjson: {

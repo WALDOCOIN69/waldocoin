@@ -20,7 +20,7 @@ from xrpl.asyncio.transaction import autofill_and_sign, submit_and_wait
 load_dotenv()
 LIVE_MODE = os.getenv("LIVE_MODE", "false").lower() == "true"
 USE_MOCK_DATA = False
-NFT_XP_THRESHOLD = 60
+# NFT_XP_THRESHOLD removed - whitepaper doesn't specify XP requirement for NFT minting
 DEFAULT_REWARD_TYPE = "instant"
 
 # === Setup Flask + Redis ===
@@ -54,7 +54,13 @@ def get_month_end():
     return next_month.replace(day=1) - timedelta(seconds=1)
 
 def calculate_xp(likes, retweets):
-    return (likes // 10) + (retweets // 15)
+    """Calculate XP based on engagement (1 XP per 25 likes, 1 XP per 15 retweets, max 10 XP per meme)"""
+    xp_from_likes = likes // 25
+    xp_from_retweets = retweets // 15
+    total_xp = xp_from_likes + xp_from_retweets
+
+    # Cap at 10 XP per meme as per whitepaper
+    return min(total_xp, 10)
 
 def calculate_rewards(likes, retweets, reward_type):
     tiers = [
@@ -172,11 +178,10 @@ def store_meme_tweet(tweet):
     r.set(f"meme:waldo:{tweet_id}", waldo)
     r.set(f"meme:nft_minted:{tweet_id}", "false")
 
-    # XP tracking + NFT flag
+    # XP tracking (NFT eligibility removed - whitepaper doesn't specify XP requirement)
     r.set(f"meme:xp:{tweet['id']}", xp)
     r.incrby(f"wallet:xp:{wallet}", xp)
-    if xp >= NFT_XP_THRESHOLD:
-        r.set(f"meme:nft_ready:{tweet['id']}", 1)
+    # All memes are eligible for NFT minting (50 WALDO cost only)
 
     # Increment daily meme count
     today = datetime.now().strftime('%Y-%m-%d')

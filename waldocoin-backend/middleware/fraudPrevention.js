@@ -219,14 +219,7 @@ export const mintFraudPrevention = createFraudPrevention({
   requireWallet: true,
   economicBarrier: { type: 'waldo_balance', amount: 50 },
   customValidation: async (req, wallet) => {
-    // Check if meme has 60+ XP
-    const xp = parseInt(await redis.get(`meme:xp:${req.body.tweetId}`)) || 0;
-    if (xp < 60) {
-      return {
-        success: false,
-        error: 'Meme requires 60+ XP for NFT minting'
-      };
-    }
+    // Whitepaper doesn't specify XP requirement for NFT minting, only 50 WALDO cost
     return { success: true };
   }
 });

@@ -63,8 +63,8 @@ router.post("/", async (req, res) => {
     // 📋 Track voter by vote choice
     await redis.sAdd(`battle:${battleId}:voters:${vote}`, wallet);
 
-    // ⭐ Award XP for voting
-    await addXP(wallet, 1);
+    // ⭐ Award XP for voting (whitepaper compliant: 2 XP)
+    await addXP(wallet, 2);
 
     return res.json({
       success: true,

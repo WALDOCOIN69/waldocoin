@@ -68,12 +68,15 @@ router.post("/", async (req, res) => {
       (await redis.sCard(`battle:${battleId}:voters:A`)) +
       (await redis.sCard(`battle:${battleId}:voters:B`));
 
-    // WALDO Distribution
+    // WALDO Distribution (Whitepaper compliant: 95% distributed, 5% fees)
     const pot = 100 + 50 + (totalVoters * 5); // challenger + acceptor + voters
-    const burnAmount = Math.floor(pot * 0.05);
-    const net = pot - burnAmount;
-    const posterAmount = Math.floor(net * 0.5);
-    const voterAmount = Math.floor(net * 0.45);
+    const distributedAmount = Math.floor(pot * 0.95); // 95% distributed
+    const burnAmount = Math.floor(pot * 0.02); // 2% burned
+    const treasuryAmount = Math.floor(pot * 0.03); // 3% treasury
+
+    // Prize distribution: 65% to winner, 30% to winning voters
+    const posterAmount = Math.floor(distributedAmount * 0.65); // 65% to winner
+    const voterAmount = Math.floor(distributedAmount * 0.30); // 30% to voters
     const voterSplit = winningVoters.length ? Math.floor(voterAmount / winningVoters.length) : 0;
 
     // Payout to meme poster
@@ -99,7 +102,8 @@ router.post("/", async (req, res) => {
         options: { submit: true }
       });
 
-      await addXP(voter, 1);
+      // Award 2 XP to each voter (whitepaper compliant)
+      await addXP(voter, 2);
     }
 
     // Burn fee to issuer
@@ -113,8 +117,20 @@ router.post("/", async (req, res) => {
       options: { submit: true }
     });
 
-    // XP to winner
-    await calculateXpReward(winnerWallet, 30);
+    // Treasury fee to treasury wallet
+    await xummClient.payload.create({
+      txjson: {
+        TransactionType: "Payment",
+        Destination: process.env.TREASURY_WALLET,
+        Amount: String(treasuryAmount * 1_000_000),
+        DestinationTag: 888
+      },
+      options: { submit: true }
+    });
+
+    // XP rewards (whitepaper compliant)
+    await addXP(winnerWallet, 100); // Winner gets 100 XP
+    await addXP(loserWallet, 25);   // Loser gets 25 XP
 
     // Mark battle as paid/ended and store results
     await redis.hset(battleKey, {

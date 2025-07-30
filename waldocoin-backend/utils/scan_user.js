@@ -9,9 +9,14 @@ const HEADERS = {
   "User-Agent": "WaldoBot"
 };
 
-// XP calculation (matches Python version)
+// XP calculation (whitepaper compliant: 1 XP per 25 likes, 1 XP per 15 retweets)
 function calculateXp(likes, retweets) {
-  return Math.floor(likes / 10) + Math.floor(retweets / 15);
+  const xpFromLikes = Math.floor(likes / 25);
+  const xpFromRetweets = Math.floor(retweets / 15);
+  const totalXp = xpFromLikes + xpFromRetweets;
+
+  // Cap at 10 XP per meme as per whitepaper
+  return Math.min(totalXp, 10);
 }
 
 // Reward calculation (matches Python version)

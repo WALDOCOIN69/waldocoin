@@ -6,12 +6,14 @@ const router = express.Router();
 
 console.log("🧩 Loaded: routes/tokenomics.js");
 
-// Fee structure constants
+// Fee structure constants (whitepaper compliant)
 const FEE_STRUCTURE = {
   battle: {
-    start: 100,        // WALDO
-    vote: 5,           // WALDO
-    burnRate: 0.05     // 5% of pot
+    start: 100,        // WALDO (challenger fee)
+    accept: 50,        // WALDO (acceptor fee)
+    vote: 5,           // WALDO (voting fee)
+    burnRate: 0.02,    // 2% burned
+    treasuryRate: 0.03 // 3% to treasury
   },
   claim: {
     instantFeeRate: 0.10,  // 10%
@@ -121,8 +123,8 @@ router.get("/calculator", async (req, res) => {
           fee: FEE_STRUCTURE.nft.mintCost,
           currency: "WALDO",
           destination: "Distributor Wallet",
-          requirement: "60+ XP meme",
-          note: "One-time minting cost per meme"
+          requirement: "None (whitepaper compliant)",
+          note: "One-time minting cost per meme - no XP requirement"
         };
         break;
 
