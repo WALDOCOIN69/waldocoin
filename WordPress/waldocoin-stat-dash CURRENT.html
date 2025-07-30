@@ -3185,33 +3185,33 @@
       <!-- Staking Instruction Cards Inside Zone -->
       <div class="instruction-cards-full-width">
 
-        <!-- Initial Choice -->
+        <!-- Open Staking Access -->
         <div class="instruction-card-full">
-          <h2>🎯 Initial Choice</h2>
+          <h2>🎯 Open Staking Access</h2>
           <div class="instruction-card-content">
-            <div class="text-red font-bold margin-bottom-5">❌ Instant Payout</div>
-            <div class="font-small text-gray">10% fee • No future staking opportunities</div>
+            <div class="text-green font-bold margin-bottom-5">✅ Stake Anytime</div>
+            <div class="font-small text-gray">Open access for anyone • Level-based bonuses</div>
           </div>
           <div class="instruction-card-content">
-            <div class="text-green font-bold margin-bottom-5">✅ Staking Option</div>
-            <div class="font-small text-gray">5% fee • Tiered re-staking eligible</div>
+            <div class="text-green font-bold margin-bottom-5">✅ No Restrictions</div>
+            <div class="font-small text-gray">Stake any amount • Choose your duration</div>
           </div>
           <div class="instruction-card-warning">
-            <div class="text-yellow font-bold font-small">⚠️ Choice made per meme when claiming</div>
+            <div class="text-yellow font-bold font-small">⚡ Bonus based on your XP level, not meme choice</div>
           </div>
         </div>
 
         <!-- Auto-Continue Staking System -->
         <div class="instruction-card-full">
-          <h2>🔄 Auto-Continue Staking System (Only when staking was initially chosen)</h2>
-          <div class="instruction-subtitle">How long-term staking works:</div>
+          <h2>🔄 Auto-Continue Staking System</h2>
+          <div class="instruction-subtitle">How long-term staking works for everyone:</div>
 
           <div class="auto-continue-explanation">
             <div class="auto-continue-step">
               <span class="step-number">1</span>
               <div class="step-content">
                 <div class="step-title">Initial Stake Completes</div>
-                <div class="step-description">Your 30-day stake finishes, you earn 12% APY</div>
+                <div class="step-description">Your stake finishes, you earn level-based bonus</div>
               </div>
             </div>
 
@@ -3227,7 +3227,7 @@
               <span class="step-number">3</span>
               <div class="step-content">
                 <div class="step-title">Auto-Continue (Default)</div>
-                <div class="step-description">Do nothing → Automatically renews for 30 days at 12% APY</div>
+                <div class="step-description">Do nothing → Automatically renews at your current level bonus</div>
               </div>
             </div>
           </div>
@@ -3235,22 +3235,22 @@
           <div class="tier-grid">
             <div class="tier-item tier-item-default">
               <span class="text-green font-bold">Auto-Renew</span>
-              <span class="text-gray">30 days • 12% APY</span>
+              <span class="text-gray">Same duration • Level bonus</span>
               <span class="text-small">Default if no action</span>
             </div>
             <div class="tier-item tier-item-blue">
-              <span class="text-blue font-bold">Upgrade Option</span>
-              <span class="text-gray">90 days • 13.2% APY</span>
+              <span class="text-blue font-bold">Duration Option</span>
+              <span class="text-gray">30-90 days • Level bonus</span>
               <span class="text-small">Choose during window</span>
             </div>
             <div class="tier-item tier-item-yellow">
-              <span class="text-yellow font-bold">Upgrade Option</span>
-              <span class="text-gray">180 days • 24% APY</span>
+              <span class="text-yellow font-bold">Duration Option</span>
+              <span class="text-gray">180 days • Level bonus</span>
               <span class="text-small">Choose during window</span>
             </div>
             <div class="tier-item tier-item-purple">
-              <span class="text-purple font-bold">Upgrade Option</span>
-              <span class="text-gray">365 days • 26% APY</span>
+              <span class="text-purple font-bold">Duration Option</span>
+              <span class="text-gray">365 days • Level bonus</span>
               <span class="text-small">Choose during window</span>
             </div>
           </div>
@@ -3286,20 +3286,15 @@
 
       <!-- APY Information Banner -->
       <div class="apy-banner">
-        <div class="apy-banner-title">📈 Level-Based Staking Rewards</div>
+        <div class="apy-banner-title">📈 Staking Rewards</div>
         <div class="apy-banner-rates">
-          <span class="apy-rate-text">Level 1 (Waldo Watcher): <strong class="apy-rate-green">10.78%
-              Bonus</strong></span>
-          <span class="apy-rate-text">Level 2 (Waldo Scout): <strong class="apy-rate-green">12.32% Bonus</strong></span>
-          <span class="apy-rate-text">Level 3 (Waldo Agent): <strong class="apy-rate-bright-green">13.87%
-              Bonus</strong></span>
-          <span class="apy-rate-text">Level 4 (Waldo Commander): <strong class="apy-rate-bright-green">15.43%
-              Bonus</strong></span>
-          <span class="apy-rate-text">Level 5 (Waldo Legend): <strong class="apy-rate-bright-green">17.00%
-              Bonus</strong></span>
+          <span class="apy-rate-text">30-89 days: <strong class="apy-rate-green">12% APY</strong></span>
+          <span class="apy-rate-text">90+ days: <strong class="apy-rate-green">13.2% APY</strong></span>
+          <span class="apy-rate-text">180+ days: <strong class="apy-rate-bright-green">24% APY</strong></span>
+          <span class="apy-rate-text">365+ days: <strong class="apy-rate-bright-green">26% APY</strong></span>
         </div>
         <div class="apy-warning">
-          ⚠️ Early unstaking: 15% penalty • 7-day re-staking window after completion
+          ⚠️ Early unstaking: 15% penalty
         </div>
       </div>
 
@@ -3642,22 +3637,11 @@
       <div class="modal-field">
         <label class="modal-label">Staking Duration:</label>
         <select id="stakeDuration" class="modal-select">
-          <option value="30">30 days (Level-based bonus)</option>
-          <option value="90">90 days (Level-based bonus)</option>
-          <option value="180">180 days (Level-based bonus)</option>
-          <option value="365">365 days (Level-based bonus)</option>
+          <option value="30">30 days (12% APY)</option>
+          <option value="90">90 days (13.2% APY)</option>
+          <option value="180">180 days (24% APY)</option>
+          <option value="365">365 days (26% APY)</option>
         </select>
-      </div>
-
-      <div class="modal-field">
-        <div class="modal-level-info" style="background: #222; padding: 15px; border-radius: 6px; text-align: center;">
-          <div class="modal-level-title" style="color: #25c2a0; font-weight: bold; margin-bottom: 5px;">Your Level
-            Bonus:</div>
-          <div id="userLevelBonus" class="modal-level-bonus"
-            style="color: #ffd700; font-size: 1.2em; font-weight: bold;">Loading...</div>
-          <div class="modal-level-description" style="color: #ccc; font-size: 0.9em; margin-top: 5px;">Bonus applied to
-            staked rewards based on your XP level</div>
-        </div>
       </div>
 
       <div class="modal-estimate">
@@ -3937,13 +3921,7 @@
         $("xpBattles") && ($("xpBattles").textContent = `${breakdown.battles ?? 0} XP`);
         $("xpReferrals") && ($("xpReferrals").textContent = `${breakdown.referrals ?? 0} XP`);
         $("xpVoting") && ($("xpVoting").textContent = `${breakdown.voting ?? 0} XP`);
-        // Update staking bonus based on user level
-        const userLevel = getCurrentUserLevel();
-        const levelBonuses = {
-          1: 10.78, 2: 12.32, 3: 13.87, 4: 15.43, 5: 17.00
-        };
-        const levelStakingBonus = levelBonuses[userLevel.level] || levelBonuses[1];
-        $("xpStakingBonus") && ($("xpStakingBonus").textContent = `${levelStakingBonus.toFixed(2)}%`);
+        $("xpStakingBonus") && ($("xpStakingBonus").textContent = `${breakdown.stakingBonus ?? 0}%`);
 
         // Update XP multipliers
         updateXPMultipliers(stats);
@@ -3977,18 +3955,10 @@
     // Update XP Multipliers display
     function updateXPMultipliers(stats) {
       try {
-        // Calculate staking multiplier based on user level
-        const userLevel = getCurrentUserLevel();
-        const levelBonuses = {
-          1: 0.1078, // 10.78%
-          2: 0.1232, // 12.32%
-          3: 0.1387, // 13.87%
-          4: 0.1543, // 15.43%
-          5: 0.1700  // 17.00%
-        };
-        const stakingBonus = levelBonuses[userLevel.level] || levelBonuses[1];
+        // Calculate staking multiplier based on staked amount
+        const stakingBonus = (stats.xpBreakdown?.stakingBonus || 0) / 100;
         const stakingMultiplier = 1 + stakingBonus;
-        $("stakingMultiplier") && ($("stakingMultiplier").textContent = `${stakingMultiplier.toFixed(2)}x`);
+        $("stakingMultiplier") && ($("stakingMultiplier").textContent = `${stakingMultiplier.toFixed(1)}x`);
 
         // Calculate battle streak multiplier
         const battleWins = stats.battles || 0;
@@ -4285,31 +4255,26 @@
       const updateEstimate = () => {
         const amount = parseFloat(amountInput.value) || 0;
         const duration = parseInt(durationSelect.value) || 30;
-
-        // Get user's current level and staking bonus
-        const userLevel = getCurrentUserLevel();
-        const levelBonuses = {
-          1: 0.1078, // 10.78%
-          2: 0.1232, // 12.32%
-          3: 0.1387, // 13.87%
-          4: 0.1543, // 15.43%
-          5: 0.1700  // 17.00%
-        };
-
-        const stakingBonus = levelBonuses[userLevel.level] || levelBonuses[1];
-
-        // Update level bonus display
-        document.getElementById("userLevelBonus").textContent = `${(stakingBonus * 100).toFixed(2)}% (${userLevel.title})`;
+        let apy;
+        if (duration >= 365) {
+          apy = 0.26; // 26% APY for 365+ days
+        } else if (duration >= 180) {
+          apy = 0.24; // 24% APY for 180+ days
+        } else if (duration >= 90) {
+          apy = 0.132; // 13.2% APY for 90+ days
+        } else {
+          apy = 0.12; // 12% APY for 30-89 days
+        }
 
         if (amount > 0) {
-          // Calculate rewards with level-based bonus
-          const baseRewards = amount * stakingBonus;
-          const finalAmount = amount + baseRewards;
+          const dailyRate = apy / 365;
+          const totalRewards = amount * dailyRate * duration;
+          const finalAmount = amount + totalRewards;
 
           document.getElementById("stakingEstimate").innerHTML = `
-        <div class="js-estimate-rewards">💰 Level Bonus Rewards: ${baseRewards.toFixed(2)} WALDO</div>
+        <div class="js-estimate-rewards">💰 Estimated Rewards: ${totalRewards.toFixed(2)} WALDO</div>
         <div class="js-estimate-total">📈 Total Return: ${finalAmount.toFixed(2)} WALDO</div>
-        <div class="js-estimate-apy">Level ${userLevel.level} Bonus: ${(stakingBonus * 100).toFixed(2)}% | Duration: ${duration} days</div>
+        <div class="js-estimate-apy">APY: ${(apy * 100).toFixed(0)}% | Duration: ${duration} days</div>
       `;
         } else {
           document.getElementById("stakingEstimate").textContent = "Enter amount to see estimate";
