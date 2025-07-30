@@ -1,7 +1,347 @@
 import express from 'express';
 import { redis } from '../redisClient.js';
+import getWaldoBalance from '../utils/getWaldoBalance.js';
+
+// ✅ Level-based staking bonuses from whitepaper
+const LEVEL_STAKING_BONUSES = {
+  1: 0.1078, // 10.78% bonus (Waldo Watcher)
+  2: 0.1232, // 12.32% bonus (Waldo Scout)
+  3: 0.1387, // 13.87% bonus (Waldo Agent)
+  4: 0.1543, // 15.43% bonus (Waldo Commander)
+  5: 0.1700  // 17.00% bonus (Waldo Legend)
+};
+
+// ✅ XP level thresholds from whitepaper
+const XP_LEVELS = {
+  1: { min: 0, max: 249, title: "Waldo Watcher" },
+  2: { min: 250, max: 849, title: "Waldo Scout" },
+  3: { min: 850, max: 1749, title: "Waldo Agent" },
+  4: { min: 1750, max: 2999, title: "Waldo Commander" },
+  5: { min: 3000, max: Infinity, title: "Waldo Legend" }
+};
+
+// ✅ Calculate user's XP level
+function getUserLevel(xp) {
+  for (const [level, data] of Object.entries(XP_LEVELS)) {
+    if (xp >= data.min && xp <= data.max) {
+      return {
+        level: parseInt(level),
+        title: data.title,
+        xp: xp,
+        stakingBonus: LEVEL_STAKING_BONUSES[parseInt(level)]
+      };
+    }
+  }
+  return { level: 1, title: "Waldo Watcher", xp: 0, stakingBonus: LEVEL_STAKING_BONUSES[1] };
+}
+import getWaldoBalance from '../utils/getWaldoBalance.js';
 
 const router = express.Router();
+
+// ✅ POST /api/staking/stake - Open staking for anyone (level-based bonuses)
+router.post("/stake", async (req, res) => {
+  try {
+    const { wallet, amount, duration = 30 } = req.body;
+
+    if (!wallet || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing wallet or amount"
+      });
+    }
+
+    // Validate amount
+    const stakeAmount = parseFloat(amount);
+    if (isNaN(stakeAmount) || stakeAmount < 100) {
+      return res.status(400).json({
+        success: false,
+        error: "Minimum stake amount is 100 WALDO"
+      });
+    }
+
+    // Get user's current WALDO balance
+    const currentBalance = await getWaldoBalance(wallet);
+    if (currentBalance < stakeAmount) {
+      return res.status(400).json({
+        success: false,
+        error: `Insufficient balance. You have ${currentBalance} WALDO, trying to stake ${stakeAmount} WALDO`
+      });
+    }
+
+    // Get user's XP and level
+    const userXP = await redis.get(`user:${wallet}:xp`) || 0;
+    const userLevel = getUserLevel(parseInt(userXP));
+
+    // Calculate staking rewards based on level
+    const stakingBonus = userLevel.stakingBonus;
+    const baseReward = stakeAmount;
+    const bonusReward = Math.floor(baseReward * stakingBonus);
+    const totalReward = baseReward + bonusReward;
+
+    // Calculate end date (30 days from now)
+    const startDate = new Date();
+    const endDate = new Date(startDate.getTime() + (duration * 24 * 60 * 60 * 1000));
+
+    // Create staking record
+    const stakeId = `stake_${wallet}_${Date.now()}`;
+    const stakeData = {
+      stakeId,
+      wallet,
+      amount: stakeAmount,
+      duration,
+      userLevel: userLevel.level,
+      userTitle: userLevel.title,
+      stakingBonus: stakingBonus,
+      baseReward: baseReward,
+      bonusReward: bonusReward,
+      totalReward: totalReward,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      status: 'active',
+      type: 'open_staking',
+      earlyUnstakePenalty: 0.15, // 15% penalty
+      feePaid: false,
+      claimed: false
+    };
+
+    // Store staking record
+    await redis.hSet(`staking:${stakeId}`, stakeData);
+
+    // Add to user's active stakes
+    await redis.sAdd(`user:${wallet}:stakes`, stakeId);
+
+    // Update staking totals
+    await redis.incrByFloat('staking:total_staked', stakeAmount);
+    await redis.incr('staking:total_stakes');
+
+    // Log the staking action
+    await redis.lPush('staking_logs', JSON.stringify({
+      action: 'open_stake_created',
+      stakeId,
+      wallet,
+      amount: stakeAmount,
+      level: userLevel.level,
+      bonus: stakingBonus,
+      timestamp: new Date().toISOString()
+    }));
+
+    res.json({
+      success: true,
+      message: "Staking position created successfully",
+      stakeData: {
+        stakeId,
+        amount: stakeAmount,
+        duration,
+        userLevel: userLevel.level,
+        userTitle: userLevel.title,
+        stakingBonus: `${(stakingBonus * 100).toFixed(2)}%`,
+        expectedReward: totalReward,
+        bonusReward: bonusReward,
+        endDate: endDate.toISOString(),
+        status: 'active'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating stake:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to create staking position"
+    });
+  }
+});
+
+// ✅ GET /api/staking/info/:wallet - Get staking info for user
+router.get("/info/:wallet", async (req, res) => {
+  try {
+    const { wallet } = req.params;
+
+    // Get user's XP and level
+    const userXP = await redis.get(`user:${wallet}:xp`) || 0;
+    const userLevel = getUserLevel(parseInt(userXP));
+
+    // Get user's current balance
+    const currentBalance = await getWaldoBalance(wallet);
+
+    // Get user's active stakes
+    const activeStakeIds = await redis.sMembers(`user:${wallet}:stakes`);
+    const activeStakes = [];
+
+    for (const stakeId of activeStakeIds) {
+      try {
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+        if (stakeData.status === 'active') {
+          activeStakes.push({
+            stakeId,
+            amount: parseFloat(stakeData.amount),
+            duration: parseInt(stakeData.duration),
+            userLevel: parseInt(stakeData.userLevel),
+            stakingBonus: `${(parseFloat(stakeData.stakingBonus) * 100).toFixed(2)}%`,
+            expectedReward: parseFloat(stakeData.totalReward),
+            startDate: stakeData.startDate,
+            endDate: stakeData.endDate,
+            status: stakeData.status,
+            type: stakeData.type
+          });
+        }
+      } catch (error) {
+        console.error(`Error processing stake ${stakeId}:`, error);
+      }
+    }
+
+    res.json({
+      success: true,
+      userInfo: {
+        wallet,
+        xp: parseInt(userXP),
+        level: userLevel.level,
+        title: userLevel.title,
+        stakingBonus: `${(userLevel.stakingBonus * 100).toFixed(2)}%`,
+        currentBalance: currentBalance
+      },
+      activeStakes: activeStakes,
+      stakingOptions: {
+        minimumStake: 100,
+        availableDurations: [30, 90, 180, 365],
+        earlyUnstakePenalty: "15%",
+        feeStructure: {
+          burn: "2%",
+          treasury: "3%"
+        }
+      },
+      levelBonuses: Object.entries(XP_LEVELS).map(([level, data]) => ({
+        level: parseInt(level),
+        title: data.title,
+        xpRange: `${data.min}${data.max === Infinity ? '+' : `-${data.max}`}`,
+        stakingBonus: `${(LEVEL_STAKING_BONUSES[parseInt(level)] * 100).toFixed(2)}%`
+      }))
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting staking info:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get staking information"
+    });
+  }
+});
+
+// ✅ POST /api/staking/unstake - Unstake with penalty if early
+router.post("/unstake", async (req, res) => {
+  try {
+    const { wallet, stakeId } = req.body;
+
+    if (!wallet || !stakeId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing wallet or stakeId"
+      });
+    }
+
+    // Get staking record
+    const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+
+    if (!stakeData.wallet || stakeData.wallet !== wallet) {
+      return res.status(404).json({
+        success: false,
+        error: "Staking position not found"
+      });
+    }
+
+    if (stakeData.status !== 'active') {
+      return res.status(400).json({
+        success: false,
+        error: "Staking position is not active"
+      });
+    }
+
+    const now = new Date();
+    const endDate = new Date(stakeData.endDate);
+    const isEarly = now < endDate;
+
+    let finalAmount = parseFloat(stakeData.amount);
+    let penalty = 0;
+    let bonusReward = 0;
+
+    if (isEarly) {
+      // Early unstaking - apply 15% penalty
+      penalty = finalAmount * 0.15;
+      finalAmount = finalAmount - penalty;
+    } else {
+      // Completed staking - add level-based bonus
+      bonusReward = parseFloat(stakeData.bonusReward);
+      finalAmount = parseFloat(stakeData.totalReward);
+    }
+
+    // Calculate fees (2% burn, 3% treasury)
+    const burnFee = finalAmount * 0.02;
+    const treasuryFee = finalAmount * 0.03;
+    const totalFees = burnFee + treasuryFee;
+    const userReceives = finalAmount - totalFees;
+
+    // Update staking record
+    await redis.hSet(`staking:${stakeId}`, {
+      status: 'completed',
+      unstakedAt: now.toISOString(),
+      isEarlyUnstake: isEarly,
+      penalty: penalty,
+      bonusReceived: bonusReward,
+      finalAmount: finalAmount,
+      burnFee: burnFee,
+      treasuryFee: treasuryFee,
+      userReceives: userReceives,
+      claimed: true
+    });
+
+    // Remove from active stakes
+    await redis.sRem(`user:${wallet}:stakes`, stakeId);
+
+    // Update totals
+    await redis.incrByFloat('staking:total_staked', -parseFloat(stakeData.amount));
+    await redis.incrByFloat('staking:total_burned', burnFee);
+    await redis.incrByFloat('staking:total_treasury', treasuryFee);
+
+    if (penalty > 0) {
+      await redis.incrByFloat('staking:total_penalties', penalty);
+    }
+
+    // Log the unstaking action
+    await redis.lPush('staking_logs', JSON.stringify({
+      action: 'unstake_completed',
+      stakeId,
+      wallet,
+      originalAmount: parseFloat(stakeData.amount),
+      isEarly,
+      penalty,
+      bonusReward,
+      userReceives,
+      timestamp: now.toISOString()
+    }));
+
+    res.json({
+      success: true,
+      message: isEarly ? "Early unstaking completed with penalty" : "Staking completed successfully",
+      unstakeData: {
+        stakeId,
+        originalAmount: parseFloat(stakeData.amount),
+        isEarlyUnstake: isEarly,
+        penalty: penalty,
+        bonusReceived: bonusReward,
+        burnFee: burnFee,
+        treasuryFee: treasuryFee,
+        userReceives: userReceives,
+        completedAt: now.toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error unstaking:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to unstake"
+    });
+  }
+});
 
 console.log("🏦 Loaded: routes/staking.js");
 
@@ -604,6 +944,78 @@ router.post('/unstake', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: "Failed to unstake position"
+    });
+  }
+});
+
+// ✅ GET /api/staking/admin/overview - Admin staking overview
+router.get("/admin/overview", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get staking totals
+    const totalStaked = await redis.get('staking:total_staked') || 0;
+    const totalStakes = await redis.get('staking:total_stakes') || 0;
+    const totalBurned = await redis.get('staking:total_burned') || 0;
+    const totalTreasury = await redis.get('staking:total_treasury') || 0;
+    const totalPenalties = await redis.get('staking:total_penalties') || 0;
+
+    // Get recent staking logs
+    const recentLogs = await redis.lRange('staking_logs', 0, 19); // Last 20 logs
+    const parsedLogs = recentLogs.map(log => {
+      try {
+        return JSON.parse(log);
+      } catch (error) {
+        return null;
+      }
+    }).filter(log => log !== null);
+
+    // Get active stakes by level
+    const stakesByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const allStakeKeys = await redis.keys('staking:stake_*');
+
+    for (const key of allStakeKeys) {
+      try {
+        const stakeData = await redis.hGetAll(key);
+        if (stakeData.status === 'active' && stakeData.userLevel) {
+          const level = parseInt(stakeData.userLevel);
+          if (level >= 1 && level <= 5) {
+            stakesByLevel[level]++;
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing stake ${key}:`, error);
+      }
+    }
+
+    res.json({
+      success: true,
+      overview: {
+        totalStaked: parseFloat(totalStaked),
+        totalStakes: parseInt(totalStakes),
+        totalBurned: parseFloat(totalBurned),
+        totalTreasury: parseFloat(totalTreasury),
+        totalPenalties: parseFloat(totalPenalties),
+        activeStakesByLevel: stakesByLevel
+      },
+      levelBonuses: Object.entries(LEVEL_STAKING_BONUSES).map(([level, bonus]) => ({
+        level: parseInt(level),
+        title: XP_LEVELS[level].title,
+        bonus: `${(bonus * 100).toFixed(2)}%`
+      })),
+      recentActivity: parsedLogs
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting staking overview:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get staking overview"
     });
   }
 });
