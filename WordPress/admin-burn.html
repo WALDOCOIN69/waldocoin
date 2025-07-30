@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WALDO Token Burn - Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<style>
+  :root {
+    --primary-color: #25c2a0;
+    --secondary-color: #ff5252;
+    --accent-color: #ffd700;
+    --bg-dark: #0a0a0a;
+    --bg-card: #111;
+    --text-light: #eee;
+    --border-color: #333;
+    --danger-color: #ff4444;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a1a 100%);
+    font-family: 'Orbitron', sans-serif;
+    color: var(--text-light);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .header {
+    text-align: center;
+    padding: 40px 0;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 40px;
+  }
+
+  .header h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    background: linear-gradient(45deg, var(--danger-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+  }
+
+  .warning-banner {
+    background: linear-gradient(45deg, var(--danger-color), #ff6666);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .admin-auth {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border-color);
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #ccc;
+    font-weight: bold;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    background: #222;
+    color: white;
+    border: 1px solid #444;
+    font-size: 16px;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(37, 194, 160, 0.3);
+  }
+
+  .burn-section {
+    display: none;
+  }
+
+  .burn-section.active {
+    display: block;
+  }
+
+  .burn-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border-color);
+  }
+
+  .burn-card h3 {
+    color: var(--danger-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+  }
+
+  .burn-amount-display {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(255, 212, 0, 0.1);
+    border-radius: 8px;
+    border: 2px solid var(--accent-color);
+  }
+
+  .button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .button-primary {
+    background: var(--primary-color);
+    color: white;
+  }
+
+  .button-primary:hover {
+    background: #1e9b7a;
+    transform: translateY(-2px);
+  }
+
+  .button-danger {
+    background: var(--danger-color);
+    color: white;
+  }
+
+  .button-danger:hover {
+    background: #cc3333;
+    transform: translateY(-2px);
+  }
+
+  .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+  }
+
+  .stat-label {
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+
+  .burn-history {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 30px;
+    border: 1px solid var(--border-color);
+  }
+
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #333;
+    margin-bottom: 10px;
+  }
+
+  .history-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .history-amount {
+    font-weight: bold;
+    color: var(--danger-color);
+  }
+
+  .history-hash {
+    font-family: monospace;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+  }
+
+  .history-date {
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #ccc;
+  }
+
+  .loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+    margin-left: 10px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .confirmation-section {
+    background: rgba(255, 68, 68, 0.1);
+    border: 2px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+
+  .confirmation-text {
+    font-family: monospace;
+    background: #222;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    color: var(--accent-color);
+    text-align: center;
+    font-weight: bold;
+  }
+
+  @media (max-width: 768px) {
+    .header h1 {
+      font-size: 2rem;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .history-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
+    }
+  }
+</style>
+
+<div class="container">
+  <div class="header">
+    <h1>🔥 WALDO Token Burn</h1>
+    <p>Admin Panel - Token Burning Interface</p>
+  </div>
+
+  <div class="warning-banner">
+    ⚠️ WARNING: Token burning is IRREVERSIBLE and permanently removes tokens from circulation ⚠️
+  </div>
+
+  <!-- Admin Authentication -->
+  <div class="admin-auth">
+    <h3>🔐 Admin Authentication</h3>
+    <div class="form-group">
+      <label class="form-label">Admin Key:</label>
+      <input type="password" id="adminKey" class="form-input" placeholder="Enter admin key">
+    </div>
+    <button class="button button-primary" onclick="authenticate()">Authenticate</button>
+  </div>
+
+  <!-- Burn Section (Hidden until authenticated) -->
+  <div id="burnSection" class="burn-section">
+    
+    <!-- Burn Statistics -->
+    <div class="stats-grid" id="burnStats">
+      <div class="stat-card">
+        <div class="stat-value" id="totalBurned">Loading...</div>
+        <div class="stat-label">Total Burned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="burnEvents">Loading...</div>
+        <div class="stat-label">Burn Events</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="lastBurn">Loading...</div>
+        <div class="stat-label">Last Burn</div>
+      </div>
+    </div>
+
+    <!-- Quick Burn: 23.1M Tokens -->
+    <div class="burn-card">
+      <h3>🔥 Quick Burn: 23,100,000 WLO</h3>
+      <p>Burn the specified 23.1 million WLO tokens for tokenomics optimization.</p>
+      
+      <div class="burn-amount-display">
+        23,100,000 WLO TOKENS
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Burn Reason:</label>
+        <input type="text" id="quickBurnReason" class="form-input" 
+               value="Strategic token burn - Reducing total supply for tokenomics optimization">
+      </div>
+
+      <div class="confirmation-section">
+        <p><strong>Confirmation Required:</strong></p>
+        <p>Type the following confirmation text to proceed:</p>
+        <div class="confirmation-text">BURN_23100000_WLO_TOKENS</div>
+        <input type="text" id="quickBurnConfirmation" class="form-input" placeholder="Enter confirmation text">
+      </div>
+
+      <button class="button button-danger" onclick="burnQuick()" id="quickBurnBtn">
+        🔥 BURN 23,100,000 WLO TOKENS
+      </button>
+    </div>
+
+    <!-- Custom Burn -->
+    <div class="burn-card">
+      <h3>⚙️ Custom Token Burn</h3>
+      
+      <div class="form-group">
+        <label class="form-label">Amount to Burn:</label>
+        <input type="number" id="customAmount" class="form-input" placeholder="Enter amount" min="1">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Burn Reason:</label>
+        <input type="text" id="customReason" class="form-input" placeholder="Enter reason for burn">
+      </div>
+
+      <button class="button button-danger" onclick="burnCustom()" id="customBurnBtn">
+        🔥 Burn Custom Amount
+      </button>
+    </div>
+
+    <!-- Burn History -->
+    <div class="burn-history">
+      <h3>📊 Recent Burn History</h3>
+      <div id="burnHistoryList">
+        <div class="loading">Loading burn history...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const baseURL = 'https://waldocoin-backend.onrender.com';
+let adminKey = '';
+
+// Authenticate admin
+async function authenticate() {
+  const key = document.getElementById('adminKey').value;
+  
+  if (!key) {
+    alert('Please enter admin key');
+    return;
+  }
+
+  try {
+    // Test admin key by fetching burn stats
+    const response = await fetch(`${baseURL}/api/burn/stats`, {
+      headers: {
+        'x-admin-key': key
+      }
+    });
+
+    if (response.ok) {
+      adminKey = key;
+      document.getElementById('burnSection').classList.add('active');
+      document.querySelector('.admin-auth').style.display = 'none';
+      
+      // Load initial data
+      loadBurnStats();
+      loadBurnHistory();
+      
+      alert('✅ Authentication successful');
+    } else {
+      alert('❌ Invalid admin key');
+    }
+  } catch (error) {
+    console.error('Authentication error:', error);
+    alert('❌ Authentication failed');
+  }
+}
+
+// Load burn statistics
+async function loadBurnStats() {
+  try {
+    const response = await fetch(`${baseURL}/api/burn/stats`, {
+      headers: {
+        'x-admin-key': adminKey
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      document.getElementById('totalBurned').textContent = 
+        data.stats.totalBurned.toLocaleString() + ' WLO';
+      document.getElementById('burnEvents').textContent = 
+        data.stats.totalBurnEvents.toLocaleString();
+      document.getElementById('lastBurn').textContent = 
+        new Date(data.stats.lastUpdated).toLocaleDateString();
+    }
+  } catch (error) {
+    console.error('Error loading burn stats:', error);
+  }
+}
+
+// Load burn history
+async function loadBurnHistory() {
+  try {
+    const response = await fetch(`${baseURL}/api/burn/history`, {
+      headers: {
+        'x-admin-key': adminKey
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const historyList = document.getElementById('burnHistoryList');
+      
+      if (data.burnHistory.length === 0) {
+        historyList.innerHTML = '<p>No burn history found</p>';
+        return;
+      }
+
+      historyList.innerHTML = data.burnHistory.map(burn => `
+        <div class="history-item">
+          <div>
+            <div class="history-amount">${parseFloat(burn.amount).toLocaleString()} WLO</div>
+            <div class="history-date">${new Date(burn.timestamp).toLocaleString()}</div>
+          </div>
+          <div>
+            <div class="history-hash">${burn.txHash.substring(0, 16)}...</div>
+            <div>${burn.reason}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error loading burn history:', error);
+    document.getElementById('burnHistoryList').innerHTML = '<p>Failed to load burn history</p>';
+  }
+}
+
+// Quick burn 23.1M tokens
+async function burnQuick() {
+  const reason = document.getElementById('quickBurnReason').value;
+  const confirmation = document.getElementById('quickBurnConfirmation').value;
+  
+  if (!reason) {
+    alert('Please enter a burn reason');
+    return;
+  }
+
+  if (confirmation !== 'BURN_23100000_WLO_TOKENS') {
+    alert('Please enter the correct confirmation text');
+    return;
+  }
+
+  if (!confirm('⚠️ FINAL WARNING: You are about to burn 23,100,000 WLO tokens. This action is IRREVERSIBLE. Are you absolutely sure?')) {
+    return;
+  }
+
+  const btn = document.getElementById('quickBurnBtn');
+  btn.disabled = true;
+  btn.textContent = '🔥 Burning tokens...';
+
+  try {
+    const response = await fetch(`${baseURL}/api/burn/massive`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': adminKey
+      },
+      body: JSON.stringify({
+        amount: 23100000,
+        adminKey: adminKey,
+        reason: reason,
+        confirmation: 'BURN_23100000_WLO_TOKENS'
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`✅ SUCCESS: Burned 23,100,000 WLO tokens!\nTX Hash: ${data.burnEvent.txHash}`);
+      
+      // Refresh data
+      loadBurnStats();
+      loadBurnHistory();
+      
+      // Clear form
+      document.getElementById('quickBurnConfirmation').value = '';
+    } else {
+      alert(`❌ Burn failed: ${data.error}`);
+    }
+  } catch (error) {
+    console.error('Burn error:', error);
+    alert('❌ Burn failed: Network error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔥 BURN 23,100,000 WLO TOKENS';
+  }
+}
+
+// Custom burn
+async function burnCustom() {
+  const amount = parseFloat(document.getElementById('customAmount').value);
+  const reason = document.getElementById('customReason').value;
+  
+  if (!amount || amount <= 0) {
+    alert('Please enter a valid amount');
+    return;
+  }
+
+  if (!reason) {
+    alert('Please enter a burn reason');
+    return;
+  }
+
+  if (!confirm(`⚠️ WARNING: You are about to burn ${amount.toLocaleString()} WLO tokens. This action is IRREVERSIBLE. Continue?`)) {
+    return;
+  }
+
+  const btn = document.getElementById('customBurnBtn');
+  btn.disabled = true;
+  btn.textContent = '🔥 Burning tokens...';
+
+  try {
+    const response = await fetch(`${baseURL}/api/burn/tokens`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: amount,
+        adminKey: adminKey,
+        reason: reason
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`✅ SUCCESS: Burned ${amount.toLocaleString()} WLO tokens!\nTX Hash: ${data.burnEvent.txHash}`);
+      
+      // Refresh data
+      loadBurnStats();
+      loadBurnHistory();
+      
+      // Clear form
+      document.getElementById('customAmount').value = '';
+      document.getElementById('customReason').value = '';
+    } else {
+      alert(`❌ Burn failed: ${data.error}`);
+    }
+  } catch (error) {
+    console.error('Burn error:', error);
+    alert('❌ Burn failed: Network error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔥 Burn Custom Amount';
+  }
+}
+</script>
+
+</body>
+</html>

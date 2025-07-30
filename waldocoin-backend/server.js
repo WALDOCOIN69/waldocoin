@@ -92,6 +92,7 @@ const app = express();
   app.use("/api/security", (await import("./routes/security.js")).default);
   app.use("/api/staking", (await import("./routes/staking.js")).default);
   app.use("/api/marketplace", (await import("./routes/marketplace.js")).default);
+  app.use("/api/burn", (await import("./routes/burn.js")).default);
   app.use("/api/battle", (await import("./routes/battle.js")).default);
   app.use("/api/dao", (await import("./routes/dao.js")).default);
   app.use("/api/users", (await import("./routes/users.js")).default);
