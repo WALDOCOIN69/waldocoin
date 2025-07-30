@@ -1234,6 +1234,76 @@
         </div>
       </div>
 
+      <!-- Presale Countdown Management -->
+      <div class="admin-card margin-bottom-30">
+        <div class="card-title">⏱️ Presale Countdown Management</div>
+
+        <div class="grid-2">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Current End Date</label>
+              <div id="currentEndDate" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Current presale countdown end date</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Time Remaining</label>
+              <div id="timeRemaining" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                Loading...
+              </div>
+              <small class="help-text">Time left until presale ends</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top: 15px;">
+          <div>
+            <div class="form-group">
+              <label class="form-label">Set New End Date & Time</label>
+              <input type="datetime-local" id="newEndDate" class="form-input" style="width: 100%;">
+              <small class="help-text">Select when the presale should end</small>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label">Quick Actions</label>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(24)">
+                  +24 Hours
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(168)">
+                  +7 Days
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="setCountdownQuick(720)">
+                  +30 Days
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn btn-primary" onclick="updatePresaleCountdown()">
+            ⏱️ Update Countdown
+          </button>
+          <button type="button" class="btn btn-info" onclick="loadCurrentCountdown()">
+            🔄 Refresh Status
+          </button>
+          <button type="button" class="btn btn-danger" onclick="clearPresaleCountdown()">
+            🗑️ Clear Countdown
+          </button>
+        </div>
+
+        <div id="countdownStatus" style="margin-top: 15px; padding: 10px; background: #222; border-radius: 6px; display: none;">
+          <!-- Countdown status messages will appear here -->
+        </div>
+      </div>
+
       <!-- Presale Analytics & Tracking -->
       <div class="admin-card margin-bottom-30">
         <div class="card-title">🚀 Presale Analytics & Tracking</div>
@@ -7140,6 +7210,183 @@ This action cannot be undone. Continue?`;
 
     function exportPresaleData() {
       showAlert('Presale data export feature coming soon', 'info');
+    }
+
+    // Presale Countdown Management Functions
+    async function loadCurrentCountdown() {
+      try {
+        const response = await fetch(`${API_BASE}/api/presale/countdown`);
+        const data = await response.json();
+
+        if (data.success) {
+          const endDateElement = document.getElementById('currentEndDate');
+          const timeRemainingElement = document.getElementById('timeRemaining');
+
+          if (data.endDate) {
+            const endDate = new Date(data.endDate);
+            endDateElement.textContent = endDate.toLocaleString();
+            endDateElement.style.color = '#25c2a0';
+
+            // Calculate and display time remaining
+            const now = new Date();
+            const diff = endDate - now;
+
+            if (diff > 0) {
+              const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+              const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+              const minutes = Math.floor((diff / (1000 * 60)) % 60);
+
+              timeRemainingElement.textContent = `${days}d ${hours}h ${minutes}m`;
+              timeRemainingElement.style.color = '#25c2a0';
+            } else {
+              timeRemainingElement.textContent = 'EXPIRED';
+              timeRemainingElement.style.color = '#e74c3c';
+            }
+          } else {
+            endDateElement.textContent = 'Not Set';
+            endDateElement.style.color = '#666';
+            timeRemainingElement.textContent = 'No countdown active';
+            timeRemainingElement.style.color = '#666';
+          }
+        } else {
+          document.getElementById('currentEndDate').textContent = 'Error loading';
+          document.getElementById('timeRemaining').textContent = 'Error loading';
+        }
+      } catch (error) {
+        console.error('Failed to load countdown:', error);
+        document.getElementById('currentEndDate').textContent = 'Load failed';
+        document.getElementById('timeRemaining').textContent = 'Load failed';
+      }
+    }
+
+    async function updatePresaleCountdown() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      const newEndDate = document.getElementById('newEndDate').value;
+      if (!newEndDate) {
+        showAlert('Please select an end date and time', 'error');
+        return;
+      }
+
+      try {
+        showAlert('Updating presale countdown...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/presale/set-countdown`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            endDate: new Date(newEndDate).toISOString()
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('✅ Presale countdown updated successfully', 'success');
+
+          // Show status message
+          const statusDiv = document.getElementById('countdownStatus');
+          statusDiv.innerHTML = `
+            <div style="color: #25c2a0; font-weight: bold;">
+              ✅ Countdown Updated Successfully
+            </div>
+            <div style="color: #ccc; font-size: 12px; margin-top: 5px;">
+              New end date: ${new Date(data.endDate).toLocaleString()}
+            </div>
+          `;
+          statusDiv.style.display = 'block';
+
+          // Refresh the display
+          loadCurrentCountdown();
+
+          // Clear the input
+          document.getElementById('newEndDate').value = '';
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Update countdown error:', error);
+        showAlert('❌ Failed to update countdown', 'error');
+      }
+    }
+
+    async function clearPresaleCountdown() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      if (!confirm('Are you sure you want to clear the presale countdown? This will remove the countdown from all displays.')) {
+        return;
+      }
+
+      try {
+        showAlert('Clearing presale countdown...', 'info');
+
+        const response = await fetch(`${API_BASE}/api/presale/set-countdown`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            action: 'clear'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('✅ Presale countdown cleared', 'success');
+
+          // Show status message
+          const statusDiv = document.getElementById('countdownStatus');
+          statusDiv.innerHTML = `
+            <div style="color: #ffd93d; font-weight: bold;">
+              🗑️ Countdown Cleared
+            </div>
+            <div style="color: #ccc; font-size: 12px; margin-top: 5px;">
+              The presale countdown has been removed from all displays
+            </div>
+          `;
+          statusDiv.style.display = 'block';
+
+          // Refresh the display
+          loadCurrentCountdown();
+        } else {
+          showAlert(`❌ ${data.error}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('Clear countdown error:', error);
+        showAlert('❌ Failed to clear countdown', 'error');
+      }
+    }
+
+    function setCountdownQuick(hours) {
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + (hours * 60 * 60 * 1000));
+
+      // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+      const year = futureDate.getFullYear();
+      const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+      const day = String(futureDate.getDate()).padStart(2, '0');
+      const hour = String(futureDate.getHours()).padStart(2, '0');
+      const minute = String(futureDate.getMinutes()).padStart(2, '0');
+
+      const formattedDate = `${year}-${month}-${day}T${hour}:${minute}`;
+      document.getElementById('newEndDate').value = formattedDate;
+
+      showAlert(`Set to ${hours} hours from now`, 'info');
     }
   </script>
 

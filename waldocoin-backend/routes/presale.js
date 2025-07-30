@@ -68,14 +68,23 @@ router.get("/airdrops", async (req, res) => {
   }
 });
 
-// ✅ GET /api/presale/countdown — Return presale end date
+// ✅ GET /api/presale/countdown - Get presale countdown end date
 router.get("/countdown", async (req, res) => {
   try {
-    const endDate = await redis.get("presale:endDate");
-    res.json({ endDate });
-  } catch (err) {
-    console.error("❌ Failed to load countdown:", err);
-    res.status(500).json({ error: "Server error" });
+    const endDate = await redis.get("presale:end_date");
+
+    res.json({
+      success: true,
+      endDate: endDate || null,
+      timeRemaining: endDate ? Math.max(0, new Date(endDate) - new Date()) : null
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting presale countdown:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get presale countdown"
+    });
   }
 });
 
@@ -511,6 +520,88 @@ router.get("/admin-summary", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to get presale admin summary"
+    });
+  }
+});
+
+// ✅ POST /api/presale/set-countdown - Set presale countdown end date (Admin only)
+router.post("/set-countdown", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { endDate, action } = req.body;
+
+    if (action === 'clear') {
+      // Clear the countdown
+      await redis.del("presale:end_date");
+
+      // Log admin action
+      await redis.lPush('admin_logs', JSON.stringify({
+        action: 'presale_countdown_cleared',
+        timestamp: new Date().toISOString(),
+        ip: req.ip || 'unknown',
+        details: 'Presale countdown cleared'
+      }));
+
+      res.json({
+        success: true,
+        message: "Presale countdown cleared",
+        endDate: null
+      });
+
+    } else if (endDate) {
+      // Validate the date
+      const parsedDate = new Date(endDate);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid date format"
+        });
+      }
+
+      // Check if date is in the future
+      if (parsedDate <= new Date()) {
+        return res.status(400).json({
+          success: false,
+          error: "End date must be in the future"
+        });
+      }
+
+      // Set the countdown end date
+      await redis.set("presale:end_date", parsedDate.toISOString());
+
+      // Log admin action
+      await redis.lPush('admin_logs', JSON.stringify({
+        action: 'presale_countdown_set',
+        timestamp: new Date().toISOString(),
+        ip: req.ip || 'unknown',
+        details: `Presale countdown set to: ${parsedDate.toISOString()}`
+      }));
+
+      res.json({
+        success: true,
+        message: "Presale countdown updated successfully",
+        endDate: parsedDate.toISOString(),
+        timeRemaining: Math.max(0, parsedDate - new Date())
+      });
+
+    } else {
+      res.status(400).json({
+        success: false,
+        error: "Missing endDate or action parameter"
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error setting presale countdown:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to set presale countdown"
     });
   }
 });
