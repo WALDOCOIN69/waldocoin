@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Token Burn</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      color: #eee;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #111;
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+    .test-card {
+      background: #222;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 4px solid #25c2a0;
+    }
+    .error-card {
+      border-left-color: #ff5252;
+    }
+    .button {
+      background: #25c2a0;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 10px 5px;
+    }
+    .button:hover {
+      background: #1e9b7a;
+    }
+    .button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .input {
+      width: 100%;
+      padding: 10px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .log {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔥 Token Burn Debug Test</h1>
+  <p>Let's test the burn system step by step to find the issue.</p>
+
+  <div class="test-card">
+    <h3>1. Admin Key Test</h3>
+    <input type="password" id="adminKey" class="input" placeholder="Enter your admin key">
+    <button class="button" onclick="testAdminKey()">Test Admin Key</button>
+    <div id="adminResult"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>2. Wallet Balance Check</h3>
+    <button class="button" onclick="checkWalletBalance()">Check Distributor Wallet Balance</button>
+    <div id="balanceResult"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>3. Small Test Burn</h3>
+    <p>Let's try burning just 1 WLO token to test the system:</p>
+    <input type="text" id="testReason" class="input" value="Test burn - 1 WLO token" placeholder="Burn reason">
+    <button class="button" onclick="testSmallBurn()" id="testBurnBtn">🔥 Test Burn 1 WLO</button>
+    <div id="testBurnResult"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>4. System Debug Info</h3>
+    <button class="button" onclick="getDebugInfo()">Get System Debug Info</button>
+    <div id="debugResult"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>📋 Debug Log</h3>
+    <div id="debugLog" class="log">Click buttons above to start debugging...\n</div>
+  </div>
+</div>
+
+<script>
+const baseURL = 'https://waldocoin-backend.onrender.com';
+
+function log(message) {
+  const debugLog = document.getElementById('debugLog');
+  const timestamp = new Date().toLocaleTimeString();
+  debugLog.textContent += `[${timestamp}] ${message}\n`;
+  debugLog.scrollTop = debugLog.scrollHeight;
+  console.log(message);
+}
+
+async function testAdminKey() {
+  const adminKey = document.getElementById('adminKey').value;
+  const resultDiv = document.getElementById('adminResult');
+  
+  if (!adminKey) {
+    resultDiv.innerHTML = '<div style="color: #ff5252;">Please enter admin key</div>';
+    return;
+  }
+
+  log('Testing admin key...');
+  
+  try {
+    const response = await fetch(`${baseURL}/api/burn/debug`, {
+      headers: {
+        'x-admin-key': adminKey
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      resultDiv.innerHTML = '<div style="color: #25c2a0;">✅ Admin key valid!</div>';
+      localStorage.setItem('testAdminKey', adminKey);
+      log('Admin key test: SUCCESS');
+      log(`System status: ${JSON.stringify(data.debug.systemStatus, null, 2)}`);
+    } else {
+      resultDiv.innerHTML = `<div style="color: #ff5252;">❌ Admin key invalid: ${data.error}</div>`;
+      log(`Admin key test: FAILED - ${data.error}`);
+    }
+  } catch (error) {
+    resultDiv.innerHTML = `<div style="color: #ff5252;">❌ Network error: ${error.message}</div>`;
+    log(`Admin key test: ERROR - ${error.message}`);
+  }
+}
+
+async function checkWalletBalance() {
+  const resultDiv = document.getElementById('balanceResult');
+  
+  log('Checking wallet balance...');
+  
+  try {
+    // Check XRPL directly for wallet balance
+    const walletAddress = 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC';
+    
+    resultDiv.innerHTML = `
+      <div>Distributor wallet: <code>${walletAddress}</code></div>
+      <div>Check balance manually at: <a href="https://livenet.xrpl.org/accounts/${walletAddress}" target="_blank" style="color: #25c2a0;">XRPL Explorer</a></div>
+      <div style="margin-top: 10px;">Look for WLO tokens with issuer: <code>rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY</code></div>
+    `;
+    
+    log(`Wallet to check: ${walletAddress}`);
+    log('Please check the XRPL Explorer link to see WLO balance');
+    
+  } catch (error) {
+    resultDiv.innerHTML = `<div style="color: #ff5252;">❌ Error: ${error.message}</div>`;
+    log(`Balance check: ERROR - ${error.message}`);
+  }
+}
+
+async function testSmallBurn() {
+  const adminKey = localStorage.getItem('testAdminKey') || document.getElementById('adminKey').value;
+  const reason = document.getElementById('testReason').value;
+  const resultDiv = document.getElementById('testBurnResult');
+  const btn = document.getElementById('testBurnBtn');
+  
+  if (!adminKey) {
+    resultDiv.innerHTML = '<div style="color: #ff5252;">Please test admin key first</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '🔥 Testing burn...';
+  
+  log('Starting test burn of 1 WLO token...');
+  
+  try {
+    const response = await fetch(`${baseURL}/api/burn/tokens`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: 1,
+        adminKey: adminKey,
+        reason: reason
+      })
+    });
+
+    const data = await response.json();
+    
+    log(`Burn API response: ${JSON.stringify(data, null, 2)}`);
+    
+    if (data.success) {
+      resultDiv.innerHTML = `
+        <div style="color: #25c2a0;">✅ Test burn successful!</div>
+        <div>TX Hash: <code>${data.burnEvent.txHash}</code></div>
+        <div><a href="https://livenet.xrpl.org/transactions/${data.burnEvent.txHash}" target="_blank" style="color: #25c2a0;">View on XRPL</a></div>
+      `;
+      log(`Test burn SUCCESS: ${data.burnEvent.txHash}`);
+    } else {
+      resultDiv.innerHTML = `<div style="color: #ff5252;">❌ Test burn failed: ${data.error}</div>`;
+      log(`Test burn FAILED: ${data.error}`);
+    }
+  } catch (error) {
+    resultDiv.innerHTML = `<div style="color: #ff5252;">❌ Network error: ${error.message}</div>`;
+    log(`Test burn ERROR: ${error.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔥 Test Burn 1 WLO';
+  }
+}
+
+async function getDebugInfo() {
+  const adminKey = localStorage.getItem('testAdminKey') || document.getElementById('adminKey').value;
+  const resultDiv = document.getElementById('debugResult');
+  
+  if (!adminKey) {
+    resultDiv.innerHTML = '<div style="color: #ff5252;">Please test admin key first</div>';
+    return;
+  }
+
+  log('Getting system debug info...');
+  
+  try {
+    const response = await fetch(`${baseURL}/api/burn/debug`, {
+      headers: {
+        'x-admin-key': adminKey
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      resultDiv.innerHTML = `
+        <div style="color: #25c2a0;">✅ Debug info retrieved</div>
+        <pre style="background: #000; color: #0f0; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${JSON.stringify(data.debug, null, 2)}</pre>
+      `;
+      log(`Debug info: ${JSON.stringify(data.debug, null, 2)}`);
+    } else {
+      resultDiv.innerHTML = `<div style="color: #ff5252;">❌ Failed to get debug info: ${data.error}</div>`;
+      log(`Debug info FAILED: ${data.error}`);
+    }
+  } catch (error) {
+    resultDiv.innerHTML = `<div style="color: #ff5252;">❌ Network error: ${error.message}</div>`;
+    log(`Debug info ERROR: ${error.message}`);
+  }
+}
+</script>
+
+</body>
+</html>
