@@ -365,4 +365,61 @@ async function burnTokens(amount, reason) {
   }
 }
 
+// ✅ GET /api/burn/debug - Debug burn system status
+router.get('/debug', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized: Invalid admin key'
+      });
+    }
+
+    // Check system configuration
+    const systemStatus = {
+      xrplServer: XRPL_SERVER,
+      waldoIssuer: WALDO_ISSUER,
+      distributorSecretConfigured: !!DISTRIBUTOR_SECRET,
+      adminKeyConfigured: !!process.env.X_ADMIN_KEY,
+      redisConnected: true // Assume connected if we got here
+    };
+
+    // Get recent burn attempts (including failed ones)
+    const totalBurned = await redis.get('total_tokens_burned') || 0;
+    const burnHistory = await redis.lRange('token_burns', 0, 9); // Last 10
+
+    const parsedHistory = burnHistory.map(burn => {
+      try {
+        return JSON.parse(burn);
+      } catch (error) {
+        return null;
+      }
+    }).filter(burn => burn !== null);
+
+    res.json({
+      success: true,
+      debug: {
+        systemStatus,
+        burnStats: {
+          totalBurned: parseFloat(totalBurned),
+          recentBurns: parsedHistory.length,
+          lastBurn: parsedHistory.length > 0 ? parsedHistory[0].timestamp : null
+        },
+        recentBurns: parsedHistory,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in burn debug:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Debug check failed: ' + error.message
+    });
+  }
+});
+
 export default router;

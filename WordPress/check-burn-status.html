@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Token Burn Status</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      color: #eee;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #111;
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+    .status-card {
+      background: #222;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 4px solid #25c2a0;
+    }
+    .error-card {
+      border-left-color: #ff5252;
+    }
+    .warning-card {
+      border-left-color: #ffd700;
+    }
+    .button {
+      background: #25c2a0;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 10px 5px;
+    }
+    .button:hover {
+      background: #1e9b7a;
+    }
+    .loading {
+      color: #ffd700;
+    }
+    .success {
+      color: #25c2a0;
+    }
+    .error {
+      color: #ff5252;
+    }
+    .hash {
+      font-family: monospace;
+      background: #333;
+      padding: 5px;
+      border-radius: 3px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔍 Token Burn Status Checker</h1>
+  <p>Check if your token burn was successful and get transaction details.</p>
+
+  <div class="status-card">
+    <h3>📊 Current Status</h3>
+    <div id="statusDisplay">
+      <div class="loading">⏳ Click "Check Status" to begin verification...</div>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <h3>🔥 Burn History</h3>
+    <div id="burnHistory">
+      <div class="loading">⏳ Burn history will appear here...</div>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <h3>💰 Wallet Balance</h3>
+    <div id="walletBalance">
+      <div class="loading">⏳ Wallet balance will appear here...</div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin: 30px 0;">
+    <button class="button" onclick="checkBurnStatus()">🔍 Check Burn Status</button>
+    <button class="button" onclick="checkWalletBalance()">💰 Check Wallet Balance</button>
+    <button class="button" onclick="refreshAll()">🔄 Refresh All</button>
+  </div>
+
+  <div class="status-card warning-card">
+    <h3>⚠️ If No Burns Show Up:</h3>
+    <ul>
+      <li><strong>Transaction might be pending</strong> - XRPL can take 1-2 minutes</li>
+      <li><strong>Burn might have failed</strong> - Check browser console for errors</li>
+      <li><strong>Admin key issue</strong> - Make sure you're authenticated</li>
+      <li><strong>Network issue</strong> - Try refreshing and checking again</li>
+    </ul>
+  </div>
+
+  <div class="status-card">
+    <h3>🔗 Manual Verification</h3>
+    <p>If you have a transaction hash, check it manually:</p>
+    <input type="text" id="txHashInput" placeholder="Enter transaction hash" style="width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; margin: 10px 0;">
+    <button class="button" onclick="checkTransaction()">🔍 Check Transaction</button>
+  </div>
+</div>
+
+<script>
+const baseURL = 'https://waldocoin-backend.onrender.com';
+
+async function checkBurnStatus() {
+  const statusDisplay = document.getElementById('statusDisplay');
+  statusDisplay.innerHTML = '<div class="loading">🔍 Checking burn status...</div>';
+
+  try {
+    // Get admin key from localStorage (same as admin panel)
+    const adminKey = localStorage.getItem('adminKey');
+    
+    if (!adminKey) {
+      statusDisplay.innerHTML = '<div class="error">❌ No admin key found. Please authenticate in the admin panel first.</div>';
+      return;
+    }
+
+    // Check burn history
+    const response = await fetch(`${baseURL}/api/burn/history`, {
+      headers: {
+        'x-admin-key': adminKey
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const burnHistory = document.getElementById('burnHistory');
+      
+      if (data.burnHistory.length === 0) {
+        statusDisplay.innerHTML = '<div class="warning">⚠️ No burns found in history</div>';
+        burnHistory.innerHTML = '<div class="warning">No burn transactions recorded</div>';
+      } else {
+        const latestBurn = data.burnHistory[0];
+        const burnTime = new Date(latestBurn.timestamp);
+        const timeDiff = Date.now() - burnTime.getTime();
+        const minutesAgo = Math.floor(timeDiff / (1000 * 60));
+
+        statusDisplay.innerHTML = `
+          <div class="success">✅ Latest burn found!</div>
+          <div><strong>Amount:</strong> ${parseFloat(latestBurn.amount).toLocaleString()} WLO</div>
+          <div><strong>Time:</strong> ${burnTime.toLocaleString()} (${minutesAgo} minutes ago)</div>
+          <div><strong>TX Hash:</strong> <span class="hash">${latestBurn.txHash}</span></div>
+          <div><strong>Reason:</strong> ${latestBurn.reason}</div>
+        `;
+
+        // Show all recent burns
+        burnHistory.innerHTML = data.burnHistory.slice(0, 5).map(burn => `
+          <div style="border-bottom: 1px solid #333; padding: 10px 0; margin: 10px 0;">
+            <div><strong>${parseFloat(burn.amount).toLocaleString()} WLO</strong> - ${new Date(burn.timestamp).toLocaleString()}</div>
+            <div class="hash">${burn.txHash}</div>
+            <div style="font-size: 0.9em; color: #ccc;">${burn.reason}</div>
+            <a href="https://livenet.xrpl.org/transactions/${burn.txHash}" target="_blank" style="color: #25c2a0;">🔗 View on XRPL Explorer</a>
+          </div>
+        `).join('');
+      }
+    } else {
+      statusDisplay.innerHTML = `<div class="error">❌ Failed to check burn status: ${data.error}</div>`;
+    }
+  } catch (error) {
+    console.error('Error checking burn status:', error);
+    statusDisplay.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+  }
+}
+
+async function checkWalletBalance() {
+  const walletBalance = document.getElementById('walletBalance');
+  walletBalance.innerHTML = '<div class="loading">💰 Checking wallet balance...</div>';
+
+  try {
+    // This would require XRPL client integration
+    // For now, show instructions
+    walletBalance.innerHTML = `
+      <div class="warning">⚠️ Wallet balance check requires XRPL integration</div>
+      <div>To check manually:</div>
+      <ol>
+        <li>Go to <a href="https://livenet.xrpl.org/" target="_blank" style="color: #25c2a0;">XRPL Explorer</a></li>
+        <li>Search for your distributor wallet address</li>
+        <li>Check the WLO token balance</li>
+        <li>Compare with previous balance to confirm burn</li>
+      </ol>
+    `;
+  } catch (error) {
+    walletBalance.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+  }
+}
+
+function checkTransaction() {
+  const txHash = document.getElementById('txHashInput').value.trim();
+  
+  if (!txHash) {
+    alert('Please enter a transaction hash');
+    return;
+  }
+
+  // Open XRPL explorer in new tab
+  window.open(`https://livenet.xrpl.org/transactions/${txHash}`, '_blank');
+}
+
+function refreshAll() {
+  checkBurnStatus();
+  checkWalletBalance();
+}
+
+// Auto-check on page load
+window.addEventListener('load', () => {
+  // Small delay to let page settle
+  setTimeout(checkBurnStatus, 1000);
+});
+</script>
+
+</body>
+</html>
