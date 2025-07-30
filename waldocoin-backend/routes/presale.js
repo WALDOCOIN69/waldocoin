@@ -12,18 +12,19 @@ function calculateWaldoBonus(xrpAmount) {
   let bonusTier = null;
   let bonusPercentage = 0;
 
+  // Calculate bonus as percentage of base amount
   if (xrpAmount >= 100) {
-    bonus = 300000; // 300k bonus (30% of 1M base)
-    bonusTier = "Tier 3 (100+ XRP)";
     bonusPercentage = 30;
+    bonus = Math.floor(baseWaldo * 0.30); // 30% bonus
+    bonusTier = "Tier 3 (100+ XRP)";
   } else if (xrpAmount >= 90) {
-    bonus = 198000; // 198k bonus (22% of 900k base)
-    bonusTier = "Tier 2 (90+ XRP)";
     bonusPercentage = 22;
+    bonus = Math.floor(baseWaldo * 0.22); // 22% bonus
+    bonusTier = "Tier 2 (90+ XRP)";
   } else if (xrpAmount >= 80) {
-    bonus = 120000; // 120k bonus (15% of 800k base)
-    bonusTier = "Tier 1 (80+ XRP)";
     bonusPercentage = 15;
+    bonus = Math.floor(baseWaldo * 0.15); // 15% bonus
+    bonusTier = "Tier 1 (80+ XRP)";
   }
 
   const totalWaldo = baseWaldo + bonus;
@@ -297,7 +298,19 @@ router.post("/buy", async (req, res) => {
         options: {
           submit: true,
           multisign: false,
-          expire: 1440 // 24 hours
+          expire: 1440, // 24 hours
+          return_url: {
+            web: 'https://waldocoin.live/presale-success'
+          }
+        },
+        custom_meta: {
+          identifier: `presale-${Date.now()}`,
+          blob: {
+            wallet,
+            xrpAmount,
+            waldoAmount: calculation.totalWaldo,
+            bonusPercentage: calculation.bonusPercentage
+          }
         }
       })
     });
@@ -602,6 +615,293 @@ router.post("/set-countdown", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to set presale countdown"
+    });
+  }
+});
+
+// ✅ POST /api/presale/webhook - Handle XUMM webhook for completed transactions
+router.post("/webhook", async (req, res) => {
+  try {
+    const { meta, txid, signed, user_token } = req.body;
+
+    console.log('📥 Presale webhook received:', { meta, txid, signed });
+
+    if (signed && txid && meta?.resolved_at) {
+      // Transaction was signed and completed
+      console.log('✅ Processing completed presale transaction:', txid);
+
+      // Get transaction details from XRPL
+      try {
+        const txResponse = await fetch('https://s1.ripple.com:51234', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            method: 'tx',
+            params: [{
+              transaction: txid,
+              binary: false
+            }]
+          })
+        });
+
+        const txData = await txResponse.json();
+
+        if (txData.result && txData.result.TransactionType === 'Payment') {
+          const transaction = txData.result;
+          const fromWallet = transaction.Account;
+          const toWallet = transaction.Destination;
+          const xrpAmount = parseInt(transaction.Amount) / 1000000; // Convert drops to XRP
+
+          // Verify this is a presale transaction to our distributor wallet
+          if (toWallet === 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt') {
+            console.log(`💰 Presale payment received: ${xrpAmount} XRP from ${fromWallet}`);
+
+            // Calculate WALDO amount with bonus
+            const calculation = calculateWaldoBonus(xrpAmount);
+
+            // Send WALDO tokens to buyer
+            await sendWaldoTokens(fromWallet, calculation.totalWaldo, calculation, txid);
+
+            // Record the purchase
+            await recordPresalePurchase(fromWallet, xrpAmount, calculation, txid);
+
+            console.log(`✅ Presale completed: ${fromWallet} received ${calculation.totalWaldo} WALDO`);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error processing transaction:', error);
+      }
+    }
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error('❌ Webhook error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ✅ Function to send WALDO tokens to buyer
+async function sendWaldoTokens(buyerWallet, waldoAmount, calculation, originalTxId) {
+  try {
+    console.log(`🚀 Sending ${waldoAmount} WALDO to ${buyerWallet}`);
+
+    // Create WALDO payment transaction
+    const payload = {
+      TransactionType: 'Payment',
+      Account: 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt', // WALDO distributor wallet
+      Destination: buyerWallet,
+      Amount: {
+        currency: 'WLO',
+        issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY',
+        value: waldoAmount.toString()
+      },
+      Memos: [{
+        Memo: {
+          MemoType: Buffer.from('PRESALE_DELIVERY').toString('hex').toUpperCase(),
+          MemoData: Buffer.from(`Base:${calculation.baseWaldo}+Bonus:${calculation.bonus}=${waldoAmount}WALDO`).toString('hex').toUpperCase()
+        }
+      }]
+    };
+
+    // Submit transaction using XUMM or direct XRPL submission
+    // For now, we'll use XUMM to create and auto-submit
+    const xummResponse = await fetch('https://xumm.app/api/v1/platform/payload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': process.env.XUMM_API_KEY,
+        'X-API-Secret': process.env.XUMM_API_SECRET
+      },
+      body: JSON.stringify({
+        txjson: payload,
+        options: {
+          submit: true,
+          multisign: false,
+          expire: 60, // 1 hour
+          return_url: {
+            web: 'https://waldocoin.live/presale-success'
+          }
+        },
+        custom_meta: {
+          identifier: `presale-delivery-${originalTxId}`,
+          blob: {
+            buyerWallet,
+            waldoAmount,
+            originalTxId
+          }
+        }
+      })
+    });
+
+    const xummData = await xummResponse.json();
+
+    if (xummData.uuid) {
+      console.log(`✅ WALDO delivery transaction created: ${xummData.uuid}`);
+
+      // Store delivery transaction info
+      await redis.hSet(`presale:delivery:${originalTxId}`, {
+        buyerWallet,
+        waldoAmount,
+        deliveryUuid: xummData.uuid,
+        status: 'pending',
+        timestamp: new Date().toISOString()
+      });
+
+      return xummData.uuid;
+    } else {
+      throw new Error('Failed to create WALDO delivery transaction');
+    }
+
+  } catch (error) {
+    console.error('❌ Error sending WALDO tokens:', error);
+
+    // Store failed delivery for manual processing
+    await redis.hSet(`presale:failed_delivery:${originalTxId}`, {
+      buyerWallet,
+      waldoAmount,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+
+    throw error;
+  }
+}
+
+// ✅ Function to record presale purchase
+async function recordPresalePurchase(wallet, xrpAmount, calculation, txId) {
+  try {
+    // Store individual purchase record
+    await redis.hSet(`presale:purchase:${txId}`, {
+      wallet,
+      xrpAmount,
+      waldoAmount: calculation.totalWaldo,
+      baseWaldo: calculation.baseWaldo,
+      bonus: calculation.bonus,
+      bonusPercentage: calculation.bonusPercentage,
+      bonusTier: calculation.bonusTier || 'No Bonus',
+      txHash: txId,
+      timestamp: new Date().toISOString()
+    });
+
+    // Update totals
+    await redis.incrByFloat('presale:total_xrp', xrpAmount);
+    await redis.incrByFloat('presale:total_sold', calculation.totalWaldo);
+    await redis.incr('presale:total_purchases');
+
+    console.log(`📊 Recorded presale purchase: ${wallet} - ${xrpAmount} XRP = ${calculation.totalWaldo} WALDO`);
+
+  } catch (error) {
+    console.error('❌ Error recording purchase:', error);
+  }
+}
+
+// ✅ GET /api/presale/failed-deliveries - Get failed WALDO deliveries (Admin only)
+router.get("/failed-deliveries", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get all failed delivery keys
+    const failedKeys = await redis.keys("presale:failed_delivery:*");
+    const failedDeliveries = [];
+
+    for (const key of failedKeys) {
+      try {
+        const deliveryData = await redis.hGetAll(key);
+        if (deliveryData.buyerWallet) {
+          failedDeliveries.push({
+            txId: key.replace('presale:failed_delivery:', ''),
+            ...deliveryData
+          });
+        }
+      } catch (error) {
+        console.error(`Error processing failed delivery ${key}:`, error);
+      }
+    }
+
+    res.json({
+      success: true,
+      failedDeliveries: failedDeliveries,
+      count: failedDeliveries.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting failed deliveries:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get failed deliveries"
+    });
+  }
+});
+
+// ✅ POST /api/presale/retry-delivery - Retry failed WALDO delivery (Admin only)
+router.post("/retry-delivery", async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    // Verify admin access
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { txId } = req.body;
+
+    if (!txId) {
+      return res.status(400).json({ success: false, error: "Missing transaction ID" });
+    }
+
+    // Get failed delivery data
+    const failedData = await redis.hGetAll(`presale:failed_delivery:${txId}`);
+
+    if (!failedData.buyerWallet) {
+      return res.status(404).json({ success: false, error: "Failed delivery not found" });
+    }
+
+    // Retry the delivery
+    const calculation = {
+      baseWaldo: parseInt(failedData.waldoAmount) - (parseInt(failedData.bonus) || 0),
+      bonus: parseInt(failedData.bonus) || 0,
+      totalWaldo: parseInt(failedData.waldoAmount),
+      bonusPercentage: parseInt(failedData.bonusPercentage) || 0
+    };
+
+    try {
+      const deliveryUuid = await sendWaldoTokens(failedData.buyerWallet, failedData.waldoAmount, calculation, txId);
+
+      // Remove from failed deliveries
+      await redis.del(`presale:failed_delivery:${txId}`);
+
+      // Log admin action
+      await redis.lPush('admin_logs', JSON.stringify({
+        action: 'presale_delivery_retry',
+        timestamp: new Date().toISOString(),
+        ip: req.ip || 'unknown',
+        details: `Retried delivery for ${failedData.buyerWallet}: ${failedData.waldoAmount} WALDO`
+      }));
+
+      res.json({
+        success: true,
+        message: "Delivery retry initiated successfully",
+        deliveryUuid: deliveryUuid
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: `Failed to retry delivery: ${error.message}`
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error retrying delivery:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to retry delivery"
     });
   }
 });
