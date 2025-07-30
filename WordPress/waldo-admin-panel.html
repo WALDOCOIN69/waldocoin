@@ -2269,6 +2269,72 @@
             <button type="button" class="btn btn-danger" onclick="emergencyStop()">🛑 SYSTEM EMERGENCY STOP</button>
           </div>
         </div>
+
+        <!-- Token Burning Controls -->
+        <div class="admin-card">
+          <div class="card-title">🔥 Token Burning Controls</div>
+
+          <div class="alert alert-error alert-small">
+            ⚠️ Token burning is IRREVERSIBLE and permanently removes tokens from circulation
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Burn Amount (WLO Tokens):</label>
+            <input type="number" id="burnAmount" class="form-input" placeholder="Enter amount to burn" min="1" step="0.01">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Burn Reason:</label>
+            <input type="text" id="burnReason" class="form-input" placeholder="Enter reason for token burn">
+          </div>
+
+          <!-- Quick Burn Buttons -->
+          <div class="form-group">
+            <label class="form-label">Quick Burn Options:</label>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+              <button type="button" class="btn btn-info" onclick="setQuickBurn(1000000)">1M WLO</button>
+              <button type="button" class="btn btn-info" onclick="setQuickBurn(5000000)">5M WLO</button>
+              <button type="button" class="btn btn-info" onclick="setQuickBurn(10000000)">10M WLO</button>
+              <button type="button" class="btn btn-warning" onclick="setQuickBurn(23100000)">23.1M WLO</button>
+              <button type="button" class="btn btn-danger" onclick="setQuickBurn(50000000)">50M WLO</button>
+            </div>
+          </div>
+
+          <!-- Burn Confirmation -->
+          <div id="burnConfirmationSection" style="display: none;">
+            <div class="alert alert-error alert-small">
+              <strong>CONFIRMATION REQUIRED:</strong><br>
+              Type the following confirmation text to proceed:<br>
+              <code id="burnConfirmationText" style="background: #333; padding: 5px; border-radius: 3px; color: #ffd700;"></code>
+            </div>
+            <div class="form-group">
+              <input type="text" id="burnConfirmation" class="form-input" placeholder="Enter confirmation text">
+            </div>
+          </div>
+
+          <!-- Burn Actions -->
+          <div class="emergency-controls">
+            <button type="button" class="btn btn-warning" onclick="prepareBurn()" id="prepareBurnBtn">🔥 Prepare Token Burn</button>
+            <button type="button" class="btn btn-danger" onclick="executeBurn()" id="executeBurnBtn" style="display: none;">🔥 EXECUTE BURN</button>
+            <button type="button" class="btn" onclick="cancelBurn()" id="cancelBurnBtn" style="display: none;">❌ Cancel</button>
+          </div>
+
+          <!-- Burn Statistics -->
+          <div class="form-group" style="margin-top: 20px;">
+            <label class="form-label">Burn Statistics:</label>
+            <div id="burnStats" style="background: #222; padding: 15px; border-radius: 6px; margin-top: 10px;">
+              <div class="spinner"></div> Loading burn statistics...
+            </div>
+          </div>
+
+          <!-- Recent Burns -->
+          <div class="form-group">
+            <label class="form-label">Recent Burns:</label>
+            <div id="recentBurns" style="background: #222; padding: 15px; border-radius: 6px; margin-top: 10px; max-height: 200px; overflow-y: auto;">
+              <div class="spinner"></div> Loading recent burns...
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -3422,6 +3488,12 @@
         loadFraudAnalytics();
         loadRecentViolations();
         loadSuspiciousActivity();
+      }
+
+      // Load burn statistics and recent burns if on system section
+      if (sectionName === 'system') {
+        loadBurnStatistics();
+        loadRecentBurns();
       }
     }
 
@@ -5786,6 +5858,220 @@ This action cannot be undone. Continue?`;
         // In production, this would call the emergency stop API
       } else if (confirmation !== null) {
         showAlert('❌ Emergency stop cancelled - incorrect confirmation', 'warning');
+      }
+    }
+
+    // ===== TOKEN BURNING FUNCTIONS =====
+
+    // Set quick burn amount
+    function setQuickBurn(amount) {
+      document.getElementById('burnAmount').value = amount;
+      document.getElementById('burnReason').value = `Strategic token burn - ${amount.toLocaleString()} WLO tokens`;
+      showAlert(`Set burn amount to ${amount.toLocaleString()} WLO tokens`, 'info');
+    }
+
+    // Prepare burn (show confirmation)
+    function prepareBurn() {
+      const amount = parseFloat(document.getElementById('burnAmount').value);
+      const reason = document.getElementById('burnReason').value;
+
+      if (!amount || amount <= 0) {
+        showAlert('Please enter a valid burn amount', 'error');
+        return;
+      }
+
+      if (!reason.trim()) {
+        showAlert('Please enter a reason for the burn', 'error');
+        return;
+      }
+
+      // Show confirmation section
+      const confirmationSection = document.getElementById('burnConfirmationSection');
+      const confirmationText = document.getElementById('burnConfirmationText');
+      const prepareBurnBtn = document.getElementById('prepareBurnBtn');
+      const executeBurnBtn = document.getElementById('executeBurnBtn');
+      const cancelBurnBtn = document.getElementById('cancelBurnBtn');
+
+      const confirmText = `BURN_${Math.floor(amount)}_WLO_TOKENS`;
+      confirmationText.textContent = confirmText;
+
+      confirmationSection.style.display = 'block';
+      prepareBurnBtn.style.display = 'none';
+      executeBurnBtn.style.display = 'inline-block';
+      cancelBurnBtn.style.display = 'inline-block';
+
+      showAlert(`⚠️ Burn prepared for ${amount.toLocaleString()} WLO tokens. Enter confirmation to proceed.`, 'warning');
+    }
+
+    // Cancel burn
+    function cancelBurn() {
+      const confirmationSection = document.getElementById('burnConfirmationSection');
+      const prepareBurnBtn = document.getElementById('prepareBurnBtn');
+      const executeBurnBtn = document.getElementById('executeBurnBtn');
+      const cancelBurnBtn = document.getElementById('cancelBurnBtn');
+
+      confirmationSection.style.display = 'none';
+      prepareBurnBtn.style.display = 'inline-block';
+      executeBurnBtn.style.display = 'none';
+      cancelBurnBtn.style.display = 'none';
+
+      document.getElementById('burnConfirmation').value = '';
+      showAlert('Token burn cancelled', 'info');
+    }
+
+    // Execute burn
+    async function executeBurn() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) {
+        showAlert('Please enter admin key first', 'error');
+        return;
+      }
+
+      const amount = parseFloat(document.getElementById('burnAmount').value);
+      const reason = document.getElementById('burnReason').value;
+      const confirmation = document.getElementById('burnConfirmation').value;
+      const expectedConfirmation = `BURN_${Math.floor(amount)}_WLO_TOKENS`;
+
+      if (confirmation !== expectedConfirmation) {
+        showAlert('Incorrect confirmation text. Please enter the exact text shown.', 'error');
+        return;
+      }
+
+      if (!window.confirm(`🔥 FINAL WARNING: You are about to burn ${amount.toLocaleString()} WLO tokens.\n\nThis action is IRREVERSIBLE and will permanently remove tokens from circulation.\n\nAre you absolutely sure?`)) {
+        return;
+      }
+
+      const executeBurnBtn = document.getElementById('executeBurnBtn');
+      executeBurnBtn.disabled = true;
+      executeBurnBtn.textContent = '🔥 Burning tokens...';
+
+      try {
+        const endpoint = amount >= 1000000 ? '/api/burn/massive' : '/api/burn/tokens';
+        const payload = {
+          amount: amount,
+          adminKey: adminKey,
+          reason: reason
+        };
+
+        if (amount >= 1000000) {
+          payload.confirmation = expectedConfirmation;
+        }
+
+        const response = await fetch(`${baseURL}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`✅ SUCCESS: Burned ${amount.toLocaleString()} WLO tokens!\nTX Hash: ${data.burnEvent.txHash}`, 'success');
+
+          // Reset form
+          cancelBurn();
+          document.getElementById('burnAmount').value = '';
+          document.getElementById('burnReason').value = '';
+
+          // Refresh burn statistics
+          loadBurnStatistics();
+          loadRecentBurns();
+
+        } else {
+          showAlert(`❌ Burn failed: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Burn error:', error);
+        showAlert('❌ Burn failed: Network error', 'error');
+      } finally {
+        executeBurnBtn.disabled = false;
+        executeBurnBtn.textContent = '🔥 EXECUTE BURN';
+      }
+    }
+
+    // Load burn statistics
+    async function loadBurnStatistics() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) return;
+
+      try {
+        const response = await fetch(`${baseURL}/api/burn/stats`, {
+          headers: {
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const burnStats = document.getElementById('burnStats');
+          burnStats.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+              <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #ff5252;">${data.stats.totalBurned.toLocaleString()}</div>
+                <div style="color: #ccc; font-size: 0.9rem;">Total Burned</div>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #25c2a0;">${data.stats.totalBurnEvents}</div>
+                <div style="color: #ccc; font-size: 0.9rem;">Burn Events</div>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #ffd700;">${new Date(data.stats.lastUpdated).toLocaleDateString()}</div>
+                <div style="color: #ccc; font-size: 0.9rem;">Last Updated</div>
+              </div>
+            </div>
+          `;
+        } else {
+          document.getElementById('burnStats').innerHTML = '<div style="color: #ff5252;">Failed to load burn statistics</div>';
+        }
+      } catch (error) {
+        console.error('Error loading burn statistics:', error);
+        document.getElementById('burnStats').innerHTML = '<div style="color: #ff5252;">Error loading burn statistics</div>';
+      }
+    }
+
+    // Load recent burns
+    async function loadRecentBurns() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) return;
+
+      try {
+        const response = await fetch(`${baseURL}/api/burn/history`, {
+          headers: {
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const recentBurns = document.getElementById('recentBurns');
+
+          if (data.burnHistory.length === 0) {
+            recentBurns.innerHTML = '<div style="color: #ccc;">No burn history found</div>';
+            return;
+          }
+
+          recentBurns.innerHTML = data.burnHistory.slice(0, 5).map(burn => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 10px;">
+              <div>
+                <div style="font-weight: bold; color: #ff5252;">${parseFloat(burn.amount).toLocaleString()} WLO</div>
+                <div style="font-size: 0.9rem; color: #ccc;">${new Date(burn.timestamp).toLocaleString()}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-family: monospace; color: #25c2a0; font-size: 0.8rem;">${burn.txHash.substring(0, 16)}...</div>
+                <div style="font-size: 0.8rem; color: #ccc;">${burn.reason.substring(0, 30)}${burn.reason.length > 30 ? '...' : ''}</div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('recentBurns').innerHTML = '<div style="color: #ff5252;">Failed to load recent burns</div>';
+        }
+      } catch (error) {
+        console.error('Error loading recent burns:', error);
+        document.getElementById('recentBurns').innerHTML = '<div style="color: #ff5252;">Error loading recent burns</div>';
       }
     }
 
