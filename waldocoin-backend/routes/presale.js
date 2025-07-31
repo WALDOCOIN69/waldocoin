@@ -41,7 +41,7 @@ function calculateWaldoBonus(xrpAmount) {
 // 🛡️ Admin key check middleware
 function adminCheck(req, res, next) {
   const key = req.headers["x-admin-key"];
-  if (key !== "waldogod2025") return res.status(401).json({ success: false, error: "Unauthorized" });
+  if (key !== process.env.X_ADMIN_KEY) return res.status(401).json({ success: false, error: "Unauthorized" });
   next();
 }
 
