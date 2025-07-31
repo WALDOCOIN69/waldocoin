@@ -307,7 +307,7 @@ router.post("/buy", async (req, res) => {
     };
 
     // Use createAndSubscribe to automatically handle transaction completion
-    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, async (event) => {
+    const created = await xummClient.payload.createAndSubscribe(payload, async (event) => {
       if (event.data.signed === true) {
         console.log(`✅ Presale transaction signed! Processing WALDO delivery...`);
 
@@ -327,14 +327,18 @@ router.post("/buy", async (req, res) => {
       }
     });
 
-    console.log("✅ XUMM Presale Payload Created:", { uuid });
+    console.log("✅ XUMM Presale Payload Created:", {
+      uuid: created.uuid,
+      qr_png: created.refs?.qr_png ? 'Available' : 'Missing',
+      next: created.next ? 'Available' : 'Missing'
+    });
 
     // Return response in same format as login
     res.json({
       success: true,
-      qr: next.qr_png,
-      uuid: uuid,
-      deeplink: next.always,
+      qr: created.refs.qr_png,
+      uuid: created.uuid,
+      deeplink: created.next?.always,
       calculation: calculation,
       message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
     });
