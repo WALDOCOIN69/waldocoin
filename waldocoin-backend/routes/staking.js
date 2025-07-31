@@ -2,16 +2,9 @@ import express from 'express';
 import { redis } from '../redisClient.js';
 import getWaldoBalance from '../utils/getWaldoBalance.js';
 
-// ✅ Level-based staking bonuses from whitepaper
-const LEVEL_STAKING_BONUSES = {
-  1: 0.1078, // 10.78% bonus (Waldo Watcher)
-  2: 0.1232, // 12.32% bonus (Waldo Scout)
-  3: 0.1387, // 13.87% bonus (Waldo Agent)
-  4: 0.1543, // 15.43% bonus (Waldo Commander)
-  5: 0.1700  // 17.00% bonus (Waldo Legend)
-};
+// ✅ DUAL STAKING SYSTEM CONFIGURATION
 
-// ✅ XP level thresholds from whitepaper
+// XP level thresholds (using xpManager.js structure)
 const XP_LEVELS = {
   1: { min: 0, max: 249, title: "Waldo Watcher" },
   2: { min: 250, max: 849, title: "Waldo Scout" },
@@ -20,7 +13,42 @@ const XP_LEVELS = {
   5: { min: 3000, max: Infinity, title: "Waldo Legend" }
 };
 
-// ✅ Calculate user's XP level
+// Long-term staking APY rates by duration
+const LONG_TERM_APY_RATES = {
+  30: 12,   // 12% APY for 30 days
+  90: 18,   // 18% APY for 90 days
+  180: 25,  // 25% APY for 180 days
+  365: 35   // 35% APY for 365 days
+};
+
+// Level-based duration access for long-term staking
+const LEVEL_DURATION_ACCESS = {
+  1: [30],                    // Level 1: 30-day only
+  2: [30, 90],               // Level 2: 30, 90-day
+  3: [30, 90, 180],          // Level 3: 30, 90, 180-day
+  4: [30, 90, 180, 365],     // Level 4: All durations
+  5: [30, 90, 180, 365]      // Level 5: All durations + bonus
+};
+
+// Level 5 Legend bonus (+2% APY)
+const LEGEND_BONUS = 0.02; // +2% APY for Level 5
+
+// Per-meme staking configuration (whitepaper)
+const PER_MEME_CONFIG = {
+  bonus: 0.15,        // Fixed 15% bonus
+  duration: 30,       // Fixed 30-day lock
+  stakingFee: 0.05,   // 5% staking fee
+  instantFee: 0.10    // 10% instant fee
+};
+
+// Long-term staking configuration
+const LONG_TERM_CONFIG = {
+  minimumAmount: 1000,      // 1,000 WALDO minimum
+  earlyUnstakePenalty: 0.15, // 15% penalty
+  maxActiveStakes: 10       // Maximum active stakes per user
+};
+
+// Calculate user's XP level
 function getUserLevel(xp) {
   for (const [level, data] of Object.entries(XP_LEVELS)) {
     if (xp >= data.min && xp <= data.max) {
@@ -28,33 +56,50 @@ function getUserLevel(xp) {
         level: parseInt(level),
         title: data.title,
         xp: xp,
-        stakingBonus: LEVEL_STAKING_BONUSES[parseInt(level)]
+        availableDurations: LEVEL_DURATION_ACCESS[parseInt(level)]
       };
     }
   }
-  return { level: 1, title: "Waldo Watcher", xp: 0, stakingBonus: LEVEL_STAKING_BONUSES[1] };
+  return { level: 1, title: "Waldo Watcher", xp: 0, availableDurations: LEVEL_DURATION_ACCESS[1] };
+}
+
+// Calculate APY with Level 5 bonus
+function calculateAPY(duration, userLevel) {
+  const baseAPY = LONG_TERM_APY_RATES[duration];
+  if (userLevel === 5) {
+    return baseAPY + (LEGEND_BONUS * 100); // Add 2% for Level 5
+  }
+  return baseAPY;
 }
 
 const router = express.Router();
 
-// ✅ POST /api/staking/stake - Open staking for anyone (level-based bonuses)
-router.post("/stake", async (req, res) => {
+// ✅ POST /api/staking/long-term - Create long-term staking position
+router.post("/long-term", async (req, res) => {
   try {
-    const { wallet, amount, duration = 30 } = req.body;
+    const { wallet, amount, duration } = req.body;
 
-    if (!wallet || !amount) {
+    if (!wallet || !amount || !duration) {
       return res.status(400).json({
         success: false,
-        error: "Missing wallet or amount"
+        error: "Missing required fields: wallet, amount, duration"
       });
     }
 
     // Validate amount
     const stakeAmount = parseFloat(amount);
-    if (isNaN(stakeAmount) || stakeAmount < 100) {
+    if (isNaN(stakeAmount) || stakeAmount < LONG_TERM_CONFIG.minimumAmount) {
       return res.status(400).json({
         success: false,
-        error: "Minimum stake amount is 100 WALDO"
+        error: `Minimum stake amount is ${LONG_TERM_CONFIG.minimumAmount} WALDO`
+      });
+    }
+
+    // Validate duration
+    if (!Object.keys(LONG_TERM_APY_RATES).includes(duration.toString())) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid duration. Must be 30, 90, 180, or 365 days"
       });
     }
 
@@ -71,86 +116,207 @@ router.post("/stake", async (req, res) => {
     const userXP = await redis.get(`user:${wallet}:xp`) || 0;
     const userLevel = getUserLevel(parseInt(userXP));
 
-    // Calculate staking rewards based on level
-    const stakingBonus = userLevel.stakingBonus;
-    const baseReward = stakeAmount;
-    const bonusReward = Math.floor(baseReward * stakingBonus);
-    const totalReward = baseReward + bonusReward;
+    // Check if user has access to this duration
+    if (!userLevel.availableDurations.includes(parseInt(duration))) {
+      return res.status(403).json({
+        success: false,
+        error: `Level ${userLevel.level} (${userLevel.title}) does not have access to ${duration}-day staking. Available durations: ${userLevel.availableDurations.join(', ')} days`
+      });
+    }
 
-    // Calculate end date (30 days from now)
+    // Check maximum active stakes limit
+    const activeStakes = await redis.sCard(`user:${wallet}:long_term_stakes`);
+    if (activeStakes >= LONG_TERM_CONFIG.maxActiveStakes) {
+      return res.status(400).json({
+        success: false,
+        error: `Maximum ${LONG_TERM_CONFIG.maxActiveStakes} active long-term stakes allowed`
+      });
+    }
+
+    // Calculate APY with Level 5 bonus
+    const apy = calculateAPY(parseInt(duration), userLevel.level);
+
+    // Calculate expected rewards
+    const expectedReward = Math.floor((stakeAmount * apy / 100) * (duration / 365));
+
+    // Create staking record
+    const stakeId = `longterm_${wallet}_${Date.now()}`;
     const startDate = new Date();
     const endDate = new Date(startDate.getTime() + (duration * 24 * 60 * 60 * 1000));
 
-    // Create staking record
-    const stakeId = `stake_${wallet}_${Date.now()}`;
     const stakeData = {
       stakeId,
       wallet,
       amount: stakeAmount,
-      duration,
+      duration: parseInt(duration),
+      apy: apy,
       userLevel: userLevel.level,
       userTitle: userLevel.title,
-      stakingBonus: stakingBonus,
-      baseReward: baseReward,
-      bonusReward: bonusReward,
-      totalReward: totalReward,
+      expectedReward: expectedReward,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       status: 'active',
-      type: 'open_staking',
-      earlyUnstakePenalty: 0.15, // 15% penalty
-      feePaid: false,
-      claimed: false
+      type: 'long_term',
+      earlyUnstakePenalty: LONG_TERM_CONFIG.earlyUnstakePenalty,
+      claimed: false,
+      createdAt: new Date().toISOString()
     };
 
     // Store staking record
     await redis.hSet(`staking:${stakeId}`, stakeData);
 
-    // Add to user's active stakes
-    await redis.sAdd(`user:${wallet}:stakes`, stakeId);
+    // Add to user's active long-term stakes
+    await redis.sAdd(`user:${wallet}:long_term_stakes`, stakeId);
 
-    // Update staking totals
-    await redis.incrByFloat('staking:total_staked', stakeAmount);
-    await redis.incr('staking:total_stakes');
+    // Update global staking totals
+    await redis.incrByFloat('staking:total_long_term_staked', stakeAmount);
+    await redis.incr('staking:total_long_term_stakes');
 
     // Log the staking action
     await redis.lPush('staking_logs', JSON.stringify({
-      action: 'open_stake_created',
+      action: 'long_term_stake_created',
       stakeId,
       wallet,
       amount: stakeAmount,
+      duration: duration,
+      apy: apy,
       level: userLevel.level,
-      bonus: stakingBonus,
       timestamp: new Date().toISOString()
     }));
 
+    console.log(`🏦 Long-term stake created: ${wallet} staked ${stakeAmount} WALDO for ${duration} days at ${apy}% APY (Level ${userLevel.level})`);
+
     res.json({
       success: true,
-      message: "Staking position created successfully",
+      message: `Successfully created long-term stake of ${stakeAmount} WALDO for ${duration} days!`,
       stakeData: {
         stakeId,
         amount: stakeAmount,
-        duration,
+        duration: parseInt(duration),
+        apy: `${apy}%`,
         userLevel: userLevel.level,
         userTitle: userLevel.title,
-        stakingBonus: `${(stakingBonus * 100).toFixed(2)}%`,
-        expectedReward: totalReward,
-        bonusReward: bonusReward,
+        expectedReward: expectedReward,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        earlyUnstakePenalty: `${(LONG_TERM_CONFIG.earlyUnstakePenalty * 100)}%`,
+        status: 'active'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating long-term stake:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to create long-term staking position"
+    });
+  }
+});
+
+// ✅ POST /api/staking/per-meme - Create per-meme staking position (whitepaper system)
+router.post("/per-meme", async (req, res) => {
+  try {
+    const { wallet, amount, memeId } = req.body;
+
+    if (!wallet || !amount || !memeId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, amount, memeId"
+      });
+    }
+
+    // Validate amount
+    const stakeAmount = parseFloat(amount);
+    if (isNaN(stakeAmount) || stakeAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid stake amount"
+      });
+    }
+
+    // Calculate staking fee (5% vs 10% instant fee)
+    const stakingFee = Math.floor(stakeAmount * PER_MEME_CONFIG.stakingFee);
+    const stakedAmount = stakeAmount - stakingFee;
+
+    // Calculate bonus (15% fixed bonus)
+    const bonusAmount = Math.floor(stakedAmount * PER_MEME_CONFIG.bonus);
+    const totalReward = stakedAmount + bonusAmount;
+
+    // Create per-meme staking record
+    const stakeId = `permeme_${wallet}_${Date.now()}`;
+    const startDate = new Date();
+    const endDate = new Date(startDate.getTime() + (PER_MEME_CONFIG.duration * 24 * 60 * 60 * 1000));
+
+    const stakeData = {
+      stakeId,
+      wallet,
+      memeId,
+      originalAmount: stakeAmount,
+      stakingFee: stakingFee,
+      stakedAmount: stakedAmount,
+      bonusAmount: bonusAmount,
+      totalReward: totalReward,
+      duration: PER_MEME_CONFIG.duration,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      status: 'active',
+      type: 'per_meme',
+      claimed: false,
+      createdAt: new Date().toISOString()
+    };
+
+    // Store staking record
+    await redis.hSet(`staking:${stakeId}`, stakeData);
+
+    // Add to user's per-meme stakes
+    await redis.sAdd(`user:${wallet}:per_meme_stakes`, stakeId);
+
+    // Update global per-meme staking totals
+    await redis.incrByFloat('staking:total_per_meme_staked', stakedAmount);
+    await redis.incr('staking:total_per_meme_stakes');
+
+    // Log the staking action
+    await redis.lPush('staking_logs', JSON.stringify({
+      action: 'per_meme_stake_created',
+      stakeId,
+      wallet,
+      memeId,
+      originalAmount: stakeAmount,
+      stakedAmount: stakedAmount,
+      bonusAmount: bonusAmount,
+      timestamp: new Date().toISOString()
+    }));
+
+    console.log(`🎭 Per-meme stake created: ${wallet} staked ${stakedAmount} WALDO (${stakeAmount} - ${stakingFee} fee) for meme ${memeId}`);
+
+    res.json({
+      success: true,
+      message: `Successfully created per-meme stake for ${stakedAmount} WALDO!`,
+      stakeData: {
+        stakeId,
+        memeId,
+        originalAmount: stakeAmount,
+        stakingFee: stakingFee,
+        stakedAmount: stakedAmount,
+        bonusAmount: bonusAmount,
+        totalReward: totalReward,
+        duration: PER_MEME_CONFIG.duration,
+        startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         status: 'active'
       }
     });
 
   } catch (error) {
-    console.error('❌ Error creating stake:', error);
+    console.error('❌ Error creating per-meme stake:', error);
     res.status(500).json({
       success: false,
-      error: "Failed to create staking position"
+      error: "Failed to create per-meme staking position"
     });
   }
 });
 
-// ✅ GET /api/staking/info/:wallet - Get staking info for user
+// ✅ GET /api/staking/info/:wallet - Get dual staking system info for user
 router.get("/info/:wallet", async (req, res) => {
   try {
     const { wallet } = req.params;
@@ -162,31 +328,77 @@ router.get("/info/:wallet", async (req, res) => {
     // Get user's current balance
     const currentBalance = await getWaldoBalance(wallet);
 
-    // Get user's active stakes
-    const activeStakeIds = await redis.sMembers(`user:${wallet}:stakes`);
-    const activeStakes = [];
+    // Get user's long-term stakes
+    const longTermStakeIds = await redis.sMembers(`user:${wallet}:long_term_stakes`);
+    const longTermStakes = [];
 
-    for (const stakeId of activeStakeIds) {
+    for (const stakeId of longTermStakeIds) {
       try {
         const stakeData = await redis.hGetAll(`staking:${stakeId}`);
         if (stakeData.status === 'active') {
-          activeStakes.push({
-            stakeId,
+          const now = new Date();
+          const endDate = new Date(stakeData.endDate);
+          const timeRemaining = Math.max(0, endDate - now);
+          const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+
+          longTermStakes.push({
+            stakeId: stakeData.stakeId,
             amount: parseFloat(stakeData.amount),
             duration: parseInt(stakeData.duration),
-            userLevel: parseInt(stakeData.userLevel),
-            stakingBonus: `${(parseFloat(stakeData.stakingBonus) * 100).toFixed(2)}%`,
-            expectedReward: parseFloat(stakeData.totalReward),
+            apy: `${stakeData.apy}%`,
             startDate: stakeData.startDate,
             endDate: stakeData.endDate,
+            expectedReward: parseFloat(stakeData.expectedReward),
+            daysRemaining: daysRemaining,
             status: stakeData.status,
-            type: stakeData.type
+            type: 'long_term'
           });
         }
       } catch (error) {
-        console.error(`Error processing stake ${stakeId}:`, error);
+        console.error(`Error processing long-term stake ${stakeId}:`, error);
       }
     }
+
+    // Get user's per-meme stakes
+    const perMemeStakeIds = await redis.sMembers(`user:${wallet}:per_meme_stakes`);
+    const perMemeStakes = [];
+
+    for (const stakeId of perMemeStakeIds) {
+      try {
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+        if (stakeData.status === 'active') {
+          const now = new Date();
+          const endDate = new Date(stakeData.endDate);
+          const timeRemaining = Math.max(0, endDate - now);
+          const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+
+          perMemeStakes.push({
+            stakeId: stakeData.stakeId,
+            memeId: stakeData.memeId,
+            originalAmount: parseFloat(stakeData.originalAmount),
+            stakedAmount: parseFloat(stakeData.stakedAmount),
+            bonusAmount: parseFloat(stakeData.bonusAmount),
+            totalReward: parseFloat(stakeData.totalReward),
+            duration: parseInt(stakeData.duration),
+            startDate: stakeData.startDate,
+            endDate: stakeData.endDate,
+            daysRemaining: daysRemaining,
+            status: stakeData.status,
+            type: 'per_meme'
+          });
+        }
+      } catch (error) {
+        console.error(`Error processing per-meme stake ${stakeId}:`, error);
+      }
+    }
+
+    // Calculate available durations with APY rates
+    const availableDurations = userLevel.availableDurations.map(duration => ({
+      days: duration,
+      apy: `${calculateAPY(duration, userLevel.level)}%`,
+      baseAPY: `${LONG_TERM_APY_RATES[duration]}%`,
+      legendBonus: userLevel.level === 5 ? `+${LEGEND_BONUS * 100}%` : null
+    }));
 
     res.json({
       success: true,
@@ -195,29 +407,36 @@ router.get("/info/:wallet", async (req, res) => {
         xp: parseInt(userXP),
         level: userLevel.level,
         title: userLevel.title,
-        stakingBonus: `${(userLevel.stakingBonus * 100).toFixed(2)}%`,
-        currentBalance: currentBalance
+        currentBalance: currentBalance,
+        availableDurations: userLevel.availableDurations
       },
-      activeStakes: activeStakes,
-      stakingOptions: {
-        minimumStake: 100,
-        availableDurations: [30, 90, 180, 365],
-        earlyUnstakePenalty: "15%",
-        feeStructure: {
-          burn: "2%",
-          treasury: "3%"
-        }
+      longTermStaking: {
+        activeStakes: longTermStakes,
+        totalActiveStakes: longTermStakes.length,
+        maxActiveStakes: LONG_TERM_CONFIG.maxActiveStakes,
+        minimumAmount: LONG_TERM_CONFIG.minimumAmount,
+        availableDurations: availableDurations,
+        earlyUnstakePenalty: `${(LONG_TERM_CONFIG.earlyUnstakePenalty * 100)}%`
       },
-      levelBonuses: Object.entries(XP_LEVELS).map(([level, data]) => ({
+      perMemeStaking: {
+        activeStakes: perMemeStakes,
+        totalActiveStakes: perMemeStakes.length,
+        fixedBonus: `${(PER_MEME_CONFIG.bonus * 100)}%`,
+        duration: `${PER_MEME_CONFIG.duration} days`,
+        stakingFee: `${(PER_MEME_CONFIG.stakingFee * 100)}%`,
+        instantFee: `${(PER_MEME_CONFIG.instantFee * 100)}%`
+      },
+      levelInfo: Object.entries(XP_LEVELS).map(([level, data]) => ({
         level: parseInt(level),
         title: data.title,
         xpRange: `${data.min}${data.max === Infinity ? '+' : `-${data.max}`}`,
-        stakingBonus: `${(LEVEL_STAKING_BONUSES[parseInt(level)] * 100).toFixed(2)}%`
+        availableDurations: LEVEL_DURATION_ACCESS[parseInt(level)],
+        legendBonus: parseInt(level) === 5 ? `+${LEGEND_BONUS * 100}% APY` : null
       }))
     });
 
   } catch (error) {
-    console.error('❌ Error getting staking info:', error);
+    console.error('❌ Error getting dual staking info:', error);
     res.status(500).json({
       success: false,
       error: "Failed to get staking information"
@@ -348,7 +567,7 @@ console.log("🏦 Loaded: routes/staking.js");
 router.get('/positions', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
@@ -363,26 +582,26 @@ router.get('/positions', async (req, res) => {
     for (const key of stakingKeys) {
       if (key.includes(':position:')) {
         const positionData = await redis.hGetAll(key);
-        
+
         if (positionData && Object.keys(positionData).length > 0) {
           const walletAddress = key.split(':')[1];
           const positionId = key.split(':')[3];
-          
+
           // Calculate current value and time remaining
           const startTime = new Date(positionData.startTime);
           const endTime = new Date(positionData.endTime);
           const now = new Date();
-          
+
           const timeRemaining = Math.max(0, endTime - now);
           const totalDuration = endTime - startTime;
           const elapsed = now - startTime;
           const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
-          
+
           // Calculate current rewards
           const baseAmount = parseFloat(positionData.amount) || 0;
           const apy = parseFloat(positionData.apy) || 0;
           const currentRewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
-          
+
           const position = {
             id: positionId,
             walletAddress: walletAddress,
@@ -445,13 +664,13 @@ router.get('/positions', async (req, res) => {
 router.get('/user/:wallet', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const { wallet } = req.params;
-    
+
     if (!wallet || wallet.length < 25) {
       return res.status(400).json({
         success: false,
@@ -465,25 +684,25 @@ router.get('/user/:wallet', async (req, res) => {
 
     for (const key of userStakingKeys) {
       const positionData = await redis.hGetAll(key);
-      
+
       if (positionData && Object.keys(positionData).length > 0) {
         const positionId = key.split(':')[3];
-        
+
         // Calculate current status
         const startTime = new Date(positionData.startTime);
         const endTime = new Date(positionData.endTime);
         const now = new Date();
-        
+
         const timeRemaining = Math.max(0, endTime - now);
         const totalDuration = endTime - startTime;
         const elapsed = now - startTime;
         const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
-        
+
         // Calculate rewards
         const baseAmount = parseFloat(positionData.amount) || 0;
         const apy = parseFloat(positionData.apy) || 0;
         const currentRewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
-        
+
         positions.push({
           id: positionId,
           amount: baseAmount,
@@ -537,13 +756,13 @@ router.get('/user/:wallet', async (req, res) => {
 router.post('/manual-unstake', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const { wallet, positionId, force } = req.body;
-    
+
     if (!wallet || !positionId) {
       return res.status(400).json({
         success: false,
@@ -554,7 +773,7 @@ router.post('/manual-unstake', async (req, res) => {
     // Check if position exists
     const positionKey = `staking:${wallet}:position:${positionId}`;
     const positionExists = await redis.exists(positionKey);
-    
+
     if (!positionExists) {
       return res.status(404).json({
         success: false,
@@ -572,7 +791,7 @@ router.post('/manual-unstake', async (req, res) => {
     // Calculate final amount (with penalty if early)
     let finalAmount = baseAmount;
     let penalty = 0;
-    
+
     if (isEarly && !force) {
       return res.status(400).json({
         success: false,
@@ -581,7 +800,7 @@ router.post('/manual-unstake', async (req, res) => {
         earlyUnstakePenalty: "15%"
       });
     }
-    
+
     if (isEarly && force) {
       penalty = baseAmount * 0.15; // 15% penalty
       finalAmount = baseAmount - penalty;
@@ -607,7 +826,7 @@ router.post('/manual-unstake', async (req, res) => {
     // Update global staking counters
     const currentTotalStaked = await redis.get("staking:total_amount") || 0;
     const currentActiveStakers = await redis.get("staking:active_count") || 0;
-    
+
     await redis.set("staking:total_amount", Math.max(0, parseFloat(currentTotalStaked) - baseAmount));
     await redis.set("staking:active_count", Math.max(0, parseInt(currentActiveStakers) - 1));
 
@@ -656,15 +875,15 @@ router.get('/stats', async (req, res) => {
 
     for (const key of stakingKeys) {
       const positionData = await redis.hGetAll(key);
-      
+
       if (positionData && Object.keys(positionData).length > 0) {
         const tier = positionData.tier || 'tier1';
         const status = positionData.status || 'active';
-        
+
         if (positionsByTier.hasOwnProperty(tier)) {
           positionsByTier[tier]++;
         }
-        
+
         if (positionsByStatus.hasOwnProperty(status)) {
           positionsByStatus[status]++;
         }
