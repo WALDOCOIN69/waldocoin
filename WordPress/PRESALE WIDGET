@@ -343,69 +343,23 @@
 
       const data = await res.json();
 
-      if (data && data.success && (data.qr || data.deeplink)) {
+      if (data && data.success && data.deeplink) {
         clearTimeout(failsafeTimeout);
 
-        // Check if user is on mobile device
-        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        // Always open XUMM directly - no QR codes needed
+        console.log('� Opening XUMM app for purchase approval...');
+        window.location.href = data.deeplink;
 
-        if (isMobile && data.deeplink) {
-          // On mobile: directly open XUMM app
-          console.log('📱 Opening XUMM app directly on mobile...');
-          window.location.href = data.deeplink;
+        btn.innerText = "✅ Check XUMM App";
+        btn.disabled = false;
 
-          btn.innerText = "✅ Opening XUMM...";
-          btn.disabled = false;
+        // Show success message
+        alert(`Purchase request sent to XUMM!\n\nAmount: ${amount} XRP\nYou'll receive: ${data.calculation ? data.calculation.totalWaldo.toLocaleString() : 'calculating...'} WALDO tokens\n\nPlease approve the transaction in your XUMM app.`);
 
-          // Reset button after 5 seconds
-          setTimeout(() => {
-            btn.innerText = "🔐 Buy Now with XUMM";
-          }, 5000);
-
-        } else {
-          // On desktop: show choice between QR code and deeplink
-          const choice = confirm(
-            `Complete your ${amount} XRP purchase for ${data.calculation ? data.calculation.totalWaldo.toLocaleString() : 'calculating...'} WALDO tokens.\n\n` +
-            `Click OK to open XUMM app directly, or Cancel to see QR code.`
-          );
-
-          if (choice && data.deeplink) {
-            // User chose to open XUMM directly
-            window.location.href = data.deeplink;
-            btn.innerText = "✅ Opening XUMM...";
-          } else if (data.qr) {
-            // User chose QR code or no deeplink available
-            const qrWindow = window.open('', '_blank', 'width=450,height=600');
-            qrWindow.document.write(`
-            <html>
-              <head><title>Complete WALDO Purchase</title></head>
-              <body style="text-align:center; padding:20px; background:#0d2818; color:white; font-family: Arial, sans-serif;">
-                <h2 style="color: #25c2a0;">🚀 Complete Your WALDO Purchase</h2>
-                <div style="background: #0f2d17; padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid #25c2a0;">
-                  <p><strong>Amount:</strong> ${amount} XRP</p>
-                  <p><strong>You'll receive:</strong> ${data.calculation ? data.calculation.totalWaldo.toLocaleString() : 'Calculating...'} WALDO</p>
-                  ${data.calculation && data.calculation.bonusPercentage > 0 ?
-                `<p style="color: #ffd93d;"><strong>🎁 Bonus:</strong> ${data.calculation.bonusPercentage}% (${data.calculation.bonus.toLocaleString()} WALDO)</p>` :
-                ''
-              }
-                </div>
-                <img src="${data.qr}" style="width:300px; border-radius:10px; border: 2px solid #25c2a0;" />
-                <p style="margin-top: 15px;">Scan this QR code with your XUMM wallet to complete the purchase</p>
-                ${data.deeplink ? `<p><a href="${data.deeplink}" style="color: #25c2a0; font-weight: bold;">📱 Open in XUMM App</a></p>` : ''}
-                <button onclick="window.close()" style="background: #25c2a0; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">Close</button>
-              </body>
-            </html>
-          `);
-            btn.innerText = "✅ QR Code Opened";
-          }
-
-          btn.disabled = false;
-
-          // Reset button after 10 seconds
-          setTimeout(() => {
-            btn.innerText = "🔐 Buy Now with XUMM";
-          }, 10000);
-        }
+        // Reset button after 10 seconds
+        setTimeout(() => {
+          btn.innerText = "🔐 Buy Now with XUMM";
+        }, 10000);
 
       } else if (data && data.redirect) {
         // Fallback to redirect if no QR
