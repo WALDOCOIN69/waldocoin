@@ -220,7 +220,7 @@ router.get("/total-sold", async (req, res) => {
 
     // Calculate progress towards goals
     const xrpGoal = 10000; // Example goal
-    const waldoGoal = 100000000; // 100M WALDO goal
+    const waldoGoal = 40000000; // 40M WALDO goal
     const xrpProgress = Math.min((totalXRP / xrpGoal) * 100, 100);
     const waldoProgress = Math.min((totalWALDO / waldoGoal) * 100, 100);
 
@@ -658,7 +658,7 @@ router.post("/webhook", async (req, res) => {
           const xrpAmount = parseInt(transaction.Amount) / 1000000; // Convert drops to XRP
 
           // Verify this is a presale transaction to our distributor wallet
-          if (toWallet === 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt') {
+          if (toWallet === DISTRIBUTOR_WALLET) {
             console.log(`💰 Presale payment received: ${xrpAmount} XRP from ${fromWallet}`);
 
             // Calculate WALDO amount with bonus
@@ -694,7 +694,7 @@ async function sendWaldoTokens(buyerWallet, waldoAmount, calculation, originalTx
     // Create WALDO payment transaction
     const payload = {
       TransactionType: 'Payment',
-      Account: 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt', // WALDO distributor wallet
+      Account: DISTRIBUTOR_WALLET, // WALDO distributor wallet
       Destination: buyerWallet,
       Amount: {
         currency: 'WLO',
