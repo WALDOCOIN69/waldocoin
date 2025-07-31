@@ -286,23 +286,55 @@ router.post("/buy", async (req, res) => {
             MemoData: Buffer.from(`${xrpAmount}XRP=${calculation.totalWaldo}WALDO`).toString('hex').toUpperCase()
           }
         }]
+      },
+      options: {
+        submit: true,
+        multisign: false,
+        expire: 1440, // 24 hours
+        return_url: {
+          web: 'https://waldocoin.live/presale-success'
+        }
+      },
+      custom_meta: {
+        identifier: `presale-${Date.now()}`,
+        blob: {
+          wallet,
+          xrpAmount,
+          waldoAmount: calculation.totalWaldo,
+          bonusPercentage: calculation.bonusPercentage
+        }
       }
     };
 
-    const created = await xummClient.payload.create(payload);
+    // Use createAndSubscribe to automatically handle transaction completion
+    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, async (event) => {
+      if (event.data.signed === true) {
+        console.log(`✅ Presale transaction signed! Processing WALDO delivery...`);
 
-    console.log("✅ XUMM Presale Payload Created:", {
-      uuid: created.uuid,
-      qr_png: created.refs.qr_png,
-      qr_uri: created.refs.qr_uri
+        // Send WALDO tokens to buyer
+        try {
+          await sendWaldoTokens(wallet, calculation.totalWaldo, calculation, event.data.txid);
+          console.log(`✅ WALDO delivery completed for ${wallet}`);
+        } catch (error) {
+          console.error(`❌ WALDO delivery failed for ${wallet}:`, error);
+        }
+
+        return true;
+      }
+      if (event.data.signed === false) {
+        console.log(`❌ Presale transaction rejected by user`);
+        return false;
+      }
     });
+
+    console.log("✅ XUMM Presale Payload Created:", { uuid });
 
     // Return response in same format as login
     res.json({
       success: true,
-      qr: created.refs.qr_png,
-      uuid: created.uuid,
-      deeplink: created.next?.always,
+      qr: next.qr_png,
+      uuid: uuid,
+      deeplink: next.always,
       calculation: calculation,
       message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
     });
