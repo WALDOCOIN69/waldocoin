@@ -427,10 +427,10 @@ router.get("/analytics", async (req, res) => {
     });
 
     const topPurchasers = Object.entries(walletTotals)
-      .sort(([,a], [,b]) => b.xrp - a.xrp)
+      .sort(([, a], [, b]) => b.xrp - a.xrp)
       .slice(0, 10)
       .map(([wallet, data]) => ({
-        wallet: `${wallet.slice(0,8)}...${wallet.slice(-6)}`,
+        wallet: `${wallet.slice(0, 8)}...${wallet.slice(-6)}`,
         xrpTotal: data.xrp,
         waldoTotal: data.waldo,
         purchaseCount: data.count
@@ -461,7 +461,7 @@ router.get("/analytics", async (req, res) => {
         .slice(0, 20)
         .map(p => ({
           ...p,
-          wallet: `${p.wallet.slice(0,8)}...${p.wallet.slice(-6)}`
+          wallet: `${p.wallet.slice(0, 8)}...${p.wallet.slice(-6)}`
         }))
     });
 
@@ -689,11 +689,11 @@ async function sendWaldoTokens(buyerWallet, waldoAmount, calculation, originalTx
     // Create WALDO payment transaction
     const payload = {
       TransactionType: 'Payment',
-      Account: 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt', // WALDO distributor wallet
+      Account: DISTRIBUTOR_WALLET, // WALDO distributor wallet
       Destination: buyerWallet,
       Amount: {
         currency: 'WLO',
-        issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY',
+        issuer: WALDO_ISSUER,
         value: waldoAmount.toString()
       },
       Memos: [{
