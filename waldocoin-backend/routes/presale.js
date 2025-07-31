@@ -1,7 +1,6 @@
 // routes/presale.js
 import express from "express";
 import { redis } from "../redisClient.js";
-import { DISTRIBUTOR_WALLET, WALDO_ISSUER } from "../constants.js";
 
 const router = express.Router();
 
@@ -274,7 +273,7 @@ router.post("/buy", async (req, res) => {
     // Create XUMM payload for presale purchase
     const payload = {
       TransactionType: 'Payment',
-      Destination: 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt', // WALDO distributor wallet
+      Destination: DISTRIBUTOR_WALLET, // WALDO distributor wallet
       Amount: (xrpAmount * 1000000).toString(), // Convert XRP to drops
       Memos: [{
         Memo: {
@@ -286,7 +285,10 @@ router.post("/buy", async (req, res) => {
 
     console.log(`🚀 Creating presale purchase: ${xrpAmount} XRP = ${calculation.totalWaldo} WALDO for ${wallet}`);
 
-    // Create XUMM sign request
+    // Create XUMM sign request with timeout (like airdrop)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     const xummResponse = await fetch('https://xumm.app/api/v1/platform/payload', {
       method: 'POST',
       headers: {
@@ -297,7 +299,7 @@ router.post("/buy", async (req, res) => {
       body: JSON.stringify({
         txjson: payload,
         options: {
-          submit: true,
+          submit: false, // Don't auto-submit, let user sign
           multisign: false,
           expire: 1440, // 24 hours
           return_url: {
@@ -313,9 +315,11 @@ router.post("/buy", async (req, res) => {
             bonusPercentage: calculation.bonusPercentage
           }
         }
-      })
+      }),
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
     const xummData = await xummResponse.json();
 
     if (xummData.uuid) {
