@@ -64,8 +64,8 @@ const startServer = async () => {
   await connectRedis();
 
 
-// inside startServer()
-const app = express();
+  // inside startServer()
+  const app = express();
   app.set("trust proxy", 1);
 
   // 🛡️ Security Middleware
@@ -146,32 +146,32 @@ const app = express();
   });
 
   app.get("/api/routes", (_, res) => {
-  res.json(app._router.stack
-    .filter(r => r.route && r.route.path)
-    .map(r => ({
-      method: Object.keys(r.route.methods)[0].toUpperCase(),
-      path: r.route.path
-    }))
-  );
-});
-
-app.get("/api/debug/refund", async (_, res) => {
-  await refundExpiredBattles();
-  res.send("✅ Refund logic manually triggered");
-    refundExpiredBattles()
-    .then(() => res.json({ success: true, message: "Manual refund triggered" }))
-    .catch((err) =>
-      res.status(500).json({ success: false, error: err.message })
+    res.json(app._router.stack
+      .filter(r => r.route && r.route.path)
+      .map(r => ({
+        method: Object.keys(r.route.methods)[0].toUpperCase(),
+        path: r.route.path
+      }))
     );
-});
-console.log("Render ENV WALDO_DISTRIBUTOR_SECRET:", process.env.WALDO_DISTRIBUTOR_SECRET);
+  });
 
-try {
-  const testWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
-  console.log("🔍 Wallet Address from Secret:", testWallet.classicAddress);
-} catch (e) {
-  console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET:", e.message);
-}
+  app.get("/api/debug/refund", async (_, res) => {
+    await refundExpiredBattles();
+    res.send("✅ Refund logic manually triggered");
+    refundExpiredBattles()
+      .then(() => res.json({ success: true, message: "Manual refund triggered" }))
+      .catch((err) =>
+        res.status(500).json({ success: false, error: err.message })
+      );
+  });
+  console.log("Render ENV WALDO_DISTRIBUTOR_SECRET:", process.env.WALDO_DISTRIBUTOR_SECRET);
+
+  try {
+    const testWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
+    console.log("🔍 Wallet Address from Secret:", testWallet.classicAddress);
+  } catch (e) {
+    console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET:", e.message);
+  }
 
   // 🧪 Health Check
   app.get("/", (_, res) => {
@@ -186,7 +186,7 @@ try {
 
   const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => {
-    console.log(`🧩 WALDO backend running on http://localhost:${PORT}`);
+    console.log(`🧩 WALDO backend running on http://localhost:${PORT} - UPDATED`);
   });
 };
 
