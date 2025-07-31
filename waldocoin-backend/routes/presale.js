@@ -2,6 +2,7 @@
 import express from "express";
 import { redis } from "../redisClient.js";
 import { DISTRIBUTOR_WALLET, WALDO_ISSUER } from "../constants.js";
+import { xummClient } from "../utils/xummClient.js";
 
 const router = express.Router();
 
@@ -248,7 +249,7 @@ router.get("/total-sold", async (req, res) => {
   }
 });
 
-// ✅ POST /api/presale/buy - Create presale purchase transaction
+// ✅ POST /api/presale/buy - Create presale purchase transaction (using working XUMM pattern)
 router.post("/buy", async (req, res) => {
   try {
     const { wallet, xrpAmount } = req.body;
@@ -271,126 +272,48 @@ router.post("/buy", async (req, res) => {
     // Calculate WALDO amount using the same logic as /calculate
     const calculation = calculateWaldoBonus(xrpAmount);
 
-    // Create XUMM payload for presale purchase
-    const payload = {
-      TransactionType: 'Payment',
-      Destination: DISTRIBUTOR_WALLET, // WALDO distributor wallet
-      Amount: (xrpAmount * 1000000).toString(), // Convert XRP to drops
-      Memos: [{
-        Memo: {
-          MemoType: Buffer.from('PRESALE').toString('hex').toUpperCase(),
-          MemoData: Buffer.from(`${xrpAmount}XRP=${calculation.totalWaldo}WALDO`).toString('hex').toUpperCase()
-        }
-      }]
-    };
-
     console.log(`🚀 Creating presale purchase: ${xrpAmount} XRP = ${calculation.totalWaldo} WALDO for ${wallet}`);
 
-    // Create XUMM sign request with timeout (like airdrop)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    // Create XUMM payload using the same pattern as login (which works!)
+    const payload = {
+      txjson: {
+        TransactionType: 'Payment',
+        Destination: DISTRIBUTOR_WALLET,
+        Amount: (xrpAmount * 1000000).toString(), // Convert XRP to drops
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('PRESALE').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`${xrpAmount}XRP=${calculation.totalWaldo}WALDO`).toString('hex').toUpperCase()
+          }
+        }]
+      }
+    };
 
-    const xummResponse = await fetch('https://xumm.app/api/v1/platform/payload', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': process.env.XUMM_API_KEY,
-        'X-API-Secret': process.env.XUMM_API_SECRET
-      },
-      body: JSON.stringify({
-        txjson: payload,
-        options: {
-          submit: false, // Don't auto-submit, let user sign
-          multisign: false,
-          expire: 1440, // 24 hours
-          return_url: {
-            web: 'https://waldocoin.live/presale-success'
-          }
-        },
-        custom_meta: {
-          identifier: `presale-${Date.now()}`,
-          blob: {
-            wallet,
-            xrpAmount,
-            waldoAmount: calculation.totalWaldo,
-            bonusPercentage: calculation.bonusPercentage
-          }
-        }
-      }),
-      signal: controller.signal
+    const created = await xummClient.payload.create(payload);
+
+    console.log("✅ XUMM Presale Payload Created:", {
+      uuid: created.uuid,
+      qr_png: created.refs.qr_png,
+      qr_uri: created.refs.qr_uri
     });
 
-    clearTimeout(timeoutId);
-
-    console.log('🔍 XUMM Response Status:', xummResponse.status);
-
-    if (!xummResponse.ok) {
-      const errorText = await xummResponse.text();
-      console.error('❌ XUMM API Error:', errorText);
-      throw new Error(`XUMM API failed: ${xummResponse.status} - ${errorText}`);
-    }
-
-    // Parse XUMM response with race condition timeout
-    console.log('✅ XUMM API responded successfully, parsing response...');
-
-    try {
-      // Race between JSON parsing and timeout
-      const xummData = await Promise.race([
-        xummResponse.json(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('JSON parsing timeout')), 3000)
-        )
-      ]);
-
-      console.log('🔍 XUMM Response Data:', JSON.stringify(xummData, null, 2));
-
-      if (xummData.uuid && xummData.refs && xummData.refs.qr_png) {
-        console.log('✅ XUMM payload created successfully');
-        res.json({
-          success: true,
-          qr: xummData.refs.qr_png,
-          uuid: xummData.uuid,
-          deeplink: xummData.next.always,
-          calculation: calculation,
-          message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
-        });
-      } else {
-        console.error('❌ XUMM payload missing required fields:', xummData);
-        throw new Error('XUMM payload creation failed - missing UUID or QR code');
-      }
-    } catch (parseError) {
-      console.error('❌ XUMM JSON parsing failed:', parseError.message);
-      // Return success anyway with manual payment instructions
-      res.json({
-        success: true,
-        manual: true,
-        calculation: calculation,
-        paymentDetails: {
-          destination: DISTRIBUTOR_WALLET,
-          amount: xrpAmount,
-          memo: `PRESALE: ${xrpAmount}XRP=${calculation.totalWaldo}WALDO`
-        },
-        message: `Manual payment: Send ${xrpAmount} XRP to ${DISTRIBUTOR_WALLET} with memo "PRESALE"`
-      });
-    }
+    // Return response in same format as login
+    res.json({
+      success: true,
+      qr: created.refs.qr_png,
+      uuid: created.uuid,
+      deeplink: created.next?.always,
+      calculation: calculation,
+      message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
+    });
 
   } catch (error) {
-    clearTimeout(timeoutId); // Make sure timeout is cleared
-
-    if (error.name === 'AbortError') {
-      console.error('❌ XUMM API timeout after 15 seconds');
-      res.status(408).json({
-        success: false,
-        error: "Request timeout - XUMM API took too long to respond"
-      });
-    } else {
-      console.error('❌ Presale buy error:', error.message);
-      console.error('❌ Full error:', error);
-      res.status(500).json({
-        success: false,
-        error: `Failed to create presale purchase: ${error.message}`
-      });
-    }
+    console.error('❌ Presale buy error:', error.message);
+    console.error('❌ Full error:', error);
+    res.status(500).json({
+      success: false,
+      error: `Failed to create presale purchase: ${error.message}`
+    });
   }
 });
 
