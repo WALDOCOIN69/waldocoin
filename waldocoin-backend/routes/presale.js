@@ -219,7 +219,7 @@ router.get("/total-sold", async (req, res) => {
     });
 
     // Calculate progress towards goals
-    const xrpGoal = 400000; // Example goal
+    const xrpGoal = 4000; // 4K XRP for 40M WALDO (10K WALDO per XRP)
     const waldoGoal = 40000000; // 40M WALDO goal
     const xrpProgress = Math.min((totalXRP / xrpGoal) * 100, 100);
     const waldoProgress = Math.min((totalWALDO / waldoGoal) * 100, 100);
