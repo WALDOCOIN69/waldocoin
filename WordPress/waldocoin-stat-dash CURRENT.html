@@ -1854,7 +1854,7 @@
       }
     }
 
-    /* === PER-MEME STAKING COLLAPSIBLE CARD === */
+    /* === SHORT TERM OPTION COLLAPSIBLE CARD === */
     .collapsible-container {
       background: #1a1a1a;
       border: 1px solid #333;
@@ -3185,49 +3185,52 @@
       <!-- Staking Instruction Cards Inside Zone -->
       <div class="instruction-cards-full-width">
 
-        <!-- Initial Choice -->
+        <!-- Dual Staking System Overview -->
         <div class="instruction-card-full">
-          <h2>🎯 Initial Choice</h2>
+          <h2>🏦 WALDOCOIN Dual Staking System</h2>
           <div class="instruction-card-content">
-            <div class="text-red font-bold margin-bottom-5">❌ Instant Payout</div>
-            <div class="font-small text-gray">10% fee • No future staking opportunities</div>
+            <div class="text-green font-bold margin-bottom-5">🎭 Per-Meme Staking (Whitepaper)</div>
+            <div class="font-small text-gray">Choose when claiming memes • Fixed 15% bonus • 30-day lock • Any amount
+            </div>
           </div>
           <div class="instruction-card-content">
-            <div class="text-green font-bold margin-bottom-5">✅ Staking Option</div>
-            <div class="font-small text-gray">5% fee • Tiered re-staking eligible</div>
+            <div class="text-blue font-bold margin-bottom-5">🏦 Long-Term Staking (New System)</div>
+            <div class="font-small text-gray">Stake any WALDO held • Level-based APY • 1,000+ minimum • Multiple stakes
+            </div>
           </div>
           <div class="instruction-card-warning">
-            <div class="text-yellow font-bold font-small">⚠️ Choice made per meme when claiming</div>
+            <div class="text-yellow font-bold font-small">💎 Both systems can run simultaneously for maximum rewards
+            </div>
           </div>
         </div>
 
-        <!-- Auto-Continue Staking System -->
+        <!-- Long-Term Staking System -->
         <div class="instruction-card-full">
-          <h2>🔄 Auto-Continue Staking System (Only when staking was initially chosen)</h2>
-          <div class="instruction-subtitle">How long-term staking works:</div>
+          <h2>🏦 Long-Term Staking System (Any WALDO Held)</h2>
+          <div class="instruction-subtitle">Level-based access with multiple stakes allowed:</div>
 
           <div class="auto-continue-explanation">
             <div class="auto-continue-step">
               <span class="step-number">1</span>
               <div class="step-content">
-                <div class="step-title">Initial Stake Completes</div>
-                <div class="step-description">Your 30-day stake finishes, you earn 12% APY</div>
+                <div class="step-title">Level-Based Access</div>
+                <div class="step-description">Higher XP levels unlock longer staking durations</div>
               </div>
             </div>
 
             <div class="auto-continue-step">
               <span class="step-number">2</span>
               <div class="step-content">
-                <div class="step-title">7-Day Decision Window</div>
-                <div class="step-description">Choose your next move or do nothing</div>
+                <div class="step-title">Multiple Stakes</div>
+                <div class="step-description">Create up to 10 stakes with different durations</div>
               </div>
             </div>
 
             <div class="auto-continue-step">
               <span class="step-number">3</span>
               <div class="step-content">
-                <div class="step-title">Auto-Continue (Default)</div>
-                <div class="step-description">Do nothing → Automatically renews for 30 days at 12% APY</div>
+                <div class="step-title">Legend Bonus</div>
+                <div class="step-description">Level 5 users get +2% APY on all durations</div>
               </div>
             </div>
           </div>
@@ -3398,10 +3401,10 @@
   </div>
   <h4 class="duplicate-example-title">� Payout Examples (Based on Actual Tiers)</h4>
 
-  <!-- Per-Meme Staking (Whitepaper System) Collapsible Container -->
+  <!-- Short term Option Collapsible Container -->
   <div class="collapsible-container">
     <h2 class="collapsible-header" onclick="toggleShortTermOption()">
-      🎭 Per-Meme Staking (Whitepaper System)
+      💎 Short Term Option
       <span id="shortTermToggleIcon" class="toggle-icon collapsed">►</span>
     </h2>
 
@@ -4522,7 +4525,7 @@
       }
     }
 
-    // Per-Meme Staking Toggle Function
+    // Short Term Option Toggle Function
     function toggleShortTermOption() {
       const section = document.getElementById("shortTermSection");
       const icon = document.getElementById("shortTermToggleIcon");
