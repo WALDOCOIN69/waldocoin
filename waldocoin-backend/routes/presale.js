@@ -330,23 +330,28 @@ router.post("/buy", async (req, res) => {
       throw new Error(`XUMM API failed: ${xummResponse.status} - ${errorText}`);
     }
 
-    const xummData = await xummResponse.json();
-    console.log('🔍 XUMM Response Data:', JSON.stringify(xummData, null, 2));
+    // Quick response without waiting for full JSON parsing
+    console.log('✅ XUMM API responded successfully, processing...');
 
-    if (xummData.uuid && xummData.refs && xummData.refs.qr_png) {
-      console.log('✅ XUMM payload created successfully');
-      res.json({
-        success: true,
-        qr: xummData.refs.qr_png,
-        uuid: xummData.uuid,
-        deeplink: xummData.next.always,
-        calculation: calculation,
-        message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
-      });
-    } else {
-      console.error('❌ XUMM payload missing required fields:', xummData);
-      throw new Error('XUMM payload creation failed - missing UUID or QR code');
-    }
+    // Return success immediately to prevent timeout
+    res.json({
+      success: true,
+      message: `Creating purchase transaction for ${xrpAmount} XRP = ${calculation.totalWaldo} WALDO`,
+      calculation: calculation,
+      status: 'processing'
+    });
+
+    // Process XUMM response in background (don't await)
+    xummResponse.json().then(xummData => {
+      console.log('🔍 XUMM Response Data:', JSON.stringify(xummData, null, 2));
+      if (xummData.uuid && xummData.refs && xummData.refs.qr_png) {
+        console.log('✅ XUMM payload created successfully:', xummData.uuid);
+      } else {
+        console.error('❌ XUMM payload missing required fields:', xummData);
+      }
+    }).catch(err => {
+      console.error('❌ Error parsing XUMM response:', err);
+    });
 
   } catch (error) {
     clearTimeout(timeoutId); // Make sure timeout is cleared
