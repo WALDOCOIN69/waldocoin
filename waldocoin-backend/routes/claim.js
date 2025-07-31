@@ -73,11 +73,11 @@ router.post("/", async (req, res) => {
     }
 
     // ⌛ Check meme age and staking window
- const postedAtRaw = memeData.timestamp;
-if (!postedAtRaw) {
-  console.log("❌ Timestamp missing in memeData");
-  return res.status(400).json({ success: false, error: "Meme not tracked or missing timestamp." });
-}
+    const postedAtRaw = memeData.timestamp;
+    if (!postedAtRaw) {
+      console.log("❌ Timestamp missing in memeData");
+      return res.status(400).json({ success: false, error: "Meme not tracked or missing timestamp." });
+    }
     const postedAt = dayjs.unix(parseInt(postedAtRaw));
 
     const stakingDeadline = postedAt.add(stakingWindowHours, "hour");
@@ -130,27 +130,56 @@ if (!postedAtRaw) {
     let payload;
 
     if (finalStake && stakedAmount > 0) {
-      // For staked claims, create a staking position
-      const stakeId = uuidv4();
-      const unlockDate = now.add(30, 'day'); // 30-day minimum staking period
+      // For staked claims, create a per-meme staking position using new dual system
+      const stakeId = `permeme_${wallet}_${Date.now()}_${memeId}`;
+      const unlockDate = now.add(30, 'day'); // Fixed 30-day per-meme staking
 
-      // Store staking position
-      await redis.hSet(`stake:${stakeId}`, {
+      // Calculate per-meme staking values (whitepaper system)
+      const stakingFee = Math.floor(stakedAmount * 0.05); // 5% staking fee
+      const actualStaked = stakedAmount - stakingFee;
+      const bonusAmount = Math.floor(actualStaked * 0.15); // Fixed 15% bonus
+      const totalReward = actualStaked + bonusAmount;
+
+      // Store per-meme staking position using new dual system format
+      await redis.hSet(`staking:${stakeId}`, {
         stakeId,
         wallet,
-        amount: stakedAmount,
-        duration: 30,
-        apy: 0.12, // 12% APY
-        stakedAt: now.toISOString(),
-        unlockDate: unlockDate.toISOString(),
-        status: 'active',
-        source: 'meme_claim',
         memeId,
-        rewards: 0,
-        lastCompounded: now.toISOString()
+        originalAmount: stakedAmount,
+        stakingFee: stakingFee,
+        stakedAmount: actualStaked,
+        bonusAmount: bonusAmount,
+        totalReward: totalReward,
+        duration: 30,
+        startDate: now.toISOString(),
+        endDate: unlockDate.toISOString(),
+        status: 'active',
+        type: 'per_meme',
+        source: 'meme_claim',
+        claimed: false,
+        createdAt: now.toISOString()
       });
 
-      await redis.sAdd(`stakes:wallet:${wallet}`, stakeId);
+      // Add to user's per-meme stakes
+      await redis.sAdd(`user:${wallet}:per_meme_stakes`, stakeId);
+
+      // Update global per-meme staking totals
+      await redis.incrByFloat('staking:total_per_meme_staked', actualStaked);
+      await redis.incr('staking:total_per_meme_stakes');
+
+      // Log per-meme staking creation
+      await redis.lPush('staking_logs', JSON.stringify({
+        action: 'per_meme_stake_from_claim',
+        stakeId,
+        wallet,
+        memeId,
+        originalAmount: stakedAmount,
+        stakedAmount: actualStaked,
+        bonusAmount: bonusAmount,
+        timestamp: now.toISOString()
+      }));
+
+      console.log(`🎭 Per-meme stake created from claim: ${wallet} staked ${actualStaked} WALDO for meme ${memeId}`);
 
       // No immediate payout for staked claims
       payload = null;

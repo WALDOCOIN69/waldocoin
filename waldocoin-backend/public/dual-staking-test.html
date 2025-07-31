@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WALDOCOIN Dual Staking System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .staking-card {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #25c2a0;
+        }
+        .staking-card h2 {
+            color: #25c2a0;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: #333;
+            color: #fff;
+            font-size: 14px;
+        }
+        button {
+            background: #25c2a0;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #1ea085;
+        }
+        .info-section {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stakes-list {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .stake-item {
+            background: #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #25c2a0;
+        }
+        .error {
+            color: #ff6b6b;
+            margin-top: 10px;
+        }
+        .success {
+            color: #51cf66;
+            margin-top: 10px;
+        }
+        .level-info {
+            background: #333;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏦 WALDOCOIN Dual Staking System Test</h1>
+    
+    <div class="info-section">
+        <h3>User Information</h3>
+        <div class="form-group">
+            <label for="walletAddress">Wallet Address:</label>
+            <input type="text" id="walletAddress" placeholder="Enter XRPL wallet address (r...)">
+            <button onclick="loadUserInfo()">Load User Info</button>
+        </div>
+        <div id="userInfo"></div>
+    </div>
+
+    <div class="container">
+        <!-- Long-Term Staking -->
+        <div class="staking-card">
+            <h2>🏦 Long-Term Staking</h2>
+            <div class="form-group">
+                <label for="longTermAmount">Amount (WALDO):</label>
+                <input type="number" id="longTermAmount" min="1000" placeholder="Minimum 1,000 WALDO">
+            </div>
+            <div class="form-group">
+                <label for="longTermDuration">Duration:</label>
+                <select id="longTermDuration">
+                    <option value="">Select duration (based on your level)</option>
+                    <option value="30">30 days - 12% APY</option>
+                    <option value="90">90 days - 18% APY</option>
+                    <option value="180">180 days - 25% APY</option>
+                    <option value="365">365 days - 35% APY</option>
+                </select>
+            </div>
+            <button onclick="createLongTermStake()">Create Long-Term Stake</button>
+            <div id="longTermResult"></div>
+        </div>
+
+        <!-- Per-Meme Staking -->
+        <div class="staking-card">
+            <h2>🎭 Per-Meme Staking</h2>
+            <div class="form-group">
+                <label for="perMemeAmount">Amount (WALDO):</label>
+                <input type="number" id="perMemeAmount" min="1" placeholder="Any amount">
+            </div>
+            <div class="form-group">
+                <label for="memeId">Meme ID:</label>
+                <input type="text" id="memeId" placeholder="Enter meme ID">
+            </div>
+            <div class="level-info">
+                <strong>Per-Meme Staking (Whitepaper):</strong><br>
+                • Fixed 15% bonus<br>
+                • 30-day lock period<br>
+                • 5% staking fee vs 10% instant fee
+            </div>
+            <button onclick="createPerMemeStake()">Create Per-Meme Stake</button>
+            <div id="perMemeResult"></div>
+        </div>
+    </div>
+
+    <div class="stakes-list">
+        <h3>Active Stakes</h3>
+        <div id="activeStakes"></div>
+        <button onclick="loadActiveStakes()">Refresh Stakes</button>
+    </div>
+
+    <script>
+        let currentWallet = '';
+        let userLevel = 1;
+        let availableDurations = [30];
+
+        async function loadUserInfo() {
+            const wallet = document.getElementById('walletAddress').value.trim();
+            if (!wallet || !wallet.startsWith('r')) {
+                showError('userInfo', 'Please enter a valid XRPL wallet address');
+                return;
+            }
+
+            currentWallet = wallet;
+            
+            try {
+                const response = await fetch(`/api/staking/info/${wallet}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    userLevel = data.userInfo.level;
+                    availableDurations = data.userInfo.availableDurations;
+                    
+                    document.getElementById('userInfo').innerHTML = `
+                        <div class="level-info">
+                            <strong>Level ${data.userInfo.level}: ${data.userInfo.title}</strong><br>
+                            XP: ${data.userInfo.xp}<br>
+                            Balance: ${data.userInfo.currentBalance} WALDO<br>
+                            Available Durations: ${availableDurations.join(', ')} days<br>
+                            Long-term Stakes: ${data.longTermStaking.totalActiveStakes}/${data.longTermStaking.maxActiveStakes}<br>
+                            Per-meme Stakes: ${data.perMemeStaking.totalActiveStakes}
+                        </div>
+                    `;
+                    
+                    updateDurationOptions();
+                    loadActiveStakes();
+                } else {
+                    showError('userInfo', data.error);
+                }
+            } catch (error) {
+                showError('userInfo', 'Failed to load user info: ' + error.message);
+            }
+        }
+
+        function updateDurationOptions() {
+            const select = document.getElementById('longTermDuration');
+            const options = select.querySelectorAll('option');
+            
+            options.forEach((option, index) => {
+                if (index === 0) return; // Skip placeholder
+                const duration = parseInt(option.value);
+                option.disabled = !availableDurations.includes(duration);
+                if (option.disabled) {
+                    option.textContent += ' (Level locked)';
+                }
+            });
+        }
+
+        async function createLongTermStake() {
+            if (!currentWallet) {
+                showError('longTermResult', 'Please load user info first');
+                return;
+            }
+
+            const amount = document.getElementById('longTermAmount').value;
+            const duration = document.getElementById('longTermDuration').value;
+
+            if (!amount || !duration) {
+                showError('longTermResult', 'Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/staking/long-term', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet: currentWallet,
+                        amount: parseFloat(amount),
+                        duration: parseInt(duration)
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('longTermResult', `Long-term stake created! Expected reward: ${data.stakeData.expectedReward} WALDO`);
+                    loadActiveStakes();
+                } else {
+                    showError('longTermResult', data.error);
+                }
+            } catch (error) {
+                showError('longTermResult', 'Failed to create stake: ' + error.message);
+            }
+        }
+
+        async function createPerMemeStake() {
+            if (!currentWallet) {
+                showError('perMemeResult', 'Please load user info first');
+                return;
+            }
+
+            const amount = document.getElementById('perMemeAmount').value;
+            const memeId = document.getElementById('memeId').value;
+
+            if (!amount || !memeId) {
+                showError('perMemeResult', 'Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/staking/per-meme', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet: currentWallet,
+                        amount: parseFloat(amount),
+                        memeId: memeId
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('perMemeResult', `Per-meme stake created! Total reward: ${data.stakeData.totalReward} WALDO`);
+                    loadActiveStakes();
+                } else {
+                    showError('perMemeResult', data.error);
+                }
+            } catch (error) {
+                showError('perMemeResult', 'Failed to create stake: ' + error.message);
+            }
+        }
+
+        async function loadActiveStakes() {
+            if (!currentWallet) return;
+
+            try {
+                const response = await fetch(`/api/staking/info/${currentWallet}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    let stakesHtml = '';
+                    
+                    // Long-term stakes
+                    data.longTermStaking.activeStakes.forEach(stake => {
+                        stakesHtml += `
+                            <div class="stake-item">
+                                <strong>Long-Term Stake</strong><br>
+                                Amount: ${stake.amount} WALDO<br>
+                                Duration: ${stake.duration} days (${stake.apy})<br>
+                                Days Remaining: ${stake.daysRemaining}<br>
+                                Expected Reward: ${stake.expectedReward} WALDO<br>
+                                <button onclick="unstake('${stake.stakeId}')">Unstake</button>
+                            </div>
+                        `;
+                    });
+                    
+                    // Per-meme stakes
+                    data.perMemeStaking.activeStakes.forEach(stake => {
+                        stakesHtml += `
+                            <div class="stake-item">
+                                <strong>Per-Meme Stake</strong><br>
+                                Meme ID: ${stake.memeId}<br>
+                                Staked: ${stake.stakedAmount} WALDO (${stake.originalAmount} - ${stake.originalAmount - stake.stakedAmount} fee)<br>
+                                Bonus: ${stake.bonusAmount} WALDO (15%)<br>
+                                Total Reward: ${stake.totalReward} WALDO<br>
+                                Days Remaining: ${stake.daysRemaining}<br>
+                                <button onclick="unstake('${stake.stakeId}')">Unstake</button>
+                            </div>
+                        `;
+                    });
+                    
+                    document.getElementById('activeStakes').innerHTML = stakesHtml || '<p>No active stakes</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load stakes:', error);
+            }
+        }
+
+        async function unstake(stakeId) {
+            if (!confirm('Are you sure you want to unstake? Early unstaking incurs a 15% penalty.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/staking/unstake', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet: currentWallet,
+                        stakeId: stakeId
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Unstaking successful! You received ${data.unstakeData.userReceives} WALDO`);
+                    loadActiveStakes();
+                } else {
+                    alert('Unstaking failed: ' + data.error);
+                }
+            } catch (error) {
+                alert('Unstaking failed: ' + error.message);
+            }
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function showSuccess(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="success">${message}</div>`;
+        }
+    </script>
+</body>
+</html>
