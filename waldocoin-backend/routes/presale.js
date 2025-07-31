@@ -329,14 +329,14 @@ router.post("/buy", async (req, res) => {
 
     console.log("✅ XUMM Presale Payload Created:", {
       uuid: created.uuid,
-      qr_png: created.refs?.qr_png ? 'Available' : 'Missing',
-      next: created.next ? 'Available' : 'Missing'
+      next: created.next,
+      fullResponse: created
     });
 
-    // Return response in same format as login
+    // Return response in same format as login - use created.next for QR and deeplink
     res.json({
       success: true,
-      qr: created.refs.qr_png,
+      qr: created.next?.qr_png,
       uuid: created.uuid,
       deeplink: created.next?.always,
       calculation: calculation,
