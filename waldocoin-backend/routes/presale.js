@@ -315,6 +315,7 @@ router.post("/buy", async (req, res) => {
       })
     });
 
+    clearTimeout(timeoutId);
     const xummData = await xummResponse.json();
 
     if (xummData.uuid) {
@@ -689,11 +690,11 @@ async function sendWaldoTokens(buyerWallet, waldoAmount, calculation, originalTx
     // Create WALDO payment transaction
     const payload = {
       TransactionType: 'Payment',
-      Account: DISTRIBUTOR_WALLET, // WALDO distributor wallet
+      Account: 'rMJMw3i7W4dxTBkLKSnkNETCGPeons2MVt', // WALDO distributor wallet
       Destination: buyerWallet,
       Amount: {
         currency: 'WLO',
-        issuer: WALDO_ISSUER,
+        issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY',
         value: waldoAmount.toString()
       },
       Memos: [{
