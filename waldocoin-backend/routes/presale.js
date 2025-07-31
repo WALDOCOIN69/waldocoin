@@ -330,28 +330,49 @@ router.post("/buy", async (req, res) => {
       throw new Error(`XUMM API failed: ${xummResponse.status} - ${errorText}`);
     }
 
-    // Quick response without waiting for full JSON parsing
-    console.log('✅ XUMM API responded successfully, processing...');
+    // Parse XUMM response with race condition timeout
+    console.log('✅ XUMM API responded successfully, parsing response...');
 
-    // Return success immediately to prevent timeout
-    res.json({
-      success: true,
-      message: `Creating purchase transaction for ${xrpAmount} XRP = ${calculation.totalWaldo} WALDO`,
-      calculation: calculation,
-      status: 'processing'
-    });
+    try {
+      // Race between JSON parsing and timeout
+      const xummData = await Promise.race([
+        xummResponse.json(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('JSON parsing timeout')), 3000)
+        )
+      ]);
 
-    // Process XUMM response in background (don't await)
-    xummResponse.json().then(xummData => {
       console.log('🔍 XUMM Response Data:', JSON.stringify(xummData, null, 2));
+
       if (xummData.uuid && xummData.refs && xummData.refs.qr_png) {
-        console.log('✅ XUMM payload created successfully:', xummData.uuid);
+        console.log('✅ XUMM payload created successfully');
+        res.json({
+          success: true,
+          qr: xummData.refs.qr_png,
+          uuid: xummData.uuid,
+          deeplink: xummData.next.always,
+          calculation: calculation,
+          message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
+        });
       } else {
         console.error('❌ XUMM payload missing required fields:', xummData);
+        throw new Error('XUMM payload creation failed - missing UUID or QR code');
       }
-    }).catch(err => {
-      console.error('❌ Error parsing XUMM response:', err);
-    });
+    } catch (parseError) {
+      console.error('❌ XUMM JSON parsing failed:', parseError.message);
+      // Return success anyway with manual payment instructions
+      res.json({
+        success: true,
+        manual: true,
+        calculation: calculation,
+        paymentDetails: {
+          destination: DISTRIBUTOR_WALLET,
+          amount: xrpAmount,
+          memo: `PRESALE: ${xrpAmount}XRP=${calculation.totalWaldo}WALDO`
+        },
+        message: `Manual payment: Send ${xrpAmount} XRP to ${DISTRIBUTOR_WALLET} with memo "PRESALE"`
+      });
+    }
 
   } catch (error) {
     clearTimeout(timeoutId); // Make sure timeout is cleared
