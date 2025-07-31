@@ -1,6 +1,7 @@
 // routes/presale.js
 import express from "express";
 import { redis } from "../redisClient.js";
+import { DISTRIBUTOR_WALLET, WALDO_ISSUER } from "../constants.js";
 
 const router = express.Router();
 
@@ -315,7 +316,6 @@ router.post("/buy", async (req, res) => {
       })
     });
 
-    clearTimeout(timeoutId);
     const xummData = await xummResponse.json();
 
     if (xummData.uuid) {
