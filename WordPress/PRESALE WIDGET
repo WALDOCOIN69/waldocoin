@@ -52,10 +52,23 @@
           </p>
         </div>
 
-        <!-- Mobile-First: Always show the link button -->
+        <!-- Trustline QR Code -->
+        <div id="trustlineQRContainer" style="margin-bottom: 20px;">
+          <img id="trustlineQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+            style="width:120px; height:120px; border-radius:15px; border:3px solid #ffd93d; background:#0a1f0f; display: none;">
+          <div id="trustlineQRPlaceholder"
+            style="width:120px; height:120px; border-radius:15px; border:3px solid #ffd93d; background:#0a1f0f; display: flex; align-items: center; justify-content: center; color: #ffd93d; font-size: 12px; font-weight: bold; margin: 0 auto;">
+            Loading QR...
+          </div>
+        </div>
+
+        <div style="color: white; font-size: 14px; font-weight: bold; margin-bottom: 15px;">Scan with XAMAN to add
+          trustline</div>
+
+        <!-- Mobile Deep Link -->
         <a id="trustlineDeepLink" href="#" onclick="addTrustlineAndWait()"
-          style="background: #ffd93d; color: black; padding: 15px 25px; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 16px; margin-bottom: 15px;">
-          📲 Add WALDO Trustline in XAMAN
+          style="background: #ffd93d; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px; margin-bottom: 15px;">
+          📲 Or tap here for XAMAN App
         </a>
 
         <div id="trustline-status" style="color: #25c2a0; font-size: 14px; margin-top: 15px; display: none;">
@@ -416,9 +429,14 @@
     }
   }
 
-  // Setup trustline step (mobile-first)
+  // Setup trustline step - Load QR code and set up deep link
   function setupTrustlineStep() {
-    // Always use mobile approach - set up the trustline link
+    console.log('🔧 Setting up trustline step...');
+
+    // Load the trustline QR code
+    loadTrustlineQR();
+
+    // Set up the deep link for mobile users
     document.getElementById('trustlineDeepLink').href = 'https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO';
   }
 
@@ -493,19 +511,38 @@
     try {
       console.log('🔗 Loading trustline QR code...');
 
-      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/login/trustline');
-      const data = await response.json();
+      // Show loading state
+      document.getElementById('trustlineQRPlaceholder').style.display = 'flex';
+      document.getElementById('trustlineQR').style.display = 'none';
 
+      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/login/trustline');
+
+      if (!response.ok) {
+        throw new Error(`Trustline API returned ${response.status}`);
+      }
+
+      const data = await response.json();
       console.log('📡 Trustline API response:', data);
 
       if (data.qr && data.uuid) {
-        console.log('✅ Trustline QR code received');
+        console.log('✅ Trustline QR code received, displaying...');
         document.getElementById('trustlineQR').src = data.qr;
+        document.getElementById('trustlineQR').style.display = 'block';
+        document.getElementById('trustlineQRPlaceholder').style.display = 'none';
+
+        // Update deep link with the actual XUMM URL if available
+        if (data.next && data.next.always) {
+          document.getElementById('trustlineDeepLink').href = data.next.always;
+        }
       } else {
-        console.error('❌ Invalid trustline response:', data);
+        console.error('❌ Invalid trustline response - missing qr or uuid:', data);
+        document.getElementById('trustlineQRPlaceholder').innerText = 'Failed to load QR';
+        document.getElementById('trustlineQRPlaceholder').style.color = '#e74c3c';
       }
     } catch (error) {
       console.error('❌ Trustline QR error:', error);
+      document.getElementById('trustlineQRPlaceholder').innerText = 'QR Load Failed';
+      document.getElementById('trustlineQRPlaceholder').style.color = '#e74c3c';
     }
   }
 
