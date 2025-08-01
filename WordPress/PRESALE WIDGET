@@ -347,7 +347,7 @@
         clearTimeout(failsafeTimeout);
 
         // Always open XUMM directly - no QR codes needed
-        console.log('� Opening XUMM app for purchase approval...');
+        console.log('🚀 Opening XUMM app for purchase approval...');
         window.location.href = data.deeplink;
 
         btn.innerText = "✅ Check XUMM App";
@@ -356,9 +356,16 @@
         // Show success message
         alert(`Purchase request sent to XUMM!\n\nAmount: ${amount} XRP\nYou'll receive: ${data.calculation ? data.calculation.totalWaldo.toLocaleString() : 'calculating...'} WALDO tokens\n\nPlease approve the transaction in your XUMM app.`);
 
-        // Reset button after 10 seconds
+        // Start polling for transaction completion
+        if (data.uuid) {
+          pollTransactionStatus(data.uuid, btn);
+        }
+
+        // Reset button after 10 seconds if no completion detected
         setTimeout(() => {
-          btn.innerText = "🔐 Buy Now with XUMM";
+          if (btn.innerText === "✅ Check XUMM App") {
+            btn.innerText = "🔐 Buy Now with XUMM";
+          }
         }, 10000);
 
       } else if (data && data.redirect) {
@@ -684,6 +691,58 @@
     localStorage.removeItem('xummUUID');
     connectXummWallet();
   };
+
+  // Function to poll transaction status and disconnect when complete
+  function pollTransactionStatus(uuid, btn) {
+    let pollCount = 0;
+    const maxPolls = 60; // Poll for up to 5 minutes (5 second intervals)
+
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+
+      try {
+        const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/presale/status/${uuid}`);
+        const statusData = await response.json();
+
+        if (statusData.success) {
+          if (statusData.completed) {
+            // Transaction completed successfully
+            clearInterval(pollInterval);
+            btn.innerText = "🎉 Purchase Complete!";
+
+            // Show success message
+            alert(`🎉 Purchase completed successfully!\n\nYou received: ${parseInt(statusData.waldoDelivered).toLocaleString()} WALDO tokens\n\nDisconnecting wallet for security...`);
+
+            // Disconnect wallet after successful purchase
+            setTimeout(() => {
+              disconnectWallet();
+              btn.innerText = "🔐 Buy Now with XUMM";
+            }, 2000);
+
+          } else if (statusData.rejected) {
+            // Transaction was rejected
+            clearInterval(pollInterval);
+            btn.innerText = "❌ Transaction Rejected";
+
+            setTimeout(() => {
+              btn.innerText = "🔐 Buy Now with XUMM";
+            }, 3000);
+          }
+          // If still pending, continue polling
+        }
+
+      } catch (error) {
+        console.error('Error polling transaction status:', error);
+      }
+
+      // Stop polling after max attempts
+      if (pollCount >= maxPolls) {
+        clearInterval(pollInterval);
+        console.log('Stopped polling transaction status after 5 minutes');
+      }
+
+    }, 5000); // Poll every 5 seconds
+  }
 
   // Initialize widget on page load
   document.addEventListener('DOMContentLoaded', function () {

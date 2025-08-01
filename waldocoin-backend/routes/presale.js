@@ -324,12 +324,31 @@ router.post("/buy", async (req, res) => {
         try {
           await sendWaldoTokens(wallet, calculation.totalWaldo, calculation, event.data.txid);
           console.log(`✅ WALDO delivery completed for ${wallet}`);
+
+          // Store completion status for frontend to check
+          await redis.hSet(`presale:completed:${created.uuid}`, {
+            wallet,
+            completed: true,
+            waldoDelivered: calculation.totalWaldo,
+            timestamp: new Date().toISOString(),
+            shouldDisconnect: true
+          });
+
         } catch (error) {
           console.error(`❌ WALDO delivery failed for ${wallet}:`, error);
         }
       }
       if (event.data.signed === false) {
         console.log(`❌ Presale transaction rejected by user`);
+
+        // Store rejection status
+        await redis.hSet(`presale:completed:${created.uuid}`, {
+          wallet,
+          completed: false,
+          rejected: true,
+          timestamp: new Date().toISOString(),
+          shouldDisconnect: false
+        });
       }
     });
 
@@ -915,6 +934,39 @@ router.post("/retry-delivery", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to retry delivery"
+    });
+  }
+});
+
+// ✅ GET /api/presale/status/:uuid - Check if presale transaction is complete
+router.get("/status/:uuid", async (req, res) => {
+  try {
+    const { uuid } = req.params;
+
+    const status = await redis.hGetAll(`presale:completed:${uuid}`);
+
+    if (Object.keys(status).length === 0) {
+      return res.json({
+        success: true,
+        completed: false,
+        pending: true
+      });
+    }
+
+    res.json({
+      success: true,
+      completed: status.completed === 'true',
+      rejected: status.rejected === 'true',
+      shouldDisconnect: status.shouldDisconnect === 'true',
+      waldoDelivered: status.waldoDelivered || 0,
+      timestamp: status.timestamp
+    });
+
+  } catch (error) {
+    console.error('❌ Presale status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to check presale status"
     });
   }
 });
