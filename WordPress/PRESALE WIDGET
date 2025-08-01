@@ -12,12 +12,11 @@
     </p>
   </div>
 
-  <!-- Layout Wrapper -->
-  <div
-    style="display: flex; justify-content: center; gap: 40px; align-items: flex-start; max-width: 1200px; margin: 0 auto; flex-wrap: wrap;">
+  <!-- Layout Wrapper - Mobile First -->
+  <div style="max-width: 400px; margin: 0 auto; padding: 0 15px;">
 
-    <!-- Left Side: Progressive Steps -->
-    <div style="flex: 1; min-width: 280px; max-width: 500px; color: white; font-family: 'Arial Black', sans-serif;">
+    <!-- Progressive Steps -->
+    <div style="color: white; font-family: 'Arial Black', sans-serif;">
 
       <!-- Step 1: Wallet Connection -->
       <div id="step1-connect" style="text-align:center; margin-bottom: 20px;">
@@ -44,33 +43,24 @@
       <div id="step2-trustline" style="text-align:center; margin-bottom: 20px; display: none;">
         <h3 style="color: #ffd93d; margin-bottom: 15px;">Step 2: Add WALDO Trustline</h3>
         <div
-          style="background: #0f2d17; padding: 15px; border-radius: 10px; border: 1px solid #ffd93d; margin-bottom: 15px;">
-          <p style="color: white; font-size: 13px; margin: 0;">
+          style="background: #0f2d17; padding: 20px; border-radius: 15px; border: 2px solid #ffd93d; margin-bottom: 20px;">
+          <p style="color: white; font-size: 16px; margin: 0 0 15px 0; font-weight: bold;">
             ⚠️ Your wallet needs a WALDO trustline to receive tokens.
+          </p>
+          <p style="color: #ffd93d; font-size: 14px; margin: 0;">
+            Tap the button below to add it automatically!
           </p>
         </div>
 
-        <!-- Desktop: Show QR -->
-        <div id="trustline-desktop" style="display: none;">
-          <img id="trustlineQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
-            style="width:100px; border-radius:10px; border:2px solid #ffd93d;" />
-          <div style="color: white; font-size: 12px; margin-top: 6px;">
-            Scan with XAMAN to add trustline
-          </div>
-        </div>
+        <!-- Mobile-First: Always show the link button -->
+        <a id="trustlineDeepLink" href="#" onclick="addTrustlineAndWait()"
+          style="background: #ffd93d; color: black; padding: 15px 25px; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 16px; margin-bottom: 15px;">
+          📲 Add WALDO Trustline in XAMAN
+        </a>
 
-        <!-- Mobile: Show Link -->
-        <div id="trustline-mobile" style="display: none;">
-          <a id="trustlineDeepLink" href="#"
-            style="background: #ffd93d; color: black; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
-            📲 Add WALDO Trustline in XAMAN
-          </a>
+        <div id="trustline-status" style="color: #25c2a0; font-size: 14px; margin-top: 15px; display: none;">
+          ⏳ Waiting for trustline to be added...
         </div>
-
-        <button onclick="recheckTrustline()"
-          style="background: #25c2a0; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; margin-top: 10px; cursor: pointer;">
-          ✅ I've Added the Trustline
-        </button>
       </div>
 
       <!-- Step 3: Purchase Info (shown after wallet connected and trustline verified) -->
@@ -108,8 +98,8 @@
       </div>
     </div>
 
-    <!-- Right Side: Purchase Interface -->
-    <div id="purchase-interface" style="flex: 1; min-width: 300px; max-width: 600px; display: none;">
+    <!-- Purchase Interface - Mobile Optimized -->
+    <div id="purchase-interface" style="width: 100%; display: none; margin-top: 20px;">
 
       <!-- Purchase Calculator -->
       <div
@@ -245,8 +235,10 @@
   let connectedWallet = null;
   let hasTrustline = false;
 
-  // Progressive flow management
+  // Progressive flow management - Mobile optimized
   function showStep(stepNumber) {
+    console.log(`📱 Showing Step ${stepNumber}`);
+
     // Hide all steps
     document.getElementById('step1-connect').style.display = 'none';
     document.getElementById('step2-trustline').style.display = 'none';
@@ -413,18 +405,76 @@
     }
   }
 
-  // Setup trustline step
+  // Setup trustline step (mobile-first)
   function setupTrustlineStep() {
-    if (isMobile()) {
-      document.getElementById('trustline-mobile').style.display = 'block';
-      document.getElementById('trustline-desktop').style.display = 'none';
-      // Set up mobile trustline link
-      document.getElementById('trustlineDeepLink').href = 'https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO';
-    } else {
-      document.getElementById('trustline-desktop').style.display = 'block';
-      document.getElementById('trustline-mobile').style.display = 'none';
-      loadTrustlineQR();
-    }
+    // Always use mobile approach - set up the trustline link
+    document.getElementById('trustlineDeepLink').href = 'https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO';
+  }
+
+  // New function: Add trustline and automatically wait for completion
+  function addTrustlineAndWait() {
+    console.log('📲 Opening XAMAN to add trustline...');
+
+    // Show waiting status
+    document.getElementById('trustline-status').style.display = 'block';
+    document.getElementById('trustline-status').innerText = '⏳ Opening XAMAN... Please add the trustline';
+
+    // Start automatic polling for trustline after a short delay
+    setTimeout(() => {
+      startTrustlinePolling();
+    }, 3000); // Give user 3 seconds to open XAMAN
+  }
+
+  // Automatic trustline polling
+  function startTrustlinePolling() {
+    console.log('🔄 Starting automatic trustline polling...');
+
+    document.getElementById('trustline-status').innerText = '⏳ Waiting for trustline to be added...';
+
+    let pollCount = 0;
+    const maxPolls = 60; // Poll for 5 minutes (5 second intervals)
+
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+
+      try {
+        const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
+        const data = await response.json();
+
+        console.log(`Trustline poll ${pollCount}:`, data);
+
+        if (data.hasWaldoTrustline) {
+          clearInterval(pollInterval);
+          console.log('✅ Trustline detected automatically!');
+
+          document.getElementById('trustline-status').innerText = '✅ Trustline added successfully!';
+          document.getElementById('trustline-status').style.color = '#25c2a0';
+
+          // Auto-proceed to Step 3 after 1 second
+          setTimeout(() => {
+            hasTrustline = true;
+            showStep(3);
+            loadPresaleProgress();
+          }, 1000);
+
+          return;
+        }
+
+        // Update status with poll count
+        document.getElementById('trustline-status').innerText = `⏳ Still waiting... (${pollCount}/${maxPolls})`;
+
+      } catch (error) {
+        console.error('Trustline polling error:', error);
+      }
+
+      // Stop polling after max attempts
+      if (pollCount >= maxPolls) {
+        clearInterval(pollInterval);
+        document.getElementById('trustline-status').innerText = '❌ Timeout - Please try again';
+        document.getElementById('trustline-status').style.color = '#e74c3c';
+      }
+
+    }, 5000); // Poll every 5 seconds
   }
 
   // Load trustline QR code
