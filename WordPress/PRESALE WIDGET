@@ -457,49 +457,65 @@
   // Automatic trustline polling
   function startTrustlinePolling() {
     console.log('🔄 Starting automatic trustline polling...');
+    console.log('Connected wallet:', connectedWallet);
 
-    document.getElementById('trustline-status').innerText = '⏳ Waiting for trustline to be added...';
+    if (!connectedWallet) {
+      console.error('❌ No connected wallet for trustline polling');
+      return;
+    }
+
+    document.getElementById('trustline-status').style.display = 'block';
+    document.getElementById('trustline-status').innerText = '⏳ Checking for trustline...';
+    document.getElementById('trustline-status').style.color = '#25c2a0';
 
     let pollCount = 0;
     const maxPolls = 60; // Poll for 5 minutes (5 second intervals)
 
     const pollInterval = setInterval(async () => {
       pollCount++;
+      console.log(`🔍 Trustline poll attempt ${pollCount}/${maxPolls} for wallet: ${connectedWallet}`);
 
       try {
         const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
+
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+
         const data = await response.json();
+        console.log(`📡 Trustline poll ${pollCount} response:`, data);
 
-        console.log(`Trustline poll ${pollCount}:`, data);
-
-        if (data.hasWaldoTrustline) {
+        if (data.hasWaldoTrustline === true) {
           clearInterval(pollInterval);
-          console.log('✅ Trustline detected automatically!');
+          console.log('🎉 TRUSTLINE DETECTED AUTOMATICALLY!');
 
           document.getElementById('trustline-status').innerText = '✅ Trustline added successfully!';
           document.getElementById('trustline-status').style.color = '#25c2a0';
 
-          // Auto-proceed to Step 3 after 1 second
+          // Auto-proceed to Step 3 after 1.5 seconds
           setTimeout(() => {
             hasTrustline = true;
+            console.log('🚀 Auto-proceeding to Step 3...');
             showStep(3);
             loadPresaleProgress();
-          }, 1000);
+          }, 1500);
 
           return;
         }
 
         // Update status with poll count
-        document.getElementById('trustline-status').innerText = `⏳ Still waiting... (${pollCount}/${maxPolls})`;
+        document.getElementById('trustline-status').innerText = `⏳ Checking... (${pollCount}/${maxPolls})`;
 
       } catch (error) {
-        console.error('Trustline polling error:', error);
+        console.error(`❌ Trustline polling error (attempt ${pollCount}):`, error);
+        document.getElementById('trustline-status').innerText = `⚠️ Check failed (${pollCount}/${maxPolls})`;
       }
 
       // Stop polling after max attempts
       if (pollCount >= maxPolls) {
         clearInterval(pollInterval);
-        document.getElementById('trustline-status').innerText = '❌ Timeout - Please try again';
+        console.log('❌ Trustline polling timeout');
+        document.getElementById('trustline-status').innerText = '❌ Timeout - Please refresh and try again';
         document.getElementById('trustline-status').style.color = '#e74c3c';
       }
 
@@ -534,6 +550,16 @@
         if (data.next && data.next.always) {
           document.getElementById('trustlineDeepLink').href = data.next.always;
         }
+
+        // Start automatic polling immediately when QR is displayed
+        console.log('🔄 Starting automatic trustline polling for QR scan...');
+        document.getElementById('trustline-status').style.display = 'block';
+        document.getElementById('trustline-status').innerText = '⏳ Scan QR code and add trustline in XAMAN...';
+
+        setTimeout(() => {
+          startTrustlinePolling();
+        }, 5000); // Give user 5 seconds to scan and process
+
       } else {
         console.error('❌ Invalid trustline response - missing qr or uuid:', data);
         document.getElementById('trustlineQRPlaceholder').innerText = 'Failed to load QR';
