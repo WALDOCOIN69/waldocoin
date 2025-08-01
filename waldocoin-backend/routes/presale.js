@@ -277,8 +277,8 @@ router.post("/buy", async (req, res) => {
         multisign: false,
         expire: 1440, // 24 hours
         return_url: {
-          web: `https://waldocoin.live/presale/?completed=${Date.now()}#widget`,
-          app: `https://waldocoin.live/presale/?completed=${Date.now()}#widget`
+          web: 'https://waldocoin.live/presale-success/',
+          app: 'https://waldocoin.live/presale-success/'
         }
       },
       custom_meta: {

@@ -564,6 +564,12 @@
       return;
     }
 
+    // Don't start polling if we're already on Step 3
+    if (document.getElementById('step3-info').style.display === 'block') {
+      console.log('⚠️ Already on Step 3, skipping trustline polling');
+      return;
+    }
+
     document.getElementById('trustline-status').style.display = 'block';
     document.getElementById('trustline-status').innerText = '⏳ Checking for trustline...';
     document.getElementById('trustline-status').style.color = '#25c2a0';
@@ -572,6 +578,13 @@
     const maxPolls = 120; // Poll for 10 minutes (5 second intervals)
 
     const pollInterval = setInterval(async () => {
+      // Stop polling if user is already on Step 3
+      if (document.getElementById('step3-info').style.display === 'block') {
+        console.log('⚠️ User already on Step 3, stopping trustline polling');
+        clearInterval(pollInterval);
+        return;
+      }
+
       pollCount++;
       console.log(`🔍 Trustline poll attempt ${pollCount}/${maxPolls} for wallet: ${connectedWallet}`);
 
