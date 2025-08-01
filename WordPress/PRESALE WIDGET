@@ -53,12 +53,14 @@
         </div>
 
         <!-- Trustline QR Code -->
-        <div id="trustlineQRContainer" style="margin-bottom: 20px;">
-          <img id="trustlineQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
-            style="width:120px; height:120px; border-radius:15px; border:3px solid #ffd93d; background:#0a1f0f; display: none;">
-          <div id="trustlineQRPlaceholder"
-            style="width:120px; height:120px; border-radius:15px; border:3px solid #ffd93d; background:#0a1f0f; display: flex; align-items: center; justify-content: center; color: #ffd93d; font-size: 12px; font-weight: bold; margin: 0 auto;">
-            Loading QR...
+        <div id="trustlineQRContainer" style="margin-bottom: 20px; text-align: center;">
+          <div style="display: inline-block; position: relative;">
+            <img id="trustlineQR" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+              style="width:120px; height:120px; border-radius:15px; border:3px solid #ffd93d; background:#0a1f0f; display: none;">
+            <div id="trustlineQRPlaceholder"
+              style="width:120px; height:120px; border-radius:15px; border:3px solid #ffd93d; background:#0a1f0f; display: flex; align-items: center; justify-content: center; color: #ffd93d; font-size: 12px; font-weight: bold;">
+              Loading QR...
+            </div>
           </div>
         </div>
 
@@ -497,7 +499,7 @@
     document.getElementById('trustline-status').style.color = '#25c2a0';
 
     let pollCount = 0;
-    const maxPolls = 60; // Poll for 5 minutes (5 second intervals)
+    const maxPolls = 120; // Poll for 10 minutes (5 second intervals)
 
     const pollInterval = setInterval(async () => {
       pollCount++;
@@ -507,28 +509,36 @@
         const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
 
         if (!response.ok) {
+          console.error(`API returned ${response.status}`);
           throw new Error(`API returned ${response.status}`);
         }
 
         const data = await response.json();
         console.log(`📡 Trustline poll ${pollCount} response:`, data);
 
+        // Check explicitly for true value
         if (data.hasWaldoTrustline === true) {
           clearInterval(pollInterval);
           console.log('🎉 TRUSTLINE DETECTED AUTOMATICALLY!');
+          console.log('Setting hasTrustline = true and proceeding to Step 3');
 
           document.getElementById('trustline-status').innerText = '✅ Trustline added successfully!';
           document.getElementById('trustline-status').style.color = '#25c2a0';
 
-          // Auto-proceed to Step 3 after 1.5 seconds
+          // Set the global variable
+          hasTrustline = true;
+
+          // Auto-proceed to Step 3 after 1 second
           setTimeout(() => {
-            hasTrustline = true;
             console.log('🚀 Auto-proceeding to Step 3...');
+            console.log('Current hasTrustline value:', hasTrustline);
             showStep(3);
             loadPresaleProgress();
-          }, 1500);
+          }, 1000);
 
           return;
+        } else {
+          console.log(`❌ Trustline not found yet. hasWaldoTrustline = ${data.hasWaldoTrustline}`);
         }
 
         // Update status with poll count
@@ -536,13 +546,13 @@
 
       } catch (error) {
         console.error(`❌ Trustline polling error (attempt ${pollCount}):`, error);
-        document.getElementById('trustline-status').innerText = `⚠️ Check failed (${pollCount}/${maxPolls})`;
+        document.getElementById('trustline-status').innerText = `⚠️ Check failed (${pollCount}/${maxPolls}) - ${error.message}`;
       }
 
       // Stop polling after max attempts
       if (pollCount >= maxPolls) {
         clearInterval(pollInterval);
-        console.log('❌ Trustline polling timeout');
+        console.log('❌ Trustline polling timeout after 10 minutes');
         document.getElementById('trustline-status').innerText = '❌ Timeout - Please refresh and try again';
         document.getElementById('trustline-status').style.color = '#e74c3c';
       }
@@ -584,9 +594,11 @@
         document.getElementById('trustline-status').style.display = 'block';
         document.getElementById('trustline-status').innerText = '⏳ Scan QR code and add trustline in XAMAN...';
 
+        // Start polling immediately - don't wait 5 seconds
         setTimeout(() => {
+          console.log('🚀 Starting trustline polling now...');
           startTrustlinePolling();
-        }, 5000); // Give user 5 seconds to scan and process
+        }, 2000); // Reduced to 2 seconds
 
       } else {
         console.error('❌ Invalid trustline response - missing qr or uuid:', data);
