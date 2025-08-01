@@ -423,14 +423,21 @@
   // Load trustline QR code
   async function loadTrustlineQR() {
     try {
-      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/trustline/qr');
+      console.log('🔗 Loading trustline QR code...');
+
+      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/login/trustline');
       const data = await response.json();
 
-      if (data.success && data.qr) {
+      console.log('📡 Trustline API response:', data);
+
+      if (data.qr && data.uuid) {
+        console.log('✅ Trustline QR code received');
         document.getElementById('trustlineQR').src = data.qr;
+      } else {
+        console.error('❌ Invalid trustline response:', data);
       }
     } catch (error) {
-      console.error('Trustline QR error:', error);
+      console.error('❌ Trustline QR error:', error);
     }
   }
 
