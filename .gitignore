@@ -75,3 +75,4 @@ Thumbs.db
 waldocoin-backend/waldocoin-backend/
 node_modules/
 .env
+telegram/node_modules/
