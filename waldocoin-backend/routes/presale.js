@@ -306,17 +306,8 @@ router.post("/buy", async (req, res) => {
       }
     };
 
-    // First create the payload to get QR code and UUID
-    const created = await xummClient.payload.create(payload);
-
-    console.log("✅ XUMM Presale Payload Created:", {
-      uuid: created.uuid,
-      qr_png: created.refs?.qr_png ? 'Available' : 'Missing',
-      next: created.next ? 'Available' : 'Missing'
-    });
-
-    // Then subscribe to handle completion in background
-    xummClient.payload.subscribe(created.uuid, async (event) => {
+    // Use createAndSubscribe to ensure proper subscription handling
+    const created = await xummClient.payload.createAndSubscribe(payload, async (event) => {
       if (event.data.signed === true) {
         console.log(`✅ Presale transaction signed! Processing WALDO delivery...`);
 
@@ -337,6 +328,8 @@ router.post("/buy", async (req, res) => {
         } catch (error) {
           console.error(`❌ WALDO delivery failed for ${wallet}:`, error);
         }
+
+        return true;
       }
       if (event.data.signed === false) {
         console.log(`❌ Presale transaction rejected by user`);
@@ -349,7 +342,14 @@ router.post("/buy", async (req, res) => {
           timestamp: new Date().toISOString(),
           shouldDisconnect: false
         });
+
+        return false;
       }
+    });
+
+    console.log("✅ XUMM Presale Payload Created:", {
+      uuid: created.uuid,
+      deeplink: created.next?.always
     });
 
     // Return only deeplink - no QR code needed since user is already connected
