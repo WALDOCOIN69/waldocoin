@@ -1,20 +1,27 @@
 {
   "name": "waldocoin-telegram-bot",
   "version": "1.0.0",
+  "description": "Telegram bot for WALDOcoin presale and debug sending",
   "main": "waldoBuyBot.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node waldoBuyBot.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "waldo",
+    "telegram",
+    "xrpl",
+    "crypto",
+    "bot"
+  ],
+  "author": "WALDOcoin",
+  "license": "MIT",
   "dependencies": {
     "dotenv": "^17.2.1",
     "node-fetch": "^3.3.2",
     "node-telegram-bot-api": "^0.63.0"
-    },
-    "engines": {
+  },
+  "engines": {
     "node": "18.x"
   }
 }
