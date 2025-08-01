@@ -317,7 +317,7 @@ router.post("/buy", async (req, res) => {
           console.log(`✅ WALDO delivery completed for ${wallet}`);
 
           // Store completion status for frontend to check
-          await redis.hSet(`presale:completed:${created.uuid}`, {
+          await redis.hSet(`presale:completed:${created.created.uuid}`, {
             wallet,
             completed: true,
             waldoDelivered: calculation.totalWaldo,
@@ -335,7 +335,7 @@ router.post("/buy", async (req, res) => {
         console.log(`❌ Presale transaction rejected by user`);
 
         // Store rejection status
-        await redis.hSet(`presale:completed:${created.uuid}`, {
+        await redis.hSet(`presale:completed:${created.created.uuid}`, {
           wallet,
           completed: false,
           rejected: true,
@@ -348,16 +348,15 @@ router.post("/buy", async (req, res) => {
     });
 
     console.log("✅ XUMM Presale Payload Created:", {
-      uuid: created.uuid,
-      deeplink: created.next?.always,
-      fullResponse: created
+      uuid: created.created.uuid,
+      deeplink: created.created.next?.always
     });
 
     // Return only deeplink - no QR code needed since user is already connected
     res.json({
       success: true,
-      uuid: created.uuid,
-      deeplink: created.next?.always,
+      uuid: created.created.uuid,
+      deeplink: created.created.next?.always,
       calculation: calculation,
       message: `Purchase ${xrpAmount} XRP worth of WALDO (${calculation.totalWaldo} tokens)`
     });
