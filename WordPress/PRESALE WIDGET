@@ -1009,9 +1009,38 @@
     }
   }
 
+  // Check if user returned from XUMM completion
+  function checkForXummReturn() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const completed = urlParams.get('completed');
+    const hash = window.location.hash;
+
+    if (completed && hash === '#widget') {
+      console.log('🎉 User returned from XUMM! Checking for completion...');
+
+      // Clear the URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname + '#widget');
+
+      // Check for any active polling and trigger immediate completion check
+      setTimeout(() => {
+        console.log('🔍 Triggering immediate completion check...');
+        // If there's an active purchase, check its status immediately
+        const purchaseBtn = document.getElementById('purchaseBtn');
+        if (purchaseBtn && purchaseBtn.innerText === "✅ Check XUMM App") {
+          // Trigger an immediate status check
+          window.location.href = 'https://waldocoin.live/presale-success/';
+        }
+      }, 1000);
+    }
+  }
+
   // Initialize widget on page load
   document.addEventListener('DOMContentLoaded', function () {
     console.log('🚀 Initializing progressive presale widget...');
+
+    // Check if user returned from XUMM
+    checkForXummReturn();
+
     initializePresaleWidget();
 
     // Refresh progress every 30 seconds, but only if we have trustline
