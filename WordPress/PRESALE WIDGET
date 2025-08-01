@@ -384,23 +384,30 @@
   // Step 2: Check trustline and proceed accordingly
   async function checkTrustlineAndProceed() {
     try {
-      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/wallet/trustlines/${connectedWallet}`);
+      console.log('🔍 Checking trustline for wallet:', connectedWallet);
+
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
       const data = await response.json();
 
-      hasTrustline = data.success && data.hasTrustline;
+      console.log('📡 Trustline check response:', data);
+
+      hasTrustline = data.hasWaldoTrustline;
 
       if (hasTrustline) {
+        console.log('✅ Wallet has WALDO trustline, skipping to Step 3');
         // Skip step 2, go directly to step 3
         showStep(3);
         loadPresaleProgress();
       } else {
+        console.log('⚠️ Wallet needs WALDO trustline, showing Step 2');
         // Show step 2: trustline setup
         showStep(2);
         setupTrustlineStep();
       }
     } catch (error) {
-      console.error('Trustline check error:', error);
+      console.error('❌ Trustline check error:', error);
       // If error, assume no trustline and show step 2
+      console.log('⚠️ Error checking trustline, assuming no trustline - showing Step 2');
       showStep(2);
       setupTrustlineStep();
     }
@@ -444,18 +451,24 @@
   // Recheck trustline after user claims to have added it
   async function recheckTrustline() {
     try {
-      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/wallet/trustlines/${connectedWallet}`);
+      console.log('🔄 Rechecking trustline for wallet:', connectedWallet);
+
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
       const data = await response.json();
 
-      if (data.success && data.hasTrustline) {
+      console.log('📡 Trustline recheck response:', data);
+
+      if (data.hasWaldoTrustline) {
+        console.log('✅ Trustline confirmed! Moving to Step 3');
         hasTrustline = true;
         showStep(3);
         loadPresaleProgress();
       } else {
+        console.log('❌ Trustline still not detected');
         alert('Trustline not detected yet. Please make sure you have added the WALDO trustline and try again.');
       }
     } catch (error) {
-      console.error('Trustline recheck error:', error);
+      console.error('❌ Trustline recheck error:', error);
       alert('Error checking trustline. Please try again.');
     }
   }
