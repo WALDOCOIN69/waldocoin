@@ -794,45 +794,63 @@
     document.getElementById('purchaseBtn').innerText = `🔐 Buy ${amount} XRP Worth of WALDO`;
   }
 
-  // Calculate purchase details
-  async function calculatePurchase(xrpAmount) {
+  // Calculate purchase details (local calculation - no API needed)
+  function calculatePurchase(xrpAmount) {
     try {
-      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/presale/calculate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ xrpAmount })
+      console.log('🧮 Calculating purchase for', xrpAmount, 'XRP');
+
+      // Base rate: 100,000 WALDO per XRP
+      const baseRate = 100000;
+      const baseWaldo = xrpAmount * baseRate;
+
+      // Calculate bonus based on amount
+      let bonusPercentage = 0;
+      if (xrpAmount >= 100) {
+        bonusPercentage = 30; // 30% bonus for 100+ XRP
+      } else if (xrpAmount >= 90) {
+        bonusPercentage = 22; // 22% bonus for 90+ XRP
+      } else if (xrpAmount >= 80) {
+        bonusPercentage = 15; // 15% bonus for 80+ XRP
+      }
+
+      const bonus = Math.floor(baseWaldo * (bonusPercentage / 100));
+      const totalWaldo = baseWaldo + bonus;
+
+      console.log('📊 Calculation result:', {
+        xrpAmount,
+        baseWaldo,
+        bonusPercentage,
+        bonus,
+        totalWaldo
       });
 
-      const data = await response.json();
+      // Update digital LED display with total WALDO amount
+      const totalWaldoFormatted = totalWaldo.toLocaleString();
+      document.getElementById('calculatorDisplay').innerText = totalWaldoFormatted;
 
-      if (data.success) {
-        // Update digital LED display with total WALDO amount
-        const totalWaldoFormatted = data.totalWaldo.toLocaleString();
-        document.getElementById('calculatorDisplay').innerText = totalWaldoFormatted;
+      // Add a brief flash effect for the digital display
+      const display = document.getElementById('calculatorDisplay');
+      display.style.textShadow = '0 0 20px #ff0000, 0 0 30px #ff0000';
+      setTimeout(() => {
+        display.style.textShadow = '0 0 10px #ff0000';
+      }, 200);
 
-        // Add a brief flash effect for the digital display
-        const display = document.getElementById('calculatorDisplay');
-        display.style.textShadow = '0 0 20px #ff0000, 0 0 30px #ff0000';
-        setTimeout(() => {
-          display.style.textShadow = '0 0 10px #ff0000';
-        }, 200);
+      // Update purchase summary
+      document.getElementById('summaryXRP').innerText = `${xrpAmount} XRP`;
+      document.getElementById('summaryBaseWaldo').innerText = `${baseWaldo.toLocaleString()} WALDO`;
+      document.getElementById('summaryTotal').innerText = `${totalWaldo.toLocaleString()} WALDO`;
 
-        // Update purchase summary
-        document.getElementById('summaryXRP').innerText = `${xrpAmount} XRP`;
-        document.getElementById('summaryBaseWaldo').innerText = `${data.baseWaldo.toLocaleString()} WALDO`;
-        document.getElementById('summaryTotal').innerText = `${data.totalWaldo.toLocaleString()} WALDO`;
-
-        if (data.bonusPercentage > 0) {
-          document.getElementById('bonusRow').style.display = 'flex';
-          document.getElementById('summaryBonus').innerText = `${data.bonus.toLocaleString()} WALDO (${data.bonusPercentage}%)`;
-        } else {
-          document.getElementById('bonusRow').style.display = 'none';
-        }
-
-        document.getElementById('purchaseSummary').style.display = 'block';
+      if (bonusPercentage > 0) {
+        document.getElementById('bonusRow').style.display = 'flex';
+        document.getElementById('summaryBonus').innerText = `${bonus.toLocaleString()} WALDO (${bonusPercentage}%)`;
+      } else {
+        document.getElementById('bonusRow').style.display = 'none';
       }
+
+      document.getElementById('purchaseSummary').style.display = 'block';
+
     } catch (error) {
-      console.error('Calculation error:', error);
+      console.error('❌ Calculation error:', error);
       // Show error on digital display
       document.getElementById('calculatorDisplay').innerText = 'ERROR';
       document.getElementById('calculatorDisplay').style.color = '#ff6666';
