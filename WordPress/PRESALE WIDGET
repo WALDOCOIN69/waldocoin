@@ -62,14 +62,19 @@
           </div>
         </div>
 
-        <div style="color: white; font-size: 14px; font-weight: bold; margin-bottom: 15px;">Scan with XAMAN to add
-          trustline</div>
-
-        <!-- Mobile Deep Link -->
+        <!-- Mobile-First: Primary Trustline Button -->
         <a id="trustlineDeepLink" href="#" onclick="addTrustlineAndWait()"
-          style="background: #ffd93d; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px; margin-bottom: 15px;">
-          📲 Or tap here for XAMAN App
+          style="background: #ffd93d; color: black; padding: 18px 30px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 16px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(255, 217, 61, 0.3);">
+          📲 Add WALDO Trustline in XAMAN
         </a>
+
+        <div style="color: #ffd93d; font-size: 12px; margin-bottom: 15px;">
+          ⬆️ <strong>Mobile users:</strong> Tap the button above
+        </div>
+
+        <div style="color: white; font-size: 12px; margin-bottom: 10px;">
+          💻 <strong>Desktop users:</strong> Scan QR code below
+        </div>
 
         <div id="trustline-status" style="color: #25c2a0; font-size: 14px; margin-top: 15px; display: none;">
           ⏳ Waiting for trustline to be added...
@@ -436,8 +441,9 @@
     // Load the trustline QR code
     loadTrustlineQR();
 
-    // Set up the deep link for mobile users
-    document.getElementById('trustlineDeepLink').href = 'https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO';
+    // Set up the deep link for mobile users (fallback if onclick doesn't work)
+    const trustlineUrl = 'https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO';
+    document.getElementById('trustlineDeepLink').href = trustlineUrl;
   }
 
   // New function: Add trustline and automatically wait for completion
@@ -447,9 +453,18 @@
     // Show waiting status
     document.getElementById('trustline-status').style.display = 'block';
     document.getElementById('trustline-status').innerText = '⏳ Opening XAMAN... Please add the trustline';
+    document.getElementById('trustline-status').style.color = '#ffd93d';
+
+    // For mobile users, we need to actually navigate to the trustline URL
+    // This will open XAMAN app if installed, or XUMM website if not
+    const trustlineUrl = 'https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO';
+
+    // Open the trustline URL
+    window.open(trustlineUrl, '_blank');
 
     // Start automatic polling for trustline after a short delay
     setTimeout(() => {
+      document.getElementById('trustline-status').innerText = '⏳ Add the trustline in XAMAN, then return here...';
       startTrustlinePolling();
     }, 3000); // Give user 3 seconds to open XAMAN
   }
