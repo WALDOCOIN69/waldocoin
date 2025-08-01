@@ -713,77 +713,59 @@ router.post("/webhook", async (req, res) => {
   }
 });
 
-// ✅ Function to send WALDO tokens to buyer
+// ✅ Function to send WALDO tokens to buyer (using working xummClient pattern)
 async function sendWaldoTokens(buyerWallet, waldoAmount, calculation, originalTxId) {
   try {
     console.log(`🚀 Sending ${waldoAmount} WALDO to ${buyerWallet}`);
 
-    // Create WALDO payment transaction
+    // Create WALDO payment transaction using the working pattern
     const payload = {
-      TransactionType: 'Payment',
-      Account: DISTRIBUTOR_WALLET, // WALDO distributor wallet
-      Destination: buyerWallet,
-      Amount: {
-        currency: 'WLO',
-        issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY',
-        value: waldoAmount.toString()
+      txjson: {
+        TransactionType: "Payment",
+        Destination: buyerWallet,
+        Amount: {
+          currency: "WLO",
+          issuer: process.env.WALDO_ISSUER,
+          value: parseFloat(waldoAmount).toFixed(6)
+        },
+        DestinationTag: 111,
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('PRESALE_DELIVERY').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`Base:${calculation.baseWaldo}+Bonus:${calculation.bonus}=${waldoAmount}WALDO`).toString('hex').toUpperCase()
+          }
+        }]
       },
-      Memos: [{
-        Memo: {
-          MemoType: Buffer.from('PRESALE_DELIVERY').toString('hex').toUpperCase(),
-          MemoData: Buffer.from(`Base:${calculation.baseWaldo}+Bonus:${calculation.bonus}=${waldoAmount}WALDO`).toString('hex').toUpperCase()
-        }
-      }]
+      options: {
+        submit: true,
+        expire: 300
+      }
     };
 
-    // Submit transaction using XUMM or direct XRPL submission
-    // For now, we'll use XUMM to create and auto-submit
-    const xummResponse = await fetch('https://xumm.app/api/v1/platform/payload', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': process.env.XUMM_API_KEY,
-        'X-API-Secret': process.env.XUMM_API_SECRET
-      },
-      body: JSON.stringify({
-        txjson: payload,
-        options: {
-          submit: true,
-          multisign: false,
-          expire: 60, // 1 hour
-          return_url: {
-            web: 'https://waldocoin.live/presale-success'
-          }
-        },
-        custom_meta: {
-          identifier: `presale-delivery-${originalTxId}`,
-          blob: {
-            buyerWallet,
-            waldoAmount,
-            originalTxId
-          }
-        }
-      })
+    // Use the working xummClient pattern (same as admin sendWaldo)
+    const created = await xummClient.payload.createAndSubscribe(payload, event => {
+      if (event.data.signed) {
+        console.log(`✅ WALDO delivery completed: ${waldoAmount} WALDO sent to ${buyerWallet}`);
+        return true;
+      }
+      if (event.data.signed === false) {
+        console.error(`❌ WALDO delivery rejected for ${buyerWallet}`);
+        throw new Error("WALDO delivery transaction rejected");
+      }
     });
 
-    const xummData = await xummResponse.json();
+    console.log(`✅ WALDO delivery transaction created: ${created.uuid}`);
 
-    if (xummData.uuid) {
-      console.log(`✅ WALDO delivery transaction created: ${xummData.uuid}`);
+    // Store delivery transaction info
+    await redis.hSet(`presale:delivery:${originalTxId}`, {
+      buyerWallet,
+      waldoAmount,
+      deliveryUuid: created.uuid,
+      status: 'completed',
+      timestamp: new Date().toISOString()
+    });
 
-      // Store delivery transaction info
-      await redis.hSet(`presale:delivery:${originalTxId}`, {
-        buyerWallet,
-        waldoAmount,
-        deliveryUuid: xummData.uuid,
-        status: 'pending',
-        timestamp: new Date().toISOString()
-      });
-
-      return xummData.uuid;
-    } else {
-      throw new Error('Failed to create WALDO delivery transaction');
-    }
+    return created.uuid;
 
   } catch (error) {
     console.error('❌ Error sending WALDO tokens:', error);
