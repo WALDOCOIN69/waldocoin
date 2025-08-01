@@ -713,67 +713,71 @@ router.post("/webhook", async (req, res) => {
   }
 });
 
-// ✅ Function to send WALDO tokens to buyer (using working xummClient pattern)
+// ✅ Function to send WALDO tokens to buyer (using direct XRPL approach)
 async function sendWaldoTokens(buyerWallet, waldoAmount, calculation, originalTxId) {
   try {
     console.log(`🚀 Sending ${waldoAmount} WALDO to ${buyerWallet}`);
 
-    // Create WALDO payment transaction using the working pattern
-    const payload = {
-      txjson: {
-        TransactionType: "Payment",
-        Destination: buyerWallet,
-        Amount: {
-          currency: "WLO",
-          issuer: process.env.WALDO_ISSUER,
-          value: parseFloat(waldoAmount).toFixed(6)
-        },
-        DestinationTag: 111,
-        Memos: [{
-          Memo: {
-            MemoType: Buffer.from('PRESALE_DELIVERY').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(`Base:${calculation.baseWaldo}+Bonus:${calculation.bonus}=${waldoAmount}WALDO`).toString('hex').toUpperCase()
-          }
-        }]
+    // Import XRPL library for direct transaction submission
+    const xrpl = await import('xrpl');
+
+    // Create wallet from distributor secret
+    const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
+
+    // Connect to XRPL
+    const client = new xrpl.Client("wss://xrplcluster.com");
+    await client.connect();
+
+    // Create WALDO payment transaction
+    const transaction = {
+      TransactionType: "Payment",
+      Account: distributorWallet.classicAddress,
+      Destination: buyerWallet,
+      Amount: {
+        currency: "WLO",
+        issuer: process.env.WALDO_ISSUER,
+        value: parseFloat(waldoAmount).toFixed(6)
       },
-      options: {
-        submit: true,
-        expire: 300
-      }
+      Memos: [{
+        Memo: {
+          MemoType: Buffer.from('PRESALE_DELIVERY').toString('hex').toUpperCase(),
+          MemoData: Buffer.from(`Base:${calculation.baseWaldo}+Bonus:${calculation.bonus}=${waldoAmount}WALDO`).toString('hex').toUpperCase()
+        }
+      }]
     };
 
-    // Use the working xummClient pattern (same as admin sendWaldo)
-    const created = await xummClient.payload.createAndSubscribe(payload, event => {
-      if (event.data.signed) {
-        console.log(`✅ WALDO delivery completed: ${waldoAmount} WALDO sent to ${buyerWallet}`);
-        return true;
-      }
-      if (event.data.signed === false) {
-        console.error(`❌ WALDO delivery rejected for ${buyerWallet}`);
-        throw new Error("WALDO delivery transaction rejected");
-      }
-    });
+    // Submit transaction directly
+    const prepared = await client.autofill(transaction);
+    const signed = distributorWallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
 
-    console.log(`✅ WALDO delivery transaction created: ${created.uuid}`);
+    await client.disconnect();
 
-    // Store delivery transaction info
-    await redis.hSet(`presale:delivery:${originalTxId}`, {
-      buyerWallet,
-      waldoAmount,
-      deliveryUuid: created.uuid,
-      status: 'completed',
-      timestamp: new Date().toISOString()
-    });
+    if (result.result.meta.TransactionResult === "tesSUCCESS") {
+      console.log(`✅ WALDO delivery completed: ${waldoAmount} WALDO sent to ${buyerWallet}`);
+      console.log(`✅ Transaction hash: ${result.result.hash}`);
 
-    return created.uuid;
+      // Store delivery transaction info
+      await redis.hSet(`presale:delivery:${originalTxId}`, {
+        buyerWallet: buyerWallet,
+        waldoAmount: waldoAmount.toString(),
+        deliveryTxHash: result.result.hash,
+        status: 'completed',
+        timestamp: new Date().toISOString()
+      });
+
+      return result.result.hash;
+    } else {
+      throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
+    }
 
   } catch (error) {
     console.error('❌ Error sending WALDO tokens:', error);
 
     // Store failed delivery for manual processing
     await redis.hSet(`presale:failed_delivery:${originalTxId}`, {
-      buyerWallet,
-      waldoAmount,
+      buyerWallet: buyerWallet,
+      waldoAmount: waldoAmount.toString(),
       error: error.message,
       timestamp: new Date().toISOString()
     });
