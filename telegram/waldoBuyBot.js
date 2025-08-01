@@ -14,10 +14,9 @@ const BONUS_TIERS = JSON.parse(process.env.BONUS_TIERS_JSON || '{}');
 
 // 📍 START: Wallet + client setup
 const wallet = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
-const client = new xrpl.Client("wss://s.altnet.rippletest.net"); // use mainnet if needed
-
+const client = new xrpl.Client("wss://s.altnet.rippletest.net"); // or mainnet
 await client.connect();
-// ✅ Ready
+
 console.log("🤖 WALDO Telegram Bot is live!");
 
 const sessions = {};
@@ -30,13 +29,19 @@ bot.onText(/\/start/, (msg) => {
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
+
+    // 💥 Fix crash from non-text messages
+    if (!msg.text) {
+        return bot.sendMessage(chatId, "❌ Please send a text message.");
+    }
+
     const text = msg.text.trim();
 
-    // Ignore /start, already handled
+    // Ignore /start
     if (text.startsWith("/")) return;
 
     if (!sessions[chatId]?.wallet) {
-        // Validate XRPL wallet
+        // XRPL wallet format validation
         if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(text)) {
             bot.sendMessage(chatId, "❌ That doesn't look like a valid XRPL wallet. Please try again.");
             return;
@@ -61,17 +66,23 @@ bot.on('message', async (msg) => {
     const totalWaldo = baseWaldo + bonus;
 
     // 📍 Trustline check
-    const accountLines = await client.request({
-        command: "account_lines",
-        account: walletAddr
-    });
+    try {
+        const accountLines = await client.request({
+            command: "account_lines",
+            account: walletAddr
+        });
 
-    const trustlineExists = accountLines.result.lines.some(
-        line => line.currency === WALDO_TOKEN && line.issuer === WALDO_ISSUER
-    );
+        const trustlineExists = accountLines.result.lines.some(
+            line => line.currency === WALDO_TOKEN && line.issuer === WALDO_ISSUER
+        );
 
-    if (!trustlineExists) {
-        bot.sendMessage(chatId, `⚠️ You must first set a trustline to WALDO ($WLO).\nVisit: https://xrpl.services/tokens → Search "WLO" → Add Trustline.`);
+        if (!trustlineExists) {
+            bot.sendMessage(chatId, `⚠️ You must first set a trustline to WALDO ($WLO).\nVisit: https://xrpl.services/tokens → Search "WLO" → Add Trustline.`);
+            return;
+        }
+    } catch (e) {
+        console.error(e);
+        bot.sendMessage(chatId, `❌ Could not verify trustline. Try again later.`);
         return;
     }
 
@@ -101,7 +112,6 @@ bot.on('message', async (msg) => {
         bot.sendMessage(chatId, `❌ Transaction failed. Please try again later.`);
     }
 
-    // 🔁 Reset session
-    delete sessions[chatId];
+    delete sessions[chatId]; // Reset session
 });
 
