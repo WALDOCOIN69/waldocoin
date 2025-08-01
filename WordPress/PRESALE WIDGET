@@ -237,7 +237,8 @@
 
   // Progressive flow management - Mobile optimized
   function showStep(stepNumber) {
-    console.log(`📱 Showing Step ${stepNumber}`);
+    console.log(`📱 SHOWING STEP ${stepNumber}`);
+    console.trace('Step change called from:'); // This will show the call stack
 
     // Hide all steps
     document.getElementById('step1-connect').style.display = 'none';
@@ -247,10 +248,15 @@
 
     // Show requested step
     if (stepNumber === 1) {
+      console.log('✅ Displaying Step 1: Connect Wallet');
       document.getElementById('step1-connect').style.display = 'block';
     } else if (stepNumber === 2) {
+      console.log('✅ Displaying Step 2: Add Trustline');
       document.getElementById('step2-trustline').style.display = 'block';
     } else if (stepNumber === 3) {
+      console.log('✅ Displaying Step 3: Purchase Interface');
+      console.log('⚠️ WARNING: Make sure wallet has trustline before showing Step 3!');
+      console.log('Current hasTrustline value:', hasTrustline);
       document.getElementById('step3-info').style.display = 'block';
       document.getElementById('purchase-interface').style.display = 'block';
     }
@@ -379,27 +385,32 @@
       console.log('🔍 Checking trustline for wallet:', connectedWallet);
 
       const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
       const data = await response.json();
 
       console.log('📡 Trustline check response:', data);
 
-      hasTrustline = data.hasWaldoTrustline;
-
-      if (hasTrustline) {
-        console.log('✅ Wallet has WALDO trustline, skipping to Step 3');
-        // Skip step 2, go directly to step 3
+      // Explicitly check the boolean value
+      if (data.hasWaldoTrustline === true) {
+        console.log('✅ Wallet HAS WALDO trustline, skipping to Step 3');
+        hasTrustline = true;
         showStep(3);
         loadPresaleProgress();
       } else {
-        console.log('⚠️ Wallet needs WALDO trustline, showing Step 2');
-        // Show step 2: trustline setup
+        console.log('⚠️ Wallet DOES NOT have WALDO trustline, showing Step 2');
+        hasTrustline = false;
         showStep(2);
         setupTrustlineStep();
       }
     } catch (error) {
       console.error('❌ Trustline check error:', error);
-      // If error, assume no trustline and show step 2
-      console.log('⚠️ Error checking trustline, assuming no trustline - showing Step 2');
+      // If error, assume NO trustline and show step 2
+      console.log('⚠️ Error checking trustline, assuming NO trustline - showing Step 2');
+      hasTrustline = false;
       showStep(2);
       setupTrustlineStep();
     }
@@ -525,16 +536,35 @@
 
   // Load presale progress
   async function loadPresaleProgress() {
+    // Safety check - don't load if no trustline
+    if (!hasTrustline) {
+      console.error('❌ SAFETY CHECK: Attempted to load presale progress without trustline!');
+      console.log('Current hasTrustline value:', hasTrustline);
+      console.log('Redirecting to Step 2...');
+      showStep(2);
+      setupTrustlineStep();
+      return;
+    }
+
     try {
+      console.log('📊 Loading presale progress...');
       const response = await fetch('https://waldocoin-backend-api.onrender.com/api/presale/total-sold');
+
+      if (!response.ok) {
+        throw new Error(`Presale API returned ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('📊 Presale progress data:', data);
 
       if (data.success) {
         document.getElementById('progressText').innerHTML =
           `<strong>${data.totalPurchases}</strong> purchases • <strong>${data.totalXRP}</strong> XRP raised • <strong>${data.totalWaldo.toLocaleString()}</strong> WALDO sold`;
+      } else {
+        console.error('❌ Presale API returned success: false');
       }
     } catch (error) {
-      console.error('Progress load error:', error);
+      console.error('❌ Progress load error:', error);
     }
   }
 
