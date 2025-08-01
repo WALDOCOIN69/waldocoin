@@ -799,8 +799,8 @@
     try {
       console.log('🧮 Calculating purchase for', xrpAmount, 'XRP');
 
-      // Base rate: 100,000 WALDO per XRP
-      const baseRate = 100000;
+      // Base rate: 10,000 WALDO per XRP
+      const baseRate = 10000;
       const baseWaldo = xrpAmount * baseRate;
 
       // Calculate bonus based on amount
