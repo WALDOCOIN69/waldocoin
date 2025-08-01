@@ -948,13 +948,12 @@
             btn.innerText = "🎉 Purchase Complete!";
 
             // Show success message
-            alert(`🎉 Purchase completed successfully!\n\nYou received: ${parseInt(statusData.waldoDelivered).toLocaleString()} WALDO tokens\n\nDisconnecting wallet for security...`);
+            alert(`🎉 Purchase completed successfully!\n\nYou received: ${parseInt(statusData.waldoDelivered).toLocaleString()} WALDO tokens\n\nRedirecting to success page...`);
 
-            // Disconnect wallet after successful purchase
+            // Redirect to success page after successful purchase
             setTimeout(() => {
-              console.log('🔌 Calling disconnectWallet() with auto flag...');
-              disconnectWallet('auto');
-              btn.innerText = "🔐 Buy Now with XUMM";
+              console.log('🚀 Redirecting to success page...');
+              window.location.href = 'https://waldocoin.live/presale-success/';
             }, 2000);
 
           } else if (statusData.rejected) {
