@@ -81,6 +81,12 @@
         <div id="trustline-status" style="color: #25c2a0; font-size: 14px; margin-top: 15px; display: none;">
           ⏳ Waiting for trustline to be added...
         </div>
+
+        <!-- Manual Check Button (backup) -->
+        <button id="manualCheckBtn" onclick="recheckTrustline()"
+          style="background: #25c2a0; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; margin-top: 15px; cursor: pointer; display: none;">
+          ✅ I've Added the Trustline - Check Now
+        </button>
       </div>
 
       <!-- Step 3: Purchase Info (shown after wallet connected and trustline verified) -->
@@ -547,14 +553,20 @@
       } catch (error) {
         console.error(`❌ Trustline polling error (attempt ${pollCount}):`, error);
         document.getElementById('trustline-status').innerText = `⚠️ Check failed (${pollCount}/${maxPolls}) - ${error.message}`;
+
+        // Show manual button after 3 failed attempts
+        if (pollCount >= 3) {
+          document.getElementById('manualCheckBtn').style.display = 'inline-block';
+        }
       }
 
       // Stop polling after max attempts
       if (pollCount >= maxPolls) {
         clearInterval(pollInterval);
         console.log('❌ Trustline polling timeout after 10 minutes');
-        document.getElementById('trustline-status').innerText = '❌ Timeout - Please refresh and try again';
+        document.getElementById('trustline-status').innerText = '❌ Auto-detection failed - Use button below';
         document.getElementById('trustline-status').style.color = '#e74c3c';
+        document.getElementById('manualCheckBtn').style.display = 'inline-block';
       }
 
     }, 5000); // Poll every 5 seconds
@@ -615,25 +627,47 @@
   // Recheck trustline after user claims to have added it
   async function recheckTrustline() {
     try {
-      console.log('🔄 Rechecking trustline for wallet:', connectedWallet);
+      console.log('🔄 Manual trustline recheck for wallet:', connectedWallet);
+
+      if (!connectedWallet) {
+        alert('No wallet connected. Please refresh and try again.');
+        return;
+      }
+
+      // Show loading state
+      document.getElementById('manualCheckBtn').innerText = 'Checking...';
+      document.getElementById('manualCheckBtn').disabled = true;
 
       const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('📡 Manual trustline recheck response:', data);
 
-      console.log('📡 Trustline recheck response:', data);
-
-      if (data.hasWaldoTrustline) {
-        console.log('✅ Trustline confirmed! Moving to Step 3');
+      if (data.hasWaldoTrustline === true) {
+        console.log('✅ Trustline confirmed manually! Moving to Step 3');
         hasTrustline = true;
-        showStep(3);
-        loadPresaleProgress();
+        document.getElementById('trustline-status').innerText = '✅ Trustline confirmed!';
+        document.getElementById('trustline-status').style.color = '#25c2a0';
+
+        setTimeout(() => {
+          showStep(3);
+          loadPresaleProgress();
+        }, 1000);
       } else {
         console.log('❌ Trustline still not detected');
-        alert('Trustline not detected yet. Please make sure you have added the WALDO trustline and try again.');
+        document.getElementById('manualCheckBtn').innerText = '✅ I\'ve Added the Trustline - Check Now';
+        document.getElementById('manualCheckBtn').disabled = false;
+        alert('Trustline not detected yet. Please make sure you have added the WALDO trustline in XAMAN and try again.');
       }
     } catch (error) {
-      console.error('❌ Trustline recheck error:', error);
-      alert('Error checking trustline. Please try again.');
+      console.error('❌ Manual trustline recheck error:', error);
+      document.getElementById('manualCheckBtn').innerText = '✅ I\'ve Added the Trustline - Check Now';
+      document.getElementById('manualCheckBtn').disabled = false;
+      alert(`Error checking trustline: ${error.message}. Please try again.`);
     }
   }
 
