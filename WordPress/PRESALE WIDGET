@@ -87,6 +87,12 @@
           style="background: #25c2a0; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; margin-top: 15px; cursor: pointer; display: none;">
           ✅ I've Added the Trustline - Check Now
         </button>
+
+        <!-- Skip Button (API bypass) -->
+        <button id="skipTrustlineBtn" onclick="skipTrustlineCheck()"
+          style="background: #ffd93d; color: black; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; margin-top: 10px; cursor: pointer; display: none;">
+          🚀 Skip Check - Go to Purchase (API Issues)
+        </button>
       </div>
 
       <!-- Step 3: Purchase Info (shown after wallet connected and trustline verified) -->
@@ -418,23 +424,81 @@
     }, 2000);
   }
 
+  // Direct XRPL trustline check (same as airdrop system)
+  async function checkTrustlineDirectXRPL(wallet) {
+    console.log('🔍 Direct XRPL trustline check for:', wallet);
+
+    // Multiple XRPL servers for reliability (same as airdrop)
+    const servers = [
+      'https://xrplcluster.com',
+      'https://s1.ripple.com:51234',
+      'https://s2.ripple.com:51234'
+    ];
+
+    for (const server of servers) {
+      try {
+        console.log(`🔗 Trying XRPL server: ${server}`);
+
+        const response = await fetch(server, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            method: 'account_lines',
+            params: [{
+              account: wallet,
+              ledger_index: 'validated'
+            }]
+          })
+        });
+
+        if (!response.ok) {
+          console.log(`❌ ${server} returned status:`, response.status);
+          continue;
+        }
+
+        const data = await response.json();
+        console.log(`📡 XRPL response from ${server}:`, data);
+
+        if (data.result && data.result.lines) {
+          const waldoTrustline = data.result.lines.find(line =>
+            line.account === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY' &&
+            (line.currency === 'WLO' || line.currency === 'WALDO')
+          );
+
+          if (waldoTrustline) {
+            console.log('✅ WALDO trustline found via direct XRPL!');
+            return true;
+          } else {
+            console.log('❌ No WALDO trustline found via direct XRPL');
+            return false;
+          }
+        }
+
+      } catch (error) {
+        console.log(`❌ Failed to query ${server}:`, error.message);
+        continue;
+      }
+    }
+
+    // All servers failed
+    throw new Error('All XRPL servers failed');
+  }
+
   // Step 2: Check trustline and proceed accordingly
   async function checkTrustlineAndProceed() {
     try {
       console.log('🔍 Checking trustline for wallet:', connectedWallet);
 
-      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
+      if (!connectedWallet) {
+        console.error('❌ No connected wallet found');
+        showStep(1);
+        return;
       }
 
-      const data = await response.json();
+      // Use direct XRPL check (same as airdrop system)
+      const hasWaldoTrustline = await checkTrustlineDirectXRPL(connectedWallet);
 
-      console.log('📡 Trustline check response:', data);
-
-      // Explicitly check the boolean value
-      if (data.hasWaldoTrustline === true) {
+      if (hasWaldoTrustline) {
         console.log('✅ Wallet HAS WALDO trustline, skipping to Step 3');
         hasTrustline = true;
         showStep(3);
@@ -512,18 +576,12 @@
       console.log(`🔍 Trustline poll attempt ${pollCount}/${maxPolls} for wallet: ${connectedWallet}`);
 
       try {
-        const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
-
-        if (!response.ok) {
-          console.error(`API returned ${response.status}`);
-          throw new Error(`API returned ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log(`📡 Trustline poll ${pollCount} response:`, data);
+        // Use direct XRPL check instead of API
+        const hasWaldoTrustline = await checkTrustlineDirectXRPL(connectedWallet);
+        console.log(`📡 Trustline poll ${pollCount} result:`, hasWaldoTrustline);
 
         // Check explicitly for true value
-        if (data.hasWaldoTrustline === true) {
+        if (hasWaldoTrustline === true) {
           clearInterval(pollInterval);
           console.log('🎉 TRUSTLINE DETECTED AUTOMATICALLY!');
           console.log('Setting hasTrustline = true and proceeding to Step 3');
@@ -557,6 +615,11 @@
         // Show manual button after 3 failed attempts
         if (pollCount >= 3) {
           document.getElementById('manualCheckBtn').style.display = 'inline-block';
+        }
+
+        // Show skip button after 5 failed attempts (API issues)
+        if (pollCount >= 5) {
+          document.getElementById('skipTrustlineBtn').style.display = 'inline-block';
         }
       }
 
@@ -638,16 +701,11 @@
       document.getElementById('manualCheckBtn').innerText = 'Checking...';
       document.getElementById('manualCheckBtn').disabled = true;
 
-      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/trustline-check?wallet=${connectedWallet}`);
+      // Use direct XRPL check instead of API
+      const hasWaldoTrustline = await checkTrustlineDirectXRPL(connectedWallet);
+      console.log('📡 Manual trustline recheck result:', hasWaldoTrustline);
 
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('📡 Manual trustline recheck response:', data);
-
-      if (data.hasWaldoTrustline === true) {
+      if (hasWaldoTrustline === true) {
         console.log('✅ Trustline confirmed manually! Moving to Step 3');
         hasTrustline = true;
         document.getElementById('trustline-status').innerText = '✅ Trustline confirmed!';
