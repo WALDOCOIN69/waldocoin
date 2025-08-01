@@ -305,22 +305,22 @@
       const data = await response.json();
       console.log('📡 Login API data:', data);
 
-      if (data.success && data.qr) {
+      if (data.qr && data.uuid) {
         console.log('✅ QR code received, displaying...');
         document.getElementById('xummQR').src = data.qr;
         document.getElementById('xummQR').style.display = 'block';
         document.getElementById('qrPlaceholder').style.display = 'none';
 
-        if (data.deeplink) {
-          document.getElementById('xummDeepLink').href = data.deeplink;
+        if (data.next && data.next.always) {
+          document.getElementById('xummDeepLink').href = data.next.always;
           document.getElementById('xummDeepLink').style.display = 'block';
         }
 
         // Poll for connection
         pollForConnection(data.uuid);
       } else {
-        console.error('❌ Invalid response:', data);
-        throw new Error('Invalid API response');
+        console.error('❌ Invalid response - missing qr or uuid:', data);
+        throw new Error('Invalid API response - missing required fields');
       }
     } catch (error) {
       console.error('❌ Connection error:', error);
