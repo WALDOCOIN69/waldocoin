@@ -200,25 +200,10 @@ router.post("/log", async (req, res) => {
 // ✅ GET /api/presale/total-sold - Get total presale statistics
 router.get("/total-sold", async (req, res) => {
   try {
-    // Get all presale purchases from Redis
-    const presaleKey = "presale:purchases";
-    const purchases = await redis.lRange(presaleKey, 0, -1);
-
-    let totalXRP = 0;
-    let totalWALDO = 0;
-    let totalPurchases = 0;
-
-    // Calculate totals from stored purchases
-    purchases.forEach(purchaseStr => {
-      try {
-        const purchase = JSON.parse(purchaseStr);
-        totalXRP += purchase.amount || 0;
-        totalWALDO += purchase.waldoAmount || 0;
-        totalPurchases++;
-      } catch (error) {
-        console.error('Error parsing purchase:', error);
-      }
-    });
+    // Get totals from Redis counters (set by recordPresalePurchase)
+    const totalXRP = parseFloat(await redis.get('presale:total_xrp') || '0');
+    const totalWALDO = parseFloat(await redis.get('presale:total_sold') || '0');
+    const totalPurchases = parseInt(await redis.get('presale:total_purchases') || '0');
 
     // Calculate progress towards goals
     const xrpGoal = 4000; // 4K XRP for 40M WALDO (10K WALDO per XRP)
@@ -316,6 +301,10 @@ router.post("/buy", async (req, res) => {
         try {
           await sendWaldoTokens(wallet, calculation.totalWaldo, calculation, event.data.txid);
           console.log(`✅ WALDO delivery completed for ${wallet}`);
+
+          // Record the purchase for tracking
+          await recordPresalePurchase(wallet, xrpAmount, calculation, event.data.txid);
+          console.log(`✅ Purchase recorded for tracking`);
 
           // Store completion status for frontend to check
           await redis.hSet(`presale:completed:${created.created.uuid}`, {
