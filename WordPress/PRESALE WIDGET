@@ -661,10 +661,19 @@
       console.log('📊 Presale progress data:', data);
 
       if (data.success) {
+        // Add null checks and fallback values
+        const totalPurchases = data.totalPurchases || 0;
+        const totalXRP = data.totalXRP || 0;
+        const totalWaldo = data.totalWaldo || 0;
+
         document.getElementById('progressText').innerHTML =
-          `<strong>${data.totalPurchases}</strong> purchases • <strong>${data.totalXRP}</strong> XRP raised • <strong>${data.totalWaldo.toLocaleString()}</strong> WALDO sold`;
+          `<strong>${totalPurchases}</strong> purchases • <strong>${totalXRP}</strong> XRP raised • <strong>${totalWaldo.toLocaleString()}</strong> WALDO sold`;
       } else {
         console.error('❌ Presale API returned success: false');
+        console.log('API response data:', data);
+        // Show fallback data
+        document.getElementById('progressText').innerHTML =
+          `<strong>0</strong> purchases • <strong>0</strong> XRP raised • <strong>0</strong> WALDO sold`;
       }
     } catch (error) {
       console.error('❌ Progress load error:', error);
@@ -896,7 +905,11 @@
     console.log('🚀 Initializing progressive presale widget...');
     initializePresaleWidget();
 
-    // Refresh progress every 30 seconds
-    setInterval(loadPresaleProgress, 30000);
+    // Refresh progress every 30 seconds, but only if we have trustline
+    setInterval(() => {
+      if (hasTrustline) {
+        loadPresaleProgress();
+      }
+    }, 30000);
   });
 </script>
