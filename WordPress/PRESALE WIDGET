@@ -211,7 +211,14 @@
 
   // Disconnect wallet function
   function disconnectWallet() {
-    if (confirm('Are you sure you want to disconnect your wallet?')) {
+    console.log('🔌 disconnectWallet() called');
+
+    // For auto-disconnect after purchase, skip confirmation
+    const isAutoDisconnect = arguments[0] === 'auto';
+
+    if (isAutoDisconnect || confirm('Are you sure you want to disconnect your wallet?')) {
+      console.log('🔌 Proceeding with wallet disconnect...');
+
       // Clear localStorage
       localStorage.removeItem("xummWallet");
       localStorage.removeItem("xummUUID");
@@ -232,7 +239,9 @@
       // Automatically start connection process
       connectXummWallet();
 
-      console.log('Wallet disconnected successfully');
+      console.log('✅ Wallet disconnected successfully');
+    } else {
+      console.log('❌ Wallet disconnect cancelled by user');
     }
   }
 
@@ -704,9 +713,12 @@
         const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/presale/status/${uuid}`);
         const statusData = await response.json();
 
+        console.log(`Poll ${pollCount}: Status for ${uuid}:`, statusData);
+
         if (statusData.success) {
           if (statusData.completed) {
             // Transaction completed successfully
+            console.log('🎉 Transaction completed! Disconnecting wallet...');
             clearInterval(pollInterval);
             btn.innerText = "🎉 Purchase Complete!";
 
@@ -715,18 +727,22 @@
 
             // Disconnect wallet after successful purchase
             setTimeout(() => {
-              disconnectWallet();
+              console.log('🔌 Calling disconnectWallet() with auto flag...');
+              disconnectWallet('auto');
               btn.innerText = "🔐 Buy Now with XUMM";
             }, 2000);
 
           } else if (statusData.rejected) {
             // Transaction was rejected
+            console.log('❌ Transaction rejected');
             clearInterval(pollInterval);
             btn.innerText = "❌ Transaction Rejected";
 
             setTimeout(() => {
               btn.innerText = "🔐 Buy Now with XUMM";
             }, 3000);
+          } else {
+            console.log('⏳ Transaction still pending...');
           }
           // If still pending, continue polling
         }
