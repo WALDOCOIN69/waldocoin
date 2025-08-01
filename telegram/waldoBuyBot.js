@@ -9,14 +9,12 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 const WALDO_ISSUER = process.env.WALDO_ISSUER;
 const WALDO_TOKEN = process.env.WALDO_TOKEN || "WLO";
 const WALDO_DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
-
 const BONUS_TIERS = JSON.parse(process.env.BONUS_TIERS_JSON || '{}');
 
-// 📍 START: Wallet + client setup
 const wallet = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
-const client = new xrpl.Client("wss://s.altnet.rippletest.net"); // or mainnet
-await client.connect();
+const client = new xrpl.Client("wss://s.altnet.rippletest.net");
 
+await client.connect();
 console.log("🤖 WALDO Telegram Bot is live!");
 
 const sessions = {};
@@ -30,42 +28,35 @@ bot.onText(/\/start/, (msg) => {
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
 
-    // 💥 Fix crash from non-text messages
-    if (!msg.text) {
-        return bot.sendMessage(chatId, "❌ Please send a text message.");
-    }
+    // Ignore commands
+    if (!msg.text || msg.text.startsWith("/")) return;
 
     const text = msg.text.trim();
 
-    // Ignore /start
-    if (text.startsWith("/")) return;
-
+    // Step 1: Collect wallet
     if (!sessions[chatId]?.wallet) {
-        // XRPL wallet format validation
         if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(text)) {
-            bot.sendMessage(chatId, "❌ That doesn't look like a valid XRPL wallet. Please try again.");
-            return;
+            return bot.sendMessage(chatId, "❌ That doesn't look like a valid XRPL wallet. Please try again.");
         }
 
         sessions[chatId].wallet = text;
-        bot.sendMessage(chatId, `✅ Wallet saved: ${text}\n\nNow, how much XRP do you want to send?\nAvailable tiers:\n\n5 XRP\n10 XRP\n20 XRP\n40 XRP\n80 XRP\n90 XRP\n100 XRP`);
-        return;
+        return bot.sendMessage(chatId, `✅ Wallet saved: ${text}\n\nNow, how much XRP do you want to send?\n\nMinimum: 1 XRP\n\n🎁 Bonus tiers:\n5 XRP → +5%\n10 XRP → +10%\n20 XRP → +12%\n40 XRP → +14%\n80 XRP → +15%\n90 XRP → +22%\n100 XRP → +30%`);
     }
 
+    // Step 2: Amount to buy
     const walletAddr = sessions[chatId].wallet;
-
     const xrpAmount = parseFloat(text);
-    if (!xrpAmount || isNaN(xrpAmount) || xrpAmount <= 0) {
-        bot.sendMessage(chatId, `❌ Please enter a valid XRP amount from the available tiers.`);
-        return;
+
+    if (isNaN(xrpAmount) || xrpAmount < 1) {
+        return bot.sendMessage(chatId, `❌ Please enter a valid amount (minimum 1 XRP).`);
     }
 
-    const bonusRate = BONUS_TIERS[xrpAmount.toString()] || 0;
     const baseWaldo = xrpAmount * 10000;
+    const bonusRate = BONUS_TIERS[xrpAmount.toString()] || 0;
     const bonus = Math.floor(baseWaldo * bonusRate);
     const totalWaldo = baseWaldo + bonus;
 
-    // 📍 Trustline check
+    // Trustline check
     try {
         const accountLines = await client.request({
             command: "account_lines",
@@ -77,16 +68,14 @@ bot.on('message', async (msg) => {
         );
 
         if (!trustlineExists) {
-            bot.sendMessage(chatId, `⚠️ You must first set a trustline to WALDO ($WLO).\nVisit: https://xrpl.services/tokens → Search "WLO" → Add Trustline.`);
-            return;
+            return bot.sendMessage(chatId, `⚠️ You must first set a trustline to WALDO ($WLO).\n\n👉 Go to https://xrpl.services/tokens → Search "WLO" → Click Add Trustline`);
         }
-    } catch (e) {
-        console.error(e);
-        bot.sendMessage(chatId, `❌ Could not verify trustline. Try again later.`);
-        return;
+    } catch (err) {
+        console.error(err);
+        return bot.sendMessage(chatId, `❌ Error checking trustline. Try again later.`);
     }
 
-    // 📍 Send WALDO
+    // Send WALDO
     try {
         const tx = await client.autofill({
             TransactionType: "Payment",
@@ -103,15 +92,16 @@ bot.on('message', async (msg) => {
         const result = await client.submitAndWait(signed.tx_blob);
 
         if (result.result.meta.TransactionResult === "tesSUCCESS") {
-            bot.sendMessage(chatId, `🎉 Sent ${totalWaldo} WALDO to ${walletAddr}!\n\n✅ Tx Hash: ${signed.hash}`);
+            bot.sendMessage(chatId, `🎉 Sent ${totalWaldo} WALDO to ${walletAddr}!\n\n✅ Tx Hash:\nhttps://testnet.xrpl.org/transactions/${signed.hash}`);
         } else {
-            bot.sendMessage(chatId, `❌ Error: ${result.result.meta.TransactionResult}`);
+            bot.sendMessage(chatId, `❌ Transaction failed: ${result.result.meta.TransactionResult}`);
         }
     } catch (err) {
         console.error(err);
         bot.sendMessage(chatId, `❌ Transaction failed. Please try again later.`);
     }
 
-    delete sessions[chatId]; // Reset session
+    // Reset session
+    delete sessions[chatId];
 });
 
