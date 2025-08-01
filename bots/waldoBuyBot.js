@@ -109,8 +109,8 @@ export async function startBuyBot() {
 
             bot.sendMessage(
                 chatId,
-                `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}$
-        {nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""}`
+                `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}` +
+                (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : "")
             );
         }
     }
@@ -174,7 +174,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
                 if (!exists) {
                     bot.sendMessage(
                         chatId,
-                        `👋 *Welcome to the WALDOcoin Buy Bot (Mainnet)*\n\nSteps:\n1️⃣ Send your XRPL wallet address\n2️⃣ Send XRP to: \\`${ distributorWallet.classicAddress }\\`\n3️⃣ WALDO will be sent automatically with bonuses\n\n💡 *Bonus Tiers:*\n80 XRP = +15%\n90 XRP = +22%\n100 XRP = +30%\n\n💰 *Min Buy:* 5 XRP\n🔗 Set trustline: https://waldocoin.live`,
+                        `👋 *Welcome to the WALDOcoin Buy Bot (Mainnet)*\n\nSteps:\n1️⃣ Send your XRPL wallet address\n2️⃣ Send XRP to: \`${distributorWallet.classicAddress}\`\n3️⃣ WALDO will be sent automatically with bonuses\n\n💡 *Bonus Tiers:*\n80 XRP = +15%\n90 XRP = +22%\n100 XRP = +30%\n\n💰 *Min Buy:* 5 XRP\n🔗 Set trustline: https://waldocoin.live`,
                         { parse_mode: "Markdown" }
                     );
                     redis.set(greetedKey(chatId), "1");
@@ -184,7 +184,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
                 if (text.startsWith("r") && text.length >= 25 && text.length <= 35) {
                     bot.sendMessage(
                         chatId,
-                        `✅ Wallet received: \\`${ text }\\`\nNow send XRP to: \\`${ distributorWallet.classicAddress }\\`\n\nI'll check for payment every 60 seconds.`,
+                        `✅ Wallet received: \`${text}\`\nNow send XRP to: \`${distributorWallet.classicAddress}\`\n\nI'll check for payment every 60 seconds.`,
                         { parse_mode: "Markdown" }
                     );
                     const interval = setInterval(() => checkIncoming(text, chatId), 60000);
@@ -196,6 +196,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
         }
     });
 }
+
 
 
 
