@@ -124,6 +124,19 @@
         style="background: #0f2d17; padding: 20px; border-radius: 15px; border: 2px solid #25c2a0; margin-bottom: 20px;">
         <h3 style="color: #25c2a0; margin-top: 0; text-align: center;">Purchase Calculator</h3>
 
+        <!-- Digital LED Display -->
+        <div
+          style="background: #000; padding: 20px; border-radius: 10px; border: 2px solid #333; margin-bottom: 20px; text-align: center;">
+          <div style="color: #666; font-size: 12px; margin-bottom: 5px; font-family: 'Courier New', monospace;">WALDO
+            AMOUNT</div>
+          <div id="calculatorDisplay"
+            style="color: #ff0000; font-size: 32px; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 0 0 10px #ff0000; letter-spacing: 2px; min-height: 40px; display: flex; align-items: center; justify-content: center;">
+            0
+          </div>
+          <div style="color: #666; font-size: 10px; margin-top: 5px; font-family: 'Courier New', monospace;">SELECT XRP
+            AMOUNT BELOW</div>
+        </div>
+
         <!-- Amount Selection -->
         <div style="margin-bottom: 20px;">
           <label style="color: white; font-weight: bold; display: block; margin-bottom: 10px;">Select XRP
@@ -680,6 +693,18 @@
       const data = await response.json();
 
       if (data.success) {
+        // Update digital LED display with total WALDO amount
+        const totalWaldoFormatted = data.totalWaldo.toLocaleString();
+        document.getElementById('calculatorDisplay').innerText = totalWaldoFormatted;
+
+        // Add a brief flash effect for the digital display
+        const display = document.getElementById('calculatorDisplay');
+        display.style.textShadow = '0 0 20px #ff0000, 0 0 30px #ff0000';
+        setTimeout(() => {
+          display.style.textShadow = '0 0 10px #ff0000';
+        }, 200);
+
+        // Update purchase summary
         document.getElementById('summaryXRP').innerText = `${xrpAmount} XRP`;
         document.getElementById('summaryBaseWaldo').innerText = `${data.baseWaldo.toLocaleString()} WALDO`;
         document.getElementById('summaryTotal').innerText = `${data.totalWaldo.toLocaleString()} WALDO`;
@@ -695,6 +720,15 @@
       }
     } catch (error) {
       console.error('Calculation error:', error);
+      // Show error on digital display
+      document.getElementById('calculatorDisplay').innerText = 'ERROR';
+      document.getElementById('calculatorDisplay').style.color = '#ff6666';
+
+      // Reset after 2 seconds
+      setTimeout(() => {
+        document.getElementById('calculatorDisplay').innerText = '0';
+        document.getElementById('calculatorDisplay').style.color = '#ff0000';
+      }, 2000);
     }
   }
 
