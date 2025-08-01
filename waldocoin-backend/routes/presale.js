@@ -349,7 +349,8 @@ router.post("/buy", async (req, res) => {
 
     console.log("✅ XUMM Presale Payload Created:", {
       uuid: created.uuid,
-      deeplink: created.next?.always
+      deeplink: created.next?.always,
+      fullResponse: created
     });
 
     // Return only deeplink - no QR code needed since user is already connected
