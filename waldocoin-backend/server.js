@@ -31,6 +31,7 @@ import topMemeRoute from "./routes/topmeme.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import activityRoute from "./routes/activity.js";
 
+import { startBuyBot } from "./bots/waldoBuyBot.js";
 
 // ⚔️ Meme Battle Routes
 import battleStartRoute from "./routes/battle/start.js";
@@ -190,9 +191,18 @@ const startServer = async () => {
   });
 };
 
-// 🚀 Boot the server
-startServer().catch((err) => {
-  console.error("❌ Startup error:", err);
-  process.exit(1);
-});
+// 🚀 Boot everything (bot + server)
+const boot = async () => {
+  try {
+    await startBuyBot();
+    console.log("🤖 WALDO Buy Bot is running.");
+    await startServer();
+  } catch (err) {
+    console.error("❌ Startup error:", err);
+    process.exit(1);
+  }
+};
+
+boot();
+
 
