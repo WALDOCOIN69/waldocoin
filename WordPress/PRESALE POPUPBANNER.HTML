@@ -1,23 +1,110 @@
 <!-- 🧨 WALDOcoin Presale Popup Modal -->
-<div id="waldoPresaleModal" style="display: none; position: fixed; z-index: 99999; inset: 0; background: rgba(0,0,0,0.85);">
-  <div style="background: #111; border: 3px solid red; color: white; border-radius: 20px; width: 90%; max-width: 450px; padding: 30px; margin: 15% auto; text-align: center; font-family: 'Arial Black', sans-serif; box-shadow: 0 0 20px red; position: relative;">
+<div id="waldoPresaleModal"
+  style="display: none; position: fixed; z-index: 99999; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(4px); padding: 10px; box-sizing: border-box;">
+  <div
+    style="background: #111; border: 3px solid red; color: white; border-radius: 15px; width: 100%; max-width: 400px; padding: 20px; margin: 10vh auto; text-align: center; font-family: 'Arial Black', sans-serif; box-shadow: 0 0 30px red; position: relative; box-sizing: border-box; max-height: 80vh; overflow-y: auto;">
+    <!-- Mobile-Friendly Close Button -->
     <span onclick="document.getElementById('waldoPresaleModal').style.display='none'"
-          style="position: absolute; top: 10px; right: 20px; color: white; font-size: 28px; cursor: pointer;">&times;</span>
-    <h2 style="color: #FFD700; margin-bottom: 10px;">🚨 WALDOcoin Presale Incoming</h2>
-    <p style="font-size: 1.2rem; line-height: 1.6;">
-      The presale officially begins on <strong>July 01, 2025</strong>.<br>
+      style="position: absolute; top: 8px; right: 15px; color: white; font-size: 32px; cursor: pointer; background: rgba(255,0,0,0.2); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; line-height: 1; font-weight: bold; touch-action: manipulation;">&times;</span>
+    <!-- Content -->
+    <h2 style="color: #FFD700; margin: 15px 0 15px 0; font-size: 1.5rem; line-height: 1.3;">🚨 WALDOcoin Presale
+      Incoming</h2>
+    <p style="font-size: 1.1rem; line-height: 1.5; margin: 15px 0; color: #fff;">
+      The presale officially begins on <strong style="color: #FFD700;">July 01, 2025</strong>.<br>
       Get your XRP ready. It’s about to get degen.
     </p>
-    <div style="margin-top: 20px; font-size: 0.95rem; color: #bbb;">
+    <div style="margin-top: 20px; font-size: 0.9rem; color: #bbb; line-height: 1.4;">
       Limited supply • Early bonus tiers • Meme economy revolution
     </div>
   </div>
 </div>
 
+<!-- Mobile-Specific CSS -->
+<style>
+  @media (max-width: 768px) {
+    #waldoPresaleModal>div {
+      width: calc(100vw - 20px) !important;
+      max-width: 95vw !important;
+      margin: 5vh auto !important;
+      padding: 18px !important;
+      border-radius: 12px !important;
+      max-height: 85vh !important;
+    }
+
+    #waldoPresaleModal h2 {
+      font-size: 1.3rem !important;
+      margin: 10px 0 12px 0 !important;
+    }
+
+    #waldoPresaleModal p {
+      font-size: 1rem !important;
+      margin: 12px 0 !important;
+    }
+
+    #waldoPresaleModal>div>span {
+      top: 5px !important;
+      right: 10px !important;
+      width: 35px !important;
+      height: 35px !important;
+      font-size: 28px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #waldoPresaleModal>div {
+      width: calc(100vw - 16px) !important;
+      margin: 3vh auto !important;
+      padding: 15px !important;
+      border-radius: 10px !important;
+      max-height: 90vh !important;
+    }
+
+    #waldoPresaleModal h2 {
+      font-size: 1.2rem !important;
+      margin: 8px 0 10px 0 !important;
+    }
+
+    #waldoPresaleModal p {
+      font-size: 0.95rem !important;
+      margin: 10px 0 !important;
+    }
+
+    #waldoPresaleModal>div>div {
+      font-size: 0.85rem !important;
+      margin-top: 15px !important;
+    }
+  }
+
+  @media (max-width: 360px) {
+    #waldoPresaleModal>div {
+      width: calc(100vw - 12px) !important;
+      margin: 2vh auto !important;
+      padding: 12px !important;
+      max-height: 95vh !important;
+    }
+
+    #waldoPresaleModal h2 {
+      font-size: 1.1rem !important;
+    }
+
+    #waldoPresaleModal p {
+      font-size: 0.9rem !important;
+    }
+  }
+
+  /* Touch-friendly improvements */
+  @media (hover: none) and (pointer: coarse) {
+    #waldoPresaleModal>div>span:active {
+      transform: scale(0.95);
+      background: rgba(255, 0, 0, 0.4) !important;
+    }
+  }
+</style>
+
 <script>
   window.addEventListener("load", () => {
     setTimeout(() => {
       document.getElementById("waldoPresaleModal").style.display = "block";
-    }, 500); // Delay by 0.5s after page load
+    }, 300); // Delay by 0.5s after page load
   });
 </script>
