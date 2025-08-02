@@ -107,12 +107,14 @@ export async function startBuyBot() {
                 JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
             );
 
-            bot.sendMessage(
-                chatId,
-                `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}` +
-                (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""),
-                { parse_mode: "Markdown" }
-            );
+            // Build confirmation message
+            let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
+
+            if (nftTx) {
+                confirmationMessage += `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}`;
+            }
+
+            bot.sendMessage(chatId, confirmationMessage, { parse_mode: "Markdown" });
         }
     }
 
@@ -130,7 +132,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
 
 🚀 *How to get started:*
 1️⃣ DM 👉 [@WaldoBuyBot](https://t.me/WaldoBuyBot)
-2️⃣ Type */buywaldo*
+2️⃣ Type */buy*
 3️⃣ Paste your *XRPL Wallet Address*
 4️⃣ Send XRP → Get WALDO instantly (bonus tiers apply!)
 
@@ -199,4 +201,4 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
 }
 
 // Start the bot
-console.log("🤖 WALDO Buy Bot started! v2.0");
+console.log("🤖 WALDO Buy Bot started! v3.0 - SYNTAX FIXED");
