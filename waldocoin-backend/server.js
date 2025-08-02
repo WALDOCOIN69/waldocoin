@@ -198,13 +198,13 @@ const startServer = async () => {
   });
 };
 
-// 🚀 Boot everything (server + bot with new token)
+// 🚀 Boot server only (bot disabled until 409 conflicts resolved)
 const boot = async () => {
   try {
-    await startBuyBot();
-    console.log("🤖 WALDO Buy Bot is running with new token.");
+    // await startBuyBot(); // DISABLED - 409 conflicts persist
+    console.log("🚫 Telegram bot disabled - focusing on automation");
     await startServer();
-    console.log("🚀 Server and bot started successfully");
+    console.log("🚀 Server started - automation active, bot disabled");
   } catch (err) {
     console.error("❌ Startup error:", err);
     process.exit(1);
