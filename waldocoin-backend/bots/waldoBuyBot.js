@@ -226,13 +226,13 @@ export async function startBuyBot() {
         const chatId = msg.chat.id;
         const text = msg.text || "";
 
-        if (msg.chat.type.endsWith("group") && text.includes("https://t.me/WALDOCOINBuyBot")) {
+        if (msg.chat.type.endsWith("group") && text.includes("https://t.me/WALDOCOINbuyBot")) {
             const markdownMessage = `
 📌 *WALDOcoin Presale Bot is Live!*
 Buy WLO instantly with XRP — no waiting, no middlemen.
 
 *How it works:*
-1️⃣ DM 👉 [@WaldoBuyBot](https://t.me/WALDOCOINBuyBot)
+1️⃣ DM 👉 [@WALDOCOINbuyBot](https://t.me/WALDOCOINbuyBot)
 2️⃣ Send your XRPL wallet address
 3️⃣ Send XRP to our address
 4️⃣ Send XRP → Get WLO instantly (bonus tiers apply!)
@@ -247,7 +247,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
             const keyboard = {
                 inline_keyboard: [
                     [
-                        { text: "💸 DM Buy Bot", url: "@WALDOCOINbuyBot" },
+                        { text: "💸 DM Buy Bot", url: "https://t.me/WALDOCOINbuyBot" },
                         { text: "🛡️ Set Trustline", url: "https://xrpl.services/?issuer=rnWfL48YCknW6PYewFLKfMKUymHCfj3aww&currency=WLO&limit=100000000" }
                     ],
                     [
