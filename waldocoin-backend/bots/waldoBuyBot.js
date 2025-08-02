@@ -107,11 +107,14 @@ export async function startBuyBot() {
                 JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
             );
 
-            bot.sendMessage(
-                chatId,
-                `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}$
-        {nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""}`
-            );
+            // FIXED: Build confirmation message properly
+            let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
+
+            if (nftTx) {
+                confirmationMessage += `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}`;
+            }
+
+            bot.sendMessage(chatId, confirmationMessage, { parse_mode: "Markdown" });
         }
     }
 
