@@ -188,6 +188,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
                         chatId,
                         `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}` +
                         (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""),
+
                         { parse_mode: "Markdown" }
                     );
 
