@@ -289,7 +289,13 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                     "💰 *Min Buy:* 5 XRP\n" +
                     "🔗 Set trustline: https://waldocoin.live";
 
-                bot.sendMessage(chatId, welcomeMessage, { parse_mode: "Markdown" });
+                console.log("📤 Sending welcome message to user:", userId);
+                try {
+                    await bot.sendMessage(chatId, welcomeMessage, { parse_mode: "Markdown" });
+                    console.log("✅ Welcome message sent successfully");
+                } catch (error) {
+                    console.error("❌ Failed to send welcome message:", error);
+                }
             }
             return;
         }
