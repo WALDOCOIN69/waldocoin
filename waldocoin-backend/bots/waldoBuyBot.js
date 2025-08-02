@@ -65,9 +65,15 @@ export async function startBuyBot() {
 
     // Process webhook updates manually
     bot.processUpdate = (update) => {
-        console.log("🔄 Processing update:", update?.message?.text || 'no text');
-        bot.emit('message', update.message);
+        console.log("🔄 Bot processing update:", update?.message?.text || 'no text');
+        if (update.message) {
+            bot.emit('message', update.message);
+        }
     };
+
+    // Make bot available globally for webhook processing
+    global.telegramBot = bot;
+    console.log("🌐 Bot made available globally for webhook processing");
 
     // Only error handler (no polling error handler)
     bot.on('error', (error) => {
