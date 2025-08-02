@@ -525,11 +525,8 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-      // Get correct presale widget URL for return after XUMM
-      const presaleWidgetUrl = 'https://waldocoin.live/presale-widget/?signed=1#widget';
-      const encodedReturnUrl = encodeURIComponent(presaleWidgetUrl);
-
-      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login?return_url=${encodedReturnUrl}`, {
+      // NO return URL - this prevents automatic redirects and keeps users in XUMM
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login`, {
         method: 'GET',
         signal: controller.signal
       });
@@ -554,10 +551,26 @@
         document.getElementById('xummQR').style.display = 'block';
         document.getElementById('qrPlaceholder').style.display = 'none';
 
-        if (data.next && data.next.always) {
-          document.getElementById('xummDeepLink').href = data.next.always;
-          document.getElementById('xummDeepLink').style.display = 'block';
-        }
+        // Set up mobile deep link using the UUID
+        const mobileDeepLink = `https://xumm.app/sign/${data.uuid}`;
+        document.getElementById('xummDeepLink').href = mobileDeepLink;
+        document.getElementById('xummDeepLink').style.display = 'block';
+
+        // Add click handler for mobile deep link
+        document.getElementById('xummDeepLink').onclick = function(e) {
+          e.preventDefault();
+          console.log('📱 Opening XUMM app for mobile user...');
+
+          if (isMobile()) {
+            // On mobile, use window.location to open XUMM app
+            window.location.href = mobileDeepLink;
+          } else {
+            // On desktop, open in new tab
+            window.open(mobileDeepLink, '_blank');
+          }
+
+          return false;
+        };
 
         // Poll for connection
         pollForConnection(data.uuid);
@@ -590,14 +603,17 @@
   function pollForConnection(uuid) {
     console.log('🔄 Starting to poll for connection with UUID:', uuid);
     let pollCount = 0;
-    const maxPolls = 120; // 2 minutes with 1-second intervals
+    const maxPolls = 180; // 3 minutes with 1-second intervals
+
+    // Store polling state
+    window.currentPollingUuid = uuid;
 
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login/status?uuid=${uuid}`);
         const data = await response.json();
 
-        console.log('📡 Login status response:', data);
+        console.log(`📡 Login status response (poll ${pollCount + 1}):`, data);
 
         // Update feedback based on polling progress
         const placeholder = document.getElementById('qrPlaceholder');
@@ -613,29 +629,44 @@
           placeholder.innerText = '🕐 Please try refreshing if needed...';
         }
 
-        if (data.signed) {
+        if (data.signed && (data.account || data.response?.signer)) {
           clearInterval(pollInterval);
-          connectedWallet = data.account;
+          window.currentPollingUuid = null; // Clear polling state
+
+          // Get wallet address from any available property
+          connectedWallet = data.account || data.response?.signer;
 
           // Store wallet connection in session storage
-          sessionStorage.setItem('connected_wallet', data.account);
+          sessionStorage.setItem('connected_wallet', connectedWallet);
+          sessionStorage.removeItem('presale_login_uuid'); // Clear old UUID
 
-          console.log('✅ Wallet connected:', connectedWallet);
+          console.log('✅ Wallet connected successfully:', connectedWallet);
 
-          // Update UI
+          // Update UI immediately
           document.getElementById('connectedWallet').innerText = connectedWallet;
           document.getElementById('connectedWallet').style.color = '#25c2a0';
           document.getElementById('connectionStatus').innerText = 'Connected successfully!';
           document.getElementById('connectionStatus').style.color = '#25c2a0';
           document.getElementById('disconnectBtn').style.display = 'inline-block';
 
+          // Hide QR code and show success
+          document.getElementById('xummQR').style.display = 'none';
+          document.getElementById('qrPlaceholder').innerText = '✅ Wallet Connected!';
+          document.getElementById('qrPlaceholder').style.display = 'block';
+          document.getElementById('qrPlaceholder').style.color = '#25c2a0';
+
           // Move to step 2: Check trustline
-          checkTrustlineAndProceed();
+          setTimeout(() => {
+            checkTrustlineAndProceed();
+          }, 1000);
+
         } else if (data.expired) {
           clearInterval(pollInterval);
+          window.currentPollingUuid = null;
           console.log('❌ Login payload expired');
-          document.getElementById('qrPlaceholder').innerText = 'QR Code Expired';
+          document.getElementById('qrPlaceholder').innerText = 'QR Code Expired - Click to retry';
           document.getElementById('qrPlaceholder').style.color = '#e74c3c';
+          document.getElementById('qrPlaceholder').onclick = () => connectXummWallet();
         }
       } catch (error) {
         console.error('❌ Polling error:', error);
@@ -644,9 +675,11 @@
       pollCount++;
       if (pollCount >= maxPolls) {
         clearInterval(pollInterval);
+        window.currentPollingUuid = null;
         console.log('⏰ Polling timeout reached');
-        placeholder.innerText = 'Connection timeout - please try again';
-        placeholder.style.color = '#e74c3c';
+        document.getElementById('qrPlaceholder').innerText = 'Connection timeout - Click to retry';
+        document.getElementById('qrPlaceholder').style.color = '#e74c3c';
+        document.getElementById('qrPlaceholder').onclick = () => connectXummWallet();
       }
     }, 1000); // Faster polling - every 1 second
   }
@@ -1369,6 +1402,25 @@
     return false;
   }
 
+  // Add window focus event to check authentication when user returns from XUMM
+  window.addEventListener('focus', function() {
+    console.log('🔍 Window focused - checking for authentication updates...');
+
+    // If we're currently polling and user returns to window, check status immediately
+    if (window.currentPollingUuid && !connectedWallet) {
+      console.log('🔄 Checking authentication status on window focus...');
+      checkWalletStatus(window.currentPollingUuid);
+    }
+  });
+
+  // Add visibility change event for mobile browsers
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && window.currentPollingUuid && !connectedWallet) {
+      console.log('🔍 Page became visible - checking authentication...');
+      checkWalletStatus(window.currentPollingUuid);
+    }
+  });
+
   // Initialize widget on page load
   document.addEventListener('DOMContentLoaded', function () {
     console.log('🚀 Initializing progressive presale widget...');
@@ -1376,10 +1428,14 @@
     // Check for return from XUMM first
     if (!checkForXummReturn()) {
       // If not returning from XUMM, check for existing connection
-      checkExistingConnection();
+      if (!checkExistingConnection()) {
+        // If no existing connection, start fresh
+        initializePresaleWidget();
+      }
+    } else {
+      // If returning from XUMM, still initialize but don't start fresh connection
+      console.log('🔄 Returning from XUMM - checking authentication status...');
     }
-
-    initializePresaleWidget();
 
     // Refresh progress every 30 seconds, but only if we have trustline
     setInterval(() => {

@@ -520,6 +520,7 @@ function closeXummQR() {
 // 📱 Connect to XUMM wallet
 async function connectXummWallet() {
   try {
+    // NO return URL - this prevents automatic redirects and keeps users in XUMM
     const res = await fetch("https://waldocoin-backend-api.onrender.com/api/login");
     const data = await res.json();
 
@@ -527,7 +528,7 @@ async function connectXummWallet() {
 
     console.log("XUMM Response:", data); // Debug log
 
-    // Store UUID for later status checking (in case user returns from redirect)
+    // Store UUID for later status checking
     localStorage.setItem('xumm_uuid', data.uuid);
 
     // Show QR in both mobile and desktop views

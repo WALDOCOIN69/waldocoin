@@ -11,10 +11,7 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // Get return URL from query parameter or use default
-    const returnUrl = req.query.return_url || "https://waldocoin.live/?signed=1";
-
-    // Enhanced SignIn with return URL for better UX
+    // Enhanced SignIn WITHOUT return URL to keep users in XUMM
     const payload = {
       txjson: {
         TransactionType: "SignIn"
@@ -22,11 +19,8 @@ router.get("/", async (req, res) => {
       options: {
         submit: true,
         multisign: false,
-        expire: 300, // 5 minutes
-        return_url: {
-          web: returnUrl,
-          app: returnUrl
-        }
+        expire: 300 // 5 minutes
+        // NO return_url - this prevents automatic redirects
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
