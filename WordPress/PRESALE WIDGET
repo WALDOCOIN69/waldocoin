@@ -392,7 +392,11 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/login', {
+      // Get current page URL for return after XUMM
+      const currentUrl = window.location.href.split('?')[0] + '?signed=1#widget';
+      const encodedReturnUrl = encodeURIComponent(currentUrl);
+
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login?return_url=${encodedReturnUrl}`, {
         method: 'GET',
         signal: controller.signal
       });
@@ -409,6 +413,10 @@
 
       if (data.qr && data.uuid) {
         console.log('✅ QR code received, displaying...');
+
+        // Store UUID for potential resume after XUMM return
+        sessionStorage.setItem('presale_login_uuid', data.uuid);
+
         document.getElementById('xummQR').src = data.qr;
         document.getElementById('xummQR').style.display = 'block';
         document.getElementById('qrPlaceholder').style.display = 'none';
@@ -1105,28 +1113,39 @@
     }
   }
 
-  // Check if user returned from XUMM completion
+  // Check if user returned from XUMM with signed status
   function checkForXummReturn() {
     const urlParams = new URLSearchParams(window.location.search);
+    const signed = urlParams.get('signed');
     const completed = urlParams.get('completed');
     const hash = window.location.hash;
 
-    if (completed && hash === '#widget') {
-      console.log('🎉 User returned from XUMM! Checking for completion...');
+    if ((signed === '1' || completed) && hash === '#widget') {
+      console.log('🎉 User returned from XUMM! Staying on presale widget...');
 
-      // Clear the URL parameters
+      // Clear the URL parameters but keep the hash
       window.history.replaceState({}, document.title, window.location.pathname + '#widget');
 
-      // Check for any active polling and trigger immediate completion check
-      setTimeout(() => {
-        console.log('🔍 Triggering immediate completion check...');
-        // If there's an active purchase, check its status immediately
+      // If user was connecting wallet (signed=1), resume polling
+      if (signed === '1') {
+        const storedUuid = sessionStorage.getItem('presale_login_uuid');
+        if (storedUuid && !connectedWallet) {
+          console.log('🔄 Resuming wallet connection polling...');
+          pollForConnection(storedUuid);
+        }
+        console.log('✅ Staying on presale widget for wallet connection');
+        return; // Don't redirect for wallet connection
+      }
+
+      // If user completed a purchase, check status but don't auto-redirect
+      if (completed) {
+        console.log('🔍 Checking purchase completion status...');
         const purchaseBtn = document.getElementById('purchaseBtn');
         if (purchaseBtn && purchaseBtn.innerText === "✅ Check XUMM App") {
-          // Trigger an immediate status check
-          window.location.href = 'https://waldocoin.live/presale-success/';
+          // Let the existing polling handle the completion
+          console.log('✅ Purchase polling will handle completion');
         }
-      }, 1000);
+      }
     }
   }
 
