@@ -14,7 +14,7 @@ export async function startBuyBot() {
     await client.connect();
     console.log("✅ WALDO Buy Bot connected to XRPL");
 
-    const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SEED);
+    const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
     const issuer = process.env.WALDO_ISSUER;
     const NFT_ENABLED = process.env.NFT_BADGE_ENABLED === "true";
 
