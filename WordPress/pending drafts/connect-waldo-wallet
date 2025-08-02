@@ -112,6 +112,7 @@
 
     async function startXummLogin() {
       try {
+        // NO return URL - this prevents automatic redirects and keeps users in XUMM
         const res = await fetch(`${baseURL}/api/login`);
         const { qr, uuid } = await res.json();
 
@@ -132,7 +133,12 @@
               pollLoginStatus(uuid);
               pollingStarted = true;
             }
-            window.open(mobileLink.href, '_blank');
+            // Use window.location for mobile to properly open XUMM app
+            if (isMobileDevice()) {
+              window.location.href = mobileLink.href;
+            } else {
+              window.open(mobileLink.href, '_blank');
+            }
           };
         } else {
           qrImg.src = qr;
