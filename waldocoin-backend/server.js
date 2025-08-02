@@ -10,7 +10,7 @@ import xrpl from "xrpl";
 
 dotenv.config();
 
-import { connectRedis } from "./redisClient.js";
+import { connectRedis, redis } from "./redisClient.js";
 import { refundExpiredBattles } from "./cron/battleRefunder.js";
 
 //airdrop
@@ -127,6 +127,54 @@ const startServer = async () => {
   console.log("🔐 Registering admin routes...");
   app.use("/api/admin/send-waldo", adminSendWaldoRoute);
   app.use("/api/admin/trustline", adminTrustlineRoute);
+
+  // 🔐 Auth routes for user sign-in
+  app.post("/api/auth/signin", async (req, res) => {
+    try {
+      const { wallet } = req.body;
+
+      if (!wallet) {
+        return res.status(400).json({
+          success: false,
+          message: "Wallet address is required"
+        });
+      }
+
+      // Validate wallet format (XRPL address)
+      if (!wallet.match(/^r[a-zA-Z0-9]{24,34}$/)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid wallet address format"
+        });
+      }
+
+      console.log("🔐 User signing in with wallet:", wallet);
+
+      // Store user session in Redis (optional - for session management)
+      const sessionKey = `user_session:${wallet}`;
+      await redis.setex(sessionKey, 3600, JSON.stringify({
+        wallet: wallet,
+        signedInAt: new Date().toISOString(),
+        lastActivity: new Date().toISOString()
+      }));
+
+      console.log("✅ User signed in successfully:", wallet);
+
+      res.json({
+        success: true,
+        message: "User signed in successfully",
+        wallet: wallet,
+        signedInAt: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error("❌ Sign-in error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error during sign-in"
+      });
+    }
+  });
 
   app.use("/api/presale", presaleRoute);
   app.use('/api/presale', presaleLookup);
