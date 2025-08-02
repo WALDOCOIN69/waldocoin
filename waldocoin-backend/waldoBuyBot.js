@@ -6,13 +6,30 @@ import TelegramBot from "node-telegram-bot-api";
 import xrpl from "xrpl";
 import Redis from "ioredis";
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // Using webhooks
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
 export async function startBuyBot() {
     await client.connect();
     console.log("✅ WALDO Buy Bot connected to XRPL");
+
+    // Test bot token and setup webhook
+    try {
+        const botInfo = await bot.getMe();
+        console.log("✅ Bot info:", botInfo.username, "-", botInfo.first_name);
+        console.log("🔗 Bot link: https://t.me/" + botInfo.username);
+
+        // Setup webhook instead of polling
+        console.log("🌐 Setting up webhook...");
+        const webhookUrl = `${process.env.RENDER_EXTERNAL_URL || 'https://waldocoin-backend-api.onrender.com'}/webhook/telegram`;
+        await bot.deleteWebHook(); // Clear any existing webhook
+        await bot.setWebHook(webhookUrl);
+        console.log("✅ Webhook set:", webhookUrl);
+    } catch (error) {
+        console.error("❌ Bot setup error:", error.message);
+        return;
+    }
 
     const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
     const issuer = process.env.WALDO_ISSUER;
