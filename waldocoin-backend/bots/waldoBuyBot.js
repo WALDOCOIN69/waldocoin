@@ -175,11 +175,20 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
 
             redis.exists(greetedKey(chatId)).then((exists) => {
                 if (!exists) {
-                    bot.sendMessage(
-                        chatId,
-                        `👋 *Welcome to the WALDOcoin Buy Bot (Mainnet)*\n\nSteps:\n1️⃣ Send your XRPL wallet address\n2️⃣ Send XRP to: \\`${ distributorWallet.classicAddress }\\`\n3️⃣ WALDO will be sent automatically with bonuses\n\n💡 *Bonus Tiers:*\n80 XRP = +15%\n90 XRP = +22%\n100 XRP = +30%\n\n💰 *Min Buy:* 5 XRP\n🔗 Set trustline: https://waldocoin.live`,
-                        { parse_mode: "Markdown" }
-                    );
+                    // FIXED: Build welcome message without problematic backticks
+                    const welcomeMessage = "👋 *Welcome to the WALDOcoin Buy Bot (Mainnet)*\n\n" +
+                        "Steps:\n" +
+                        "1️⃣ Send your XRPL wallet address\n" +
+                        "2️⃣ Send XRP to: `" + distributorWallet.classicAddress + "`\n" +
+                        "3️⃣ WALDO will be sent automatically with bonuses\n\n" +
+                        "💡 *Bonus Tiers:*\n" +
+                        "80 XRP = +15%\n" +
+                        "90 XRP = +22%\n" +
+                        "100 XRP = +30%\n\n" +
+                        "💰 *Min Buy:* 5 XRP\n" +
+                        "🔗 Set trustline: https://waldocoin.live";
+
+                    bot.sendMessage(chatId, welcomeMessage, { parse_mode: "Markdown" });
                     redis.set(greetedKey(chatId), "1");
                     return;
                 }
