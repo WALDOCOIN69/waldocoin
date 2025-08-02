@@ -14,7 +14,7 @@ export async function startBuyBot() {
     await client.connect();
     console.log("✅ WALDO Buy Bot connected to XRPL");
 
-    const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SEED);
+    const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
     const issuer = process.env.WALDO_ISSUER;
     const NFT_ENABLED = process.env.NFT_BADGE_ENABLED === "true";
 
@@ -32,7 +32,7 @@ export async function startBuyBot() {
 
     async function hasTrustline(address) {
         const acc = await client.request({ command: "account_lines", account: address });
-        return acc.result.lines.some((line) => line.currency === "WALDO" && line.account === issuer);
+        return acc.result.lines.some((line) => line.currency === "WLO" && line.account === issuer);
     }
 
     async function sendWaldo(to, amount, tag) {
@@ -41,7 +41,7 @@ export async function startBuyBot() {
             Account: distributorWallet.classicAddress,
             Destination: to,
             Amount: {
-                currency: "WALDO",
+                currency: "WLO",
                 issuer,
                 value: amount.toString(),
             },
