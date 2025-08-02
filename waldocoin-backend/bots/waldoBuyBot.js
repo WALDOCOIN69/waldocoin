@@ -22,6 +22,17 @@ export async function startBuyBot() {
     console.log("🤖 Starting Telegram polling...");
     bot.startPolling();
 
+    // Test bot connection
+    bot.on('polling_error', (error) => {
+        console.error('❌ Polling error:', error);
+    });
+
+    bot.on('error', (error) => {
+        console.error('❌ Bot error:', error);
+    });
+
+    console.log("✅ Bot event listeners registered");
+
     const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
     const issuer = process.env.WALDO_ISSUER;
     const NFT_ENABLED = process.env.NFT_BADGE_ENABLED === "true";
@@ -131,7 +142,7 @@ export async function startBuyBot() {
         const chatId = msg.chat.id;
         const text = (msg.text || "").toLowerCase();
 
-        if (msg.chat.type.endsWith("group") && text.includes("@waldocoinbuybot")) {
+        if (msg.chat.type.endsWith("group") && text.includes("https://t.me/WaldoBuyBot")) {
             const WALDO_ISSUER = process.env.WALDO_ISSUER;
 
             const markdownMessage = `
