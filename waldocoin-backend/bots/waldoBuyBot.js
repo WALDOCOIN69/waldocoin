@@ -60,8 +60,17 @@ export async function startBuyBot() {
     // Use webhooks instead of polling to avoid conflicts
     console.log("🌐 Setting up webhook instead of polling...");
     const webhookUrl = `${process.env.RENDER_EXTERNAL_URL || 'https://waldocoin-backend-api.onrender.com'}/webhook/telegram`;
+
+    // Clear webhook first, then set new one
+    await bot.deleteWebHook();
+    console.log("🗑️ Cleared existing webhook");
+
     await bot.setWebHook(webhookUrl);
     console.log("✅ Webhook set:", webhookUrl);
+
+    // Verify webhook was set
+    const webhookInfo = await bot.getWebHookInfo();
+    console.log("🔍 Webhook verification:", webhookInfo);
 
     // Process webhook updates manually
     bot.processUpdate = (update) => {

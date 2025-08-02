@@ -203,6 +203,11 @@ const startServer = async () => {
     res.send("✅ WALDO backend is live at /api/*");
   });
 
+  // 🔍 Webhook Test Endpoint
+  app.get("/webhook/telegram", (_, res) => {
+    res.send("🤖 Telegram webhook endpoint is active. Bot global status: " + (global.telegramBot ? "✅ Available" : "❌ Not available"));
+  });
+
   // ⏱️ Cron Job — Check every 5 min for expired battles
   cron.schedule("*/5 * * * *", async () => {
     console.log("🕒 Checking for expired battles...");
