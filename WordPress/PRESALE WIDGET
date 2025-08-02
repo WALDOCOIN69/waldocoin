@@ -722,17 +722,32 @@
         return;
       }
 
+      // Update UI to show user is signed in
+      console.log('🔐 User signed in with wallet:', connectedWallet);
+      document.getElementById('connectionStatus').innerText = 'Signed in successfully!';
+      document.getElementById('connectionStatus').style.color = '#25c2a0';
+
       // Use direct XRPL check (same as airdrop system)
       const hasWaldoTrustline = await checkTrustlineDirectXRPL(connectedWallet);
 
       if (hasWaldoTrustline) {
-        console.log('✅ Wallet HAS WALDO trustline, skipping to Step 3');
+        console.log('✅ Wallet HAS WALDO trustline - user fully signed in and ready');
         hasTrustline = true;
+
+        // Update status to show ready state
+        document.getElementById('connectionStatus').innerText = 'Ready to purchase!';
+        document.getElementById('connectionStatus').style.color = '#25c2a0';
+
         showStep(3);
         loadPresaleProgress();
       } else {
-        console.log('⚠️ Wallet DOES NOT have WALDO trustline, showing Step 2');
+        console.log('⚠️ Wallet DOES NOT have WALDO trustline - showing trustline setup');
         hasTrustline = false;
+
+        // Update status to show trustline needed
+        document.getElementById('connectionStatus').innerText = 'Signed in - Trustline required';
+        document.getElementById('connectionStatus').style.color = '#ffd93d';
+
         showStep(2);
         setupTrustlineStep();
       }
@@ -749,6 +764,8 @@
   // Setup trustline step - Load QR code and set up deep link
   function setupTrustlineStep() {
     console.log('🔧 Setting up trustline step...');
+    console.log('👤 User is signed in with wallet:', connectedWallet);
+    console.log('🔗 Now showing trustline setup for WALDO token');
 
     // Load the trustline QR code
     loadTrustlineQR();
@@ -756,6 +773,9 @@
     // Set up the deep link for mobile users (fallback if onclick doesn't work)
     const trustlineUrl = 'https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO';
     document.getElementById('trustlineDeepLink').href = trustlineUrl;
+
+    // Show clear status that user is signed in but needs trustline
+    console.log('✅ User signed in successfully - trustline setup required to continue');
   }
 
   // New function: Add trustline and automatically wait for completion
@@ -1310,12 +1330,12 @@
         sessionStorage.setItem('connected_wallet', data.account);
 
         // Update UI immediately
-        document.getElementById('qrPlaceholder').innerText = '✅ Wallet connected!';
+        document.getElementById('qrPlaceholder').innerText = '✅ Wallet connected! Checking trustline...';
         document.getElementById('qrPlaceholder').style.color = '#25c2a0';
 
-        // Move to step 2
+        // Check trustline and proceed (this will sign in the user)
         setTimeout(() => {
-          showStep(2);
+          checkTrustlineAndProceed();
         }, 1000);
       }
     } catch (error) {
