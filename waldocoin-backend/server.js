@@ -31,7 +31,7 @@ import topMemeRoute from "./routes/topmeme.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import activityRoute from "./routes/activity.js";
 
-import { startBuyBot } from "./bots/waldoBuyBot.js";
+import { startBuyBot } from "./waldoBuyBot.js";
 
 // ⚔️ Meme Battle Routes
 import battleStartRoute from "./routes/battle/start.js";
