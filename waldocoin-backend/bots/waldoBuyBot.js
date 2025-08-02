@@ -264,16 +264,28 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
             return;
         }
 
-        if (msg.chat.type !== "private") return;
+        if (msg.chat.type !== "private") {
+            console.log("❌ Not a private chat, ignoring");
+            return;
+        }
 
+        console.log("✅ Private chat confirmed, processing...");
         const userId = msg.from.id;
+        console.log("👤 User ID:", userId);
         const now = Date.now();
         const lastMessage = rateLimit.get(userId) || 0;
         if (now - lastMessage < 2000) return;
         rateLimit.set(userId, now);
 
+        console.log("🔍 Checking /start condition:");
+        console.log("  - text:", JSON.stringify(text));
+        console.log("  - startsWith('/start'):", text.startsWith("/start"));
+        console.log("  - includes('start'):", text.includes("start"));
+
         if (text.startsWith("/start") || text.includes("start")) {
+            console.log("✅ /start condition matched!");
             const greetedBefore = await redis.get(greetedKey(userId));
+            console.log("🔍 Greeted before:", greetedBefore);
             if (!greetedBefore) {
                 await redis.set(greetedKey(userId), "1", "EX", 86400);
 
