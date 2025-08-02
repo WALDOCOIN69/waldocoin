@@ -194,11 +194,12 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
                 }
 
                 if (text.startsWith("r") && text.length >= 25 && text.length <= 35) {
-                    bot.sendMessage(
-                        chatId,
-                        `✅ Wallet received: \\`${ text }\\`\nNow send XRP to: \\`${ distributorWallet.classicAddress }\\`\n\nI'll check for payment every 60 seconds.`,
-                        { parse_mode: "Markdown" }
-                    );
+                    // FIXED: Build wallet confirmation message without problematic backticks
+                    const walletMessage = "✅ Wallet received: `" + text + "`\n" +
+                        "Now send XRP to: `" + distributorWallet.classicAddress + "`\n\n" +
+                        "I'll check for payment every 60 seconds.";
+
+                    bot.sendMessage(chatId, walletMessage, { parse_mode: "Markdown" });
                     const interval = setInterval(() => checkIncoming(text, chatId), 60000);
                     setTimeout(() => clearInterval(interval), 1800000);
                 } else {
