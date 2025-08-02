@@ -13,12 +13,23 @@ const redis = new Redis(process.env.REDIS_URL);
 export async function startBuyBot() {
     // Add delay to prevent conflicts with other instances
     console.log("⏳ Starting bot in 5 seconds...");
+    console.log("🔍 Service: waldocoin backend API - Telegram Bot Starting");
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     await client.connect();
     console.log("✅ WALDO Buy Bot connected to XRPL");
 
-    // Start polling after XRPL connection
+    // Test bot token and get bot info
+    try {
+        const botInfo = await bot.getMe();
+        console.log("✅ Bot info:", botInfo.username, "-", botInfo.first_name);
+        console.log("� Bot link: https://t.me/" + botInfo.username);
+    } catch (error) {
+        console.error("❌ Bot token error:", error.message);
+        return;
+    }
+
+    // Start polling after verification
     console.log("🤖 Starting Telegram polling...");
     bot.startPolling();
 
@@ -164,7 +175,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
 👉 [Set Trustline](https://xrpl.services/?issuer=${WALDO_ISSUER}&currency=WLO&limit=976849999)
 
 🌐 [Visit WALDOcoin.live](https://waldocoin.live)
-📣 [Join Telegram](https://t.me/WALDOcoinXRP)
+📣 [Join X (twitter)](https://x.com/W_A_L_D_O_coin)
       `;
 
             bot.sendMessage(chatId, markdownMessage, {
