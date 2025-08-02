@@ -19,6 +19,9 @@ export async function startBuyBot() {
     await client.connect();
     console.log("✅ WALDO Buy Bot connected to XRPL");
 
+    console.log("🔍 BOT_TOKEN exists:", !!process.env.BOT_TOKEN);
+    console.log("🔍 BOT_TOKEN length:", process.env.BOT_TOKEN ? process.env.BOT_TOKEN.length : 0);
+
     // Test bot token and get bot info
     try {
         const botInfo = await bot.getMe();
