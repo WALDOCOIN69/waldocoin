@@ -11,10 +11,23 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // Simple SignIn - no return URL (mobile stays in Xaman)
+    // Enhanced SignIn with return URL for better UX
     const payload = {
       txjson: {
         TransactionType: "SignIn"
+      },
+      options: {
+        submit: true,
+        multisign: false,
+        expire: 300, // 5 minutes
+        return_url: {
+          web: "https://waldocoin.live/?signed=1",
+          app: "https://waldocoin.live/?signed=1"
+        }
+      },
+      custom_meta: {
+        identifier: "WALDOCOIN_LOGIN",
+        instruction: "Sign in to access your WALDOCOIN dashboard"
       }
     };
 

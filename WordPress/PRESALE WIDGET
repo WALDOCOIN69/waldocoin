@@ -386,9 +386,11 @@
     }
   }
 
-  // Poll for wallet connection
+  // Poll for wallet connection with better feedback
   function pollForConnection(uuid) {
     console.log('🔄 Starting to poll for connection with UUID:', uuid);
+    let pollCount = 0;
+    const maxPolls = 120; // 2 minutes with 1-second intervals
 
     const pollInterval = setInterval(async () => {
       try {
@@ -396,6 +398,20 @@
         const data = await response.json();
 
         console.log('📡 Login status response:', data);
+
+        // Update feedback based on polling progress
+        const placeholder = document.getElementById('qrPlaceholder');
+        if (pollCount < 5) {
+          placeholder.innerText = '🔍 Waiting for wallet response...';
+        } else if (pollCount < 15) {
+          placeholder.innerText = '⏳ Please check your XAMAN app...';
+        } else if (pollCount < 30) {
+          placeholder.innerText = '🔄 Still waiting for signature...';
+        } else if (pollCount < 60) {
+          placeholder.innerText = '⏰ Taking longer than usual...';
+        } else {
+          placeholder.innerText = '🕐 Please try refreshing if needed...';
+        }
 
         if (data.signed) {
           clearInterval(pollInterval);
@@ -421,7 +437,15 @@
       } catch (error) {
         console.error('❌ Polling error:', error);
       }
-    }, 2000);
+
+      pollCount++;
+      if (pollCount >= maxPolls) {
+        clearInterval(pollInterval);
+        console.log('⏰ Polling timeout reached');
+        placeholder.innerText = 'Connection timeout - please try again';
+        placeholder.style.color = '#e74c3c';
+      }
+    }, 1000); // Faster polling - every 1 second
   }
 
   // Direct XRPL trustline check (same as airdrop system)
