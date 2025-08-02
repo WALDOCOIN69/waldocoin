@@ -525,9 +525,9 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-      // Get current page URL for return after XUMM
-      const currentUrl = window.location.href.split('?')[0] + '?signed=1#widget';
-      const encodedReturnUrl = encodeURIComponent(currentUrl);
+      // Get correct presale widget URL for return after XUMM
+      const presaleWidgetUrl = 'https://waldocoin.live/presale-widget/?signed=1#widget';
+      const encodedReturnUrl = encodeURIComponent(presaleWidgetUrl);
 
       const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/login?return_url=${encodedReturnUrl}`, {
         method: 'GET',
@@ -1253,11 +1253,11 @@
     const completed = urlParams.get('completed');
     const hash = window.location.hash;
 
-    if ((signed === '1' || completed) && hash === '#widget') {
+    if ((signed === '1' || completed) && (hash === '#widget' || window.location.pathname.includes('presale-widget'))) {
       console.log('🎉 User returned from XUMM! Staying on presale widget...');
 
       // Clear the URL parameters but keep the hash
-      window.history.replaceState({}, document.title, window.location.pathname + '#widget');
+      window.history.replaceState({}, document.title, '/presale-widget/#widget');
 
       // If user was connecting wallet (signed=1), resume polling
       if (signed === '1') {
