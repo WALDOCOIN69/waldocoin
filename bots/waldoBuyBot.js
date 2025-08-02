@@ -197,6 +197,5 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
     });
 }
 
-
-
-
+// Start the bot
+console.log("🤖 WALDO Buy Bot started! v2.0");
