@@ -110,7 +110,8 @@ export async function startBuyBot() {
             bot.sendMessage(
                 chatId,
                 `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}` +
-                (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : "")
+                (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""),
+                { parse_mode: "Markdown" }
             );
         }
     }
