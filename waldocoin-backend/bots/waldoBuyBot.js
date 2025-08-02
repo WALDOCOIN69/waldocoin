@@ -6,13 +6,21 @@ import TelegramBot from "node-telegram-bot-api";
 import xrpl from "xrpl";
 import Redis from "ioredis";
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // Disabled polling to prevent conflicts
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
 export async function startBuyBot() {
+    // Add delay to prevent conflicts with other instances
+    console.log("⏳ Starting bot in 5 seconds...");
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     await client.connect();
     console.log("✅ WALDO Buy Bot connected to XRPL");
+
+    // Start polling after XRPL connection
+    console.log("🤖 Starting Telegram polling...");
+    bot.startPolling();
 
     const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
     const issuer = process.env.WALDO_ISSUER;
