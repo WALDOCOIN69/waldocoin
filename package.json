@@ -21,6 +21,7 @@
     "nft.storage": "^3.4.0",
     "node-cron": "^4.1.0",
     "node-fetch": "^2.7.0",
+    "node-telegram-bot-api": "^0.66.0",
     "redis": "^5.5.6",
     "twitter-api-v2": "^1.23.2",
     "uuid": "^11.1.0",
