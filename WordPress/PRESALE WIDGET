@@ -722,45 +722,13 @@
         return;
       }
 
-      // FIRST: Actually sign in the user to the backend system
-      console.log('🔐 Signing user into backend system with wallet:', connectedWallet);
-      document.getElementById('connectionStatus').innerText = 'Signing in...';
-      document.getElementById('connectionStatus').style.color = '#ffd93d';
+      // User is already signed in via XUMM authentication
+      console.log('✅ User signed in via XUMM with wallet:', connectedWallet);
+      document.getElementById('connectionStatus').innerText = 'Signed in successfully!';
+      document.getElementById('connectionStatus').style.color = '#25c2a0';
 
-      try {
-        // Call the backend to sign in the user
-        const signInResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/auth/signin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            wallet: connectedWallet
-          })
-        });
-
-        const signInData = await signInResponse.json();
-        console.log('� Sign-in response:', signInData);
-
-        if (signInData.success) {
-          console.log('✅ User successfully signed into backend system');
-          document.getElementById('connectionStatus').innerText = 'Signed in successfully!';
-          document.getElementById('connectionStatus').style.color = '#25c2a0';
-        } else {
-          console.error('❌ Backend sign-in failed:', signInData.message);
-          document.getElementById('connectionStatus').innerText = 'Sign-in failed - please try again';
-          document.getElementById('connectionStatus').style.color = '#e74c3c';
-          return;
-        }
-      } catch (signInError) {
-        console.error('❌ Sign-in API error:', signInError);
-        document.getElementById('connectionStatus').innerText = 'Sign-in error - please try again';
-        document.getElementById('connectionStatus').style.color = '#e74c3c';
-        return;
-      }
-
-      // SECOND: Check trustline after successful sign-in
-      console.log('🔗 Now checking WALDO trustline...');
+      // Now check WALDO trustline
+      console.log('🔗 Checking WALDO trustline...');
       document.getElementById('connectionStatus').innerText = 'Checking trustline...';
       document.getElementById('connectionStatus').style.color = '#ffd93d';
 
