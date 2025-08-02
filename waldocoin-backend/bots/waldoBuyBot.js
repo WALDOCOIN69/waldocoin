@@ -63,6 +63,12 @@ export async function startBuyBot() {
     await bot.setWebHook(webhookUrl);
     console.log("✅ Webhook set:", webhookUrl);
 
+    // Process webhook updates manually
+    bot.processUpdate = (update) => {
+        console.log("🔄 Processing update:", update?.message?.text || 'no text');
+        bot.emit('message', update.message);
+    };
+
     // Only error handler (no polling error handler)
     bot.on('error', (error) => {
         console.error('❌ Bot error:', error);
