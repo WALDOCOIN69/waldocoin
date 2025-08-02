@@ -190,6 +190,10 @@ export async function startBuyBot() {
 
     // Group message handler
     bot.on("message", async (msg) => {
+        console.log("🎯 Bot received message:", msg?.text || 'no text');
+        console.log("👤 From user:", msg?.from?.username || msg?.from?.first_name || 'unknown');
+        console.log("💬 Chat type:", msg?.chat?.type || 'unknown');
+
         const chatId = msg.chat.id;
         const text = msg.text || "";
 

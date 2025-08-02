@@ -176,14 +176,24 @@ const startServer = async () => {
 
   // 🤖 Telegram Webhook Route
   app.post("/webhook/telegram", express.json(), (req, res) => {
-    console.log("📨 Telegram webhook received:", req.body?.message?.text || 'no text');
+    console.log("📨 Telegram webhook received");
+    console.log("📋 Full webhook body:", JSON.stringify(req.body, null, 2));
+    console.log("🔍 Global bot exists:", !!global.telegramBot);
+
     // Process the webhook update
     if (req.body && global.telegramBot) {
       console.log("🔄 Processing webhook update for user:", req.body?.message?.from?.username || 'unknown');
-      // Send the update to the bot for processing
-      global.telegramBot.processUpdate(req.body);
+      try {
+        // Send the update to the bot for processing
+        global.telegramBot.processUpdate(req.body);
+        console.log("✅ Update sent to bot successfully");
+      } catch (error) {
+        console.error("❌ Error processing update:", error);
+      }
     } else {
       console.log("⚠️ No bot instance available to process update");
+      console.log("⚠️ req.body exists:", !!req.body);
+      console.log("⚠️ global.telegramBot exists:", !!global.telegramBot);
     }
     res.sendStatus(200);
   });
