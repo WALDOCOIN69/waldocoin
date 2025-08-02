@@ -191,13 +191,13 @@ const startServer = async () => {
   });
 };
 
-// 🚀 Boot everything (server + bot)
+// 🚀 Boot server only (bot temporarily disabled for debugging)
 const boot = async () => {
   try {
-    await startBuyBot();
-    console.log("🤖 WALDO Buy Bot is running.");
+    // await startBuyBot(); // TEMPORARILY DISABLED - Debugging 409 conflicts
+    console.log("🚫 Bot temporarily disabled for debugging");
     await startServer();
-    console.log("🚀 Server and bot started successfully");
+    console.log("🚀 Server started successfully (bot disabled)");
   } catch (err) {
     console.error("❌ Startup error:", err);
     process.exit(1);
