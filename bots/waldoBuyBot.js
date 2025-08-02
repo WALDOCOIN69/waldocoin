@@ -184,13 +184,9 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
                 }
 
                 if (text.startsWith("r") && text.length >= 25 && text.length <= 35) {
-                    await bot.sendMessage(
-                        chatId,
-                        `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}` +
-                        (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""),
-                        { parse_mode: "Markdown" }
-                    );
-
+                    bot.sendMessage(chatId, `✅ Address received! Now send XRP to:\n\`${distributorWallet.classicAddress}\`\n\nMinimum: *5 XRP*\nWALDO will be sent automatically with bonuses.`, {
+                        parse_mode: "Markdown"
+                    });
 
                     const interval = setInterval(() => checkIncoming(text, chatId), 60000);
                     setTimeout(() => clearInterval(interval), 1800000);
@@ -201,6 +197,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
         }
     });
 }
+
 
 
 
