@@ -107,15 +107,18 @@ export async function startBuyBot() {
                 JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
             );
 
-            // Build confirmation message (FIXED: No more template literal syntax errors)
-            let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
+            // COMPLETELY REWRITTEN MESSAGE SENDING - v5.0 FORCE UPDATE
+            const txLink = "https://livenet.xrpl.org/transactions/" + waldoTx;
+            const baseMessage = "✅ Payment confirmed!\n\n💸 Sent: " + amount + " XRP\n🎁 WALDO: " + waldo + "\n📦 TX: " + txLink;
 
+            let finalMessage = baseMessage;
             if (nftTx) {
-                confirmationMessage += `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}`;
+                const nftLink = "https://livenet.xrpl.org/transactions/" + nftTx;
+                finalMessage = finalMessage + "\n🏅 NFT: " + nftLink;
             }
 
-            // Send message with proper syntax (FIXED v4.0)
-            bot.sendMessage(chatId, confirmationMessage, { parse_mode: "Markdown" });
+            // Send with string concatenation (NO TEMPLATE LITERALS)
+            bot.sendMessage(chatId, finalMessage, { parse_mode: "Markdown" });
         }
     }
 
