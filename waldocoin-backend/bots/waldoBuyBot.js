@@ -41,9 +41,11 @@ export async function startBuyBot() {
         return;
     }
 
-    // Start polling after verification
-    console.log("🤖 Starting Telegram polling...");
-    bot.startPolling();
+    // Use webhooks instead of polling to avoid conflicts
+    console.log("🌐 Setting up webhook instead of polling...");
+    const webhookUrl = `${process.env.RENDER_EXTERNAL_URL || 'https://waldocoin-backend-api.onrender.com'}/webhook/telegram`;
+    await bot.setWebHook(webhookUrl);
+    console.log("✅ Webhook set:", webhookUrl);
 
     // Test bot connection
     bot.on('polling_error', (error) => {

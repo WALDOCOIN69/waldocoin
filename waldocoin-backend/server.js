@@ -174,6 +174,13 @@ const startServer = async () => {
     console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET:", e.message);
   }
 
+  // 🤖 Telegram Webhook Route
+  app.post("/webhook/telegram", express.json(), (req, res) => {
+    console.log("📨 Telegram webhook received");
+    // The bot will handle the update automatically
+    res.sendStatus(200);
+  });
+
   // 🧪 Health Check
   app.get("/", (_, res) => {
     res.send("✅ WALDO backend is live at /api/*");
