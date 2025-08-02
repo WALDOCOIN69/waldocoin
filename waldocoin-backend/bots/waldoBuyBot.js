@@ -32,7 +32,7 @@ export async function startBuyBot() {
 
     async function hasTrustline(address) {
         const acc = await client.request({ command: "account_lines", account: address });
-        return acc.result.lines.some((line) => line.currency === "WALDO" && line.account === issuer);
+        return acc.result.lines.some((line) => line.currency === "WLO" && line.account === issuer);
     }
 
     async function sendWaldo(to, amount, tag) {
@@ -41,7 +41,7 @@ export async function startBuyBot() {
             Account: distributorWallet.classicAddress,
             Destination: to,
             Amount: {
-                currency: "WALDO",
+                currency: "WLO",
                 issuer,
                 value: amount.toString(),
             },
@@ -94,7 +94,7 @@ export async function startBuyBot() {
             const hasLine = await hasTrustline(wallet);
 
             if (!hasLine) {
-                bot.sendMessage(chatId, "⚠️ WALDO trustline not found. Please set it first:\nhttps://waldocoin.live");
+                bot.sendMessage(chatId, "⚠️ WLO trustline not found. Please set it first:\nhttps://waldocoin.live");
                 continue;
             }
 
@@ -108,7 +108,7 @@ export async function startBuyBot() {
             );
 
             // FIXED: Build confirmation message properly
-            let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
+            let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WLO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
 
             if (nftTx) {
                 confirmationMessage += `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}`;
@@ -128,13 +128,13 @@ export async function startBuyBot() {
 
             const markdownMessage = `
 📌 *WALDOcoin Presale Bot is Live!*
-Buy WALDO instantly with XRP — no waiting, no middlemen.
+Buy WLO instantly with XRP — no waiting, no middlemen.
 
 🚀 *How to get started:*
 1️⃣ DM 👉 [@WaldoBuyBot](https://t.me/WaldoBuyBot)
 2️⃣ Type */buywaldo*
 3️⃣ Paste your *XRPL Wallet Address*
-4️⃣ Send XRP → Get WALDO instantly (bonus tiers apply!)
+4️⃣ Send XRP → Get WLO instantly (bonus tiers apply!)
 
 💰 *BONUS TIERS*
 - 80 XRP = +15%
@@ -180,7 +180,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
                         "Steps:\n" +
                         "1️⃣ Send your XRPL wallet address\n" +
                         "2️⃣ Send XRP to: `" + distributorWallet.classicAddress + "`\n" +
-                        "3️⃣ WALDO will be sent automatically with bonuses\n\n" +
+                        "3️⃣ WLO will be sent automatically with bonuses\n\n" +
                         "💡 *Bonus Tiers:*\n" +
                         "80 XRP = +15%\n" +
                         "90 XRP = +22%\n" +
