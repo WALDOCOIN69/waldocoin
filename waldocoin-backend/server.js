@@ -191,23 +191,13 @@ const startServer = async () => {
   });
 };
 
-// 🚀 Boot server only (testing bot token)
+// 🚀 Boot everything (server + bot with new token)
 const boot = async () => {
   try {
-    // Test bot token without starting polling
-    console.log("🔍 Testing bot token...");
-    const TelegramBot = (await import("node-telegram-bot-api")).default;
-    const testBot = new TelegramBot(process.env.BOT_TOKEN, { polling: false });
-
-    try {
-      const botInfo = await testBot.getMe();
-      console.log("✅ Bot token valid:", botInfo.username, "-", botInfo.first_name);
-    } catch (tokenError) {
-      console.error("❌ Bot token error:", tokenError.message);
-    }
-
+    await startBuyBot();
+    console.log("🤖 WALDO Buy Bot is running with new token.");
     await startServer();
-    console.log("🚀 Server started successfully (bot token tested)");
+    console.log("🚀 Server and bot started successfully");
   } catch (err) {
     console.error("❌ Startup error:", err);
     process.exit(1);
