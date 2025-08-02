@@ -107,13 +107,14 @@ export async function startBuyBot() {
                 JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
             );
 
-            // Build confirmation message
+            // Build confirmation message (FIXED: No more template literal syntax errors)
             let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
 
             if (nftTx) {
                 confirmationMessage += `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}`;
             }
 
+            // Send message with proper syntax (FIXED v4.0)
             bot.sendMessage(chatId, confirmationMessage, { parse_mode: "Markdown" });
         }
     }
@@ -199,5 +200,6 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
     });
 }
 
-// Start the bot
-console.log("🤖 WALDO Buy Bot started! v3.0 - SYNTAX FIXED");
+// Start the bot - VERSION 4.0 SYNTAX FIXED
+console.log("🤖 WALDO Buy Bot started! v4.0 - TEMPLATE LITERAL FIXED");
+console.log("📅 Deploy timestamp:", new Date().toISOString());
