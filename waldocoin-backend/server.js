@@ -191,13 +191,23 @@ const startServer = async () => {
   });
 };
 
-// 🚀 Boot server only (bot temporarily disabled for debugging)
+// 🚀 Boot server only (testing bot token)
 const boot = async () => {
   try {
-    // await startBuyBot(); // TEMPORARILY DISABLED - Debugging 409 conflicts
-    console.log("🚫 Bot temporarily disabled for debugging");
+    // Test bot token without starting polling
+    console.log("🔍 Testing bot token...");
+    const TelegramBot = (await import("node-telegram-bot-api")).default;
+    const testBot = new TelegramBot(process.env.BOT_TOKEN, { polling: false });
+
+    try {
+      const botInfo = await testBot.getMe();
+      console.log("✅ Bot token valid:", botInfo.username, "-", botInfo.first_name);
+    } catch (tokenError) {
+      console.error("❌ Bot token error:", tokenError.message);
+    }
+
     await startServer();
-    console.log("🚀 Server started successfully (bot disabled)");
+    console.log("🚀 Server started successfully (bot token tested)");
   } catch (err) {
     console.error("❌ Startup error:", err);
     process.exit(1);
