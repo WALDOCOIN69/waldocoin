@@ -94,6 +94,16 @@ export async function startBuyBot() {
     global.telegramBot = bot;
     console.log("🌐 Bot made available globally for webhook processing");
 
+    // FINAL TEST: Force webhook info check
+    setTimeout(async () => {
+        try {
+            const finalCheck = await bot.getWebHookInfo();
+            console.log("🔍 FINAL WEBHOOK CHECK:", JSON.stringify(finalCheck, null, 2));
+        } catch (error) {
+            console.error("❌ Final webhook check failed:", error);
+        }
+    }, 5000);
+
     // Only error handler (no polling error handler)
     bot.on('error', (error) => {
         console.error('❌ Bot error:', error);
