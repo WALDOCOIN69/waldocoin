@@ -10,6 +10,19 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // Disab
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
+// Debug Redis connection
+redis.on('connect', () => {
+    console.log('✅ Bot Redis connected');
+});
+
+redis.on('error', (err) => {
+    console.error('❌ Bot Redis error:', err.message);
+});
+
+redis.on('ready', () => {
+    console.log('🚀 Bot Redis ready');
+});
+
 export async function startBuyBot() {
     // Add delay to prevent conflicts with other instances
     console.log("⏳ Starting bot in 5 seconds...");
@@ -44,19 +57,21 @@ export async function startBuyBot() {
     // Use webhooks instead of polling to avoid conflicts
     console.log("🌐 Setting up webhook instead of polling...");
     const webhookUrl = `${process.env.RENDER_EXTERNAL_URL || 'https://waldocoin-backend-api.onrender.com'}/webhook/telegram`;
+
+    // Clear any existing webhook first
+    await bot.deleteWebHook();
+    console.log("🗑️ Cleared existing webhook");
+
+    // Set new webhook
     await bot.setWebHook(webhookUrl);
     console.log("✅ Webhook set:", webhookUrl);
 
-    // Test bot connection
-    bot.on('polling_error', (error) => {
-        console.error('❌ Polling error:', error);
-    });
-
+    // Only error handler (no polling error handler)
     bot.on('error', (error) => {
         console.error('❌ Bot error:', error);
     });
 
-    console.log("✅ Bot event listeners registered");
+    console.log("✅ Webhook mode activated - no polling");
 
     const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
     const issuer = process.env.WALDO_ISSUER;
