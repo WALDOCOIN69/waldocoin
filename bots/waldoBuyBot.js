@@ -107,12 +107,10 @@ export async function startBuyBot() {
                 JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
             );
 
-            bot.sendMessage(
+            await bot.sendMessage(
                 chatId,
-                await bot.sendMessage(chatId, `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`);
-
-
-            (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""),
+                `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}` +
+                (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""),
                 { parse_mode: "Markdown" }
             );
 
@@ -174,7 +172,7 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
             if (rateLimit.has(chatId) && Date.now() - rateLimit.get(chatId) < 3000) return;
             rateLimit.set(chatId, Date.now());
 
-            redis.exists(greetedKey(chatId)).then((exists) => {
+            redis.exists(greetedKey(chatId)).then(async (exists) => {
                 if (!exists) {
                     bot.sendMessage(
                         chatId,
@@ -186,11 +184,13 @@ Buy WALDO instantly with XRP — no waiting, no middlemen.
                 }
 
                 if (text.startsWith("r") && text.length >= 25 && text.length <= 35) {
-                    bot.sendMessage(
+                    await bot.sendMessage(
                         chatId,
-                        `✅ Wallet received: \`${text}\`\nNow send XRP to: \`${distributorWallet.classicAddress}\`\n\nI'll check for payment every 60 seconds.`,
+                        `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WALDO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}` +
+                        (nftTx ? `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}` : ""),
                         { parse_mode: "Markdown" }
                     );
+
                     const interval = setInterval(() => checkIncoming(text, chatId), 60000);
                     setTimeout(() => clearInterval(interval), 1800000);
                 } else {
