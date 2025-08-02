@@ -68,9 +68,19 @@ export async function startBuyBot() {
     await bot.setWebHook(webhookUrl);
     console.log("✅ Webhook set:", webhookUrl);
 
-    // Verify webhook was set
+    // CRITICAL: Verify webhook was actually set
     const webhookInfo = await bot.getWebHookInfo();
-    console.log("🔍 Webhook verification:", webhookInfo);
+    console.log("🔍 WEBHOOK VERIFICATION:", JSON.stringify(webhookInfo, null, 2));
+
+    if (webhookInfo.url !== webhookUrl) {
+        console.error("❌ WEBHOOK MISMATCH!");
+        console.error("Expected:", webhookUrl);
+        console.error("Actual:", webhookInfo.url);
+    } else {
+        console.log("✅ Webhook verified successfully");
+    }
+
+    // (Webhook verification moved above)
 
     // Process webhook updates manually
     bot.processUpdate = (update) => {
