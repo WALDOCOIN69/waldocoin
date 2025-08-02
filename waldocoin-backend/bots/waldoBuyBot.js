@@ -27,6 +27,15 @@ export async function startBuyBot() {
         const botInfo = await bot.getMe();
         console.log("✅ Bot info:", botInfo.username, "-", botInfo.first_name);
         console.log("� Bot link: https://t.me/" + botInfo.username);
+
+        // Check and clear any existing webhook
+        const webhookInfo = await bot.getWebHookInfo();
+        console.log("🔍 Webhook info:", webhookInfo);
+        if (webhookInfo.url) {
+            console.log("🗑️ Removing existing webhook:", webhookInfo.url);
+            await bot.deleteWebHook();
+            console.log("✅ Webhook removed");
+        }
     } catch (error) {
         console.error("❌ Bot token error:", error.message);
         return;
