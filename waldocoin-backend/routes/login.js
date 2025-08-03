@@ -21,8 +21,8 @@ router.get("/", async (req, res) => {
         multisign: false,
         expire: 300, // 5 minutes
         return_url: {
-          web: "https://waldocoin.live/presale/?signed=1",
-          app: "https://waldocoin.live/presale/?signed=1"
+          web: "",
+          app: ""
         }
       },
       custom_meta: {

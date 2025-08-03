@@ -629,6 +629,12 @@
         sessionStorage.removeItem('presale_wallet');
         sessionStorage.removeItem('presale_uuid');
 
+        // Update UI to show disconnected state
+        document.getElementById('connectedWallet').innerText = 'Not connected';
+        document.getElementById('connectionStatus').innerText = 'Disconnected';
+        document.getElementById('connectionStatus').style.color = '#e74c3c';
+        document.getElementById('disconnectBtn').style.display = 'none';
+
         console.log('🔌 Wallet disconnected, going to step 1');
         showStep(1);
         connectXummWallet();
