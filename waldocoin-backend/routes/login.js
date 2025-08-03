@@ -11,10 +11,11 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // Get return URL from query parameter or use default
-    const returnUrl = req.query.return_url || "https://waldocoin.live/?signed=1";
+    // Check if return URL should be disabled for desktop QR codes
+    const noReturnUrl = req.query.no_return_url === 'true';
+    const returnUrl = req.query.return_url;
 
-    // Enhanced SignIn with return URL for better UX
+    // Enhanced SignIn payload
     const payload = {
       txjson: {
         TransactionType: "SignIn"
@@ -23,16 +24,20 @@ router.get("/", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        return_url: {
-          web: returnUrl,
-          app: returnUrl
-        }
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
         instruction: "Sign in to access your WALDOCOIN dashboard"
       }
     };
+
+    // Only add return_url if explicitly provided and not disabled
+    if (!noReturnUrl && returnUrl) {
+      payload.options.return_url = {
+        web: returnUrl,
+        app: returnUrl
+      };
+    }
 
     const created = await xummClient.payload.create(payload);
 
@@ -98,6 +103,10 @@ router.get("/status", async (req, res) => {
 // Create trustline QR code (same as login but for trustline)
 router.get("/trustline", async (req, res) => {
   try {
+    // Check if return URL should be disabled
+    const noReturnUrl = req.query.no_return_url === 'true';
+    const returnUrl = req.query.return_url;
+
     // TrustSet transaction for WALDO trustline with NoRipple flag
     const payload = {
       txjson: {
@@ -108,8 +117,21 @@ router.get("/trustline", async (req, res) => {
           value: "1000000000"
         },
         Flags: 131072 // tfSetNoRipple flag - turns OFF rippling
+      },
+      options: {
+        submit: true,
+        multisign: false,
+        expire: 300
       }
     };
+
+    // Only add return_url if explicitly provided and not disabled
+    if (!noReturnUrl && returnUrl) {
+      payload.options.return_url = {
+        web: returnUrl,
+        app: returnUrl
+      };
+    }
 
     const created = await xummClient.payload.create(payload);
 
