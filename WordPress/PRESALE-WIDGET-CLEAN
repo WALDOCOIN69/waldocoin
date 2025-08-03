@@ -160,19 +160,7 @@
             const data = await response.json();
 
             if (data.qr && data.uuid) {
-                // XUMM BEST PRACTICE: Detect mobile and redirect directly
-                const isMobile = /iPhone|Android/i.test(navigator.userAgent);
-
-                if (isMobile && data.next && data.next.always) {
-                    console.log('📱 Mobile detected - redirecting to XUMM app');
-                    // Store UUID before redirecting
-                    sessionStorage.setItem('presale_uuid', data.uuid);
-                    // Redirect to XUMM app (no new window)
-                    window.location.href = data.next.always;
-                    return; // Don't continue with desktop flow
-                }
-
-                // Desktop: Show QR code
+                // Show QR code for all users - no auto-redirect
                 document.getElementById('xummQR').src = data.qr;
                 document.getElementById('xummQR').style.display = 'block';
                 document.getElementById('xummQR').style.margin = '10px auto';
