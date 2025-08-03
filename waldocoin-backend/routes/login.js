@@ -37,12 +37,10 @@ router.get("/", async (req, res) => {
       websocket: created.refs.websocket_status
     });
 
-    // Return all available refs for mobile deep linking
+    // Return ONLY QR and UUID - NO deep links
     res.json({
       qr: created.refs.qr_png,
-      uuid: created.uuid,
-      refs: created.refs, // Include all refs (qr_png, qr_uri, websocket_status, etc.)
-      next: created.next // Include next object if available
+      uuid: created.uuid
     });
   } catch (err) {
     console.error("❌ Error in /api/login:", err.message);
@@ -119,12 +117,10 @@ router.get("/trustline", async (req, res) => {
       qr_uri: created.refs.qr_uri
     });
 
-    // Return QR with Xaman logo
+    // Return ONLY QR and UUID - NO deep links
     res.json({
       qr: created.refs.qr_png,
-      uuid: created.uuid,
-      refs: created.refs,
-      next: created.next
+      uuid: created.uuid
     });
   } catch (err) {
     console.error("❌ Error creating trustline QR:", err.message);
