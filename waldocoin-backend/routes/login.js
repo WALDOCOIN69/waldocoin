@@ -11,7 +11,10 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // SignIn - XUMM stays open (no return URL)
+    // Get return URL from query parameter or use default
+    const returnUrl = req.query.return_url || "https://waldocoin.live/?signed=1";
+
+    // Enhanced SignIn with return URL for better UX
     const payload = {
       txjson: {
         TransactionType: "SignIn"
@@ -21,8 +24,8 @@ router.get("/", async (req, res) => {
         multisign: false,
         expire: 300, // 5 minutes
         return_url: {
-          web: "about:blank",
-          app: "about:blank"
+          web: returnUrl,
+          app: returnUrl
         }
       },
       custom_meta: {
@@ -40,11 +43,12 @@ router.get("/", async (req, res) => {
       websocket: created.refs.websocket_status
     });
 
-    // Return QR and deep links for mobile
+    // Return all available refs for mobile deep linking
     res.json({
       qr: created.refs.qr_png,
       uuid: created.uuid,
-      next: created.next // Include deep links for mobile
+      refs: created.refs, // Include all refs (qr_png, qr_uri, websocket_status, etc.)
+      next: created.next // Include next object if available
     });
   } catch (err) {
     console.error("❌ Error in /api/login:", err.message);
@@ -94,7 +98,7 @@ router.get("/status", async (req, res) => {
 // Create trustline QR code (same as login but for trustline)
 router.get("/trustline", async (req, res) => {
   try {
-    // TrustSet - XUMM stays open (no return URL)
+    // TrustSet transaction for WALDO trustline with NoRipple flag
     const payload = {
       txjson: {
         TransactionType: "TrustSet",
@@ -104,12 +108,6 @@ router.get("/trustline", async (req, res) => {
           value: "1000000000"
         },
         Flags: 131072 // tfSetNoRipple flag - turns OFF rippling
-      },
-      options: {
-        submit: true,
-        multisign: false,
-        expire: 300
-        // No return_url = XUMM stays open
       }
     };
 
@@ -121,11 +119,12 @@ router.get("/trustline", async (req, res) => {
       qr_uri: created.refs.qr_uri
     });
 
-    // Return QR and deep links for mobile
+    // Return QR with Xaman logo
     res.json({
       qr: created.refs.qr_png,
       uuid: created.uuid,
-      next: created.next // Include deep links for mobile
+      refs: created.refs,
+      next: created.next
     });
   } catch (err) {
     console.error("❌ Error creating trustline QR:", err.message);

@@ -15,8 +15,8 @@
             </div>
             <img id="xummQR" style="display: none; max-width: 100%; border-radius: 10px; margin: 10px auto;" />
             <a id="xummDeepLink"
-                style="display: none; color: #25c2a0; font-weight: bold; margin-top: 10px; text-align: center; display: block;"
-                target="_blank">📱 Open in XAMAN App</a>
+                style="display: none; color: #25c2a0; font-weight: bold; margin-top: 10px; text-align: center; display: block;">📱
+                Open in XAMAN App</a>
         </div>
 
         <div style="background: #0f2d17; padding: 10px; border-radius: 8px; margin: 15px 0;">
@@ -47,8 +47,8 @@
             <img id="trustlineQR"
                 style="display: none; max-width: 100%; border-radius: 10px; margin: 10px auto; background: #ffd93d; padding: 10px;" />
             <a id="trustlineDeepLink"
-                style="display: none; color: #ffd93d; font-weight: bold; margin-top: 10px; text-align: center; display: block;"
-                target="_blank">📲 Add Trustline in XAMAN</a>
+                style="display: none; color: #ffd93d; font-weight: bold; margin-top: 10px; text-align: center; display: block;">📲
+                Add Trustline in XAMAN</a>
         </div>
 
         <div style="background: #0f2d17; padding: 10px; border-radius: 8px; margin: 15px 0;">
