@@ -155,7 +155,7 @@
             document.getElementById('qrPlaceholder').innerText = 'Loading QR...';
             document.getElementById('xummQR').style.display = 'none';
 
-            // NO RETURN URL: Let XUMM stay open
+            // Fetch the login QR code
             const response = await fetch('https://waldocoin-backend-api.onrender.com/api/login');
             const data = await response.json();
 
