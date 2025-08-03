@@ -105,6 +105,15 @@ router.get("/trustline", async (req, res) => {
           value: "1000000000"
         },
         Flags: 131072 // tfSetNoRipple flag - turns OFF rippling
+      },
+      options: {
+        submit: true,
+        multisign: false,
+        expire: 300, // 5 minutes
+        return_url: {
+          web: "xumm://",
+          app: "xumm://"
+        }
       }
     };
 
@@ -142,6 +151,15 @@ router.get("/trustline-noripple", async (req, res) => {
           value: "1000000000"
         },
         Flags: 131072 // tfSetNoRipple flag to disable rippling
+      },
+      options: {
+        submit: true,
+        multisign: false,
+        expire: 300, // 5 minutes
+        return_url: {
+          web: "xumm://",
+          app: "xumm://"
+        }
       }
     };
 

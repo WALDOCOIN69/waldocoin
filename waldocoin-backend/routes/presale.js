@@ -276,7 +276,10 @@ router.post("/buy", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 1440, // 24 hours
-        // NO return_url = XUMM stays open
+        return_url: {
+          web: "xumm://",
+          app: "xumm://"
+        }
       },
       custom_meta: {
         identifier: `presale-${Date.now()}`,
