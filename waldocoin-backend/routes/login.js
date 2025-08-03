@@ -11,7 +11,7 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // Enhanced SignIn with return URL for better UX
+    // SignIn - XUMM stays open (no return URL)
     const payload = {
       txjson: {
         TransactionType: "SignIn"
@@ -20,6 +20,7 @@ router.get("/", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
+        // No return_url = XUMM stays open
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
@@ -91,7 +92,7 @@ router.get("/status", async (req, res) => {
 // Create trustline QR code (same as login but for trustline)
 router.get("/trustline", async (req, res) => {
   try {
-    // NO REDIRECTS - Keep XUMM open always
+    // TrustSet - XUMM stays open (no return URL)
     const payload = {
       txjson: {
         TransactionType: "TrustSet",
@@ -106,7 +107,7 @@ router.get("/trustline", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300
-        // NO return_url - XUMM stays open
+        // No return_url = XUMM stays open
       }
     };
 
