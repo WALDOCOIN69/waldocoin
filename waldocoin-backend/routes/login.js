@@ -11,7 +11,7 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // NO REDIRECTS - Keep XUMM open always
+    // Enhanced SignIn with return URL for better UX
     const payload = {
       txjson: {
         TransactionType: "SignIn"
@@ -20,7 +20,6 @@ router.get("/", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        // NO return_url - XUMM stays open
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
@@ -37,11 +36,12 @@ router.get("/", async (req, res) => {
       websocket: created.refs.websocket_status
     });
 
-    // Return ONLY QR and UUID - NO deep links to prevent new windows
+    // Return all available refs for mobile deep linking
     res.json({
       qr: created.refs.qr_png,
-      uuid: created.uuid
-      // NO next object - prevents new window issues
+      uuid: created.uuid,
+      refs: created.refs, // Include all refs (qr_png, qr_uri, websocket_status, etc.)
+      next: created.next // Include next object if available
     });
   } catch (err) {
     console.error("❌ Error in /api/login:", err.message);
@@ -118,11 +118,12 @@ router.get("/trustline", async (req, res) => {
       qr_uri: created.refs.qr_uri
     });
 
-    // Return ONLY QR and UUID - NO deep links to prevent new windows
+    // Return QR with Xaman logo
     res.json({
       qr: created.refs.qr_png,
-      uuid: created.uuid
-      // NO next object - prevents new window issues
+      uuid: created.uuid,
+      refs: created.refs,
+      next: created.next
     });
   } catch (err) {
     console.error("❌ Error creating trustline QR:", err.message);
