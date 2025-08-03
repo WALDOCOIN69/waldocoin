@@ -20,7 +20,10 @@ router.get("/", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        // No return_url = XUMM stays open
+        return_url: {
+          web: "javascript:void(0)",
+          app: "javascript:void(0)"
+        }
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
