@@ -11,11 +11,7 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // Check if return URL should be disabled for desktop QR codes
-    const noReturnUrl = req.query.no_return_url === 'true';
-    const returnUrl = req.query.return_url;
-
-    // Enhanced SignIn payload
+    // NO REDIRECTS - Keep XUMM open always
     const payload = {
       txjson: {
         TransactionType: "SignIn"
@@ -24,20 +20,13 @@ router.get("/", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
+        // NO return_url - XUMM stays open
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
         instruction: "Sign in to access your WALDOCOIN dashboard"
       }
     };
-
-    // Only add return_url if explicitly provided and not disabled
-    if (!noReturnUrl && returnUrl) {
-      payload.options.return_url = {
-        web: returnUrl,
-        app: returnUrl
-      };
-    }
 
     const created = await xummClient.payload.create(payload);
 
@@ -103,11 +92,7 @@ router.get("/status", async (req, res) => {
 // Create trustline QR code (same as login but for trustline)
 router.get("/trustline", async (req, res) => {
   try {
-    // Check if return URL should be disabled
-    const noReturnUrl = req.query.no_return_url === 'true';
-    const returnUrl = req.query.return_url;
-
-    // TrustSet transaction for WALDO trustline with NoRipple flag
+    // NO REDIRECTS - Keep XUMM open always
     const payload = {
       txjson: {
         TransactionType: "TrustSet",
@@ -122,16 +107,9 @@ router.get("/trustline", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300
+        // NO return_url - XUMM stays open
       }
     };
-
-    // Only add return_url if explicitly provided and not disabled
-    if (!noReturnUrl && returnUrl) {
-      payload.options.return_url = {
-        web: returnUrl,
-        app: returnUrl
-      };
-    }
 
     const created = await xummClient.payload.create(payload);
 
