@@ -37,10 +37,11 @@ router.get("/", async (req, res) => {
       websocket: created.refs.websocket_status
     });
 
-    // Return ONLY QR and UUID - NO deep links
+    // Return QR and deep links for mobile
     res.json({
       qr: created.refs.qr_png,
-      uuid: created.uuid
+      uuid: created.uuid,
+      next: created.next // Include deep links for mobile
     });
   } catch (err) {
     console.error("❌ Error in /api/login:", err.message);
@@ -117,10 +118,11 @@ router.get("/trustline", async (req, res) => {
       qr_uri: created.refs.qr_uri
     });
 
-    // Return ONLY QR and UUID - NO deep links
+    // Return QR and deep links for mobile
     res.json({
       qr: created.refs.qr_png,
-      uuid: created.uuid
+      uuid: created.uuid,
+      next: created.next // Include deep links for mobile
     });
   } catch (err) {
     console.error("❌ Error creating trustline QR:", err.message);

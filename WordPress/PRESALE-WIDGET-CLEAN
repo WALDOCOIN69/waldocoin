@@ -47,8 +47,8 @@
             <img id="trustlineQR"
                 style="display: none; max-width: 100%; border-radius: 10px; margin: 10px auto; background: #ffd93d; padding: 10px;" />
             <a id="trustlineDeepLink"
-                style="display: none; color: #ffd93d; font-weight: bold; margin-top: 10px; text-align: center; display: block;">📲
-                Add Trustline in XAMAN</a>
+                style="display: none; color: #ffd93d; font-weight: bold; margin-top: 10px; text-align: center; display: block;"
+                target="_blank">📲 Add Trustline in XAMAN</a>
         </div>
 
         <div style="background: #0f2d17; padding: 10px; border-radius: 8px; margin: 15px 0;">
@@ -379,15 +379,6 @@
                 if (data.next && data.next.always) {
                     document.getElementById('trustlineDeepLink').href = data.next.always;
                     document.getElementById('trustlineDeepLink').style.display = 'block';
-
-                    // Force same window redirect - NO new tabs/windows
-                    document.getElementById('trustlineDeepLink').onclick = function (e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('🔗 Redirecting to XUMM trustline in same window...');
-                        window.location.replace(data.next.always);
-                        return false;
-                    };
                 }
 
                 // Start polling for trustline completion
@@ -583,7 +574,7 @@
 
             if (data.success && data.deeplink) {
                 document.getElementById('purchaseBtn').innerText = '✅ Check XUMM App';
-                window.open(data.deeplink, '_blank');
+                window.location.href = data.deeplink;
 
                 if (data.uuid) {
                     pollTransactionStatus(data.uuid);
@@ -629,6 +620,7 @@
     }
 
     function disconnectWallet() {
+        console.log('🔌 Disconnect button clicked');
         connectedWallet = null;
         hasTrustline = false;
         selectedAmount = 0;
@@ -637,6 +629,7 @@
         sessionStorage.removeItem('presale_wallet');
         sessionStorage.removeItem('presale_uuid');
 
+        console.log('🔌 Wallet disconnected, going to step 1');
         showStep(1);
         connectXummWallet();
     }
