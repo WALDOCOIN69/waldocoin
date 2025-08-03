@@ -276,10 +276,7 @@ router.post("/buy", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 1440, // 24 hours
-        return_url: {
-          web: 'https://waldocoin.live/presale-success/',
-          app: 'https://waldocoin.live/presale-success/'
-        }
+        // NO return_url = XUMM stays open
       },
       custom_meta: {
         identifier: `presale-${Date.now()}`,
