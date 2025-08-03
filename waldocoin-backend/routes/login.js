@@ -11,7 +11,7 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support
 router.get("/", async (req, res) => {
   try {
-    // Use data URL that does nothing
+    // XUMM BEST PRACTICE: Provide return URL for mobile redirect
     const payload = {
       txjson: {
         TransactionType: "SignIn"
@@ -21,8 +21,8 @@ router.get("/", async (req, res) => {
         multisign: false,
         expire: 300, // 5 minutes
         return_url: {
-          web: "data:text/html,<script>window.close();</script>",
-          app: "data:text/html,<script>window.close();</script>"
+          web: "https://waldocoin.live/presale/?signed=1",
+          app: "https://waldocoin.live/presale/?signed=1"
         }
       },
       custom_meta: {
