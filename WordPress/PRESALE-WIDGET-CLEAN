@@ -160,15 +160,25 @@
             const data = await response.json();
 
             if (data.qr && data.uuid) {
-                // Show QR code for all users - no auto-redirect
-                document.getElementById('xummQR').src = data.qr;
-                document.getElementById('xummQR').style.display = 'block';
-                document.getElementById('xummQR').style.margin = '10px auto';
-                document.getElementById('qrPlaceholder').style.display = 'none';
+                // Mobile detection
+                const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                    // Mobile: Hide QR, show direct button
+                    document.getElementById('qrPlaceholder').innerHTML =
+                        '<button onclick="window.location.href=\'' + data.next.always + '\'" style="background: #25c2a0; color: white; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📱 Open XUMM to Sign In</button>';
+                    document.getElementById('xummQR').style.display = 'none';
+                } else {
+                    // Desktop: Show QR code
+                    document.getElementById('xummQR').src = data.qr;
+                    document.getElementById('xummQR').style.display = 'block';
+                    document.getElementById('xummQR').style.margin = '10px auto';
+                    document.getElementById('qrPlaceholder').style.display = 'none';
+                }
 
                 if (data.next && data.next.always) {
                     document.getElementById('xummDeepLink').href = data.next.always;
-                    document.getElementById('xummDeepLink').style.display = 'block';
+                    document.getElementById('xummDeepLink').style.display = isMobile ? 'none' : 'block';
                 }
 
                 // Store UUID for polling
@@ -373,14 +383,27 @@
 
             if (data.qr && data.uuid) {
                 console.log('✅ Trustline QR received');
-                document.getElementById('trustlineQR').src = data.qr;
-                document.getElementById('trustlineQR').style.display = 'block';
-                document.getElementById('trustlineQRPlaceholder').style.display = 'none';
-                document.getElementById('trustlineStatus').innerText = 'Scan QR to add trustline...';
+
+                // Mobile detection
+                const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                    // Mobile: Hide QR, show direct button
+                    document.getElementById('trustlineQRPlaceholder').innerHTML =
+                        '<button onclick="window.location.href=\'' + data.next.always + '\'" style="background: #ffd93d; color: black; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📲 Open XUMM to Add Trustline</button>';
+                    document.getElementById('trustlineQR').style.display = 'none';
+                    document.getElementById('trustlineStatus').innerText = 'Tap button to add trustline in XUMM';
+                } else {
+                    // Desktop: Show QR code
+                    document.getElementById('trustlineQR').src = data.qr;
+                    document.getElementById('trustlineQR').style.display = 'block';
+                    document.getElementById('trustlineQRPlaceholder').style.display = 'none';
+                    document.getElementById('trustlineStatus').innerText = 'Scan QR to add trustline...';
+                }
 
                 if (data.next && data.next.always) {
                     document.getElementById('trustlineDeepLink').href = data.next.always;
-                    document.getElementById('trustlineDeepLink').style.display = 'block';
+                    document.getElementById('trustlineDeepLink').style.display = isMobile ? 'none' : 'block';
                 }
 
                 // Start polling for trustline completion
