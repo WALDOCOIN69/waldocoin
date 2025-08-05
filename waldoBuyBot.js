@@ -134,7 +134,7 @@ export async function startBuyBot() {
         console.log(`💬 Chat type: ${msg.chat.type}, Chat ID: ${chatId}`);
 
         // Group chat trigger
-        if (msg.chat.type.endsWith("group") && text.includes("@waldocoinbuybot")) {
+        if (msg.chat.type.endsWith("group") && text.includes("@WALDOCOINbuyBot")) {
             const WALDO_ISSUER = process.env.WALDO_ISSUER;
 
             const markdownMessage = `
@@ -142,7 +142,7 @@ export async function startBuyBot() {
 Buy WLO instantly with XRP — no waiting, no middlemen.
 
 🚀 *How to get started:*
-1️⃣ DM 👉 [@WaldoBuyBot](https://t.me/WALDOCOINbuyBot)
+1️⃣ DM 👉 [@WALDOCOINbuyBot](https://t.me/WALDOCOINbuyBot)
 2️⃣ Type */buywaldo*
 3️⃣ Paste your *XRPL Wallet Address*
 4️⃣ Send XRP → Get WLO instantly (bonus tiers apply!)
@@ -156,7 +156,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
 👉 [Set Trustline](https://xrpl.services/?issuer=${WALDO_ISSUER}&currency=WLO&limit=976849999)
 
 🌐 [Visit WALDOcoin.live](https://waldocoin.live)
-📣 [Join Telegram](https://t.me/WALDOcoinXRP)
+📣 [X (Twitter)](https://x.com/W_A_L_D_O_coin)
       `;
 
             await sendMessage(chatId, markdownMessage, {
@@ -165,12 +165,12 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "💸 DM Buy Bot", url: "https://t.me/WaldoBuyBot" },
+                            { text: "💸 DM Buy Bot", url: "https://t.me/WALDOCOINbuyBot" },
                             { text: "🛡️ Set Trustline", url: `https://xrpl.services/?issuer=${WALDO_ISSUER}&currency=WLO&limit=976849999` },
                         ],
                         [
                             { text: "🌐 WALDOcoin.live", url: "https://waldocoin.live" },
-                            { text: "📣 Join Telegram", url: "https://t.me/WALDOcoinXRP" },
+                            { text: "📣 Join Telegram", url: "https://x.com/W_A_L_D_O_coin" },
                         ],
                     ],
                 },
