@@ -133,6 +133,12 @@ export async function startBuyBot() {
         console.log(`📝 Message text: "${text}"`);
         console.log(`💬 Chat type: ${msg.chat.type}, Chat ID: ${chatId}`);
 
+        // Skip empty messages
+        if (!text) {
+            console.log('⚠️ Empty message, skipping...');
+            return;
+        }
+
         // Group chat trigger (case-insensitive)
         if (msg.chat.type.endsWith("group") && text.includes("@waldocoinbuybot")) {
             console.log('🎯 Group mention detected! Sending presale message...');
