@@ -223,6 +223,30 @@ const startServer = async () => {
   });
 };
 
+// Test endpoint to manually trigger bot
+app.post('/test-bot', async (req, res) => {
+  try {
+    console.log('🧪 Manual bot test triggered');
+    const BOT_TOKEN = process.env.BOT_TOKEN;
+    const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+    // Test getMe
+    const meResponse = await fetch(`${TELEGRAM_API}/getMe`);
+    const meData = await meResponse.json();
+    console.log('🤖 getMe result:', meData);
+
+    // Test getUpdates
+    const updatesResponse = await fetch(`${TELEGRAM_API}/getUpdates`);
+    const updatesData = await updatesResponse.json();
+    console.log('📨 getUpdates result:', updatesData);
+
+    res.json({ success: true, me: meData, updates: updatesData });
+  } catch (error) {
+    console.error('❌ Manual bot test error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 🚀 Boot everything (server + bot with fresh token)
 const boot = async () => {
   try {

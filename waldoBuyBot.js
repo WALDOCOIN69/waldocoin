@@ -85,6 +85,18 @@ export async function startBuyBot() {
             console.log(`✅ Custom HTTP bot successful: @${data.result.username}`);
             console.log(`🤖 Bot ID: ${data.result.id}`);
 
+            // Test manual update fetch first
+            console.log('🔍 Testing manual getUpdates...');
+            const testResponse = await fetch(`${TELEGRAM_API}/getUpdates`);
+            const testData = await testResponse.json();
+            console.log('📋 Manual getUpdates result:', JSON.stringify(testData, null, 2));
+
+            // Clear any pending updates first
+            console.log('🧹 Clearing pending updates...');
+            const clearResponse = await fetch(`${TELEGRAM_API}/getUpdates?offset=-1`);
+            const clearData = await clearResponse.json();
+            console.log(`🧹 Cleared ${clearData.result ? clearData.result.length : 0} pending updates`);
+
             // Start custom polling
             pollingActive = true;
             pollUpdates();
