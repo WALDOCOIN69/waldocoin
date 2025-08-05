@@ -135,6 +135,7 @@ export async function startBuyBot() {
 
         // Group chat trigger (case-insensitive)
         if (msg.chat.type.endsWith("group") && text.includes("@waldocoinbuybot")) {
+            console.log('🎯 Group mention detected! Sending presale message...');
             const WALDO_ISSUER = process.env.WALDO_ISSUER;
 
             const markdownMessage = `
@@ -159,7 +160,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
 📣 [X (Twitter)](https://x.com/W_A_L_D_O_coin)
       `;
 
-            await sendMessage(chatId, markdownMessage, {
+            const result = await sendMessage(chatId, markdownMessage, {
                 parse_mode: "Markdown",
                 disable_web_page_preview: false,
                 reply_markup: {
@@ -175,6 +176,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                     ],
                 },
             });
+            console.log('📤 Group message send result:', result ? 'Success' : 'Failed');
             return;
         }
 
