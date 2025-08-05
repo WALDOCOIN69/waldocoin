@@ -239,21 +239,38 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
     }
 
     async function sendWaldo(to, amount, tag) {
-        const tx = {
-            TransactionType: "Payment",
-            Account: distributorWallet.classicAddress,
-            Destination: to,
-            Amount: {
-                currency: "WLO",
-                issuer,
-                value: amount.toString(),
-            },
-            DestinationTag: tag || undefined,
-        };
-        const prepared = await client.autofill(tx);
-        const signed = distributorWallet.sign(prepared);
-        const result = await client.submitAndWait(signed.tx_blob);
-        return result.result.hash;
+        try {
+            console.log(`💸 Attempting to send ${amount} WLO to ${to}`);
+
+            const tx = {
+                TransactionType: "Payment",
+                Account: distributorWallet.classicAddress,
+                Destination: to,
+                Amount: {
+                    currency: "WLO",
+                    issuer,
+                    value: amount.toString(),
+                },
+                DestinationTag: tag || undefined,
+            };
+
+            console.log(`📝 Transaction prepared:`, JSON.stringify(tx, null, 2));
+
+            const prepared = await client.autofill(tx);
+            console.log(`⚙️ Transaction autofilled successfully`);
+
+            const signed = distributorWallet.sign(prepared);
+            console.log(`✍️ Transaction signed successfully`);
+
+            const result = await client.submitAndWait(signed.tx_blob);
+            console.log(`✅ WALDO sent successfully! Hash: ${result.result.hash}`);
+
+            return result.result.hash;
+        } catch (error) {
+            console.error(`❌ Error sending WALDO:`, error.message);
+            console.error(`❌ Full error:`, error);
+            throw error;
+        }
     }
 
     async function mintNFTBadge(to) {
@@ -355,26 +372,43 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 continue;
             }
 
-            const waldoTx = await sendWaldo(wallet, waldo);
-            let nftTx = null;
-            if (NFT_ENABLED) nftTx = await mintNFTBadge(wallet);
+            console.log(`🚀 Processing payment: ${amount} XRP → ${waldo} WLO`);
 
-            await redis.set(
-                hashKey,
-                JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
-            );
+            try {
+                const waldoTx = await sendWaldo(wallet, waldo);
+                console.log(`✅ WALDO transaction completed: ${waldoTx}`);
 
-            // Report purchase to backend API for tracking
-            await reportPurchaseToBackend(wallet, amount, waldo, tx.hash);
+                let nftTx = null;
+                if (NFT_ENABLED) {
+                    console.log(`🏅 Minting NFT badge...`);
+                    nftTx = await mintNFTBadge(wallet);
+                    console.log(`✅ NFT minted: ${nftTx}`);
+                }
 
-            // FIXED: Build confirmation message properly
-            let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WLO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
+                await redis.set(
+                    hashKey,
+                    JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
+                );
+                console.log(`💾 Transaction marked as processed in Redis`);
 
-            if (nftTx) {
-                confirmationMessage += `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}`;
+                // Report purchase to backend API for tracking
+                await reportPurchaseToBackend(wallet, amount, waldo, tx.hash);
+                console.log(`📊 Purchase reported to backend API`);
+
+                // FIXED: Build confirmation message properly
+                let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WLO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
+
+                if (nftTx) {
+                    confirmationMessage += `\n🏅 NFT: https://livenet.xrpl.org/transactions/${nftTx}`;
+                }
+
+                await sendMessage(chatId, confirmationMessage, { parse_mode: "Markdown" });
+                console.log(`📨 Confirmation message sent to user`);
+
+            } catch (error) {
+                console.error(`❌ Error processing payment:`, error.message);
+                await sendMessage(chatId, `❌ Error processing your payment. Please contact support with transaction hash: ${tx.hash}`);
             }
-
-            await sendMessage(chatId, confirmationMessage, { parse_mode: "Markdown" });
         }
     }
 
