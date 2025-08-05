@@ -207,8 +207,50 @@ const startServer = async () => {
   });
 
   // 🔍 Webhook Test Endpoint
+  // Telegram webhook endpoint
+  app.post("/webhook/telegram", async (req, res) => {
+    try {
+      console.log('📨 Webhook received:', JSON.stringify(req.body, null, 2));
+
+      if (req.body.message) {
+        console.log('💬 Processing webhook message...');
+        // We'll handle the message here
+        const msg = req.body.message;
+        console.log(`📩 Message from ${msg.from.username || msg.from.first_name}: ${msg.text}`);
+      }
+
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('❌ Webhook error:', error);
+      res.status(500).send('Error');
+    }
+  });
+
   app.get("/webhook/telegram", (_, res) => {
     res.send("🤖 Telegram webhook endpoint is active. Bot global status: " + (global.telegramBot ? "✅ Available" : "❌ Not available"));
+  });
+
+  // Set webhook endpoint
+  app.post('/set-webhook', async (req, res) => {
+    try {
+      console.log('🔗 Setting up Telegram webhook...');
+      const BOT_TOKEN = process.env.BOT_TOKEN;
+      const WEBHOOK_URL = 'https://waldocoin-backend-api.onrender.com/webhook/telegram';
+
+      const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: WEBHOOK_URL })
+      });
+
+      const data = await response.json();
+      console.log('🔗 Webhook setup result:', data);
+
+      res.json({ success: true, webhook: data });
+    } catch (error) {
+      console.error('❌ Webhook setup error:', error);
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Test endpoint to manually trigger bot

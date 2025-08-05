@@ -39,6 +39,7 @@ async function sendMessage(chatId, text, options = {}) {
 // Simple polling mechanism
 let pollingActive = false;
 let lastUpdateId = 0;
+let messageHandler = null; // Will be set by startBuyBot
 
 async function pollUpdates() {
     if (!pollingActive) return;
@@ -54,9 +55,9 @@ async function pollUpdates() {
             for (const update of data.result) {
                 lastUpdateId = update.update_id;
                 console.log(`📩 Update ${update.update_id}: ${update.message ? 'Message' : 'Other'}`);
-                if (update.message) {
+                if (update.message && messageHandler) {
                     console.log(`💬 Message from ${update.message.from.username || update.message.from.first_name}: ${update.message.text}`);
-                    await handleMessage(update.message);
+                    await messageHandler(update.message);
                 }
             }
         }
@@ -97,10 +98,13 @@ export async function startBuyBot() {
             const clearData = await clearResponse.json();
             console.log(`🧹 Cleared ${clearData.result ? clearData.result.length : 0} pending updates`);
 
+            // Set the message handler for polling
+            messageHandler = handleMessage;
+
             // Start custom polling
             pollingActive = true;
             pollUpdates();
-            console.log('🔄 Custom bot polling started');
+            console.log('🔄 Custom bot polling started with message handler');
         } else {
             console.error('❌ Custom HTTP bot failed:', data);
             return;
