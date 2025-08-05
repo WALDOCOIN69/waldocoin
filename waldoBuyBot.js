@@ -12,19 +12,35 @@ console.log('🔍 BOT_TOKEN exists:', !!process.env.BOT_TOKEN);
 console.log('🔍 BOT_TOKEN length:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.length : 0);
 console.log('🔍 BOT_TOKEN starts with:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.substring(0, 10) + '...' : 'undefined');
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true }); // ENABLED - Bot should respond to DMs
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // DISABLED - Debug 404 issue first
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
 export async function startBuyBot() {
-    // Test bot token validity
+    // Test bot token validity with manual HTTP request
     try {
-        console.log('🔍 Testing bot token...');
+        console.log('🔍 Testing bot token with manual HTTP request...');
+        const testUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/getMe`;
+        const response = await fetch(testUrl);
+        const data = await response.json();
+
+        if (data.ok) {
+            console.log(`✅ Manual HTTP test successful: @${data.result.username}`);
+        } else {
+            console.error('❌ Manual HTTP test failed:', data);
+        }
+    } catch (error) {
+        console.error('❌ Manual HTTP test error:', error.message);
+    }
+
+    // Test with Telegram Bot API library
+    try {
+        console.log('🔍 Testing bot token with TelegramBot library...');
         const botInfo = await bot.getMe();
-        console.log(`✅ Bot connected: @${botInfo.username} (${botInfo.first_name})`);
+        console.log(`✅ Bot library test successful: @${botInfo.username} (${botInfo.first_name})`);
         console.log(`🤖 Bot ID: ${botInfo.id}`);
     } catch (error) {
-        console.error('❌ Bot token error:', error.message);
+        console.error('❌ Bot library test failed:', error.message);
         console.error('❌ This usually means the BOT_TOKEN is invalid or the bot was deleted');
         console.log('⚠️ Continuing without bot functionality...');
         return; // Don't crash the server, just skip bot
