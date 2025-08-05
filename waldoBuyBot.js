@@ -332,14 +332,14 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
         console.log(`📋 Found ${txs.result.transactions.length} total transactions to check`);
 
         for (const transaction of txs.result.transactions) {
-            // Debug: Log the transaction structure
-            console.log(`🔍 Transaction structure:`, JSON.stringify(transaction, null, 2));
-
-            const tx = transaction.tx || transaction;
+            // Fix: Use tx_json which contains the actual transaction data
+            const tx = transaction.tx_json || transaction.tx || transaction;
             if (!tx || tx.TransactionType !== "Payment") {
                 console.log(`⏭️ Skipping non-payment transaction: ${tx ? tx.TransactionType : 'undefined'}`);
                 continue;
             }
+
+            console.log(`✅ Found Payment transaction from ${tx.Account} to ${tx.Destination}`);
             if (tx.Destination !== distributorWallet.classicAddress) {
                 console.log(`⏭️ Skipping transaction to different destination: ${tx.Destination}`);
                 continue;
