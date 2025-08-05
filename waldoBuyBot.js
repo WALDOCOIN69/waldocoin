@@ -362,7 +362,16 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 continue;
             }
 
-            const amount = parseFloat(tx.Amount) / 1_000_000;
+            // Handle both string and object amounts
+            let amount;
+            if (typeof tx.Amount === 'string') {
+                amount = parseFloat(tx.Amount) / 1_000_000;
+            } else if (typeof tx.Amount === 'object' && tx.Amount.value) {
+                amount = parseFloat(tx.Amount.value);
+            } else {
+                console.log(`⚠️ Unknown amount format:`, tx.Amount);
+                continue;
+            }
             console.log(`💰 Found valid payment: ${amount} XRP from ${tx.Account}`);
 
             if (amount < 5) {
@@ -373,8 +382,10 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
             const waldo = calcWaldoBonus(amount);
             console.log(`🎁 Calculated WALDO reward: ${waldo} WLO`);
 
-            const hasLine = await hasTrustline(wallet);
-            console.log(`🔗 Trustline check for ${wallet}: ${hasLine ? 'Found' : 'Not found'}`);
+            // Use original case wallet address for XRPL API calls
+            const originalWallet = tx.Account;
+            const hasLine = await hasTrustline(originalWallet);
+            console.log(`🔗 Trustline check for ${originalWallet}: ${hasLine ? 'Found' : 'Not found'}`);
 
             if (!hasLine) {
                 console.log(`❌ Sending trustline warning to user`);
@@ -385,24 +396,24 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
             console.log(`🚀 Processing payment: ${amount} XRP → ${waldo} WLO`);
 
             try {
-                const waldoTx = await sendWaldo(wallet, waldo);
+                const waldoTx = await sendWaldo(originalWallet, waldo);
                 console.log(`✅ WALDO transaction completed: ${waldoTx}`);
 
                 let nftTx = null;
                 if (NFT_ENABLED) {
                     console.log(`🏅 Minting NFT badge...`);
-                    nftTx = await mintNFTBadge(wallet);
+                    nftTx = await mintNFTBadge(originalWallet);
                     console.log(`✅ NFT minted: ${nftTx}`);
                 }
 
                 await redis.set(
                     hashKey,
-                    JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
+                    JSON.stringify({ wallet: originalWallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
                 );
                 console.log(`💾 Transaction marked as processed in Redis`);
 
                 // Report purchase to backend API for tracking
-                await reportPurchaseToBackend(wallet, amount, waldo, tx.hash);
+                await reportPurchaseToBackend(originalWallet, amount, waldo, tx.hash);
                 console.log(`📊 Purchase reported to backend API`);
 
                 // FIXED: Build confirmation message properly
