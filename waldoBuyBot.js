@@ -12,7 +12,22 @@ console.log('🔍 BOT_TOKEN exists:', !!process.env.BOT_TOKEN);
 console.log('🔍 BOT_TOKEN length:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.length : 0);
 console.log('🔍 BOT_TOKEN starts with:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.substring(0, 10) + '...' : 'undefined');
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // DISABLED - Debug 404 issue first
+// Create bot with network config to fix library issues
+const bot = new TelegramBot(process.env.BOT_TOKEN, {
+    polling: {
+        interval: 1000,
+        autoStart: true,
+        params: {
+            timeout: 10
+        }
+    },
+    request: {
+        agentOptions: {
+            keepAlive: true,
+            family: 4
+        }
+    }
+});
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
