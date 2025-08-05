@@ -166,8 +166,16 @@
                 if (isMobile) {
                     // Mobile: Hide QR, show direct button
                     document.getElementById('qrPlaceholder').innerHTML =
-                        '<button onclick="window.location.href=\'' + data.next.always + '\'" style="background: #25c2a0; color: white; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📱 Open XUMM to Sign In</button>';
+                        '<button id="mobileXummBtn" style="background: #25c2a0; color: white; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📱 Open XUMM to Sign In</button>';
                     document.getElementById('xummQR').style.display = 'none';
+
+                    // Add proper event listener - NO REDIRECT
+                    setTimeout(() => {
+                        document.getElementById('mobileXummBtn').addEventListener('click', () => {
+                            console.log('🔗 XUMM sign-in link:', data.next.always);
+                            alert('Please manually open XUMM app to sign in');
+                        });
+                    }, 100);
                 } else {
                     // Desktop: Show QR code
                     document.getElementById('xummQR').src = data.qr;
@@ -390,9 +398,17 @@
                 if (isMobile) {
                     // Mobile: Hide QR, show direct button
                     document.getElementById('trustlineQRPlaceholder').innerHTML =
-                        '<button onclick="window.location.href=\'' + data.next.always + '\'" style="background: #ffd93d; color: black; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📲 Open XUMM to Add Trustline</button>';
+                        '<button id="mobileTrustlineBtn" style="background: #ffd93d; color: black; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📲 Open XUMM to Add Trustline</button>';
                     document.getElementById('trustlineQR').style.display = 'none';
                     document.getElementById('trustlineStatus').innerText = 'Tap button to add trustline in XUMM';
+
+                    // Add proper event listener - NO REDIRECT
+                    setTimeout(() => {
+                        document.getElementById('mobileTrustlineBtn').addEventListener('click', () => {
+                            console.log('🔗 XUMM trustline link:', data.next.always);
+                            alert('Please manually open XUMM app to add trustline');
+                        });
+                    }, 100);
                 } else {
                     // Desktop: Show QR code
                     document.getElementById('trustlineQR').src = data.qr;
@@ -492,7 +508,7 @@
         console.log('🔄 Starting direct wallet trustline polling...');
         document.getElementById('trustlineStatus').innerText = 'Waiting for trustline...';
         document.getElementById('trustlineQRPlaceholder').innerHTML =
-            '<a href="https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO" style="color: #ffd93d; text-decoration: none; font-weight: bold;" onclick="event.preventDefault(); window.location.replace(this.href); return false;">📲 Add Trustline in XAMAN</a>';
+            '<a href="https://xumm.app/detect/xumm:trustline?issuer=rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY&currency=WLO" style="color: #ffd93d; text-decoration: none; font-weight: bold;">📲 Add Trustline in XAMAN</a>';
 
         const pollInterval = setInterval(async () => {
             try {
@@ -599,7 +615,8 @@
 
             if (data.success && data.deeplink) {
                 document.getElementById('purchaseBtn').innerText = '✅ Check XUMM App';
-                window.location.href = data.deeplink;
+                // Don't redirect - let user manually go to XUMM
+                console.log('🔗 XUMM purchase link:', data.deeplink);
 
                 if (data.uuid) {
                     pollTransactionStatus(data.uuid);
@@ -635,8 +652,9 @@
                     sessionStorage.removeItem('presale_wallet');
                     sessionStorage.removeItem('presale_uuid');
 
-                    // Redirect to success page
-                    window.location.href = 'https://waldocoin.live/presale-success/';
+                    // Show success message instead of redirecting
+                    document.getElementById('step3-purchase').innerHTML =
+                        '<div style="text-align: center; padding: 20px; background: #0f2d17; border-radius: 10px; border: 2px solid #25c2a0;"><h3 style="color: #25c2a0; margin: 0 0 10px 0;">🎉 Purchase Successful!</h3><p style="color: white; margin: 0;">Your WALDO tokens will be distributed soon.</p></div>';
                 }
             } catch (error) {
                 console.error('Status polling error:', error);
