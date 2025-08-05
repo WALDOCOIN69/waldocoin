@@ -31,8 +31,8 @@ import topMemeRoute from "./routes/topmeme.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import activityRoute from "./routes/activity.js";
 
-// Import bot from project root - TEMPORARILY DISABLED
-// import { startBuyBot } from "../waldoBuyBot.js";
+// Import bot from project root
+import { startBuyBot } from "../waldoBuyBot.js";
 
 // ⚔️ Meme Battle Routes
 import battleStartRoute from "./routes/battle/start.js";
@@ -226,11 +226,10 @@ const startServer = async () => {
 // 🚀 Boot everything (server + bot with fresh token)
 const boot = async () => {
   try {
-    // TEMPORARILY DISABLED BOT
-    // await startBuyBot();
-    console.log("🤖 WALDO Buy Bot is DISABLED for debugging.");
+    await startBuyBot();
+    console.log("🤖 WALDO Buy Bot is running with backend communication.");
     await startServer();
-    console.log("🚀 Server started successfully (bot disabled)");
+    console.log("🚀 Server and bot started successfully");
   } catch (err) {
     console.error("❌ Startup error:", err);
     process.exit(1);
