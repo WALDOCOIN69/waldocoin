@@ -7,7 +7,7 @@ import xrpl from "xrpl";
 import Redis from "ioredis";
 import fetch from "node-fetch";
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // DISABLED - Using webhooks
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true }); // ENABLED - Bot will respond to DMs
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
