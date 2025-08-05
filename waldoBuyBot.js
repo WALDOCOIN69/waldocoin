@@ -351,7 +351,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 console.log(`⏭️ Skipping transaction to different destination: ${tx.Destination}`);
                 continue;
             }
-            if (tx.Account !== wallet) {
+            if (tx.Account.toLowerCase() !== wallet.toLowerCase()) {
                 console.log(`⏭️ Skipping transaction from different account: ${tx.Account} (looking for ${wallet})`);
                 continue;
             }
