@@ -301,6 +301,8 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
     }
 
     async function checkIncoming(wallet, chatId) {
+        console.log(`🔍 Checking for payments from ${wallet} to ${distributorWallet.classicAddress}`);
+
         const txs = await client.request({
             command: "account_tx",
             account: distributorWallet.classicAddress,
@@ -310,22 +312,45 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
             limit: 20,
         });
 
+        console.log(`📋 Found ${txs.result.transactions.length} total transactions to check`);
+
         for (const transaction of txs.result.transactions) {
             const tx = transaction.tx;
-            if (!tx || tx.TransactionType !== "Payment") continue;
-            if (tx.Destination !== distributorWallet.classicAddress) continue;
-            if (tx.Account !== wallet) continue;
+            if (!tx || tx.TransactionType !== "Payment") {
+                console.log(`⏭️ Skipping non-payment transaction: ${tx ? tx.TransactionType : 'undefined'}`);
+                continue;
+            }
+            if (tx.Destination !== distributorWallet.classicAddress) {
+                console.log(`⏭️ Skipping transaction to different destination: ${tx.Destination}`);
+                continue;
+            }
+            if (tx.Account !== wallet) {
+                console.log(`⏭️ Skipping transaction from different account: ${tx.Account} (looking for ${wallet})`);
+                continue;
+            }
 
             const hashKey = processedTxKey(tx.hash);
-            if (await redis.exists(hashKey)) continue;
+            if (await redis.exists(hashKey)) {
+                console.log(`⏭️ Transaction already processed: ${tx.hash}`);
+                continue;
+            }
 
             const amount = parseFloat(tx.Amount) / 1_000_000;
-            if (amount < 5) continue;
+            console.log(`💰 Found valid payment: ${amount} XRP from ${tx.Account}`);
+
+            if (amount < 5) {
+                console.log(`⚠️ Payment too small: ${amount} XRP (minimum 5 XRP)`);
+                continue;
+            }
 
             const waldo = calcWaldoBonus(amount);
+            console.log(`🎁 Calculated WALDO reward: ${waldo} WLO`);
+
             const hasLine = await hasTrustline(wallet);
+            console.log(`🔗 Trustline check for ${wallet}: ${hasLine ? 'Found' : 'Not found'}`);
 
             if (!hasLine) {
+                console.log(`❌ Sending trustline warning to user`);
                 await sendMessage(chatId, "⚠️ WLO trustline not found. Please set it first:\nhttps://waldocoin.live");
                 continue;
             }
