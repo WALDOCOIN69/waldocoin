@@ -170,7 +170,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                         ],
                         [
                             { text: "🌐 WALDOcoin.live", url: "https://waldocoin.live" },
-                            { text: "📣 Join Telegram", url: "https://x.com/W_A_L_D_O_coin" },
+                            { text: "📣 X (Twitter)", url: "https://x.com/W_A_L_D_O_coin" },
                         ],
                     ],
                 },
