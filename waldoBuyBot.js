@@ -47,10 +47,15 @@ async function pollUpdates() {
         const response = await fetch(`${TELEGRAM_API}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`);
         const data = await response.json();
 
+        console.log(`🔄 Polling check - Updates: ${data.result ? data.result.length : 0}`);
+
         if (data.ok && data.result.length > 0) {
+            console.log(`📨 Processing ${data.result.length} updates`);
             for (const update of data.result) {
                 lastUpdateId = update.update_id;
+                console.log(`📩 Update ${update.update_id}: ${update.message ? 'Message' : 'Other'}`);
                 if (update.message) {
+                    console.log(`💬 Message from ${update.message.from.username || update.message.from.first_name}: ${update.message.text}`);
                     await handleMessage(update.message);
                 }
             }
@@ -106,8 +111,11 @@ export async function startBuyBot() {
 
     // Custom message handler
     async function handleMessage(msg) {
+        console.log(`🎯 Handling message from ${msg.from.username || msg.from.first_name} in ${msg.chat.type}`);
         const chatId = msg.chat.id;
         const text = (msg.text || "").toLowerCase();
+        console.log(`📝 Message text: "${text}"`);
+        console.log(`💬 Chat type: ${msg.chat.type}, Chat ID: ${chatId}`);
 
         // Group chat trigger
         if (msg.chat.type.endsWith("group") && text.includes("@waldocoinbuybot")) {
