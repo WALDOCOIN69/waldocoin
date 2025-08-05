@@ -133,8 +133,8 @@ export async function startBuyBot() {
         console.log(`📝 Message text: "${text}"`);
         console.log(`💬 Chat type: ${msg.chat.type}, Chat ID: ${chatId}`);
 
-        // Group chat trigger
-        if (msg.chat.type.endsWith("group") && text.includes("@WALDOCOINbuyBot")) {
+        // Group chat trigger (case-insensitive)
+        if (msg.chat.type.endsWith("group") && text.includes("@waldocoinbuybot")) {
             const WALDO_ISSUER = process.env.WALDO_ISSUER;
 
             const markdownMessage = `
