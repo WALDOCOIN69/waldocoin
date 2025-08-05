@@ -60,6 +60,10 @@ services:
         sync: false
       - key: NFT_STORAGE_API_KEY
         sync: false
+      - key: BOT_TOKEN
+        sync: false
+      - key: XRPL_ENDPOINT
+        sync: false
   
   - type: worker
     name: waldo-autodistribute

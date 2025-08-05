@@ -7,11 +7,28 @@ import xrpl from "xrpl";
 import Redis from "ioredis";
 import fetch from "node-fetch";
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true }); // ENABLED - Bot will respond to DMs
+// Debug bot token
+console.log('🔍 BOT_TOKEN exists:', !!process.env.BOT_TOKEN);
+console.log('🔍 BOT_TOKEN length:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.length : 0);
+
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // DISABLED - Fix token first
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
 export async function startBuyBot() {
+    // Test bot token validity
+    try {
+        console.log('🔍 Testing bot token...');
+        const botInfo = await bot.getMe();
+        console.log(`✅ Bot connected: @${botInfo.username} (${botInfo.first_name})`);
+        console.log(`🤖 Bot ID: ${botInfo.id}`);
+    } catch (error) {
+        console.error('❌ Bot token error:', error.message);
+        console.error('❌ This usually means the BOT_TOKEN is invalid or the bot was deleted');
+        console.log('⚠️ Continuing without bot functionality...');
+        return; // Don't crash the server, just skip bot
+    }
+
     await client.connect();
     console.log("✅ WALDO Buy Bot connected to XRPL");
 
