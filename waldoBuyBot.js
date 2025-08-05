@@ -212,14 +212,21 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
             }
 
             if (text.startsWith("r") && text.length >= 25 && text.length <= 35) {
+                console.log(`✅ Valid wallet address received: ${text}`);
+
                 const walletMessage = "✅ Wallet received: `" + text + "`\n" +
                     "Now send XRP to: `" + distributorWallet.classicAddress + "`\n\n" +
                     "I'll check for payment every 60 seconds.";
 
-                await sendMessage(chatId, walletMessage, { parse_mode: "Markdown" });
+                console.log(`📨 Sending wallet confirmation message...`);
+                const result = await sendMessage(chatId, walletMessage, { parse_mode: "Markdown" });
+                console.log(`📨 Wallet message result:`, result ? 'Success' : 'Failed');
+
+                console.log(`⏰ Starting payment monitoring for ${text}`);
                 const interval = setInterval(() => checkIncoming(text, chatId), 60000);
                 setTimeout(() => clearInterval(interval), 1800000);
             } else {
+                console.log(`❌ Invalid wallet address: ${text} (length: ${text.length})`);
                 await sendMessage(chatId, "❌ Invalid XRPL address. Please try again.");
             }
         }
