@@ -332,7 +332,10 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
         console.log(`📋 Found ${txs.result.transactions.length} total transactions to check`);
 
         for (const transaction of txs.result.transactions) {
-            const tx = transaction.tx;
+            // Debug: Log the transaction structure
+            console.log(`🔍 Transaction structure:`, JSON.stringify(transaction, null, 2));
+
+            const tx = transaction.tx || transaction;
             if (!tx || tx.TransactionType !== "Payment") {
                 console.log(`⏭️ Skipping non-payment transaction: ${tx ? tx.TransactionType : 'undefined'}`);
                 continue;
