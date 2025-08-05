@@ -10,6 +10,7 @@ import fetch from "node-fetch";
 // Debug bot token
 console.log('🔍 BOT_TOKEN exists:', !!process.env.BOT_TOKEN);
 console.log('🔍 BOT_TOKEN length:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.length : 0);
+console.log('🔍 BOT_TOKEN starts with:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.substring(0, 10) + '...' : 'undefined');
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // DISABLED - Fix token first
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
