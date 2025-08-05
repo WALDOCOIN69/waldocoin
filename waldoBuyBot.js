@@ -5,6 +5,7 @@ config();
 import TelegramBot from "node-telegram-bot-api";
 import xrpl from "xrpl";
 import Redis from "ioredis";
+import fetch from "node-fetch";
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false }); // DISABLED - Using webhooks
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
@@ -69,6 +70,34 @@ export async function startBuyBot() {
         return result.result.hash;
     }
 
+    async function reportPurchaseToBackend(wallet, xrpAmount, waldoAmount, txHash) {
+        try {
+            const backendUrl = process.env.BACKEND_API_URL || 'https://waldocoin-backend-api.onrender.com';
+            const response = await fetch(`${backendUrl}/api/presale/bot-purchase`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    wallet,
+                    xrpAmount,
+                    waldoAmount,
+                    txHash,
+                    botSource: 'telegram'
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                console.log(`✅ Purchase reported to backend: ${txHash}`);
+            } else {
+                console.error(`❌ Failed to report purchase to backend: ${result.error}`);
+            }
+        } catch (error) {
+            console.error(`❌ Error reporting purchase to backend:`, error.message);
+        }
+    }
+
     async function checkIncoming(wallet, chatId) {
         const txs = await client.request({
             command: "account_tx",
@@ -106,6 +135,9 @@ export async function startBuyBot() {
                 hashKey,
                 JSON.stringify({ wallet, amount, waldo, waldoTx, nftTx, date: Date.now() })
             );
+
+            // Report purchase to backend API for tracking
+            await reportPurchaseToBackend(wallet, amount, waldo, tx.hash);
 
             // FIXED: Build confirmation message properly
             let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WLO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;

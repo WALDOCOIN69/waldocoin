@@ -804,6 +804,56 @@ async function recordPresalePurchase(wallet, xrpAmount, calculation, txId) {
   }
 }
 
+// ✅ POST /api/presale/bot-purchase - Record bot purchase (for Telegram bot)
+router.post("/bot-purchase", async (req, res) => {
+  try {
+    const { wallet, xrpAmount, waldoAmount, txHash, botSource } = req.body;
+
+    // Validate required fields
+    if (!wallet || !xrpAmount || !waldoAmount || !txHash) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: wallet, xrpAmount, waldoAmount, txHash"
+      });
+    }
+
+    // Calculate bonus info for consistency
+    const calculation = calculateWaldoBonus(xrpAmount);
+
+    // Override with actual amounts from bot (in case of slight differences)
+    calculation.totalWaldo = waldoAmount;
+
+    // Record the purchase using the same function as regular presale
+    await recordPresalePurchase(wallet, xrpAmount, calculation, txHash);
+
+    // Add bot-specific tracking
+    await redis.hSet(`presale:bot:${txHash}`, {
+      wallet,
+      xrpAmount,
+      waldoAmount,
+      txHash,
+      botSource: botSource || 'telegram',
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`🤖 Bot purchase recorded: ${wallet} - ${xrpAmount} XRP = ${waldoAmount} WALDO via ${botSource || 'telegram'}`);
+
+    res.json({
+      success: true,
+      message: "Bot purchase recorded successfully",
+      txHash,
+      calculation
+    });
+
+  } catch (error) {
+    console.error('❌ Error recording bot purchase:', error);
+    res.status(500).json({
+      success: false,
+      error: `Failed to record bot purchase: ${error.message}`
+    });
+  }
+});
+
 // ✅ GET /api/presale/failed-deliveries - Get failed WALDO deliveries (Admin only)
 router.get("/failed-deliveries", async (req, res) => {
   try {
