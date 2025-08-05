@@ -310,8 +310,9 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
             limit: 20,
         });
 
-        for (const { tx } of txs.result.transactions) {
-            if (tx.TransactionType !== "Payment") continue;
+        for (const transaction of txs.result.transactions) {
+            const tx = transaction.tx;
+            if (!tx || tx.TransactionType !== "Payment") continue;
             if (tx.Destination !== distributorWallet.classicAddress) continue;
             if (tx.Account !== wallet) continue;
 
