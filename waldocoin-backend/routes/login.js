@@ -21,8 +21,8 @@ router.get("/", async (req, res) => {
         multisign: false,
         expire: 300, // 5 minutes
         return_url: {
-          app: null,
-          web: null
+          app: "https://waldocoin-backend-api.onrender.com/xumm-complete.html",
+          web: "https://waldocoin-backend-api.onrender.com/xumm-complete.html"
         }
       },
       custom_meta: {
@@ -111,8 +111,8 @@ router.get("/trustline", async (req, res) => {
         multisign: false,
         expire: 300, // 5 minutes
         return_url: {
-          app: null,
-          web: null
+          app: "https://waldocoin-backend-api.onrender.com/xumm-complete.html",
+          web: "https://waldocoin-backend-api.onrender.com/xumm-complete.html"
         }
       }
     };
@@ -157,8 +157,8 @@ router.get("/trustline-noripple", async (req, res) => {
         multisign: false,
         expire: 300, // 5 minutes
         return_url: {
-          app: null,
-          web: null
+          app: "https://waldocoin-backend-api.onrender.com/xumm-complete.html",
+          web: "https://waldocoin-backend-api.onrender.com/xumm-complete.html"
         }
       }
     };

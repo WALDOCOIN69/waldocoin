@@ -277,8 +277,8 @@ router.post("/buy", async (req, res) => {
         multisign: false,
         expire: 1440, // 24 hours
         return_url: {
-          app: null,
-          web: null
+          app: "https://waldocoin-backend-api.onrender.com/xumm-complete.html",
+          web: "https://waldocoin-backend-api.onrender.com/xumm-complete.html"
         }
       },
       custom_meta: {
