@@ -353,7 +353,7 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 continue;
             }
 
-            console.log(`✅ Found Payment transaction from ${tx.Account} to ${tx.Destination} - CASE FIX DEPLOYED!`);
+            console.log(`✅ Found Payment transaction from ${tx.Account} to ${tx.Destination} - AMOUNT DEBUG DEPLOYED!`);
             if (tx.Destination !== distributorWallet.classicAddress) {
                 console.log(`⏭️ Skipping transaction to different destination: ${tx.Destination}`);
                 continue;
