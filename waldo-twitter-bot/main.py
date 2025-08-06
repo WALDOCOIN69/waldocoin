@@ -41,8 +41,8 @@ HEADERS = {
     "User-Agent": "WaldoBot"
 }
 
-# Twitter search
-QUERY = "#WaldoMeme -is:retweet"
+# Twitter search - catch all hashtag variations
+QUERY = "(#WaldoMeme OR #waldomeme OR #Waldomeme OR #WALDOMEME) -is:retweet"
 TWEET_FIELDS = "author_id,public_metrics,created_at"
 MAX_RESULTS = 50
 URL = f"https://api.twitter.com/2/tweets/search/recent?query={QUERY}&tweet.fields={TWEET_FIELDS}&max_results={MAX_RESULTS}"
@@ -199,7 +199,7 @@ def fetch_and_store():
         tweets = [{
             "id": str(uuid.uuid4()),
             "author_id": "test123",
-            "text": "Test meme #WaldoMeme",
+            "text": "Test meme #WaldoMeme (catches all variations: #waldomeme #Waldomeme #WALDOMEME)",
             "public_metrics": {"like_count": 80, "retweet_count": 20},
             "created_at": datetime.now(timezone.utc).isoformat()
         }]
