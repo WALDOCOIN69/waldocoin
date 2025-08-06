@@ -369,14 +369,26 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 continue;
             }
 
-            // Handle both string and object amounts
+            // Debug: Log the transaction amount structure
+            console.log(`🔍 Transaction amount debug:`, {
+                Amount: tx.Amount,
+                DeliverMax: tx.DeliverMax,
+                type: typeof tx.Amount
+            });
+
+            // Handle both string and object amounts, also check DeliverMax
             let amount;
             if (typeof tx.Amount === 'string') {
                 amount = parseFloat(tx.Amount) / 1_000_000;
             } else if (typeof tx.Amount === 'object' && tx.Amount.value) {
                 amount = parseFloat(tx.Amount.value);
+            } else if (typeof tx.DeliverMax === 'string') {
+                // Try DeliverMax for newer transactions
+                amount = parseFloat(tx.DeliverMax) / 1_000_000;
+            } else if (typeof tx.DeliverMax === 'object' && tx.DeliverMax.value) {
+                amount = parseFloat(tx.DeliverMax.value);
             } else {
-                console.log(`⚠️ Unknown amount format:`, tx.Amount);
+                console.log(`⚠️ Unknown amount format - Amount:`, tx.Amount, `DeliverMax:`, tx.DeliverMax);
                 continue;
             }
             console.log(`💰 Found valid payment: ${amount} XRP from ${tx.Account}`);
