@@ -363,11 +363,11 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 continue;
             }
 
-            // Create unique key using multiple transaction properties
-            const uniqueKey = `${tx.Account}-${tx.Destination}-${tx.Sequence || tx.date || Date.now()}`;
-            const hashKey = processedTxKey(tx.hash || uniqueKey);
+            // Create unique key using transaction sequence (most reliable identifier)
+            const uniqueKey = `${tx.Account}-${tx.Destination}-${tx.Sequence}`;
+            const hashKey = processedTxKey(uniqueKey);
             if (await redis.exists(hashKey)) {
-                console.log(`⏭️ Transaction already processed: ${tx.hash || uniqueKey}`);
+                console.log(`⏭️ Transaction already processed: ${uniqueKey}`);
                 continue;
             }
 
