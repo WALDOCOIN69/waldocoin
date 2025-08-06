@@ -232,12 +232,18 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
         }
     }
 
+    // Copy exact calculation logic from presale backend
     function calcWaldoBonus(xrpAmount) {
-        const base = xrpAmount * 10000;
-        if (xrpAmount >= 100) return Math.floor(base * 1.3);
-        if (xrpAmount >= 90) return Math.floor(base * 1.22);
-        if (xrpAmount >= 80) return Math.floor(base * 1.15);
-        return base;
+        const WALDO_PER_XRP = 10000; // Same as presale backend
+
+        // Same bonus logic as presale backend
+        let bonus = 0;
+        if (xrpAmount === 80) bonus = 120_000; // 15% bonus
+        if (xrpAmount === 90) bonus = 198_000; // 22% bonus
+        if (xrpAmount === 100) bonus = 300_000; // 30% bonus
+
+        const totalWaldo = xrpAmount * WALDO_PER_XRP + bonus;
+        return totalWaldo;
     }
 
     async function hasTrustline(address) {
@@ -245,37 +251,38 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
         return acc.result.lines.some((line) => line.currency === "WLO" && line.account === issuer);
     }
 
+    // Copy exact working logic from presale backend
     async function sendWaldo(to, amount, tag) {
         try {
             console.log(`💸 Attempting to send ${amount} WLO to ${to}`);
 
-            const tx = {
+            // Use exact same transaction structure as working presale backend
+            const transaction = {
                 TransactionType: "Payment",
                 Account: distributorWallet.classicAddress,
                 Destination: to,
                 Amount: {
                     currency: "WLO",
                     issuer,
-                    value: amount.toString(),
-                },
-                DestinationTag: tag || undefined,
+                    value: parseFloat(amount).toFixed(6)  // Same as presale backend
+                }
             };
 
-            console.log(`📝 Transaction prepared:`, JSON.stringify(tx, null, 2));
+            console.log(`📝 Transaction prepared using presale backend pattern`);
 
-            const prepared = await client.autofill(tx);
-            console.log(`⚙️ Transaction autofilled successfully`);
-
+            const prepared = await client.autofill(transaction);
             const signed = distributorWallet.sign(prepared);
-            console.log(`✍️ Transaction signed successfully`);
-
             const result = await client.submitAndWait(signed.tx_blob);
-            console.log(`✅ WALDO sent successfully! Hash: ${result.result.hash}`);
 
-            return result.result.hash;
+            if (result.result.meta.TransactionResult === "tesSUCCESS") {
+                console.log(`✅ WALDO sent successfully! Hash: ${result.result.hash}`);
+                return result.result.hash;
+            } else {
+                throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
+            }
+
         } catch (error) {
             console.error(`❌ Error sending WALDO:`, error.message);
-            console.error(`❌ Full error:`, error);
             throw error;
         }
     }
