@@ -432,8 +432,9 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
                 console.log(`💾 Transaction marked as processed in Redis`);
 
                 // Report purchase to backend API for tracking
-                await reportPurchaseToBackend(originalWallet, amount, waldo, tx.hash);
-                console.log(`📊 Purchase reported to backend API`);
+                const txHashForReporting = tx.hash || waldoTx || `bot-${Date.now()}-${originalWallet.slice(-8)}`;
+                await reportPurchaseToBackend(originalWallet, amount, waldo, txHashForReporting);
+                console.log(`📊 Purchase reported to backend API with hash: ${txHashForReporting}`);
 
                 // FIXED: Build confirmation message properly
                 let confirmationMessage = `✅ Payment confirmed!\n\n💸 Sent: ${amount} XRP\n🎁 WLO: ${waldo}\n📦 TX: https://livenet.xrpl.org/transactions/${waldoTx}`;
@@ -447,7 +448,8 @@ Buy WLO instantly with XRP — no waiting, no middlemen.
 
             } catch (error) {
                 console.error(`❌ Error processing payment:`, error.message);
-                await sendMessage(chatId, `❌ Error processing your payment. Please contact support with transaction hash: ${tx.hash}`);
+                console.error(`❌ Full error details:`, error);
+                await sendMessage(chatId, `❌ Error processing your payment. Please contact support.`);
             }
         }
     }
