@@ -13,7 +13,7 @@ const BURN_REASON = 'Strategic token burn - Reducing total supply for tokenomics
 const XRPL_SERVER = process.env.XRPL_NODE || 'wss://xrplcluster.com';
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 // Correct WALDO distributor wallet that has the tokens to burn
-const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET || 'sEd7ZQstcsCgQ1fxqMYZxBgEpZz5KUK';
+const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
 const DISTRIBUTOR_WALLET = 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC';
 
 console.log('🔥 WALDOCOIN MASSIVE TOKEN BURN SCRIPT');
@@ -26,7 +26,7 @@ console.log('=====================================');
 
 async function burnTokens() {
   let client;
-  
+
   try {
     // Validate environment
     if (!DISTRIBUTOR_SECRET) {
@@ -51,7 +51,7 @@ async function burnTokens() {
       ledger_index: 'validated'
     });
 
-    const waldoLine = accountInfo.result.lines.find(line => 
+    const waldoLine = accountInfo.result.lines.find(line =>
       line.currency === 'WLO' && line.account === WALDO_ISSUER
     );
 
@@ -71,7 +71,7 @@ async function burnTokens() {
     console.log(`You are about to burn ${BURN_AMOUNT.toLocaleString()} WLO tokens`);
     console.log('This action is IRREVERSIBLE and will permanently remove tokens from circulation');
     console.log('\nTo proceed, you must set the environment variable CONFIRM_BURN=true');
-    
+
     if (process.env.CONFIRM_BURN !== 'true') {
       console.log('❌ Burn not confirmed. Set CONFIRM_BURN=true to proceed.');
       process.exit(1);
@@ -107,7 +107,7 @@ async function burnTokens() {
     if (response.result.meta.TransactionResult === 'tesSUCCESS') {
       const txHash = response.result.hash;
       const fee = response.result.Fee;
-      
+
       console.log('\n🎉 BURN SUCCESSFUL! 🎉');
       console.log('========================');
       console.log(`✅ Transaction Hash: ${txHash}`);
@@ -155,7 +155,7 @@ async function burnTokens() {
         ledger_index: 'validated'
       });
 
-      const newWaldoLine = newAccountInfo.result.lines.find(line => 
+      const newWaldoLine = newAccountInfo.result.lines.find(line =>
         line.currency === 'WLO' && line.account === WALDO_ISSUER
       );
 
@@ -176,7 +176,7 @@ async function burnTokens() {
     console.error('\n❌ BURN FAILED');
     console.error('===============');
     console.error('Error:', error.message);
-    
+
     if (error.message.includes('tecUNFUNDED_PAYMENT')) {
       console.error('💡 This usually means insufficient balance or trustline issues');
     } else if (error.message.includes('tecNO_LINE')) {
@@ -184,9 +184,9 @@ async function burnTokens() {
     } else if (error.message.includes('tecPATH_DRY')) {
       console.error('💡 Insufficient liquidity or balance');
     }
-    
+
     process.exit(1);
-    
+
   } finally {
     if (client && client.isConnected()) {
       console.log('🔌 Disconnecting from XRPL...');

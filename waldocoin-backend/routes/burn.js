@@ -9,7 +9,7 @@ const router = express.Router();
 const XRPL_SERVER = process.env.XRPL_NODE || 'wss://xrplcluster.com';
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 // Correct WALDO distributor wallet that has the tokens to burn
-const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET || 'sEd7ZQstcsCgQ1fxqMYZxBgEpZz5KUK';
+const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
 const DISTRIBUTOR_WALLET = 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC';
 
 console.log("🔥 Loaded: routes/burn.js");
@@ -116,7 +116,7 @@ router.post('/tokens', async (req, res) => {
     } else {
       console.error('❌ Burn transaction failed:', response.result.meta.TransactionResult);
       await client.disconnect();
-      
+
       res.status(500).json({
         success: false,
         error: `Transaction failed: ${response.result.meta.TransactionResult}`
@@ -136,7 +136,7 @@ router.post('/tokens', async (req, res) => {
 router.get('/history', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     // Verify admin access
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({
@@ -177,7 +177,7 @@ router.get('/history', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     // Verify admin access
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({
@@ -188,7 +188,7 @@ router.get('/stats', async (req, res) => {
 
     const totalBurned = await redis.get('total_tokens_burned') || 0;
     const burnHistory = await redis.lRange('token_burns', 0, -1);
-    
+
     // Calculate daily burns for last 30 days
     const dailyBurns = {};
     const thirtyDaysAgo = new Date();
@@ -198,10 +198,10 @@ router.get('/stats', async (req, res) => {
       const date = new Date(thirtyDaysAgo);
       date.setDate(date.getDate() + i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const dailyKey = `burns:${dateStr}`;
       const dailyData = await redis.lRange(dailyKey, 0, -1);
-      
+
       let dailyTotal = 0;
       dailyData.forEach(burn => {
         try {
@@ -211,7 +211,7 @@ router.get('/stats', async (req, res) => {
           // Skip invalid entries
         }
       });
-      
+
       dailyBurns[dateStr] = dailyTotal;
     }
 
@@ -248,7 +248,7 @@ router.post('/massive', async (req, res) => {
     }
 
     const burnAmount = parseFloat(amount);
-    
+
     if (!amount || isNaN(burnAmount) || burnAmount <= 0) {
       return res.status(400).json({
         success: false,
@@ -268,7 +268,7 @@ router.post('/massive', async (req, res) => {
 
     // Use the regular burn endpoint logic
     const burnResult = await burnTokens(burnAmount, reason || 'Massive token burn');
-    
+
     if (burnResult.success) {
       res.json(burnResult);
     } else {
