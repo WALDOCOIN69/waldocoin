@@ -1,0 +1,34 @@
+{
+  "name": "waldo-trading-bot",
+  "version": "1.0.0",
+  "description": "WALDOCOIN Trading Bot for Telegram - Buy/Sell WLO tokens",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.63.0",
+    "xrpl": "^2.11.0",
+    "axios": "^1.5.0",
+    "dotenv": "^16.3.1",
+    "redis": "^4.6.7",
+    "node-cron": "^3.0.2",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "waldocoin",
+    "trading",
+    "telegram",
+    "xrpl",
+    "bot",
+    "crypto"
+  ],
+  "author": "WALDOCOIN Team",
+  "license": "MIT"
+}
