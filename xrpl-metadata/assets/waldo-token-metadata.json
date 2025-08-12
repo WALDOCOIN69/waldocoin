@@ -1,0 +1,154 @@
+{
+  "name": "WALDOcoin",
+  "symbol": "WLO",
+  "description": "The first meme-to-earn cryptocurrency on XRPL. Earn WALDO tokens by creating viral memes with #WaldoMeme hashtag. Join the revolution of rewarding creativity and humor in the crypto space.",
+  "image": "https://waldocoin.live/assets/waldo-token-logo.png",
+  "external_url": "https://waldocoin.live",
+  "background_color": "1a1a1a",
+  "animation_url": "https://waldocoin.live/assets/waldo-token-animation.gif",
+  "attributes": [
+    {
+      "trait_type": "Blockchain",
+      "value": "XRPL"
+    },
+    {
+      "trait_type": "Token Type",
+      "value": "Utility Token"
+    },
+    {
+      "trait_type": "Category",
+      "value": "Meme Token"
+    },
+    {
+      "trait_type": "Total Supply",
+      "value": "976,849,999"
+    },
+    {
+      "trait_type": "Decimals",
+      "value": "6"
+    },
+    {
+      "trait_type": "Launch Date",
+      "value": "December 2024"
+    },
+    {
+      "trait_type": "Issuer Status",
+      "value": "Blackholed"
+    },
+    {
+      "trait_type": "Additional Minting",
+      "value": "Impossible"
+    }
+  ],
+  "properties": {
+    "issuer": "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY",
+    "currency_code": "WLO",
+    "total_supply": "976849999",
+    "circulating_supply": "976849999",
+    "burned_tokens": "23150001",
+    "decimals": 6,
+    "blockchain": "XRPL",
+    "token_standard": "XRPL Native Token",
+    "launch_timestamp": "2024-12-01T00:00:00Z",
+    "blackhole_status": true,
+    "additional_minting": false
+  },
+  "social_links": {
+    "website": "https://waldocoin.live",
+    "twitter": "https://twitter.com/waldocoin",
+    "telegram": "https://t.me/waldocoin",
+    "discord": "https://discord.gg/waldocoin",
+    "github": "https://github.com/waldocoin",
+    "medium": "https://medium.com/@waldocoin"
+  },
+  "utility": {
+    "primary_use": "Meme-to-earn rewards",
+    "secondary_uses": [
+      "Staking for enhanced APY",
+      "NFT minting and trading",
+      "Battle system participation",
+      "Premium features access",
+      "Governance voting"
+    ],
+    "staking_apy": {
+      "30_days": "12%",
+      "90_days": "18%",
+      "180_days": "25%",
+      "365_days": "35%"
+    }
+  },
+  "tokenomics": {
+    "distribution": {
+      "community_rewards": "40%",
+      "staking_rewards": "25%",
+      "development": "15%",
+      "marketing": "10%",
+      "team": "5%",
+      "advisors": "3%",
+      "burned": "2.315%"
+    },
+    "vesting": {
+      "team_tokens": "24 months linear vesting",
+      "advisor_tokens": "12 months linear vesting",
+      "development_fund": "36 months linear release"
+    }
+  },
+  "technical_details": {
+    "blockchain": "XRP Ledger",
+    "consensus": "XRP Ledger Consensus Protocol",
+    "transaction_speed": "3-5 seconds",
+    "transaction_cost": "~0.00001 XRP",
+    "smart_contracts": "XRPL Native Features",
+    "interoperability": "XRPL Ecosystem"
+  },
+  "roadmap": [
+    {
+      "quarter": "Q1 2025",
+      "milestones": [
+        "Solana integration launch",
+        "Dual-chain presale system",
+        "Enhanced staking features",
+        "Mobile app beta"
+      ]
+    },
+    {
+      "quarter": "Q2 2025",
+      "milestones": [
+        "DAO governance launch",
+        "Cross-chain bridge",
+        "NFT marketplace",
+        "Influencer partnerships"
+      ]
+    },
+    {
+      "quarter": "Q3 2025",
+      "milestones": [
+        "Metaverse integration",
+        "Gaming partnerships",
+        "Advanced analytics",
+        "API for developers"
+      ]
+    },
+    {
+      "quarter": "Q4 2025",
+      "milestones": [
+        "Global expansion",
+        "Enterprise partnerships",
+        "Advanced DeFi features",
+        "Community events"
+      ]
+    }
+  ],
+  "legal": {
+    "disclaimer": "WALDOcoin is a utility token for entertainment and rewards purposes. Not intended as an investment vehicle.",
+    "terms_of_service": "https://waldocoin.live/terms",
+    "privacy_policy": "https://waldocoin.live/privacy",
+    "compliance": "Designed to comply with applicable regulations"
+  },
+  "contact": {
+    "support": "support@waldocoin.live",
+    "business": "business@waldocoin.live",
+    "press": "press@waldocoin.live",
+    "legal": "legal@waldocoin.live"
+  }
+}

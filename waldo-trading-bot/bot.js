@@ -56,6 +56,17 @@ await redis.connect();
 // ===== XRPL CONNECTION =====
 async function connectXRPL() {
   try {
+    // For stealth mode, we don't need actual XRPL trading
+    if (STEALTH_MODE) {
+      logger.info('🥷 Stealth mode - skipping XRPL wallet connection');
+      return true;
+    }
+
+    if (!TRADING_WALLET_SECRET) {
+      logger.warn('⚠️ No trading wallet secret provided - running in simulation mode');
+      return true;
+    }
+
     await client.connect();
     tradingWallet = xrpl.Wallet.fromSeed(TRADING_WALLET_SECRET);
     logger.info(`🔗 Connected to XRPL - Trading wallet: ${tradingWallet.classicAddress}`);
@@ -69,6 +80,16 @@ async function connectXRPL() {
 // ===== PRICE FUNCTIONS =====
 async function getCurrentWaldoPrice() {
   try {
+    // In stealth mode, use simulated price
+    if (STEALTH_MODE || !client.isConnected()) {
+      // Simulate realistic price with small variations
+      const basePrice = 0.00006400;
+      const variation = (Math.random() - 0.5) * 0.000001; // ±0.000001 variation
+      currentPrice = basePrice + variation;
+      await redis.set('waldo:current_price', currentPrice.toString());
+      return currentPrice;
+    }
+
     // Get recent trades from XRPL to calculate current price
     const response = await client.request({
       command: 'account_tx',
@@ -96,14 +117,14 @@ async function getCurrentWaldoPrice() {
     if (tradeCount > 0) {
       currentPrice = totalXRP / totalWLO;
     } else {
-      currentPrice = 0.00001; // Default price if no trades found
+      currentPrice = 0.00006400; // Default realistic price
     }
 
     await redis.set('waldo:current_price', currentPrice.toString());
     return currentPrice;
   } catch (error) {
     logger.error('❌ Error getting WALDO price:', error);
-    return currentPrice || 0.00001;
+    return currentPrice || 0.00006400;
   }
 }
 
@@ -233,18 +254,23 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
 // ===== BOT COMMANDS =====
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  const welcomeMessage = `🤖 **WALDOCOIN Trading Bot**\n\n` +
-    `Trade WLO tokens directly through Telegram!\n\n` +
-    `**Commands:**\n` +
-    `💰 /buy [amount] - Buy WLO with XRP\n` +
-    `💸 /sell [amount] - Sell WLO for XRP\n` +
+
+  // Only respond to admin
+  if (chatId.toString() !== ADMIN_ID) {
+    bot.sendMessage(chatId, '🤖 WALDO Volume Bot is running! Check @waldocoin for trading activity.');
+    return;
+  }
+
+  const welcomeMessage = `🤖 **WALDO Volume Bot - Admin Panel**\n\n` +
+    `**Volume Bot Status**: ✅ Active\n` +
+    `**Trading Wallet**: ${TRADING_WALLET_ADDRESS || 'Not configured'}\n\n` +
+    `**Available Commands:**\n` +
     `📊 /price - Current WLO price\n` +
     `📈 /stats - Trading statistics\n` +
-    `💼 /balance - Your wallet balance\n` +
-    `❓ /help - Show this help\n\n` +
-    `**Example:** \`/buy 10\` (buy WLO with 10 XRP)\n\n` +
-    `⚠️ **Connect your wallet first with** /wallet\n\n` +
-    `💰 **Min Trade**: ${MIN_TRADE_XRP} XRP | **Max Trade**: ${MAX_TRADE_XRP} XRP`;
+    `⚙️ /status - Bot status\n` +
+    `🛑 /emergency - Emergency stop\n\n` +
+    `**Volume Generation**: Every 2-5 minutes\n` +
+    `**Daily Target**: ${process.env.MAX_DAILY_VOLUME_XRP || 150} XRP`;
 
   bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
 });
@@ -268,37 +294,10 @@ bot.onText(/\/price/, async (msg) => {
   }
 });
 
-bot.onText(/\/buy (.+)/, async (msg, match) => {
+// Remove user trading commands - this is a volume bot only
+bot.onText(/\/buy|\/sell|\/wallet|\/balance/, (msg) => {
   const chatId = msg.chat.id;
-  const xrpAmount = parseFloat(match[1]);
-
-  if (isNaN(xrpAmount)) {
-    bot.sendMessage(chatId, '❌ Invalid amount. Use: /buy [XRP amount]');
-    return;
-  }
-
-  // Get user wallet (you'll need to implement wallet connection)
-  const userWallet = await getUserWallet(msg.from.id);
-  if (!userWallet) {
-    bot.sendMessage(chatId, '❌ Please connect your wallet first with /wallet');
-    return;
-  }
-
-  bot.sendMessage(chatId, '⏳ Processing your buy order...');
-
-  const result = await buyWaldo(userWallet, xrpAmount);
-
-  if (result.success) {
-    const message = `✅ **Buy Order Successful!**\n\n` +
-      `💰 **Purchased**: ${result.waldoAmount.toFixed(0)} WLO\n` +
-      `💸 **Cost**: ${xrpAmount} XRP\n` +
-      `📊 **Price**: ${result.price.toFixed(8)} XRP per WLO\n` +
-      `🔗 **Hash**: \`${result.hash}\``;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } else {
-    bot.sendMessage(chatId, `❌ Buy order failed: ${result.error}`);
-  }
+  bot.sendMessage(chatId, '🤖 This is a volume generation bot. Check @waldocoin for trading activity updates!');
 });
 
 // ===== AUTOMATED MARKET MAKING =====
@@ -327,6 +326,15 @@ if (MARKET_MAKING) {
       await announceVolumeUpdate();
     } catch (error) {
       logger.error('❌ Volume announcement error:', error);
+    }
+  });
+
+  // Send status updates to admin every 4 hours
+  cron.schedule('0 */4 * * *', async () => {
+    try {
+      await sendStatusUpdate();
+    } catch (error) {
+      logger.error('❌ Status update error:', error);
     }
   });
 }

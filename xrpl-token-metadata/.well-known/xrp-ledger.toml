@@ -1,0 +1,90 @@
+# 🎯 WALDOCOIN XRPL TOKEN METADATA
+# This file should be hosted at: https://waldocoin.live/.well-known/xrp-ledger.toml
+
+[METADATA]
+modified_date = "2025-01-11"
+
+[[CURRENCIES]]
+code = "WLO"
+issuer = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
+display_decimals = 6
+name = "WALDOcoin"
+desc = "The first meme-to-earn cryptocurrency on XRPL. Earn WALDO tokens by creating viral memes with #WaldoMeme hashtag."
+conditions = "WALDOcoin is a utility token for the WALDO ecosystem. Total supply is fixed at 976,849,999 tokens with no additional minting possible."
+image = "https://waldocoin.live/wp-content/uploads/waldo-token-logo.png"
+domain = "waldocoin.live"
+
+# Social Media Links
+twitter = "https://twitter.com/waldocoin"
+telegram = "https://t.me/waldocoin"
+discord = "https://discord.gg/waldocoin"
+website = "https://waldocoin.live"
+
+# Documentation
+whitepaper = "https://waldocoin.live/whitepaper.pdf"
+documentation = "https://docs.waldocoin.live"
+
+# Token Economics
+total_supply = "976849999"
+circulating_supply = "976849999"
+max_supply = "1000000000"
+supply_notes = "Total supply is 976,849,999 WLO. Original max supply was 1B, with 23,150,001 tokens burned/removed."
+
+# Use Cases
+use_cases = [
+    "Meme rewards and incentives",
+    "Staking for enhanced rewards",
+    "NFT minting and trading",
+    "Governance participation",
+    "Battle system entry fees",
+    "Premium features access"
+]
+
+# Technical Details
+blockchain = "XRPL"
+token_standard = "XRPL Native Token"
+contract_verified = true
+audit_report = "https://waldocoin.live/audit-report.pdf"
+
+# Compliance
+kyc_required = false
+accredited_investors_only = false
+restricted_countries = []
+
+# Risk Warnings
+risks = [
+    "Cryptocurrency investments carry inherent risks",
+    "Token value may fluctuate significantly",
+    "Meme token with speculative nature",
+    "Regulatory changes may affect token utility"
+]
+
+# Contact Information
+support_email = "support@waldocoin.live"
+business_email = "business@waldocoin.live"
+legal_email = "legal@waldocoin.live"
+
+# Additional Metadata
+launch_date = "2024-12-01"
+category = "Meme Token"
+tags = ["meme", "social", "rewards", "xrpl", "nft"]
+language = "en"
+region = "Global"
+
+# Token Utility Features
+features = [
+    "Meme-to-earn rewards system",
+    "Multi-tier staking with APY up to 35%",
+    "NFT minting for viral memes",
+    "Battle system for competitive rewards",
+    "Level-based progression system",
+    "Cross-platform social integration"
+]
+
+# Roadmap Highlights
+roadmap = [
+    "Q1 2025: Solana integration and dual-chain support",
+    "Q2 2025: Mobile app launch",
+    "Q3 2025: DAO governance implementation",
+    "Q4 2025: Metaverse integration and virtual events"
+]
