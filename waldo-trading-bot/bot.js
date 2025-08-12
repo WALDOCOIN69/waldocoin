@@ -20,6 +20,14 @@ const ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 const PERSONAL_MODE = process.env.PERSONAL_ACCOUNT_MODE === 'true';
 const STEALTH_MODE = process.env.STEALTH_MODE === 'true';
 
+// ===== PROFIT MANAGEMENT CONFIGURATION =====
+const PROFIT_SKIMMING = process.env.PROFIT_SKIMMING_ENABLED === 'true';
+const MIN_TRADING_BALANCE = parseFloat(process.env.MIN_TRADING_BALANCE_XRP) || 100;
+const PROFIT_THRESHOLD = parseFloat(process.env.PROFIT_THRESHOLD_XRP) || 150;
+const PROFIT_SKIM_PERCENTAGE = parseFloat(process.env.PROFIT_SKIM_PERCENTAGE) || 70;
+const MAIN_WALLET_ADDRESS = process.env.MAIN_WALLET_ADDRESS;
+const PROFIT_CHECK_INTERVAL = parseInt(process.env.PROFIT_CHECK_INTERVAL) || 60;
+
 // ===== TRADING PARAMETERS =====
 const MIN_TRADE_XRP = parseFloat(process.env.MIN_TRADE_AMOUNT_XRP) || 1;
 const MAX_TRADE_XRP = parseFloat(process.env.MAX_TRADE_AMOUNT_XRP) || 100;
@@ -329,14 +337,16 @@ if (MARKET_MAKING) {
     }
   });
 
-  // Send status updates to admin every 4 hours
-  cron.schedule('0 */4 * * *', async () => {
-    try {
-      await sendStatusUpdate();
-    } catch (error) {
-      logger.error('❌ Status update error:', error);
-    }
-  });
+  // Check for profit skimming every hour
+  if (PROFIT_SKIMMING) {
+    cron.schedule(`*/${PROFIT_CHECK_INTERVAL} * * * *`, async () => {
+      try {
+        await checkAndSkimProfits();
+      } catch (error) {
+        logger.error('❌ Profit skimming error:', error);
+      }
+    });
+  }
 }
 
 // ===== AUTOMATED TRADING FUNCTIONS =====
@@ -498,6 +508,94 @@ async function announceVolumeUpdate() {
   }
 }
 
+// ===== PROFIT MANAGEMENT =====
+async function checkAndSkimProfits() {
+  if (!PROFIT_SKIMMING || !MAIN_WALLET_ADDRESS || !tradingWallet) {
+    return;
+  }
+
+  try {
+    // Get current trading wallet balance
+    const accountInfo = await client.request({
+      command: 'account_info',
+      account: tradingWallet.classicAddress,
+      ledger_index: 'validated'
+    });
+
+    const currentBalance = parseFloat(xrpl.dropsToXrp(accountInfo.result.account_data.Balance));
+
+    // Check if we have profits to skim
+    if (currentBalance > PROFIT_THRESHOLD) {
+      const excessAmount = currentBalance - MIN_TRADING_BALANCE;
+      const skimAmount = (excessAmount * PROFIT_SKIM_PERCENTAGE) / 100;
+
+      if (skimAmount >= 1) { // Only skim if >= 1 XRP
+        await skimProfits(skimAmount);
+      }
+    }
+
+    // Log current status
+    logger.info(`💰 Trading wallet balance: ${currentBalance.toFixed(4)} XRP`);
+
+  } catch (error) {
+    logger.error('❌ Error checking profits:', error);
+  }
+}
+
+async function skimProfits(amount) {
+  try {
+    // Create payment to main wallet
+    const payment = {
+      TransactionType: 'Payment',
+      Account: tradingWallet.classicAddress,
+      Destination: MAIN_WALLET_ADDRESS,
+      Amount: xrpl.xrpToDrops(amount.toString()),
+      Memo: {
+        MemoType: Buffer.from('profit-skim', 'utf8').toString('hex').toUpperCase(),
+        MemoData: Buffer.from(`Volume bot profit: ${amount.toFixed(4)} XRP`, 'utf8').toString('hex').toUpperCase()
+      }
+    };
+
+    const prepared = await client.autofill(payment);
+    const signed = tradingWallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult === 'tesSUCCESS') {
+      // Record profit skim
+      await redis.rPush('waldo:profit_skims', JSON.stringify({
+        amount: amount,
+        timestamp: new Date().toISOString(),
+        hash: result.result.hash,
+        destination: MAIN_WALLET_ADDRESS
+      }));
+
+      logger.info(`💸 Profit skimmed: ${amount.toFixed(4)} XRP sent to ${MAIN_WALLET_ADDRESS}`);
+
+      // Announce profit skim if enabled
+      if (CHANNEL_ID && !PERSONAL_MODE) {
+        const message = `💰 **Profit Skim**\n\n` +
+          `💸 **Amount**: ${amount.toFixed(4)} XRP\n` +
+          `🎯 **Destination**: Main wallet\n` +
+          `📊 **Source**: Volume bot profits\n` +
+          `🔗 **Hash**: \`${result.result.hash}\``;
+
+        await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
+      }
+
+      return {
+        success: true,
+        amount: amount,
+        hash: result.result.hash
+      };
+    } else {
+      throw new Error(`Profit skim failed: ${result.result.meta.TransactionResult}`);
+    }
+  } catch (error) {
+    logger.error('❌ Profit skim failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // ===== WALLET MANAGEMENT =====
 async function getUserWallet(userId) {
   try {
@@ -644,25 +742,76 @@ bot.onText(/\/balance/, async (msg) => {
   }
 });
 
+bot.onText(/\/profits/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Only respond to admin
+  if (chatId.toString() !== ADMIN_ID) {
+    return;
+  }
+
+  try {
+    // Get profit skim history
+    const profitSkims = await redis.lRange('waldo:profit_skims', 0, -1);
+    const skims = profitSkims.map(skim => JSON.parse(skim));
+
+    // Calculate total profits
+    const totalProfits = skims.reduce((sum, skim) => sum + skim.amount, 0);
+    const recentSkims = skims.slice(-5); // Last 5 skims
+
+    // Get current trading wallet balance
+    let currentBalance = 0;
+    if (tradingWallet) {
+      try {
+        const accountInfo = await client.request({
+          command: 'account_info',
+          account: tradingWallet.classicAddress,
+          ledger_index: 'validated'
+        });
+        currentBalance = parseFloat(xrpl.dropsToXrp(accountInfo.result.account_data.Balance));
+      } catch (error) {
+        logger.warn('Could not fetch current balance:', error.message);
+      }
+    }
+
+    const message = `💰 **Volume Bot Profit Report**\n\n` +
+      `💸 **Total Profits Skimmed**: ${totalProfits.toFixed(4)} XRP\n` +
+      `📊 **Number of Skims**: ${skims.length}\n` +
+      `💼 **Current Trading Balance**: ${currentBalance.toFixed(4)} XRP\n` +
+      `🎯 **Profit Threshold**: ${PROFIT_THRESHOLD} XRP\n` +
+      `📈 **Skim Percentage**: ${PROFIT_SKIM_PERCENTAGE}%\n\n` +
+      `**Recent Skims:**\n` +
+      recentSkims.map(skim =>
+        `• ${skim.amount.toFixed(4)} XRP - ${new Date(skim.timestamp).toLocaleDateString()}`
+      ).join('\n') +
+      `\n\n🤖 **Profit Skimming**: ${PROFIT_SKIMMING ? 'Enabled' : 'Disabled'}`;
+
+    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    bot.sendMessage(chatId, '❌ Error fetching profit data');
+  }
+});
+
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
-  const helpMessage = `🤖 **WALDOCOIN Trading Bot Help**\n\n` +
-    `**Setup:**\n` +
-    `🔗 /wallet [address] - Connect your XRPL wallet\n\n` +
-    `**Trading:**\n` +
-    `💰 /buy [XRP amount] - Buy WLO tokens\n` +
-    `💸 /sell [WLO amount] - Sell WLO tokens\n\n` +
+
+  // Only respond to admin
+  if (chatId.toString() !== ADMIN_ID) {
+    bot.sendMessage(chatId, '🤖 WALDO Volume Bot is running! Check @waldocoin for trading activity.');
+    return;
+  }
+
+  const helpMessage = `🤖 **WALDO Volume Bot - Admin Commands**\n\n` +
     `**Information:**\n` +
     `📊 /price - Current WLO price\n` +
     `📈 /stats - Trading statistics\n` +
-    `💼 /balance - Your wallet balance\n\n` +
-    `**Examples:**\n` +
-    `\`/wallet rYourWalletAddress123...\`\n` +
-    `\`/buy 10\` (buy WLO with 10 XRP)\n` +
-    `\`/sell 50000\` (sell 50,000 WLO)\n\n` +
-    `⚠️ **Trading Limits:**\n` +
-    `Min: ${MIN_TRADE_XRP} XRP | Max: ${MAX_TRADE_XRP} XRP\n` +
-    `Spread: ${PRICE_SPREAD}%`;
+    `💰 /profits - Profit skimming report\n` +
+    `⚙️ /status - Bot status\n\n` +
+    `**Settings:**\n` +
+    `🎯 **Min Trading Balance**: ${MIN_TRADING_BALANCE} XRP\n` +
+    `💸 **Profit Threshold**: ${PROFIT_THRESHOLD} XRP\n` +
+    `📈 **Skim Percentage**: ${PROFIT_SKIM_PERCENTAGE}%\n` +
+    `🤖 **Profit Skimming**: ${PROFIT_SKIMMING ? 'Enabled' : 'Disabled'}`;
 
   bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
 });
