@@ -21,11 +21,10 @@ const PERSONAL_MODE = process.env.PERSONAL_ACCOUNT_MODE === 'true';
 const STEALTH_MODE = process.env.STEALTH_MODE === 'true';
 
 // ===== PROFIT MANAGEMENT CONFIGURATION =====
-const PROFIT_SKIMMING = process.env.PROFIT_SKIMMING_ENABLED === 'true';
-const MIN_TRADING_BALANCE = parseFloat(process.env.MIN_TRADING_BALANCE_XRP) || 100;
-const PROFIT_THRESHOLD = parseFloat(process.env.PROFIT_THRESHOLD_XRP) || 150;
-const PROFIT_SKIM_PERCENTAGE = parseFloat(process.env.PROFIT_SKIM_PERCENTAGE) || 70;
-const MAIN_WALLET_ADDRESS = process.env.MAIN_WALLET_ADDRESS;
+const PROFIT_TRACKING = process.env.PROFIT_TRACKING_ENABLED === 'true';
+const STARTING_BALANCE = parseFloat(process.env.STARTING_BALANCE_XRP) || 140;
+const PROFIT_RESERVE_THRESHOLD = parseFloat(process.env.PROFIT_RESERVE_THRESHOLD) || 200;
+const PROFIT_RESERVE_PERCENTAGE = parseFloat(process.env.PROFIT_RESERVE_PERCENTAGE) || 50;
 const PROFIT_CHECK_INTERVAL = parseInt(process.env.PROFIT_CHECK_INTERVAL) || 60;
 
 // ===== TRADING PARAMETERS =====
@@ -337,13 +336,13 @@ if (MARKET_MAKING) {
     }
   });
 
-  // Check for profit skimming every hour
-  if (PROFIT_SKIMMING) {
+  // Check for profit tracking every hour
+  if (PROFIT_TRACKING) {
     cron.schedule(`*/${PROFIT_CHECK_INTERVAL} * * * *`, async () => {
       try {
-        await checkAndSkimProfits();
+        await trackProfits();
       } catch (error) {
-        logger.error('❌ Profit skimming error:', error);
+        logger.error('❌ Profit tracking error:', error);
       }
     });
   }
@@ -509,89 +508,77 @@ async function announceVolumeUpdate() {
 }
 
 // ===== PROFIT MANAGEMENT =====
-async function checkAndSkimProfits() {
-  if (!PROFIT_SKIMMING || !MAIN_WALLET_ADDRESS || !tradingWallet) {
+async function trackProfits() {
+  if (!PROFIT_TRACKING) {
     return;
   }
 
   try {
     // Get current trading wallet balance
-    const accountInfo = await client.request({
-      command: 'account_info',
-      account: tradingWallet.classicAddress,
-      ledger_index: 'validated'
-    });
+    let currentBalance = 0;
+    if (tradingWallet && client.isConnected()) {
+      const accountInfo = await client.request({
+        command: 'account_info',
+        account: tradingWallet.classicAddress,
+        ledger_index: 'validated'
+      });
+      currentBalance = parseFloat(xrpl.dropsToXrp(accountInfo.result.account_data.Balance));
+    } else {
+      // In stealth mode, simulate balance tracking
+      const storedBalance = await redis.get('waldo:simulated_balance') || STARTING_BALANCE.toString();
+      currentBalance = parseFloat(storedBalance);
+    }
 
-    const currentBalance = parseFloat(xrpl.dropsToXrp(accountInfo.result.account_data.Balance));
+    // Calculate profits
+    const totalProfit = currentBalance - STARTING_BALANCE;
 
-    // Check if we have profits to skim
-    if (currentBalance > PROFIT_THRESHOLD) {
-      const excessAmount = currentBalance - MIN_TRADING_BALANCE;
-      const skimAmount = (excessAmount * PROFIT_SKIM_PERCENTAGE) / 100;
+    // Store profit data
+    await redis.set('waldo:current_balance', currentBalance.toString());
+    await redis.set('waldo:total_profit', totalProfit.toString());
 
-      if (skimAmount >= 1) { // Only skim if >= 1 XRP
-        await skimProfits(skimAmount);
-      }
+    // Check if we should reserve some profits
+    if (currentBalance > PROFIT_RESERVE_THRESHOLD) {
+      const excessAmount = currentBalance - STARTING_BALANCE;
+      const reserveAmount = (excessAmount * PROFIT_RESERVE_PERCENTAGE) / 100;
+
+      // Record profit reserve (conceptual - money stays in wallet)
+      await recordProfitReserve(reserveAmount);
     }
 
     // Log current status
-    logger.info(`💰 Trading wallet balance: ${currentBalance.toFixed(4)} XRP`);
+    logger.info(`💰 Trading wallet balance: ${currentBalance.toFixed(4)} XRP (Profit: ${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(4)} XRP)`);
 
   } catch (error) {
-    logger.error('❌ Error checking profits:', error);
+    logger.error('❌ Error tracking profits:', error);
   }
 }
 
-async function skimProfits(amount) {
+async function recordProfitReserve(amount) {
   try {
-    // Create payment to main wallet
-    const payment = {
-      TransactionType: 'Payment',
-      Account: tradingWallet.classicAddress,
-      Destination: MAIN_WALLET_ADDRESS,
-      Amount: xrpl.xrpToDrops(amount.toString()),
-      Memo: {
-        MemoType: Buffer.from('profit-skim', 'utf8').toString('hex').toUpperCase(),
-        MemoData: Buffer.from(`Volume bot profit: ${amount.toFixed(4)} XRP`, 'utf8').toString('hex').toUpperCase()
-      }
+    // Record profit reserve (conceptual - money stays in wallet)
+    const reserve = {
+      amount: amount,
+      timestamp: new Date().toISOString(),
+      type: 'profit_reserve',
+      note: 'Profits set aside for future use'
     };
 
-    const prepared = await client.autofill(payment);
-    const signed = tradingWallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
+    await redis.rPush('waldo:profit_reserves', JSON.stringify(reserve));
 
-    if (result.result.meta.TransactionResult === 'tesSUCCESS') {
-      // Record profit skim
-      await redis.rPush('waldo:profit_skims', JSON.stringify({
-        amount: amount,
-        timestamp: new Date().toISOString(),
-        hash: result.result.hash,
-        destination: MAIN_WALLET_ADDRESS
-      }));
+    // Update total reserved profits
+    const currentReserved = await redis.get('waldo:total_reserved') || '0';
+    const newReserved = parseFloat(currentReserved) + amount;
+    await redis.set('waldo:total_reserved', newReserved.toString());
 
-      logger.info(`💸 Profit skimmed: ${amount.toFixed(4)} XRP sent to ${MAIN_WALLET_ADDRESS}`);
+    logger.info(`💎 Profit reserved: ${amount.toFixed(4)} XRP (Total reserved: ${newReserved.toFixed(4)} XRP)`);
 
-      // Announce profit skim if enabled
-      if (CHANNEL_ID && !PERSONAL_MODE) {
-        const message = `💰 **Profit Skim**\n\n` +
-          `💸 **Amount**: ${amount.toFixed(4)} XRP\n` +
-          `🎯 **Destination**: Main wallet\n` +
-          `📊 **Source**: Volume bot profits\n` +
-          `🔗 **Hash**: \`${result.result.hash}\``;
-
-        await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
-      }
-
-      return {
-        success: true,
-        amount: amount,
-        hash: result.result.hash
-      };
-    } else {
-      throw new Error(`Profit skim failed: ${result.result.meta.TransactionResult}`);
-    }
+    return {
+      success: true,
+      amount: amount,
+      totalReserved: newReserved
+    };
   } catch (error) {
-    logger.error('❌ Profit skim failed:', error);
+    logger.error('❌ Profit reserve failed:', error);
     return { success: false, error: error.message };
   }
 }
@@ -751,40 +738,34 @@ bot.onText(/\/profits/, async (msg) => {
   }
 
   try {
-    // Get profit skim history
-    const profitSkims = await redis.lRange('waldo:profit_skims', 0, -1);
-    const skims = profitSkims.map(skim => JSON.parse(skim));
+    // Get profit tracking data
+    const currentBalance = await redis.get('waldo:current_balance') || STARTING_BALANCE.toString();
+    const totalProfit = await redis.get('waldo:total_profit') || '0';
+    const totalReserved = await redis.get('waldo:total_reserved') || '0';
 
-    // Calculate total profits
-    const totalProfits = skims.reduce((sum, skim) => sum + skim.amount, 0);
-    const recentSkims = skims.slice(-5); // Last 5 skims
+    // Get profit reserves history
+    const profitReserves = await redis.lRange('waldo:profit_reserves', 0, -1);
+    const reserves = profitReserves.map(reserve => JSON.parse(reserve));
+    const recentReserves = reserves.slice(-5); // Last 5 reserves
 
-    // Get current trading wallet balance
-    let currentBalance = 0;
-    if (tradingWallet) {
-      try {
-        const accountInfo = await client.request({
-          command: 'account_info',
-          account: tradingWallet.classicAddress,
-          ledger_index: 'validated'
-        });
-        currentBalance = parseFloat(xrpl.dropsToXrp(accountInfo.result.account_data.Balance));
-      } catch (error) {
-        logger.warn('Could not fetch current balance:', error.message);
-      }
-    }
+    const profitNum = parseFloat(totalProfit);
+    const balanceNum = parseFloat(currentBalance);
+    const reservedNum = parseFloat(totalReserved);
 
     const message = `💰 **Volume Bot Profit Report**\n\n` +
-      `💸 **Total Profits Skimmed**: ${totalProfits.toFixed(4)} XRP\n` +
-      `📊 **Number of Skims**: ${skims.length}\n` +
-      `💼 **Current Trading Balance**: ${currentBalance.toFixed(4)} XRP\n` +
-      `🎯 **Profit Threshold**: ${PROFIT_THRESHOLD} XRP\n` +
-      `📈 **Skim Percentage**: ${PROFIT_SKIM_PERCENTAGE}%\n\n` +
-      `**Recent Skims:**\n` +
-      recentSkims.map(skim =>
-        `• ${skim.amount.toFixed(4)} XRP - ${new Date(skim.timestamp).toLocaleDateString()}`
-      ).join('\n') +
-      `\n\n🤖 **Profit Skimming**: ${PROFIT_SKIMMING ? 'Enabled' : 'Disabled'}`;
+      `💼 **Current Balance**: ${balanceNum.toFixed(4)} XRP\n` +
+      `🚀 **Starting Balance**: ${STARTING_BALANCE.toFixed(4)} XRP\n` +
+      `📈 **Total Profit**: ${profitNum >= 0 ? '+' : ''}${profitNum.toFixed(4)} XRP\n` +
+      `💎 **Reserved Profits**: ${reservedNum.toFixed(4)} XRP\n` +
+      `🎯 **Reserve Threshold**: ${PROFIT_RESERVE_THRESHOLD} XRP\n` +
+      `📊 **Reserve Percentage**: ${PROFIT_RESERVE_PERCENTAGE}%\n\n` +
+      `**Recent Reserves:**\n` +
+      (recentReserves.length > 0 ?
+        recentReserves.map(reserve =>
+          `• ${reserve.amount.toFixed(4)} XRP - ${new Date(reserve.timestamp).toLocaleDateString()}`
+        ).join('\n') : '• No reserves yet') +
+      `\n\n🤖 **Profit Tracking**: ${PROFIT_TRACKING ? 'Enabled' : 'Disabled'}\n` +
+      `💡 **Note**: All profits stay in trading wallet`;
 
     bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
   } catch (error) {
@@ -808,10 +789,10 @@ bot.onText(/\/help/, (msg) => {
     `💰 /profits - Profit skimming report\n` +
     `⚙️ /status - Bot status\n\n` +
     `**Settings:**\n` +
-    `🎯 **Min Trading Balance**: ${MIN_TRADING_BALANCE} XRP\n` +
-    `💸 **Profit Threshold**: ${PROFIT_THRESHOLD} XRP\n` +
-    `📈 **Skim Percentage**: ${PROFIT_SKIM_PERCENTAGE}%\n` +
-    `🤖 **Profit Skimming**: ${PROFIT_SKIMMING ? 'Enabled' : 'Disabled'}`;
+    `🚀 **Starting Balance**: ${STARTING_BALANCE} XRP\n` +
+    `🎯 **Reserve Threshold**: ${PROFIT_RESERVE_THRESHOLD} XRP\n` +
+    `📈 **Reserve Percentage**: ${PROFIT_RESERVE_PERCENTAGE}%\n` +
+    `🤖 **Profit Tracking**: ${PROFIT_TRACKING ? 'Enabled' : 'Disabled'}`;
 
   bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
 });
