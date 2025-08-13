@@ -22,7 +22,7 @@ const STEALTH_MODE = process.env.STEALTH_MODE === 'true';
 
 // ===== PROFIT MANAGEMENT CONFIGURATION =====
 const PROFIT_TRACKING = process.env.PROFIT_TRACKING_ENABLED === 'true';
-const STARTING_BALANCE = parseFloat(process.env.STARTING_BALANCE_XRP) || 140;
+const STARTING_BALANCE = parseFloat(process.env.STARTING_BALANCE_XRP) || 70;
 const PROFIT_RESERVE_THRESHOLD = parseFloat(process.env.PROFIT_RESERVE_THRESHOLD) || 200;
 const PROFIT_RESERVE_PERCENTAGE = parseFloat(process.env.PROFIT_RESERVE_PERCENTAGE) || 50;
 const PROFIT_CHECK_INTERVAL = parseInt(process.env.PROFIT_CHECK_INTERVAL) || 60;
