@@ -9,9 +9,9 @@ console.log("🧩 Loaded: routes/tokenomics.js");
 // Fee structure constants (whitepaper compliant)
 const FEE_STRUCTURE = {
   battle: {
-    start: 100,        // WALDO (challenger fee)
-    accept: 50,        // WALDO (acceptor fee)
-    vote: 5,           // WALDO (voting fee)
+    start: 100,        // WLO (challenger fee)
+    accept: 50,        // WLO (acceptor fee)
+    vote: 5,           // WLO (voting fee)
     burnRate: 0.02,    // 2% burned
     treasuryRate: 0.03 // 3% to treasury
   },
@@ -21,10 +21,10 @@ const FEE_STRUCTURE = {
     burnRate: 0.02         // 2% of fee
   },
   nft: {
-    mintCost: 50       // WALDO
+    mintCost: 50       // WLO
   },
   dao: {
-    votingRequirement: 10000  // WALDO
+    votingRequirement: 10000  // WLO
   }
 };
 
@@ -43,14 +43,14 @@ router.get("/fees", async (_, res) => {
       burnMechanisms: [
         "5% of battle pots burned to issuer",
         "2% of claim fees burned",
-        "All fees collected in WALDO token"
+        "All fees collected in WLO token"
       ]
     });
   } catch (error) {
     console.error("❌ Error getting fee structure:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to get fee structure" 
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get fee structure"
     });
   }
 });
@@ -59,7 +59,7 @@ router.get("/fees", async (_, res) => {
 router.get("/calculator", async (req, res) => {
   try {
     const { action, amount, staked } = req.query;
-    
+
     if (!action) {
       return res.status(400).json({
         success: false,
@@ -74,7 +74,7 @@ router.get("/calculator", async (req, res) => {
         calculation = {
           action: "Start Battle",
           fee: FEE_STRUCTURE.battle.start,
-          currency: "WALDO",
+          currency: "WLO",
           destination: "Issuer Wallet",
           note: "Entry fee contributes to battle pot"
         };
@@ -84,7 +84,7 @@ router.get("/calculator", async (req, res) => {
         calculation = {
           action: "Vote on Battle",
           fee: FEE_STRUCTURE.battle.vote,
-          currency: "WALDO", 
+          currency: "WLO",
           destination: "Issuer Wallet",
           note: "Voting fee contributes to battle pot"
         };
@@ -97,7 +97,7 @@ router.get("/calculator", async (req, res) => {
             error: "Amount parameter required for claim calculation"
           });
         }
-        
+
         const baseAmount = parseFloat(amount);
         const isStaked = staked === "true";
         const feeRate = isStaked ? FEE_STRUCTURE.claim.stakedFeeRate : FEE_STRUCTURE.claim.instantFeeRate;
@@ -112,8 +112,8 @@ router.get("/calculator", async (req, res) => {
           fee,
           burn,
           net,
-          currency: "WALDO",
-          note: `${burn} WALDO burned, ${fee - burn} WALDO to fees`
+          currency: "WLO",
+          note: `${burn} WLO burned, ${fee - burn} WLO to fees`
         };
         break;
 
@@ -121,7 +121,7 @@ router.get("/calculator", async (req, res) => {
         calculation = {
           action: "Mint NFT",
           fee: FEE_STRUCTURE.nft.mintCost,
-          currency: "WALDO",
+          currency: "WLO",
           destination: "Distributor Wallet",
           requirement: "None (whitepaper compliant)",
           note: "One-time minting cost per meme - no XP requirement"
@@ -132,8 +132,8 @@ router.get("/calculator", async (req, res) => {
         calculation = {
           action: "DAO Vote",
           requirement: FEE_STRUCTURE.dao.votingRequirement,
-          currency: "WALDO",
-          note: "Minimum WALDO balance required to vote",
+          currency: "WLO",
+          note: "Minimum WLO balance required to vote",
           reward: "+1 XP for voting"
         };
         break;
@@ -152,9 +152,9 @@ router.get("/calculator", async (req, res) => {
 
   } catch (error) {
     console.error("❌ Error calculating fees:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to calculate fees" 
+    return res.status(500).json({
+      success: false,
+      error: "Failed to calculate fees"
     });
   }
 });
@@ -239,7 +239,7 @@ router.get("/stats", async (_, res) => {
 router.post("/track-burn", async (req, res) => {
   try {
     const { amount, source, txHash } = req.body;
-    
+
     if (!amount || !source) {
       return res.status(400).json({
         success: false,
@@ -258,7 +258,7 @@ router.post("/track-burn", async (req, res) => {
     // Add to daily burn tracking
     const today = new Date().toISOString().split('T')[0];
     const dailyKey = `burns:${today}`;
-    
+
     await redis.rPush(dailyKey, JSON.stringify(burnEvent));
     await redis.expire(dailyKey, 86400 * 30); // Keep for 30 days
 
@@ -270,9 +270,9 @@ router.post("/track-burn", async (req, res) => {
 
   } catch (error) {
     console.error("❌ Error tracking burn:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to track burn event" 
+    return res.status(500).json({
+      success: false,
+      error: "Failed to track burn event"
     });
   }
 });
