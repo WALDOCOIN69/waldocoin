@@ -131,9 +131,9 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Password is required" });
     }
 
-    // Get daily password from Redis override, otherwise use current default
+    // Get daily password from Redis override, otherwise use environment variable
     const redisPassword = await redis.get("airdrop:daily_password");
-    const dailyPassword = redisPassword || "WALDOCREW";
+    const dailyPassword = redisPassword || process.env.AIRDROP_DEFAULT_PASSWORD || "WALDOCREW";
 
     console.log(`🔐 Password check: User entered "${password}", Expected "${dailyPassword}", Redis value: "${redisPassword}"`);
 
@@ -475,7 +475,7 @@ router.get("/current-password", async (req, res) => {
 
     // Get current password (same logic as main endpoint)
     const redisPassword = await redis.get("airdrop:daily_password");
-    const currentPassword = redisPassword || "WALDOCREW";
+    const currentPassword = redisPassword || process.env.AIRDROP_DEFAULT_PASSWORD || "WALDOCREW";
 
     return res.json({
       success: true,
@@ -494,7 +494,7 @@ router.get("/password-check", async (req, res) => {
   try {
     // Get current password (same logic as main endpoint)
     const redisPassword = await redis.get("airdrop:daily_password");
-    const currentPassword = redisPassword || "WALDOCREW";
+    const currentPassword = redisPassword || process.env.AIRDROP_DEFAULT_PASSWORD || "WALDOCREW";
 
     console.log(`🔍 Public password check: Current password is "${currentPassword}"`);
 
