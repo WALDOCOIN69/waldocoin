@@ -386,10 +386,10 @@ async function createAutomatedTrade() {
     const tradeTypes = ['BUY', 'SELL'];
     const tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
 
-    // Random amounts based on current activity
-    const baseAmount = volume < 50 ? 5 : Math.min(volume / 10, 20);
+    // Random amounts - smaller, sustainable trades
+    const baseAmount = Math.min(3, Math.max(1, volume / 20)); // 1-3 XRP base
     const randomMultiplier = 0.5 + Math.random(); // 0.5 to 1.5
-    const tradeAmount = Math.max(1, Math.floor(baseAmount * randomMultiplier));
+    const tradeAmount = Math.max(1, Math.min(5, Math.floor(baseAmount * randomMultiplier))); // Cap at 5 XRP
 
     let message = '';
 
@@ -455,7 +455,7 @@ async function createAutomatedTrade() {
         return;
       }
 
-      const waldoAmount = Math.floor(50000 + Math.random() * 100000);
+      const waldoAmount = Math.floor(15000 + Math.random() * 60000); // 15K-75K WLO (equivalent to 1-5 XRP)
       const xrpAmount = (waldoAmount * price) * (1 - PRICE_SPREAD / 100);
 
       // Safety check: prevent zero amounts
