@@ -304,7 +304,7 @@ bot.onText(/\/start/, (msg) => {
     `📈 /stats - Trading statistics\n` +
     `⚙️ /status - Bot status\n` +
     `🛑 /emergency - Emergency stop\n\n` +
-    `**Volume Generation**: Every 2-5 minutes\n` +
+    `**Volume Generation**: Every 30 minutes\n` +
     `**Daily Target**: ${process.env.MAX_DAILY_VOLUME_XRP || 150} XRP`;
 
   bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
@@ -337,8 +337,8 @@ bot.onText(/\/buy|\/sell|\/wallet|\/balance/, (msg) => {
 
 // ===== AUTOMATED MARKET MAKING =====
 if (MARKET_MAKING) {
-  // Create trading activity every 2-5 minutes
-  cron.schedule('*/2 * * * *', async () => {
+  // Create trading activity every 30 minutes
+  cron.schedule('*/30 * * * *', async () => {
     try {
       await createAutomatedTrade();
     } catch (error) {
