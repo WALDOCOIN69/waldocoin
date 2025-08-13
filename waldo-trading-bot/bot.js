@@ -206,7 +206,7 @@ async function sellWaldo(userAddress, waldoAmount) {
       throw new Error('Invalid price calculation - cannot execute trade');
     }
 
-    const xrpAmount = (waldoAmount * price) * (1 - PRICE_SPREAD / 100); // Apply spread
+    const xrpAmount = parseFloat(((waldoAmount * price) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Apply spread and round to 6 decimals
 
     // Safety check: prevent zero amounts
     if (!isFinite(xrpAmount) || xrpAmount <= 0) {
@@ -456,7 +456,7 @@ async function createAutomatedTrade() {
       }
 
       const waldoAmount = Math.floor(15000 + Math.random() * 30000); // 15K-45K WLO (equivalent to 1-3 XRP)
-      const xrpAmount = (waldoAmount * price) * (1 - PRICE_SPREAD / 100);
+      const xrpAmount = parseFloat(((waldoAmount * price) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Round to 6 decimals for XRPL
 
       // Safety check: prevent zero amounts
       if (!isFinite(xrpAmount) || xrpAmount <= 0) {
