@@ -60,6 +60,26 @@ redis.on('error', (err) => logger.error('Redis error:', err));
 redis.on('connect', () => logger.info('Connected to Redis'));
 await redis.connect();
 
+// Load existing daily volume from Redis
+try {
+  const existingVolume = await redis.get('waldo:daily_volume');
+  if (existingVolume) {
+    dailyVolume = parseFloat(existingVolume);
+    logger.info(`📊 Loaded existing daily volume: ${dailyVolume.toFixed(2)} XRP`);
+  }
+
+  // Initialize Redis keys if they don't exist
+  const tradesCount = await redis.lLen('waldo:trades');
+  logger.info(`📈 Current trades count: ${tradesCount}`);
+
+  // Set bot status
+  await redis.set('volume_bot:status', 'running');
+  await redis.set('volume_bot:last_startup', new Date().toISOString());
+
+} catch (error) {
+  logger.error('❌ Error loading daily volume:', error);
+}
+
 // ===== XRPL CONNECTION =====
 async function connectXRPL() {
   try {
@@ -267,6 +287,25 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   dailyVolume += xrpAmount;
   await redis.set('waldo:daily_volume', dailyVolume.toString());
 
+  // Store data for admin panel (volume bot controls)
+  await redis.lpush('volume_bot:recent_trades', JSON.stringify({
+    type: type,
+    amount: waldoAmount.toFixed(0),
+    currency: 'WLO',
+    price: xrpAmount.toFixed(4),
+    timestamp: new Date().toISOString(),
+    hash: trade.hash || null
+  }));
+
+  // Keep only last 50 trades for admin panel
+  await redis.ltrim('volume_bot:recent_trades', 0, 49);
+
+  // Update daily counters for admin panel
+  const today = new Date().toISOString().split('T')[0];
+  await redis.incr(`volume_bot:trades_${today}`);
+  await redis.set('volume_bot:trades_today', await redis.get(`volume_bot:trades_${today}`) || '0');
+  await redis.set('volume_bot:volume_24h', dailyVolume.toString());
+
   // Announce trade if enabled
   if (process.env.ANNOUNCE_TRADES === 'true' && CHANNEL_ID) {
     const message = `🔄 **WALDO Trade Alert**\n\n` +
@@ -374,6 +413,15 @@ if (MARKET_MAKING) {
       }
     });
   }
+
+  // Reset daily volume at midnight UTC
+  cron.schedule('0 0 * * *', async () => {
+    try {
+      await resetDailyStats();
+    } catch (error) {
+      logger.error('❌ Daily reset error:', error);
+    }
+  });
 }
 
 // ===== AUTOMATED TRADING FUNCTIONS =====
@@ -596,6 +644,48 @@ async function announceVolumeUpdate() {
 
   } catch (error) {
     logger.error('❌ Volume announcement failed:', error);
+  }
+}
+
+// ===== DAILY STATS RESET =====
+async function resetDailyStats() {
+  try {
+    // Archive yesterday's data
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateKey = yesterday.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    // Archive current stats
+    const currentVolume = await redis.get('waldo:daily_volume') || '0';
+    const currentTrades = await redis.lLen('waldo:trades');
+
+    await redis.set(`waldo:archive:${dateKey}:volume`, currentVolume);
+    await redis.set(`waldo:archive:${dateKey}:trades`, currentTrades.toString());
+
+    // Reset daily counters
+    dailyVolume = 0;
+    await redis.set('waldo:daily_volume', '0');
+
+    // Keep only last 100 trades (don't delete all history)
+    const totalTrades = await redis.lLen('waldo:trades');
+    if (totalTrades > 100) {
+      await redis.ltrim('waldo:trades', -100, -1); // Keep last 100
+    }
+
+    logger.info(`🔄 Daily stats reset - Archived ${currentVolume} XRP volume, ${currentTrades} trades`);
+
+    // Announce new day
+    if (CHANNEL_ID && !PERSONAL_MODE) {
+      const message = `🌅 **New Trading Day Started**\n\n` +
+        `📊 **Yesterday**: ${parseFloat(currentVolume).toFixed(2)} XRP volume, ${currentTrades} trades\n` +
+        `🎯 **Today**: Fresh start - let's build volume!\n\n` +
+        `🤖 **Market Making**: Active 24/7`;
+
+      await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
+    }
+
+  } catch (error) {
+    logger.error('❌ Daily reset failed:', error);
   }
 }
 
