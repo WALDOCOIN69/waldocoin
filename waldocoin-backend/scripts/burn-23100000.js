@@ -14,7 +14,7 @@ const XRPL_SERVER = process.env.XRPL_NODE || 'wss://xrplcluster.com';
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 // Correct WALDO distributor wallet that has the tokens to burn
 const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
-const DISTRIBUTOR_WALLET = 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC';
+const DISTRIBUTOR_WALLET = 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
 
 console.log('🔥 WALDOCOIN MASSIVE TOKEN BURN SCRIPT');
 console.log('=====================================');

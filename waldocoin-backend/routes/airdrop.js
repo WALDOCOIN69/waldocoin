@@ -44,7 +44,7 @@ router.post("/", async (req, res) => {
   await redis.expire(`ip_attempts:${userIP}`, 60 * 60); // 1 hour window
 
   console.log(`🔍 Airdrop request received:`, {
-    wallet: wallet ? `${wallet.slice(0,8)}...${wallet.slice(-6)}` : 'null',
+    wallet: wallet ? `${wallet.slice(0, 8)}...${wallet.slice(-6)}` : 'null',
     ip: userIP,
     hasPassword: !!password,
     passwordLength: password ? password.length : 0,
@@ -1303,7 +1303,7 @@ router.get("/admin-logs", async (req, res) => {
 
     // Filter out null entries and sort by timestamp
     const validLogs = logs.filter(log => log !== null)
-                          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({
       success: true,
@@ -1473,7 +1473,7 @@ router.get("/system-health", async (req, res) => {
         if (waldoLine) {
           walletBalance = parseFloat(waldoLine.balance);
           walletStatus = walletBalance > 1000000 ? 'healthy' :
-                        walletBalance > 100000 ? 'warning' : 'critical';
+            walletBalance > 100000 ? 'warning' : 'critical';
         }
       }
     } catch (error) {
@@ -1561,7 +1561,7 @@ router.get("/failed-transactions", async (req, res) => {
 
     // Filter out null entries and sort by timestamp
     const validFailedTxs = failedTxs.filter(tx => tx !== null)
-                                   .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({
       success: true,
@@ -1854,7 +1854,7 @@ router.get("/analytics", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            account: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL',
             ledger_index: 'validated'
           }]
         }),
@@ -2172,7 +2172,7 @@ router.get("/token-distribution", async (req, res) => {
     // Calculate concentration metrics
     const uniqueAmounts = Object.keys(amountCounts).length;
     const mostCommonAmount = Object.entries(amountCounts)
-      .sort(([,a], [,b]) => b - a)[0];
+      .sort(([, a], [, b]) => b - a)[0];
 
     // Get distributor wallet current balance
     let currentBalance = 'Unknown';
@@ -2183,7 +2183,7 @@ router.get("/token-distribution", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            account: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL',
             ledger_index: 'validated'
           }]
         }),
@@ -2495,7 +2495,7 @@ router.get("/advanced-reports", async (req, res) => {
     if (totalClaims > 900) riskFactors.push('Near capacity limit');
 
     const riskLevel = riskFactors.length === 0 ? 'low' :
-                     riskFactors.length <= 2 ? 'medium' : 'high';
+      riskFactors.length <= 2 ? 'medium' : 'high';
 
     // Performance benchmarks
     const benchmarks = {
