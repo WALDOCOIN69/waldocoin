@@ -5,8 +5,8 @@ import xrpl from 'xrpl';
 console.log('🔧 Creating XUMM-compatible wallet format...\n');
 
 // Use the existing wallet details
-const existingSecret = 'sEdS8s7ysxiLfag6uwoWHkTWb898HrS';
-const existingAddress = 'redTBHJBgeWLdiWsJrzsGcp4Sfnz3B4bV';
+const existingSecret = '';
+const existingAddress = '';
 
 try {
   // Create wallet from existing secret
