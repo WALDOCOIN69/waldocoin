@@ -503,7 +503,7 @@ async function createAutomatedTrade() {
         return;
       }
 
-      const waldoAmount = Math.floor(15000 + Math.random() * 30000); // 15K-45K WLO (equivalent to 1-3 XRP)
+      const waldoAmount = Math.floor(2000 + Math.random() * 3000); // 2K-5K WLO (much smaller for limited liquidity)
       const xrpAmount = parseFloat(((waldoAmount * price) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Round to 6 decimals for XRPL
 
       // Safety check: prevent zero amounts

@@ -4,7 +4,7 @@ import { redis } from "../redisClient.js";
 
 const router = express.Router();
 
-console.log("🧩 Loaded: routes/tokenomics.js");
+console.log("🧩 Loaded: routes/tokenomics.js - v2.0 (Telegram conflicts fixed)");
 
 // Fee structure constants (whitepaper compliant)
 const FEE_STRUCTURE = {

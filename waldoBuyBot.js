@@ -69,12 +69,17 @@ async function pollUpdates() {
     setTimeout(pollUpdates, 1000);
 }
 
-// Legacy bot object for compatibility (disabled)
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false });
+// Legacy bot object for compatibility (COMPLETELY DISABLED to prevent conflicts)
+// const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false });
 const client = new xrpl.Client(process.env.XRPL_ENDPOINT);
 const redis = new Redis(process.env.REDIS_URL);
 
 export async function startBuyBot() {
+    // DISABLED - Buy bot functionality moved to volume trading bot
+    console.log('🚫 Buy bot disabled to prevent Telegram conflicts');
+    console.log('✅ Using volume trading bot for all Telegram functionality');
+    return;
+
     // Test bot token with custom HTTP bot
     try {
         console.log('🔍 Testing bot token with custom HTTP bot...');

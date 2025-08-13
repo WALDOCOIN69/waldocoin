@@ -31,8 +31,8 @@ import topMemeRoute from "./routes/topmeme.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import activityRoute from "./routes/activity.js";
 
-// Import bot from project root (DISABLED - using volume trading bot only)
-// import { startBuyBot } from "../waldoBuyBot.js";
+// Buy bot completely removed - using volume trading bot only
+// No Telegram bot imports to prevent conflicts
 
 // ⚔️ Meme Battle Routes
 import battleStartRoute from "./routes/battle/start.js";
@@ -179,27 +179,10 @@ const startServer = async () => {
     console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET:", e.message);
   }
 
-  // 🤖 Telegram Webhook Route
+  // 🤖 Telegram Webhook Route - DISABLED (using polling instead)
   app.post("/webhook/telegram", express.json(), (req, res) => {
-    console.log("📨 Telegram webhook received");
-    console.log("📋 Full webhook body:", JSON.stringify(req.body, null, 2));
-    console.log("🔍 Global bot exists:", !!global.telegramBot);
-
-    // Process the webhook update
-    if (req.body && global.telegramBot) {
-      console.log("🔄 Processing webhook update for user:", req.body?.message?.from?.username || 'unknown');
-      try {
-        // Send the update to the bot for processing
-        global.telegramBot.processUpdate(req.body);
-        console.log("✅ Update sent to bot successfully");
-      } catch (error) {
-        console.error("❌ Error processing update:", error);
-      }
-    } else {
-      console.log("⚠️ No bot instance available to process update");
-      console.log("⚠️ req.body exists:", !!req.body);
-      console.log("⚠️ global.telegramBot exists:", !!global.telegramBot);
-    }
+    console.log("📨 Telegram webhook received but ignored (using polling)");
+    // Webhook disabled - volume bot uses polling instead
     res.sendStatus(200);
   });
 
@@ -208,52 +191,35 @@ const startServer = async () => {
     res.send("✅ WALDO backend is live at /api/*");
   });
 
-  // 🔍 Webhook Test Endpoint
-  // Telegram webhook endpoint
-  app.post("/webhook/telegram", async (req, res) => {
-    try {
-      console.log('📨 Webhook received:', JSON.stringify(req.body, null, 2));
-
-      if (req.body.message) {
-        console.log('💬 Processing webhook message...');
-        // We'll handle the message here
-        const msg = req.body.message;
-        console.log(`📩 Message from ${msg.from.username || msg.from.first_name}: ${msg.text}`);
-      }
-
-      res.status(200).send('OK');
-    } catch (error) {
-      console.error('❌ Webhook error:', error);
-      res.status(500).send('Error');
-    }
-  });
+  // 🔍 Webhook Test Endpoint - REMOVED DUPLICATE
+  // Duplicate webhook endpoint removed to prevent conflicts
 
   app.get("/webhook/telegram", (_, res) => {
     res.send("🤖 Telegram webhook endpoint is active. Bot global status: " + (global.telegramBot ? "✅ Available" : "❌ Not available"));
   });
 
-  // Set webhook endpoint
-  app.post('/set-webhook', async (req, res) => {
-    try {
-      console.log('🔗 Setting up Telegram webhook...');
-      const BOT_TOKEN = process.env.BOT_TOKEN;
-      const WEBHOOK_URL = 'https://waldocoin-backend-api.onrender.com/webhook/telegram';
+  // Set webhook endpoint - DISABLED (using polling instead)
+  // app.post('/set-webhook', async (req, res) => {
+  //   try {
+  //     console.log('🔗 Setting up Telegram webhook...');
+  //     const BOT_TOKEN = process.env.BOT_TOKEN;
+  //     const WEBHOOK_URL = 'https://waldocoin-backend-api.onrender.com/webhook/telegram';
 
-      const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: WEBHOOK_URL })
-      });
+  //     const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ url: WEBHOOK_URL })
+  //     });
 
-      const data = await response.json();
-      console.log('🔗 Webhook setup result:', data);
+  //     const data = await response.json();
+  //     console.log('🔗 Webhook setup result:', data);
 
-      res.json({ success: true, webhook: data });
-    } catch (error) {
-      console.error('❌ Webhook setup error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
+  //     res.json({ success: true, webhook: data });
+  //   } catch (error) {
+  //     console.error('❌ Webhook setup error:', error);
+  //     res.status(500).json({ error: error.message });
+  //   }
+  // });
 
   // Test endpoint to manually trigger bot
   app.post('/test-bot', async (req, res) => {
@@ -293,13 +259,12 @@ const startServer = async () => {
 
 
 
-// 🚀 Boot everything (server only - bot disabled to prevent conflicts)
+// 🚀 Boot everything (server only - buy bot completely removed)
 const boot = async () => {
   try {
-    // await startBuyBot(); // DISABLED - using volume trading bot instead
-    console.log("🤖 Buy Bot disabled - using volume trading bot only");
+    console.log("🤖 Buy Bot completely disabled - using volume trading bot only");
     await startServer();
-    console.log("🚀 Server started successfully");
+    console.log("🚀 Server started successfully (no Telegram bot conflicts)");
   } catch (err) {
     console.error("❌ Startup error:", err);
     process.exit(1);
