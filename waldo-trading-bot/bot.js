@@ -30,7 +30,7 @@ const PROFIT_CHECK_INTERVAL = parseInt(process.env.PROFIT_CHECK_INTERVAL) || 60;
 // ===== TRADING PARAMETERS =====
 const MIN_TRADE_XRP = parseFloat(process.env.MIN_TRADE_AMOUNT_XRP) || 1;
 const MAX_TRADE_XRP = parseFloat(process.env.MAX_TRADE_AMOUNT_XRP) || 100;
-const PRICE_SPREAD = parseFloat(process.env.PRICE_SPREAD_PERCENTAGE) || 2.5;
+const PRICE_SPREAD = parseFloat(process.env.PRICE_SPREAD_PERCENTAGE) || 0; // No spread for longevity
 const MARKET_MAKING = process.env.MARKET_MAKING_ENABLED === 'true';
 
 // ===== LOGGER SETUP =====
@@ -304,7 +304,7 @@ bot.onText(/\/start/, (msg) => {
     `📈 /stats - Trading statistics\n` +
     `⚙️ /status - Bot status\n` +
     `🛑 /emergency - Emergency stop\n\n` +
-    `**Volume Generation**: Every 30 minutes\n` +
+    `**Volume Generation**: Every 60 minutes\n` +
     `**Daily Target**: ${process.env.MAX_DAILY_VOLUME_XRP || 150} XRP`;
 
   bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
@@ -337,8 +337,8 @@ bot.onText(/\/buy|\/sell|\/wallet|\/balance/, (msg) => {
 
 // ===== AUTOMATED MARKET MAKING =====
 if (MARKET_MAKING) {
-  // Create trading activity every 30 minutes
-  cron.schedule('*/30 * * * *', async () => {
+  // Create trading activity every 60 minutes (1 hour)
+  cron.schedule('0 * * * *', async () => {
     try {
       await createAutomatedTrade();
     } catch (error) {
@@ -386,10 +386,10 @@ async function createAutomatedTrade() {
     const tradeTypes = ['BUY', 'SELL'];
     const tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
 
-    // Random amounts - smaller, sustainable trades
-    const baseAmount = Math.min(3, Math.max(1, volume / 20)); // 1-3 XRP base
-    const randomMultiplier = 0.5 + Math.random(); // 0.5 to 1.5
-    const tradeAmount = Math.max(1, Math.min(5, Math.floor(baseAmount * randomMultiplier))); // Cap at 5 XRP
+    // Random amounts - ultra-small for maximum longevity
+    const baseAmount = Math.min(2, Math.max(1, volume / 30)); // 1-2 XRP base
+    const randomMultiplier = 0.5 + Math.random() * 0.5; // 0.5 to 1.0
+    const tradeAmount = Math.max(1, Math.min(3, Math.floor(baseAmount * randomMultiplier))); // Cap at 3 XRP
 
     let message = '';
 
@@ -455,7 +455,7 @@ async function createAutomatedTrade() {
         return;
       }
 
-      const waldoAmount = Math.floor(15000 + Math.random() * 60000); // 15K-75K WLO (equivalent to 1-5 XRP)
+      const waldoAmount = Math.floor(15000 + Math.random() * 30000); // 15K-45K WLO (equivalent to 1-3 XRP)
       const xrpAmount = (waldoAmount * price) * (1 - PRICE_SPREAD / 100);
 
       // Safety check: prevent zero amounts
