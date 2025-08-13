@@ -107,6 +107,40 @@ async function getCurrentWaldoPrice() {
   }
 }
 
+// ===== BALANCE CHECKING FUNCTIONS =====
+async function getXRPBalance(address) {
+  try {
+    const accountInfo = await client.request({
+      command: 'account_info',
+      account: address,
+      ledger_index: 'validated'
+    });
+    return parseFloat(xrpl.dropsToXrp(accountInfo.result.account_data.Balance));
+  } catch (error) {
+    logger.error('❌ Error getting XRP balance:', error);
+    return 0;
+  }
+}
+
+async function getWLOBalance(address) {
+  try {
+    const accountLines = await client.request({
+      command: 'account_lines',
+      account: address,
+      ledger_index: 'validated'
+    });
+
+    const wloLine = accountLines.result.lines.find(
+      line => line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
+    );
+
+    return wloLine ? parseFloat(wloLine.balance) : 0;
+  } catch (error) {
+    logger.error('❌ Error getting WLO balance:', error);
+    return 0;
+  }
+}
+
 // ===== TRADING FUNCTIONS =====
 async function buyWaldo(userAddress, xrpAmount) {
   try {
@@ -391,8 +425,28 @@ async function createAutomatedTrade() {
           `📊 **Price**: ${price.toFixed(8)} XRP per WLO`;
       }
 
-      // Record the simulated trade
-      await recordTrade('BUY', 'personal', tradeAmount, waldoAmount, price);
+      // Check XRP balance before buying
+      const xrpBalance = await getXRPBalance(tradingWallet.classicAddress);
+      if (xrpBalance < tradeAmount + 1) { // +1 XRP for transaction fees
+        logger.warn(`⚠️ Insufficient XRP balance: ${xrpBalance} XRP, need ${tradeAmount + 1} XRP`);
+        return;
+      }
+
+      // Execute REAL BUY trade on XRPL
+      try {
+        logger.info(`🔄 Executing REAL BUY trade: ${tradeAmount} XRP for ${waldoAmount.toFixed(0)} WLO`);
+        const result = await buyWaldo(tradingWallet.classicAddress, tradeAmount);
+        if (result.success) {
+          logger.info(`✅ REAL BUY executed: ${result.hash}`);
+          message += `\n🔗 TX: ${result.hash}`;
+        } else {
+          logger.error(`❌ REAL BUY failed: ${result.error}`);
+          return; // Skip posting if trade failed
+        }
+      } catch (error) {
+        logger.error(`❌ REAL BUY error: ${error.message}`);
+        return; // Skip posting if trade failed
+      }
 
     } else {
       // Safety check: prevent zero or invalid price
@@ -427,8 +481,28 @@ async function createAutomatedTrade() {
           `📊 **Price**: ${price.toFixed(8)} XRP per WLO`;
       }
 
-      // Record the simulated trade
-      await recordTrade('SELL', 'personal', xrpAmount, waldoAmount, price);
+      // Check WLO balance before selling
+      const wloBalance = await getWLOBalance(tradingWallet.classicAddress);
+      if (wloBalance < waldoAmount) {
+        logger.warn(`⚠️ Insufficient WLO balance: ${wloBalance} WLO, need ${waldoAmount} WLO`);
+        return;
+      }
+
+      // Execute REAL SELL trade on XRPL
+      try {
+        logger.info(`🔄 Executing REAL SELL trade: ${waldoAmount} WLO for ${xrpAmount.toFixed(4)} XRP`);
+        const result = await sellWaldo(tradingWallet.classicAddress, waldoAmount);
+        if (result.success) {
+          logger.info(`✅ REAL SELL executed: ${result.hash}`);
+          message += `\n🔗 TX: ${result.hash}`;
+        } else {
+          logger.error(`❌ REAL SELL failed: ${result.error}`);
+          return; // Skip posting if trade failed
+        }
+      } catch (error) {
+        logger.error(`❌ REAL SELL error: ${error.message}`);
+        return; // Skip posting if trade failed
+      }
     }
 
     // Send as personal message to channel (looks like you posted it)
