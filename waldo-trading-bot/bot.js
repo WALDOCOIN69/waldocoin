@@ -107,23 +107,97 @@ async function connectXRPL() {
 // ===== PRICE FUNCTIONS =====
 async function getCurrentWaldoPrice() {
   try {
-    // Always use simulated price with realistic variations
-    // This prevents zero price errors and provides consistent trading
-    const basePrice = 0.00006400;
-    const variation = (Math.random() - 0.5) * 0.000001; // ±0.000001 variation
-    currentPrice = Math.max(basePrice + variation, 0.00006000); // Minimum price floor
+    // Get REAL-TIME price from XRPL DEX order book
+    const orderBookRequest = {
+      command: 'book_offers',
+      taker_gets: {
+        currency: 'XRP'
+      },
+      taker_pays: {
+        currency: WALDO_CURRENCY,
+        issuer: WALDO_ISSUER
+      },
+      limit: 10
+    };
 
-    // Ensure price never goes to zero
-    if (currentPrice <= 0 || isNaN(currentPrice) || !isFinite(currentPrice)) {
-      currentPrice = basePrice;
-      logger.warn('⚠️ Price calculation error, using base price');
+    const response = await client.request(orderBookRequest);
+
+    if (response.result && response.result.offers && response.result.offers.length > 0) {
+      // Get the best offer (lowest ask price)
+      const bestOffer = response.result.offers[0];
+      const takerGets = parseFloat(bestOffer.TakerGets) / 1000000; // Convert drops to XRP
+      const takerPays = parseFloat(bestOffer.TakerPays.value);
+
+      // Calculate price: XRP per WLO
+      const realPrice = takerGets / takerPays;
+
+      if (realPrice > 0 && isFinite(realPrice)) {
+        currentPrice = realPrice;
+        await redis.set('waldo:current_price', currentPrice.toString());
+        logger.info(`📊 Real-time price from XRPL DEX: ${currentPrice.toFixed(8)} XRP per WLO`);
+        return currentPrice;
+      }
     }
 
-    await redis.set('waldo:current_price', currentPrice.toString());
-    return currentPrice;
+    // Fallback: Try reverse order book (WLO -> XRP)
+    const reverseOrderBookRequest = {
+      command: 'book_offers',
+      taker_gets: {
+        currency: WALDO_CURRENCY,
+        issuer: WALDO_ISSUER
+      },
+      taker_pays: {
+        currency: 'XRP'
+      },
+      limit: 10
+    };
+
+    const reverseResponse = await client.request(reverseOrderBookRequest);
+
+    if (reverseResponse.result && reverseResponse.result.offers && reverseResponse.result.offers.length > 0) {
+      const bestOffer = reverseResponse.result.offers[0];
+      const takerGets = parseFloat(bestOffer.TakerGets.value);
+      const takerPays = parseFloat(bestOffer.TakerPays) / 1000000; // Convert drops to XRP
+
+      // Calculate price: XRP per WLO
+      const realPrice = takerPays / takerGets;
+
+      if (realPrice > 0 && isFinite(realPrice)) {
+        currentPrice = realPrice;
+        await redis.set('waldo:current_price', currentPrice.toString());
+        logger.info(`📊 Real-time price from XRPL DEX (reverse): ${currentPrice.toFixed(8)} XRP per WLO`);
+        return currentPrice;
+      }
+    }
+
+    // If no real price available, use last known price or fallback
+    const lastPrice = await redis.get('waldo:current_price');
+    if (lastPrice && parseFloat(lastPrice) > 0) {
+      currentPrice = parseFloat(lastPrice);
+      logger.warn('⚠️ Using last known price from Redis');
+      return currentPrice;
+    }
+
+    // Final fallback
+    const fallbackPrice = 0.00006400;
+    currentPrice = fallbackPrice;
+    logger.warn('⚠️ No market data available, using fallback price');
+    return fallbackPrice;
+
   } catch (error) {
-    logger.error('❌ Error getting WALDO price:', error);
-    return currentPrice || 0.00006400;
+    logger.error('❌ Real-time price fetch error:', error);
+
+    // Try to use last known price
+    const lastPrice = await redis.get('waldo:current_price');
+    if (lastPrice && parseFloat(lastPrice) > 0) {
+      currentPrice = parseFloat(lastPrice);
+      return currentPrice;
+    }
+
+    // Final fallback
+    const fallbackPrice = 0.00006400;
+    currentPrice = fallbackPrice;
+    return fallbackPrice;
   }
 }
 
@@ -376,10 +450,33 @@ bot.onText(/\/buy|\/sell|\/wallet|\/balance/, (msg) => {
 
 // ===== AUTOMATED MARKET MAKING =====
 if (MARKET_MAKING) {
-  // Create trading activity every 60 minutes (1 hour)
-  cron.schedule('0 * * * *', async () => {
+  // Ultra-conservative trading schedule - maximize fund longevity
+  cron.schedule('*/30 * * * *', async () => { // Check every 30 minutes
     try {
-      await createAutomatedTrade();
+      // Low chance to trade (15% chance each check = ~2-3 trades per day)
+      const shouldTrade = Math.random() < 0.15;
+
+      if (shouldTrade) {
+        // Rarely do multiple trades in sequence (3% chance only)
+        const multiTrade = Math.random() < 0.03;
+
+        await createAutomatedTrade();
+
+        if (multiTrade) {
+          // Wait 2-5 minutes then do another trade
+          const delay = (2 + Math.random() * 3) * 60 * 1000; // 2-5 minutes
+          setTimeout(async () => {
+            try {
+              await createAutomatedTrade();
+              logger.info('🎲 Multi-trade sequence executed');
+            } catch (error) {
+              logger.error('❌ Multi-trade error:', error);
+            }
+          }, delay);
+        }
+      } else {
+        logger.info('🎲 Skipping trade this cycle (randomized)');
+      }
     } catch (error) {
       logger.error('❌ Automated trading error:', error);
     }
@@ -430,14 +527,34 @@ async function createAutomatedTrade() {
     const price = await getCurrentWaldoPrice();
     const volume = dailyVolume;
 
-    // Generate random trade parameters
+    // Generate random trade parameters with enhanced randomization
     const tradeTypes = ['BUY', 'SELL'];
     const tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
 
-    // Random amounts - ultra-small for maximum longevity
-    const baseAmount = Math.min(2, Math.max(1, volume / 30)); // 1-2 XRP base
-    const randomMultiplier = 0.5 + Math.random() * 0.5; // 0.5 to 1.0
-    const tradeAmount = Math.max(1, Math.min(3, Math.floor(baseAmount * randomMultiplier))); // Cap at 3 XRP
+    // Ultra-conservative amounts - maximize fund longevity
+    const tradePatterns = [
+      { min: 0.5, max: 1.0, weight: 70 },  // Tiny trades (70% chance)
+      { min: 1.0, max: 1.5, weight: 25 },  // Small trades (25% chance)
+      { min: 1.5, max: 2.0, weight: 5 }    // Medium trades (5% chance only)
+    ];
+
+    // Weighted random selection
+    const random = Math.random() * 100;
+    let cumulative = 0;
+    let selectedPattern = tradePatterns[0];
+
+    for (const pattern of tradePatterns) {
+      cumulative += pattern.weight;
+      if (random <= cumulative) {
+        selectedPattern = pattern;
+        break;
+      }
+    }
+
+    // Calculate final trade amount with micro-randomization
+    const baseAmount = selectedPattern.min + Math.random() * (selectedPattern.max - selectedPattern.min);
+    const microVariation = 0.95 + Math.random() * 0.1; // ±5% micro-variation
+    const tradeAmount = parseFloat((baseAmount * microVariation).toFixed(2));
 
     let message = '';
 
