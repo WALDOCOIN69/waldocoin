@@ -165,7 +165,7 @@ router.get("/stats", async (_, res) => {
     // Get airdrop statistics (REAL DATA from Redis - like working airdrop status)
     const airdropClaimed = await redis.get("airdrop:count") || 0;
     const airdropRemaining = 1000 - parseInt(airdropClaimed);
-    const totalDistributed = parseInt(airdropClaimed) * 50000; // 50,000 WALDO per airdrop
+    const totalDistributed = parseInt(airdropClaimed) * 50000; // 50,000 WLO per airdrop
 
     console.log('📊 Simple tokenomics stats (like airdrop status):', {
       airdropClaimed: parseInt(airdropClaimed),
@@ -176,7 +176,7 @@ router.get("/stats", async (_, res) => {
     // Simple stats (no XRPL queries - like working airdrop status)
     const stats = {
       totalUsers: 159, // Static from XRPL Services
-      totalWaldoDistributed: totalDistributed, // Real calculation from airdrop data
+      totalWloDistributed: totalDistributed, // Real calculation from airdrop data
       activeBattles: 0, // Not live yet
       totalStaked: 0, // Not live yet
 
@@ -207,7 +207,7 @@ router.get("/stats", async (_, res) => {
       trustlines: {
         total: 159,
         withBalance: 132,
-        totalWaldoHeld: "2500000.00",
+        totalWloHeld: "2500000.00",
         dexOffers: 15,
         source: 'XRPL Services data'
       },
