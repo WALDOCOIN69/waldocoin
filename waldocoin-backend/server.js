@@ -59,6 +59,7 @@ import presaleLookup from "./routes/presaleLookup.js";
 // 🔐 Admin Routes
 import adminSendWaldoRoute from "./routes/admin/sendWaldo.js";
 import adminTrustlineRoute from "./routes/admin/trustline.js";
+import adminVolumeBotRoute from "./routes/admin/volumeBot.js";
 
 
 
@@ -128,6 +129,7 @@ const startServer = async () => {
   console.log("🔐 Registering admin routes...");
   app.use("/api/admin/send-waldo", adminSendWaldoRoute);
   app.use("/api/admin/trustline", adminTrustlineRoute);
+  app.use("/api/admin/volume-bot", adminVolumeBotRoute);
 
   // Note: User authentication is handled by XUMM login flow in /api/login
 
