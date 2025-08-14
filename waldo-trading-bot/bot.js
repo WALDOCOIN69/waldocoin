@@ -398,6 +398,9 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   await redis.set('volume_bot:trades_today', await redis.get(`volume_bot:trades_${today}`) || '0');
   await redis.set('volume_bot:volume_24h', dailyVolume.toString());
 
+  // Update last trade timestamp for admin panel
+  await redis.set('volume_bot:last_trade', new Date().toISOString());
+
   // Announce trade if enabled
   if (process.env.ANNOUNCE_TRADES === 'true' && CHANNEL_ID) {
     const message = `🔄 **WALDO Trade Alert**\n\n` +
@@ -579,6 +582,15 @@ if (MARKET_MAKING) {
       await resetDailyStats();
     } catch (error) {
       logger.error('❌ Daily reset error:', error);
+    }
+  });
+
+  // Update wallet balance every 10 minutes for admin panel
+  cron.schedule('*/10 * * * *', async () => {
+    try {
+      await updateWalletBalance();
+    } catch (error) {
+      logger.error('❌ Wallet balance update error:', error);
     }
   });
 }
@@ -870,6 +882,48 @@ async function announceVolumeUpdate() {
 
   } catch (error) {
     logger.error('❌ Volume announcement failed:', error);
+  }
+}
+
+// ===== WALLET BALANCE FUNCTIONS =====
+async function updateWalletBalance() {
+  try {
+    if (STEALTH_MODE) {
+      await redis.set('volume_bot:wallet_balance', 'Stealth Mode - Balance Hidden');
+      return;
+    }
+
+    // Get wallet balance from XRPL
+    const accountInfo = await client.request({
+      command: 'account_info',
+      account: TRADING_WALLET
+    });
+
+    const xrpBalance = parseFloat(accountInfo.result.account_data.Balance) / 1000000;
+
+    // Get WLO balance
+    const accountLines = await client.request({
+      command: 'account_lines',
+      account: TRADING_WALLET
+    });
+
+    let waldoBalance = 0;
+    if (accountLines.result.lines) {
+      const waldoLine = accountLines.result.lines.find(line =>
+        line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
+      );
+      if (waldoLine) {
+        waldoBalance = parseFloat(waldoLine.balance);
+      }
+    }
+
+    const balanceString = `${xrpBalance.toFixed(2)} XRP + ${waldoBalance.toFixed(0)} WLO`;
+    await redis.set('volume_bot:wallet_balance', balanceString);
+
+    logger.info(`💰 Wallet balance updated: ${balanceString}`);
+  } catch (error) {
+    logger.error('❌ Error updating wallet balance:', error);
+    await redis.set('volume_bot:wallet_balance', 'Error loading balance');
   }
 }
 
@@ -1217,6 +1271,9 @@ async function startBot() {
 
   await getCurrentWaldoPrice();
   logger.info(`💰 Initial WALDO price: ${currentPrice.toFixed(8)} XRP`);
+
+  // Update wallet balance for admin panel
+  await updateWalletBalance();
 
   logger.info('✅ WALDO Trading Bot is running!');
 }

@@ -36,8 +36,9 @@ router.get("/status", requireAdmin, async (req, res) => {
       spread: await redis.get('volume_bot:price_spread') || '0'
     };
 
-    // Mock wallet balance (in real implementation, query XRPL)
-    const balance = "65 XRP + 1,076,000 WLO";
+    // Get wallet balance from Redis cache or show loading
+    const cachedBalance = await redis.get('volume_bot:wallet_balance');
+    const balance = cachedBalance || "Loading wallet balance...";
 
     res.json({
       success: true,
