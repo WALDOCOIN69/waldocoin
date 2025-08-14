@@ -493,8 +493,18 @@ if (MARKET_MAKING) {
       // Set next trade time
       nextTradeTime = Date.now() + (intervalMinutes * 60 * 1000);
 
-      // Execute trade with probability based on frequency (more frequent = lower probability per check)
-      const tradeProbability = Math.min(0.8, 30 / intervalMinutes); // Scale probability inversely with frequency
+      // Check if we're in emergency price recovery mode
+      const currentPrice = await getCurrentWaldoPrice();
+      const emergencyMode = currentPrice < 0.00005;
+
+      // Execute trade with probability based on frequency and emergency mode
+      let tradeProbability = Math.min(0.8, 30 / intervalMinutes); // Scale probability inversely with frequency
+
+      if (emergencyMode) {
+        tradeProbability = Math.min(0.95, tradeProbability * 3); // 3x higher probability during emergency
+        logger.warn(`🚨 EMERGENCY MODE: Increased trade probability to ${(tradeProbability * 100).toFixed(1)}%`);
+      }
+
       const shouldTrade = Math.random() < tradeProbability;
 
       if (shouldTrade) {
@@ -575,19 +585,40 @@ async function createAutomatedTrade() {
       return;
     }
 
-    const price = await getCurrentWaldoPrice();
+    const currentPrice = await getCurrentWaldoPrice();
     const volume = dailyVolume;
 
-    // Generate random trade parameters with enhanced randomization
-    const tradeTypes = ['BUY', 'SELL'];
-    const tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
+    // EMERGENCY PRICE RECOVERY: BUY-ONLY MODE when price is too low
+    const emergencyPriceThreshold = 0.00005; // Below 0.00005 XRP = emergency
 
-    // Ultra-conservative amounts - maximize fund longevity
-    const tradePatterns = [
-      { min: 0.5, max: 1.0, weight: 70 },  // Tiny trades (70% chance)
-      { min: 1.0, max: 1.5, weight: 25 },  // Small trades (25% chance)
-      { min: 1.5, max: 2.0, weight: 5 }    // Medium trades (5% chance only)
-    ];
+    let tradeType;
+    if (currentPrice < emergencyPriceThreshold) {
+      tradeType = 'BUY'; // ONLY BUY when price is critically low
+      logger.warn(`🚨 EMERGENCY PRICE RECOVERY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - BUY ONLY MODE`);
+    } else {
+      // Normal trading when price is healthy
+      const tradeTypes = ['BUY', 'SELL'];
+      tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
+    }
+
+    // Dynamic trade amounts based on price emergency
+    let tradePatterns;
+    if (currentPrice < emergencyPriceThreshold) {
+      // EMERGENCY MODE: Larger, more aggressive buys to push price up
+      tradePatterns = [
+        { min: 2.0, max: 4.0, weight: 50 },  // Aggressive buys (50% chance)
+        { min: 4.0, max: 6.0, weight: 30 },  // Large buys (30% chance)
+        { min: 6.0, max: 10.0, weight: 20 }  // Massive buys (20% chance)
+      ];
+      logger.warn(`🚨 EMERGENCY TRADE AMOUNTS: Using aggressive buy sizes to recover price`);
+    } else {
+      // Normal conservative amounts
+      tradePatterns = [
+        { min: 0.5, max: 1.0, weight: 70 },  // Tiny trades (70% chance)
+        { min: 1.0, max: 1.5, weight: 25 },  // Small trades (25% chance)
+        { min: 1.5, max: 2.0, weight: 5 }    // Medium trades (5% chance only)
+      ];
+    }
 
     // Weighted random selection
     const random = Math.random() * 100;
