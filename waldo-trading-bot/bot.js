@@ -640,16 +640,16 @@ async function createAutomatedTrade() {
       }
     }
 
-    // Dynamic trade amounts based on price emergency
+    // Dynamic trade amounts based on price emergency - RESPECT 4 XRP LIMIT
     let tradePatterns;
     if (currentPrice < emergencyPriceThreshold) {
-      // EMERGENCY MODE: Larger, more aggressive buys to push price up
+      // EMERGENCY MODE: Larger buys but within 4 XRP limit
       tradePatterns = [
-        { min: 2.0, max: 4.0, weight: 50 },  // Aggressive buys (50% chance)
-        { min: 4.0, max: 6.0, weight: 30 },  // Large buys (30% chance)
-        { min: 6.0, max: 10.0, weight: 20 }  // Massive buys (20% chance)
+        { min: 2.0, max: 3.0, weight: 40 },  // Aggressive buys (40% chance)
+        { min: 3.0, max: 3.8, weight: 35 },  // Large buys (35% chance)
+        { min: 3.8, max: 4.0, weight: 25 }   // Maximum buys (25% chance)
       ];
-      logger.warn(`🚨 EMERGENCY TRADE AMOUNTS: Using aggressive buy sizes to recover price`);
+      logger.warn(`🚨 EMERGENCY TRADE AMOUNTS: Using aggressive buy sizes (2-4 XRP) to recover price`);
     } else {
       // Normal conservative amounts
       tradePatterns = [
@@ -675,7 +675,11 @@ async function createAutomatedTrade() {
     // Calculate final trade amount with micro-randomization
     const baseAmount = selectedPattern.min + Math.random() * (selectedPattern.max - selectedPattern.min);
     const microVariation = 0.95 + Math.random() * 0.1; // ±5% micro-variation
-    const tradeAmount = parseFloat((baseAmount * microVariation).toFixed(2));
+    let tradeAmount = parseFloat((baseAmount * microVariation).toFixed(2));
+
+    // SAFETY: Ensure trade amount is within limits (1-4 XRP)
+    tradeAmount = Math.max(1.0, Math.min(4.0, tradeAmount));
+    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (within 1-4 XRP limits)`);
 
     let message = '';
 
