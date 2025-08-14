@@ -27,7 +27,7 @@ router.get("/status", requireAdmin, async (req, res) => {
     const lastTrade = await redis.get('volume_bot:last_trade');
     const tradesCount = await redis.get('volume_bot:trades_today') || '0';
     const volume24h = await redis.get('volume_bot:volume_24h') || '0';
-    
+
     // Get current settings
     const settings = {
       frequency: await redis.get('volume_bot:frequency') || '60',
@@ -59,19 +59,23 @@ router.post("/settings", requireAdmin, async (req, res) => {
   try {
     const { frequency, minTradeSize, maxTradeSize, priceSpread } = req.body;
 
-    // Validate inputs
-    if (frequency && (frequency < 30 || frequency > 1440)) {
-      return res.status(400).json({ success: false, error: 'Frequency must be between 30 and 1440 minutes' });
+    // Validate inputs - support new frequency options
+    const validFrequencies = [5, 10, 15, 30, 45, 60, 120, 'random'];
+    if (frequency && !validFrequencies.includes(frequency) && !validFrequencies.includes(parseInt(frequency))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Frequency must be one of: 5, 10, 15, 30, 45, 60, 120 minutes, or "random"'
+      });
     }
-    
+
     if (minTradeSize && (minTradeSize < 0.1 || minTradeSize > 10)) {
       return res.status(400).json({ success: false, error: 'Min trade size must be between 0.1 and 10 XRP' });
     }
-    
+
     if (maxTradeSize && (maxTradeSize < 0.1 || maxTradeSize > 10)) {
       return res.status(400).json({ success: false, error: 'Max trade size must be between 0.1 and 10 XRP' });
     }
-    
+
     if (priceSpread && (priceSpread < 0 || priceSpread > 5)) {
       return res.status(400).json({ success: false, error: 'Price spread must be between 0 and 5%' });
     }
@@ -106,7 +110,7 @@ router.post("/pause", requireAdmin, async (req, res) => {
   try {
     await redis.set('volume_bot:status', 'paused');
     await redis.set('volume_bot:pause_timestamp', new Date().toISOString());
-    
+
     // Log the pause action
     await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -129,7 +133,7 @@ router.post("/resume", requireAdmin, async (req, res) => {
   try {
     await redis.set('volume_bot:status', 'running');
     await redis.del('volume_bot:pause_timestamp');
-    
+
     // Log the resume action
     await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -152,7 +156,7 @@ router.post("/restart", requireAdmin, async (req, res) => {
   try {
     await redis.set('volume_bot:status', 'restarting');
     await redis.set('volume_bot:restart_timestamp', new Date().toISOString());
-    
+
     // Log the restart action
     await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -180,7 +184,7 @@ router.post("/restart", requireAdmin, async (req, res) => {
 router.get("/trades", requireAdmin, async (req, res) => {
   try {
     const trades = await redis.lrange('volume_bot:recent_trades', 0, 19); // Get last 20 trades
-    
+
     const parsedTrades = trades.map(trade => {
       try {
         return JSON.parse(trade);
@@ -204,7 +208,7 @@ router.post("/emergency-stop", requireAdmin, async (req, res) => {
   try {
     await redis.set('volume_bot:status', 'emergency_stopped');
     await redis.set('volume_bot:emergency_stop_timestamp', new Date().toISOString());
-    
+
     // Log the emergency stop
     await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -227,9 +231,9 @@ router.post("/withdraw", requireAdmin, async (req, res) => {
   try {
     // In real implementation, this would execute XRPL transactions
     // For now, we'll simulate the withdrawal
-    
+
     await redis.set('volume_bot:status', 'withdrawing_funds');
-    
+
     // Log the withdrawal
     await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),

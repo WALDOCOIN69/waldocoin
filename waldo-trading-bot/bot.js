@@ -72,9 +72,18 @@ try {
   const tradesCount = await redis.lLen('waldo:trades');
   logger.info(`📈 Current trades count: ${tradesCount}`);
 
-  // Set bot status
+  // Set bot status and initialize default settings
   await redis.set('volume_bot:status', 'running');
   await redis.set('volume_bot:last_startup', new Date().toISOString());
+
+  // Initialize default frequency if not set
+  const currentFrequency = await redis.get('volume_bot:frequency');
+  if (!currentFrequency) {
+    await redis.set('volume_bot:frequency', '30'); // Default to 30 minutes
+    logger.info('📅 Initialized default trading frequency: 30 minutes');
+  } else {
+    logger.info(`📅 Current trading frequency: ${currentFrequency === 'random' ? 'Random (5-45 min)' : currentFrequency + ' minutes'}`);
+  }
 
 } catch (error) {
   logger.error('❌ Error loading daily volume:', error);
@@ -450,13 +459,47 @@ bot.onText(/\/buy|\/sell|\/wallet|\/balance/, (msg) => {
 
 // ===== AUTOMATED MARKET MAKING =====
 if (MARKET_MAKING) {
-  // Ultra-conservative trading schedule - maximize fund longevity
-  cron.schedule('*/30 * * * *', async () => { // Check every 30 minutes
+  // Dynamic trading schedule based on admin settings
+  let nextTradeTime = Date.now();
+
+  // Check for trades every minute and execute based on frequency settings
+  cron.schedule('* * * * *', async () => { // Check every minute
     try {
-      // Low chance to trade (15% chance each check = ~2-3 trades per day)
-      const shouldTrade = Math.random() < 0.15;
+      // Check admin control status first
+      const botStatus = await redis.get('volume_bot:status') || 'running';
+
+      if (botStatus === 'paused' || botStatus === 'emergency_stopped') {
+        logger.info(`🛑 Trading paused by admin: ${botStatus}`);
+        return;
+      }
+
+      // Check if it's time to trade based on frequency setting
+      if (Date.now() < nextTradeTime) {
+        return; // Not time yet
+      }
+
+      // Get frequency setting from Redis (default to 30 minutes)
+      const frequencySetting = await redis.get('volume_bot:frequency') || '30';
+
+      let intervalMinutes;
+      if (frequencySetting === 'random') {
+        // Random interval between 5-45 minutes
+        intervalMinutes = 5 + Math.random() * 40; // 5-45 minutes
+        logger.info(`🎲 Random trading interval: ${intervalMinutes.toFixed(1)} minutes`);
+      } else {
+        intervalMinutes = parseInt(frequencySetting);
+      }
+
+      // Set next trade time
+      nextTradeTime = Date.now() + (intervalMinutes * 60 * 1000);
+
+      // Execute trade with probability based on frequency (more frequent = lower probability per check)
+      const tradeProbability = Math.min(0.8, 30 / intervalMinutes); // Scale probability inversely with frequency
+      const shouldTrade = Math.random() < tradeProbability;
 
       if (shouldTrade) {
+        logger.info(`⏰ Executing trade (Frequency: ${frequencySetting === 'random' ? 'Random' : frequencySetting + 'min'}, Next: ${new Date(nextTradeTime).toLocaleTimeString()})`);
+
         // Rarely do multiple trades in sequence (3% chance only)
         const multiTrade = Math.random() < 0.03;
 
@@ -475,7 +518,7 @@ if (MARKET_MAKING) {
           }, delay);
         }
       } else {
-        logger.info('🎲 Skipping trade this cycle (randomized)');
+        logger.info(`⏳ Next trade scheduled for: ${new Date(nextTradeTime).toLocaleTimeString()} (${frequencySetting === 'random' ? 'Random' : frequencySetting + 'min'} interval)`);
       }
     } catch (error) {
       logger.error('❌ Automated trading error:', error);
@@ -524,6 +567,14 @@ if (MARKET_MAKING) {
 // ===== AUTOMATED TRADING FUNCTIONS =====
 async function createAutomatedTrade() {
   try {
+    // Double-check admin control status before executing trade
+    const botStatus = await redis.get('volume_bot:status') || 'running';
+
+    if (botStatus === 'paused' || botStatus === 'emergency_stopped') {
+      logger.info(`🛑 Trade blocked by admin control: ${botStatus}`);
+      return;
+    }
+
     const price = await getCurrentWaldoPrice();
     const volume = dailyVolume;
 
