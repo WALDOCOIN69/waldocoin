@@ -681,12 +681,12 @@ async function createAutomatedTrade() {
 
     if (tradeType === 'BUY') {
       // Safety check: prevent zero or invalid price
-      if (price <= 0 || isNaN(price) || !isFinite(price)) {
+      if (currentPrice <= 0 || isNaN(currentPrice) || !isFinite(currentPrice)) {
         logger.error('❌ Invalid price for automated trade, skipping');
         return;
       }
 
-      const waldoAmount = (tradeAmount / price) * (1 - PRICE_SPREAD / 100);
+      const waldoAmount = (tradeAmount / currentPrice) * (1 - PRICE_SPREAD / 100);
 
       // Safety check: prevent infinite amounts
       if (!isFinite(waldoAmount) || waldoAmount <= 0) {
@@ -698,7 +698,7 @@ async function createAutomatedTrade() {
         // Natural looking personal message
         const naturalMessages = [
           `Just picked up ${waldoAmount.toFixed(0)} more WALDO for ${tradeAmount} XRP 💰`,
-          `Added ${waldoAmount.toFixed(0)} WLO to my bag at ${price.toFixed(8)} XRP 🎯`,
+          `Added ${waldoAmount.toFixed(0)} WLO to my bag at ${currentPrice.toFixed(8)} XRP 🎯`,
           `Bought the dip - ${tradeAmount} XRP worth of WALDO 📈`,
           `Loading up on WALDO - ${waldoAmount.toFixed(0)} WLO secured 🚀`,
           `Another ${tradeAmount} XRP into WALDO, feeling bullish 💪`
@@ -708,7 +708,7 @@ async function createAutomatedTrade() {
         message = `🟢 **Buy Order**\n\n` +
           `💰 **Purchased**: ${waldoAmount.toFixed(0)} WLO\n` +
           `💸 **Cost**: ${tradeAmount} XRP\n` +
-          `📊 **Price**: ${price.toFixed(8)} XRP per WLO`;
+          `📊 **Price**: ${currentPrice.toFixed(8)} XRP per WLO`;
       }
 
       // Check XRP balance before buying
@@ -736,13 +736,13 @@ async function createAutomatedTrade() {
 
     } else {
       // Safety check: prevent zero or invalid price
-      if (price <= 0 || isNaN(price) || !isFinite(price)) {
+      if (currentPrice <= 0 || isNaN(currentPrice) || !isFinite(currentPrice)) {
         logger.error('❌ Invalid price for automated trade, skipping');
         return;
       }
 
       const waldoAmount = Math.floor(2000 + Math.random() * 3000); // 2K-5K WLO (much smaller for limited liquidity)
-      const xrpAmount = parseFloat(((waldoAmount * price) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Round to 6 decimals for XRPL
+      const xrpAmount = parseFloat(((waldoAmount * currentPrice) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Round to 6 decimals for XRPL
 
       // Safety check: prevent zero amounts
       if (!isFinite(xrpAmount) || xrpAmount <= 0) {
@@ -755,7 +755,7 @@ async function createAutomatedTrade() {
         const naturalMessages = [
           `Took some profits - sold ${waldoAmount.toFixed(0)} WALDO for ${xrpAmount.toFixed(2)} XRP 💸`,
           `Trimmed my WALDO position, ${xrpAmount.toFixed(2)} XRP secured 📊`,
-          `Sold ${waldoAmount.toFixed(0)} WLO at good price ${price.toFixed(8)} XRP 🎯`,
+          `Sold ${waldoAmount.toFixed(0)} WLO at good price ${currentPrice.toFixed(8)} XRP 🎯`,
           `Taking profits on WALDO - ${xrpAmount.toFixed(2)} XRP out 💰`,
           `Reduced WALDO holdings by ${waldoAmount.toFixed(0)} tokens 📉`
         ];
@@ -764,7 +764,7 @@ async function createAutomatedTrade() {
         message = `🔴 **Sell Order**\n\n` +
           `💸 **Sold**: ${waldoAmount.toFixed(0)} WLO\n` +
           `💰 **Received**: ${xrpAmount.toFixed(4)} XRP\n` +
-          `📊 **Price**: ${price.toFixed(8)} XRP per WLO`;
+          `📊 **Price**: ${currentPrice.toFixed(8)} XRP per WLO`;
       }
 
       // Check WLO balance before selling
@@ -894,9 +894,14 @@ async function updateWalletBalance() {
     }
 
     // Get wallet balance from XRPL
+    if (!tradingWallet || !client.isConnected()) {
+      await redis.set('volume_bot:wallet_balance', 'Wallet not connected');
+      return;
+    }
+
     const accountInfo = await client.request({
       command: 'account_info',
-      account: TRADING_WALLET
+      account: tradingWallet.classicAddress
     });
 
     const xrpBalance = parseFloat(accountInfo.result.account_data.Balance) / 1000000;
@@ -904,7 +909,7 @@ async function updateWalletBalance() {
     // Get WLO balance
     const accountLines = await client.request({
       command: 'account_lines',
-      account: TRADING_WALLET
+      account: tradingWallet.classicAddress
     });
 
     let waldoBalance = 0;
