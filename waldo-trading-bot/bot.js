@@ -85,6 +85,15 @@ try {
     logger.info(`📅 Current trading frequency: ${currentFrequency === 'random' ? 'Random (5-45 min)' : currentFrequency + ' minutes'}`);
   }
 
+  // Initialize default trading mode if not set
+  const currentTradingMode = await redis.get('volume_bot:trading_mode');
+  if (!currentTradingMode) {
+    await redis.set('volume_bot:trading_mode', 'automated'); // Default to automated mode
+    logger.info('🎛️ Initialized default trading mode: Automated');
+  } else {
+    logger.info(`🎛️ Current trading mode: ${currentTradingMode}`);
+  }
+
 } catch (error) {
   logger.error('❌ Error loading daily volume:', error);
 }
@@ -588,17 +597,35 @@ async function createAutomatedTrade() {
     const currentPrice = await getCurrentWaldoPrice();
     const volume = dailyVolume;
 
-    // EMERGENCY PRICE RECOVERY: BUY-ONLY MODE when price is too low
+    // Get admin-controlled trading mode
+    const tradingMode = await redis.get('volume_bot:trading_mode') || 'automated';
     const emergencyPriceThreshold = 0.00005; // Below 0.00005 XRP = emergency
 
     let tradeType;
-    if (currentPrice < emergencyPriceThreshold) {
-      tradeType = 'BUY'; // ONLY BUY when price is critically low
-      logger.warn(`🚨 EMERGENCY PRICE RECOVERY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - BUY ONLY MODE`);
-    } else {
-      // Normal trading when price is healthy
+
+    // Determine trade type based on admin mode and price conditions
+    if (tradingMode === 'buy_only') {
+      tradeType = 'BUY';
+      logger.info(`🎛️ ADMIN MODE: Buy Only - executing BUY trade`);
+    } else if (tradingMode === 'sell_only') {
+      tradeType = 'SELL';
+      logger.info(`🎛️ ADMIN MODE: Sell Only - executing SELL trade`);
+    } else if (tradingMode === 'buy_sell') {
+      // Manual buy & sell mode - random selection
       const tradeTypes = ['BUY', 'SELL'];
       tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
+      logger.info(`🎛️ ADMIN MODE: Buy & Sell - executing ${tradeType} trade`);
+    } else if (tradingMode === 'automated') {
+      // Automated mode with emergency detection
+      if (currentPrice < emergencyPriceThreshold) {
+        tradeType = 'BUY'; // ONLY BUY when price is critically low
+        logger.warn(`🚨 AUTOMATED EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - BUY ONLY MODE`);
+      } else {
+        // Normal trading when price is healthy
+        const tradeTypes = ['BUY', 'SELL'];
+        tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
+        logger.info(`🤖 AUTOMATED MODE: Normal trading - executing ${tradeType} trade`);
+      }
     }
 
     // Dynamic trade amounts based on price emergency

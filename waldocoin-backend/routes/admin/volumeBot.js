@@ -57,7 +57,7 @@ router.get("/status", requireAdmin, async (req, res) => {
 // POST /api/admin/volume-bot/settings - Update bot settings
 router.post("/settings", requireAdmin, async (req, res) => {
   try {
-    const { frequency, minTradeSize, maxTradeSize, priceSpread } = req.body;
+    const { frequency, tradingMode, minTradeSize, maxTradeSize, priceSpread } = req.body;
 
     // Validate inputs - support new frequency options
     const validFrequencies = [5, 10, 15, 30, 45, 60, 120, 'random'];
@@ -65,6 +65,15 @@ router.post("/settings", requireAdmin, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Frequency must be one of: 5, 10, 15, 30, 45, 60, 120 minutes, or "random"'
+      });
+    }
+
+    // Validate trading mode
+    const validTradingModes = ['automated', 'buy_only', 'buy_sell', 'sell_only'];
+    if (tradingMode && !validTradingModes.includes(tradingMode)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Trading mode must be one of: automated, buy_only, buy_sell, sell_only'
       });
     }
 
@@ -82,6 +91,7 @@ router.post("/settings", requireAdmin, async (req, res) => {
 
     // Update settings in Redis
     if (frequency) await redis.set('volume_bot:frequency', frequency.toString());
+    if (tradingMode) await redis.set('volume_bot:trading_mode', tradingMode);
     if (minTradeSize) await redis.set('volume_bot:min_trade_size', minTradeSize.toString());
     if (maxTradeSize) await redis.set('volume_bot:max_trade_size', maxTradeSize.toString());
     if (priceSpread !== undefined) await redis.set('volume_bot:price_spread', priceSpread.toString());

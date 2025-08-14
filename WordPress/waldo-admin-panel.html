@@ -2456,6 +2456,19 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">Trading Mode</label>
+            <select id="tradingMode" class="form-control">
+              <option value="automated" selected>Automated Mode (Smart Emergency Detection)</option>
+              <option value="buy_only">Buy Only Mode</option>
+              <option value="buy_sell">Buy & Sell Mode</option>
+              <option value="sell_only">Sell Only Mode</option>
+            </select>
+            <small class="help-text">Control what types of trades the bot executes</small>
+          </div>
+
+
+
+          <div class="form-group">
             <label class="form-label">Trade Size Range (XRP)</label>
             <div style="display: flex; gap: 10px;">
               <input type="number" id="minTradeSize" class="form-control" placeholder="1" min="1" max="10" step="0.1">
@@ -7669,6 +7682,7 @@ This action cannot be undone. Continue?`;
 
     async function updateBotSettings() {
       const frequency = document.getElementById('tradingFrequency').value;
+      const tradingMode = document.getElementById('tradingMode').value;
       const minSize = document.getElementById('minTradeSize').value;
       const maxSize = document.getElementById('maxTradeSize').value;
       const spread = document.getElementById('priceSpread').value;
@@ -7686,6 +7700,7 @@ This action cannot be undone. Continue?`;
           },
           body: JSON.stringify({
             frequency: parseInt(frequency),
+            tradingMode: tradingMode,
             minTradeSize: parseFloat(minSize) || 1,
             maxTradeSize: parseFloat(maxSize) || 3,
             priceSpread: parseFloat(spread) || 0
