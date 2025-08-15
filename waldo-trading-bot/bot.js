@@ -831,12 +831,13 @@ async function createAutomatedTrade() {
         return;
       }
 
-      const waldoAmount = Math.floor(2000 + Math.random() * 3000); // 2K-5K WLO (much smaller for limited liquidity)
-      const xrpAmount = parseFloat(((waldoAmount * currentPrice) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Round to 6 decimals for XRPL
+      // Use admin-selected tradeAmount as target XRP to receive
+      const xrpAmount = parseFloat(tradeAmount.toFixed(6));
+      const waldoAmount = Math.max(1, Math.floor(xrpAmount / (currentPrice * (1 - PRICE_SPREAD / 100))));
 
       // Safety check: prevent zero amounts
-      if (!isFinite(xrpAmount) || xrpAmount <= 0) {
-        logger.error('❌ Invalid XRP amount calculation, skipping trade');
+      if (!isFinite(xrpAmount) || xrpAmount <= 0 || !isFinite(waldoAmount) || waldoAmount <= 0) {
+        logger.error('❌ Invalid SELL amount calculation, skipping trade');
         return;
       }
 
