@@ -734,10 +734,26 @@ async function createAutomatedTrade() {
       tradeType = 'SELL';
       logger.info(`🎛️ ADMIN MODE: Sell Only - executing SELL trade`);
     } else if (tradingMode === 'buy_sell') {
-      // Manual buy & sell mode - random selection
-      const tradeTypes = ['BUY', 'SELL'];
-      tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
-      logger.info(`🎛️ ADMIN MODE: Buy & Sell - executing ${tradeType} trade`);
+      // Balanced buy & sell mode - favor the side with fewer recent trades
+      let buyCount = 0, sellCount = 0;
+      try {
+        const recent = await redis.lRange('volume_bot:recent_trades', 0, 49);
+        for (const item of recent) {
+          try {
+            const t = JSON.parse(item);
+            if (t && t.type === 'BUY') buyCount++;
+            else if (t && t.type === 'SELL') sellCount++;
+          } catch { }
+        }
+      } catch (e) {
+        logger.warn('⚠️ Could not read recent trades for balancing, falling back to random');
+      }
+      if (buyCount <= sellCount) {
+        tradeType = 'BUY';
+      } else {
+        tradeType = 'SELL';
+      }
+      logger.info(`🎛️ ADMIN MODE: Buy & Sell (balanced) - executing ${tradeType} trade (last50 BUY=${buyCount}, SELL=${sellCount})`);
     } else if (tradingMode === 'automated') {
       // Automated mode with emergency detection
       if (currentPrice < emergencyPriceThreshold) {
