@@ -313,9 +313,15 @@ async function getWLOBalance(address) {
 // ===== TRADING FUNCTIONS =====
 async function buyWaldo(userAddress, xrpAmount) {
   try {
-    // Validate provided amount against configured limits
-    if (xrpAmount < MIN_TRADE_XRP || xrpAmount > MAX_TRADE_XRP) {
-      throw new Error(`Trade amount must be between ${MIN_TRADE_XRP} and ${MAX_TRADE_XRP} XRP`);
+    // Read admin-configured min/max from Redis (fallback to defaults)
+    const adminMinRaw = await redis.get('volume_bot:min_trade_size');
+    const adminMaxRaw = await redis.get('volume_bot:max_trade_size');
+    const effectiveMin = adminMinRaw ? parseFloat(adminMinRaw) : MIN_TRADE_XRP;
+    const effectiveMax = adminMaxRaw ? parseFloat(adminMaxRaw) : MAX_TRADE_XRP;
+
+    // Validate provided amount against effective limits (admin overrides defaults)
+    if (xrpAmount < effectiveMin || xrpAmount > effectiveMax) {
+      throw new Error(`Trade amount must be between ${effectiveMin} and ${effectiveMax} XRP`);
     }
 
     const price = await getCurrentWaldoPrice();
