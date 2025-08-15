@@ -130,6 +130,55 @@ async function connectXRPL() {
   }
 }
 
+// Ensure the trading wallet has a trustline to the WALDO issuer (WLO)
+async function ensureWLOTrustline() {
+  try {
+    if (STEALTH_MODE) return;
+    if (!tradingWallet || !client.isConnected()) return;
+
+    // Check existing trustlines
+    const lines = await client.request({
+      command: 'account_lines',
+      account: tradingWallet.classicAddress,
+      ledger_index: 'validated'
+    });
+
+    const existing = (lines.result.lines || []).find(
+      l => l.currency === WALDO_CURRENCY && l.account === WALDO_ISSUER
+    );
+
+    if (existing) {
+      // Already have a trustline; optionally could raise limit if needed
+      return true;
+    }
+
+    // Create trustline with a generous limit so trades don't get blocked by trust limit
+    const trustSet = {
+      TransactionType: 'TrustSet',
+      Account: tradingWallet.classicAddress,
+      LimitAmount: {
+        currency: WALDO_CURRENCY,
+        issuer: WALDO_ISSUER,
+        value: '100000000' // 100M WLO
+      }
+    };
+
+    const prepared = await client.autofill(trustSet);
+    const signed = tradingWallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    if (result.result?.meta?.TransactionResult === 'tesSUCCESS') {
+      logger.info('✅ WLO trustline established');
+      return true;
+    }
+
+    throw new Error(`TrustSet failed with code ${result.result?.meta?.TransactionResult}`);
+  } catch (e) {
+    logger.warn('⚠️ Trustline setup error:', e);
+  }
+}
+
+
 // ===== PRICE FUNCTIONS =====
 async function getCurrentWaldoPrice() {
   try {
