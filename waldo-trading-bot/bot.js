@@ -6,6 +6,8 @@ import { createClient } from 'redis';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import winston from 'winston';
+import fetch from 'node-fetch';
+
 
 dotenv.config();
 
@@ -254,28 +256,48 @@ async function getCurrentWaldoPrice() {
     }
 
     // Apply optional admin guardrails for sanity (min/max valid price)
+    const minGuardRaw = await redis.get('volume_bot:min_valid_price');
+    const maxGuardRaw = await redis.get('volume_bot:max_valid_price');
+    const minGuard = minGuardRaw ? parseFloat(minGuardRaw) : 0;
+    const maxGuard = maxGuardRaw ? parseFloat(maxGuardRaw) : 0;
+
+    const applyGuardrails = (p) => {
+      let guarded = p;
+      if (minGuard && guarded < minGuard) guarded = minGuard;
+      if (maxGuard && guarded > maxGuard) guarded = maxGuard;
+      return guarded;
+    };
+
     if (selected && isFinite(selected) && selected > 0) {
-      const minGuardRaw = await redis.get('volume_bot:min_valid_price');
-      const maxGuardRaw = await redis.get('volume_bot:max_valid_price');
-      const minGuard = minGuardRaw ? parseFloat(minGuardRaw) : 0;
-      const maxGuard = maxGuardRaw ? parseFloat(maxGuardRaw) : 0;
+      const guarded = applyGuardrails(selected);
+      currentPrice = guarded;
+      await redis.set('waldo:current_price', currentPrice.toString());
+      logger.info(`📊 Real-time price selected: ${currentPrice.toFixed(8)} XRP per WLO`);
+      return currentPrice;
+    }
 
-      let guarded = selected;
-      if (minGuard && guarded < minGuard) {
-        logger.warn(`⚠️ Price ${guarded} below min_valid_price ${minGuard} - applying guardrail`);
-        guarded = minGuard;
+    // External price fallback (Magnetic API or configured URL)
+    try {
+      const apiUrl = (await redis.get('volume_bot:external_price_url')) || process.env.EXTERNAL_PRICE_URL || '';
+      if (apiUrl) {
+        const resp = await fetch(apiUrl);
+        if (resp.ok) {
+          const data = await resp.json();
+          // Expect data.price in XRP per WLO (configure your endpoint accordingly)
+          const p = parseFloat(data.price);
+          if (p > 0 && isFinite(p)) {
+            const guarded = applyGuardrails(p);
+            currentPrice = guarded;
+            await redis.set('waldo:current_price', currentPrice.toString());
+            logger.info(`📊 External price selected: ${currentPrice.toFixed(8)} XRP per WLO`);
+            return currentPrice;
+          }
+        } else {
+          logger.warn(`⚠️ External price fetch failed: HTTP ${resp.status}`);
+        }
       }
-      if (maxGuard && guarded > maxGuard) {
-        logger.warn(`⚠️ Price ${guarded} above max_valid_price ${maxGuard} - applying guardrail`);
-        guarded = maxGuard;
-      }
-
-      if (guarded > 0 && isFinite(guarded)) {
-        currentPrice = guarded;
-        await redis.set('waldo:current_price', currentPrice.toString());
-        logger.info(`📊 Real-time price selected: ${currentPrice.toFixed(8)} XRP per WLO`);
-        return currentPrice;
-      }
+    } catch (e) {
+      logger.warn('⚠️ External price fetch error:', e);
     }
 
     // If no real price available, use last known price or fallback
