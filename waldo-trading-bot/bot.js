@@ -380,17 +380,36 @@ async function buyWaldo(userAddress, xrpAmount) {
 
     // Try main amount, then smaller fallbacks within >= MIN_TRADE_XRP
     try {
-      return await attempt(xrpAmount, 0.85);
+      return await attempt(xrpAmount, 0.50); // accept 50% of expected WLO on first try
     } catch (e1) {
       if ((e1.message || '').includes('tecPATH_PARTIAL')) {
         logger.warn('⚠️ tecPATH_PARTIAL on buy - retrying with smaller amount and lower DeliverMin');
-        const mid = Math.max(MIN_TRADE_XRP, parseFloat((xrpAmount * 0.75).toFixed(2)));
+
+        // 1) Try ~75% of the original, clamped by admin min
+        const mid = Math.max(effectiveMin, parseFloat((xrpAmount * 0.75).toFixed(2)));
         if (mid < xrpAmount) {
-          try { return await attempt(mid, 0.80); } catch (e2) { }
+          try { return await attempt(mid, 0.25); } catch (e2) { }
         }
-        const min = Math.max(MIN_TRADE_XRP, 1.0);
-        if (min < xrpAmount) {
-          return await attempt(min, 0.75);
+
+        // 2) Try ~50% of the original, clamped by admin min
+        const half = Math.max(effectiveMin, parseFloat((xrpAmount * 0.50).toFixed(2)));
+        if (half < xrpAmount) {
+          try { return await attempt(half, 0.15); } catch (e3) { }
+        }
+
+        // 3) If large enough, split into two sequential half orders (best chance on thin books)
+        if (xrpAmount >= 2 * effectiveMin) {
+          const part = Math.max(effectiveMin, parseFloat((xrpAmount / 2).toFixed(2)));
+          try {
+            const first = await attempt(part, 0.15);
+            try { await attempt(part, 0.15); } catch (_) { }
+            return first;
+          } catch (_) { }
+        }
+
+        // 4) Final attempt with admin minimum and very low DeliverMin
+        if (effectiveMin < xrpAmount) {
+          return await attempt(effectiveMin, 0.05);
         }
       }
       throw e1;
