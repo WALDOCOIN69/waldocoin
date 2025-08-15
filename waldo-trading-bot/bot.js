@@ -126,6 +126,7 @@ async function connectXRPL() {
     await client.connect();
     tradingWallet = xrpl.Wallet.fromSeed(TRADING_WALLET_SECRET);
     logger.info(`🔗 Connected to XRPL - Trading wallet: ${tradingWallet.classicAddress}`);
+    logger.info(`🪙 WALDO token configured: currency=${WALDO_CURRENCY} issuer=${WALDO_ISSUER}`);
 
     // Ensure WLO trustline exists and is sufficient
     try {
@@ -208,24 +209,17 @@ async function getCurrentWaldoPrice() {
 
     const response = await client.request(orderBookRequest);
 
+    // Compute best ASK from WLO->XRP book (offers selling WLO for XRP)
+    let askPrice = null;
     if (response.result && response.result.offers && response.result.offers.length > 0) {
-      // Get the best offer (lowest ask price)
       const bestOffer = response.result.offers[0];
-      const takerGets = parseFloat(bestOffer.TakerGets) / 1000000; // Convert drops to XRP
-      const takerPays = parseFloat(bestOffer.TakerPays.value);
-
-      // Calculate price: XRP per WLO
-      const realPrice = takerGets / takerPays;
-
-      if (realPrice > 0 && isFinite(realPrice)) {
-        currentPrice = realPrice;
-        await redis.set('waldo:current_price', currentPrice.toString());
-        logger.info(`📊 Real-time price from XRPL DEX: ${currentPrice.toFixed(8)} XRP per WLO`);
-        return currentPrice;
+      const quality = bestOffer.quality ? parseFloat(bestOffer.quality) : (parseFloat(bestOffer.TakerPays.value) / (parseFloat(bestOffer.TakerGets) / 1000000));
+      if (quality > 0 && isFinite(quality)) {
+        askPrice = 1 / quality; // XRP per WLO
       }
     }
 
-    // Fallback: Try reverse order book (WLO -> XRP)
+    // Also query reverse book for best BID (offers buying WLO with XRP)
     const reverseOrderBookRequest = {
       command: 'book_offers',
       taker_gets: {
@@ -240,18 +234,46 @@ async function getCurrentWaldoPrice() {
 
     const reverseResponse = await client.request(reverseOrderBookRequest);
 
+    let bidPrice = null;
     if (reverseResponse.result && reverseResponse.result.offers && reverseResponse.result.offers.length > 0) {
       const bestOffer = reverseResponse.result.offers[0];
-      const takerGets = parseFloat(bestOffer.TakerGets.value);
-      const takerPays = parseFloat(bestOffer.TakerPays) / 1000000; // Convert drops to XRP
+      const quality = bestOffer.quality ? parseFloat(bestOffer.quality) : ((parseFloat(bestOffer.TakerPays) / 1000000) / parseFloat(bestOffer.TakerGets.value));
+      if (quality > 0 && isFinite(quality)) {
+        bidPrice = quality; // XRP per WLO
+      }
+    }
 
-      // Calculate price: XRP per WLO
-      const realPrice = takerPays / takerGets;
+    // Choose a sane price: use mid of bid/ask when both valid; otherwise whichever is available
+    let selected = null;
+    if (askPrice && bidPrice) {
+      selected = (askPrice + bidPrice) / 2;
+      logger.info(`📊 Top-of-book: bid=${bidPrice.toFixed(8)} ask=${askPrice.toFixed(8)} mid=${selected.toFixed(8)} XRP/WLO`);
+    } else if (askPrice || bidPrice) {
+      selected = askPrice || bidPrice;
+      logger.info(`📊 Top-of-book single-sided: ${selected.toFixed(8)} XRP/WLO`);
+    }
 
-      if (realPrice > 0 && isFinite(realPrice)) {
-        currentPrice = realPrice;
+    // Apply optional admin guardrails for sanity (min/max valid price)
+    if (selected && isFinite(selected) && selected > 0) {
+      const minGuardRaw = await redis.get('volume_bot:min_valid_price');
+      const maxGuardRaw = await redis.get('volume_bot:max_valid_price');
+      const minGuard = minGuardRaw ? parseFloat(minGuardRaw) : 0;
+      const maxGuard = maxGuardRaw ? parseFloat(maxGuardRaw) : 0;
+
+      let guarded = selected;
+      if (minGuard && guarded < minGuard) {
+        logger.warn(`⚠️ Price ${guarded} below min_valid_price ${minGuard} - applying guardrail`);
+        guarded = minGuard;
+      }
+      if (maxGuard && guarded > maxGuard) {
+        logger.warn(`⚠️ Price ${guarded} above max_valid_price ${maxGuard} - applying guardrail`);
+        guarded = maxGuard;
+      }
+
+      if (guarded > 0 && isFinite(guarded)) {
+        currentPrice = guarded;
         await redis.set('waldo:current_price', currentPrice.toString());
-        logger.info(`📊 Real-time price from XRPL DEX (reverse): ${currentPrice.toFixed(8)} XRP per WLO`);
+        logger.info(`📊 Real-time price selected: ${currentPrice.toFixed(8)} XRP per WLO`);
         return currentPrice;
       }
     }
