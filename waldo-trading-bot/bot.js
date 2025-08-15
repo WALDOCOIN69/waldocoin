@@ -115,6 +115,14 @@ async function connectXRPL() {
     await client.connect();
     tradingWallet = xrpl.Wallet.fromSeed(TRADING_WALLET_SECRET);
     logger.info(`🔗 Connected to XRPL - Trading wallet: ${tradingWallet.classicAddress}`);
+
+    // Ensure WLO trustline exists and is sufficient
+    try {
+      await ensureWLOTrustline();
+    } catch (e) {
+      logger.warn('⚠️ Trustline verification failed:', e);
+    }
+
     return true;
   } catch (error) {
     logger.error('❌ XRPL connection failed:', error);
@@ -256,6 +264,7 @@ async function getWLOBalance(address) {
 // ===== TRADING FUNCTIONS =====
 async function buyWaldo(userAddress, xrpAmount) {
   try {
+    // Validate provided amount against configured limits
     if (xrpAmount < MIN_TRADE_XRP || xrpAmount > MAX_TRADE_XRP) {
       throw new Error(`Trade amount must be between ${MIN_TRADE_XRP} and ${MAX_TRADE_XRP} XRP`);
     }
@@ -267,41 +276,74 @@ async function buyWaldo(userAddress, xrpAmount) {
       throw new Error('Invalid price calculation - cannot execute trade');
     }
 
-    const waldoAmount = parseFloat(((xrpAmount / price) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Apply spread and round to 6 decimals
+    // Helper to attempt a Payment with PartialPayment + optional path and DeliverMin
+    const attempt = async (amountXrp, deliverFactor) => {
+      const wantAmount = parseFloat(((amountXrp / price) * (1 - PRICE_SPREAD / 100)).toFixed(6));
+      if (!isFinite(wantAmount) || wantAmount <= 0) {
+        throw new Error('Invalid trade amount calculation');
+      }
 
-    // Safety check: prevent infinite or zero amounts
-    if (!isFinite(waldoAmount) || waldoAmount <= 0) {
-      throw new Error('Invalid trade amount calculation');
-    }
+      // Try to find a path (helps avoid tecPATH_PARTIAL)
+      let bestPaths;
+      try {
+        const pf = await client.request({
+          command: 'ripple_path_find',
+          source_account: tradingWallet.classicAddress,
+          destination_account: userAddress,
+          destination_amount: { currency: WALDO_CURRENCY, value: wantAmount.toFixed(6), issuer: WALDO_ISSUER },
+          send_max: xrpl.xrpToDrops(amountXrp.toString())
+        });
+        if (pf.result && pf.result.alternatives && pf.result.alternatives.length > 0) {
+          bestPaths = pf.result.alternatives[0].paths_computed;
+        }
+      } catch (e) {
+        // Path find may fail if no alternatives right now; continue without explicit Paths
+        logger.warn('⚠️ Path find failed or returned no alternatives; attempting payment without explicit Paths');
+      }
 
-    // Create payment transaction
-    const payment = {
-      TransactionType: 'Payment',
-      Account: tradingWallet.classicAddress,
-      Destination: userAddress,
-      Amount: {
-        currency: WALDO_CURRENCY,
-        value: parseFloat(waldoAmount).toFixed(6),
-        issuer: WALDO_ISSUER
-      },
-      SendMax: xrpl.xrpToDrops(xrpAmount.toString())
+      const deliverMinVal = Math.max(0, parseFloat((wantAmount * (deliverFactor ?? 0.85)).toFixed(6)));
+
+      // Build Partial Payment to allow fills instead of failing with tecPATH_PARTIAL
+      const payment = {
+        TransactionType: 'Payment',
+        Account: tradingWallet.classicAddress,
+        Destination: userAddress,
+        Amount: { currency: WALDO_CURRENCY, value: wantAmount.toFixed(6), issuer: WALDO_ISSUER },
+        SendMax: xrpl.xrpToDrops(amountXrp.toString()),
+        Flags: 0x00020000, // tfPartialPayment
+        DeliverMin: { currency: WALDO_CURRENCY, value: deliverMinVal.toFixed(6), issuer: WALDO_ISSUER }
+      };
+      if (bestPaths) payment.Paths = bestPaths;
+
+      const prepared = await client.autofill(payment);
+      const signed = tradingWallet.sign(prepared);
+      const result = await client.submitAndWait(signed.tx_blob);
+
+      const code = result.result?.meta?.TransactionResult;
+      if (code === 'tesSUCCESS') {
+        await recordTrade('BUY', userAddress, amountXrp, wantAmount, price);
+        return { success: true, hash: result.result.hash, waldoAmount: wantAmount, price };
+      }
+
+      throw new Error(`Transaction failed: ${code || 'unknown'}`);
     };
 
-    const prepared = await client.autofill(payment);
-    const signed = tradingWallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
-
-    if (result.result.meta.TransactionResult === 'tesSUCCESS') {
-      // Record trade
-      await recordTrade('BUY', userAddress, xrpAmount, waldoAmount, price);
-      return {
-        success: true,
-        hash: result.result.hash,
-        waldoAmount: waldoAmount,
-        price: price
-      };
-    } else {
-      throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
+    // Try main amount, then smaller fallbacks within >= MIN_TRADE_XRP
+    try {
+      return await attempt(xrpAmount, 0.85);
+    } catch (e1) {
+      if ((e1.message || '').includes('tecPATH_PARTIAL')) {
+        logger.warn('⚠️ tecPATH_PARTIAL on buy - retrying with smaller amount and lower DeliverMin');
+        const mid = Math.max(MIN_TRADE_XRP, parseFloat((xrpAmount * 0.75).toFixed(2)));
+        if (mid < xrpAmount) {
+          try { return await attempt(mid, 0.80); } catch (e2) { }
+        }
+        const min = Math.max(MIN_TRADE_XRP, 1.0);
+        if (min < xrpAmount) {
+          return await attempt(min, 0.75);
+        }
+      }
+      throw e1;
     }
   } catch (error) {
     logger.error('❌ Buy WALDO failed:', error);
@@ -640,46 +682,21 @@ async function createAutomatedTrade() {
       }
     }
 
-    // Dynamic trade amounts based on price emergency - RESPECT 4 XRP LIMIT
-    let tradePatterns;
-    if (currentPrice < emergencyPriceThreshold) {
-      // EMERGENCY MODE: Larger buys but within 4 XRP limit
-      tradePatterns = [
-        { min: 2.0, max: 3.0, weight: 40 },  // Aggressive buys (40% chance)
-        { min: 3.0, max: 3.8, weight: 35 },  // Large buys (35% chance)
-        { min: 3.8, max: 4.0, weight: 25 }   // Maximum buys (25% chance)
-      ];
-      logger.warn(`🚨 EMERGENCY TRADE AMOUNTS: Using aggressive buy sizes (2-4 XRP) to recover price`);
-    } else {
-      // Normal conservative amounts
-      tradePatterns = [
-        { min: 0.5, max: 1.0, weight: 70 },  // Tiny trades (70% chance)
-        { min: 1.0, max: 1.5, weight: 25 },  // Small trades (25% chance)
-        { min: 1.5, max: 2.0, weight: 5 }    // Medium trades (5% chance only)
-      ];
-    }
+    // GET ADMIN SETTINGS FROM REDIS - RESPECT USER CONTROLS
+    const adminMinSize = await redis.get('volume_bot:min_trade_size');
+    const adminMaxSize = await redis.get('volume_bot:max_trade_size');
 
-    // Weighted random selection
-    const random = Math.random() * 100;
-    let cumulative = 0;
-    let selectedPattern = tradePatterns[0];
+    // Use admin settings if available, otherwise use defaults
+    const minTradeSize = adminMinSize ? parseFloat(adminMinSize) : 1.0;
+    const maxTradeSize = adminMaxSize ? parseFloat(adminMaxSize) : 2.0;
 
-    for (const pattern of tradePatterns) {
-      cumulative += pattern.weight;
-      if (random <= cumulative) {
-        selectedPattern = pattern;
-        break;
-      }
-    }
+    logger.info(`🎛️ ADMIN CONTROLS: Using trade range ${minTradeSize}-${maxTradeSize} XRP from admin panel`);
 
-    // Calculate final trade amount with micro-randomization
-    const baseAmount = selectedPattern.min + Math.random() * (selectedPattern.max - selectedPattern.min);
-    const microVariation = 0.95 + Math.random() * 0.1; // ±5% micro-variation
-    let tradeAmount = parseFloat((baseAmount * microVariation).toFixed(2));
+    // Calculate trade amount using ADMIN SETTINGS
+    const tradeAmount = parseFloat((minTradeSize + Math.random() * (maxTradeSize - minTradeSize)).toFixed(2));
 
-    // SAFETY: Ensure trade amount is within limits (1-4 XRP)
-    tradeAmount = Math.max(1.0, Math.min(4.0, tradeAmount));
-    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (within 1-4 XRP limits)`);
+    // RESPECT ADMIN SETTINGS - No override clamps
+    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (from admin settings: ${minTradeSize}-${maxTradeSize} XRP)`);
 
     let message = '';
 
