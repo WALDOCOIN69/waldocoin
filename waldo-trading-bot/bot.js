@@ -58,6 +58,17 @@ let dailyVolume = 0;
 // ===== REDIS CONNECTION =====
 redis.on('error', (err) => logger.error('Redis error:', err));
 redis.on('connect', () => logger.info('Connected to Redis'));
+// Harden XRPL client to avoid unhandled events (e.g., 'noPermission')
+client.on('error', (err) => {
+  logger.warn('XRPL client error:', err);
+});
+client.on('connectionError', (err) => {
+  logger.warn('XRPL connection error:', err);
+});
+client.on('disconnected', (code) => {
+  logger.warn(`XRPL disconnected: ${code}`);
+});
+
 await redis.connect();
 
 // Load existing daily volume from Redis
@@ -338,24 +349,8 @@ async function buyWaldo(userAddress, xrpAmount) {
         throw new Error('Invalid trade amount calculation');
       }
 
-      // Try to find a path (helps avoid tecPATH_PARTIAL)
+      // Path finding on public clusters may require permissions; skip explicit Paths to avoid 'noPermission'
       let bestPaths;
-      try {
-        const pf = await client.request({
-          command: 'ripple_path_find',
-          source_account: tradingWallet.classicAddress,
-          destination_account: userAddress,
-          destination_amount: { currency: WALDO_CURRENCY, value: wantAmount.toFixed(6), issuer: WALDO_ISSUER },
-          send_max: xrpl.xrpToDrops(amountXrp.toString())
-        });
-        if (pf.result && pf.result.alternatives && pf.result.alternatives.length > 0) {
-          bestPaths = pf.result.alternatives[0].paths_computed;
-        }
-      } catch (e) {
-        // Path find may fail if no alternatives right now; continue without explicit Paths
-        logger.warn('⚠️ Path find failed or returned no alternatives; attempting payment without explicit Paths');
-      }
-
       const deliverMinVal = Math.max(0, parseFloat((wantAmount * (deliverFactor ?? 0.85)).toFixed(6)));
 
       // Build Partial Payment to allow fills instead of failing with tecPATH_PARTIAL
