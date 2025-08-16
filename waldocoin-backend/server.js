@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import './utils/logRedactor.js';
 
 import dotenv from "dotenv";
 import cron from "node-cron";
