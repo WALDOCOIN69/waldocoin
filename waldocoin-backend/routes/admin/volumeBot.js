@@ -28,9 +28,10 @@ router.get("/status", requireAdmin, async (req, res) => {
     const tradesCount = await redis.get('volume_bot:trades_today') || '0';
     const volume24h = await redis.get('volume_bot:volume_24h') || '0';
 
-    // Get current settings
+    // Get current settings (include active trading mode)
     const settings = {
       frequency: await redis.get('volume_bot:frequency') || '60',
+      tradingMode: await redis.get('volume_bot:trading_mode') || 'automated',
       minSize: await redis.get('volume_bot:min_trade_size') || '1',
       maxSize: await redis.get('volume_bot:max_trade_size') || '3',
       spread: await redis.get('volume_bot:price_spread') || '0'
