@@ -6,7 +6,6 @@ import { createClient } from 'redis';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import winston from 'winston';
-import fetch from 'node-fetch';
 
 
 dotenv.config();
@@ -280,7 +279,7 @@ async function getCurrentWaldoPrice() {
     try {
       const apiUrl = (await redis.get('volume_bot:external_price_url')) || process.env.EXTERNAL_PRICE_URL || '';
       if (apiUrl) {
-        const resp = await fetch(apiUrl);
+        const resp = await globalThis.fetch(apiUrl);
         if (resp.ok) {
           const data = await resp.json();
           // Expect data.price in XRP per WLO (configure your endpoint accordingly)
