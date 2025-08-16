@@ -9,12 +9,12 @@ export const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"; // WALDO issue
 export const WALDO_DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
 
 if (WALDO_DISTRIBUTOR_SECRET) {
-  console.log("WALDO_DISTRIBUTOR_SECRET:", WALDO_DISTRIBUTOR_SECRET ? "Loaded" : "MISSING");
+  console.log("WALDO_DISTRIBUTOR_SECRET:", "Loaded");
   try {
     const wallet = xrpl.Wallet.fromSeed(WALDO_DISTRIBUTOR_SECRET);
     console.log("WALDO_DISTRIBUTOR_ADDRESS:", wallet.classicAddress);
   } catch (e) {
-    console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET:", e.message);
+    console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET (seed could not derive address):", e.message);
   }
 } else {
   console.error("❌ WALDO_DISTRIBUTOR_SECRET not found in environment variables");

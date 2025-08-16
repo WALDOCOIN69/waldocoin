@@ -170,13 +170,17 @@ const startServer = async () => {
         res.status(500).json({ success: false, error: err.message })
       );
   });
-  console.log("Render ENV WALDO_DISTRIBUTOR_SECRET:", process.env.WALDO_DISTRIBUTOR_SECRET);
-
-  try {
-    const testWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
-    console.log("🔍 Wallet Address from Secret:", testWallet.classicAddress);
-  } catch (e) {
-    console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET:", e.message);
+  // Do not log secrets. Only indicate presence and derive public address for validation.
+  if (process.env.WALDO_DISTRIBUTOR_SECRET) {
+    console.log("Render ENV WALDO_DISTRIBUTOR_SECRET: Loaded");
+    try {
+      const testWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
+      console.log("🔍 Distributor wallet (public):", testWallet.classicAddress);
+    } catch (e) {
+      console.error("❌ Invalid WALDO_DISTRIBUTOR_SECRET (seed could not derive address):", e.message);
+    }
+  } else {
+    console.warn("⚠️ WALDO_DISTRIBUTOR_SECRET not set");
   }
 
   // 🤖 Telegram Webhook Route - DISABLED (using polling instead)
