@@ -534,7 +534,7 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   await redis.set('waldo:daily_volume', dailyVolume.toString());
 
   // Store data for admin panel (volume bot controls)
-  await redis.lpush('volume_bot:recent_trades', JSON.stringify({
+  await redis.lPush('volume_bot:recent_trades', JSON.stringify({
     type: type,
     amount: waldoAmount.toFixed(0),
     currency: 'WLO',
@@ -544,7 +544,7 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   }));
 
   // Keep only last 50 trades for admin panel
-  await redis.ltrim('volume_bot:recent_trades', 0, 49);
+  await redis.lTrim('volume_bot:recent_trades', 0, 49);
 
   // Update daily counters for admin panel
   const today = new Date().toISOString().split('T')[0];
