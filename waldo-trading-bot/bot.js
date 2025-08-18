@@ -472,45 +472,78 @@ async function sellWaldo(userAddress, waldoAmount) {
       throw new Error('Invalid price calculation - cannot execute trade');
     }
 
-    const xrpAmount = parseFloat(((waldoAmount * price) * (1 - PRICE_SPREAD / 100)).toFixed(6)); // Apply spread and round to 6 decimals
-
-    // Safety check: prevent zero amounts
-    if (!isFinite(xrpAmount) || xrpAmount <= 0) {
-      throw new Error('Invalid trade amount calculation');
-    }
-
-    if (xrpAmount < MIN_TRADE_XRP) {
-      throw new Error(`Minimum trade value is ${MIN_TRADE_XRP} XRP`);
-    }
-
-    // Create payment transaction
-    const payment = {
-      TransactionType: 'Payment',
-      Account: tradingWallet.classicAddress,
-      Destination: userAddress,
-      Amount: xrpl.xrpToDrops(xrpAmount.toString()),
-      SendMax: {
-        currency: WALDO_CURRENCY,
-        value: parseFloat(waldoAmount).toFixed(6),
-        issuer: WALDO_ISSUER
+    // Helper: attempt a partial-allowed SELL of WLO for XRP
+    const attempt = async (wloAmount, deliverFactor) => {
+      const xrpTarget = parseFloat(((wloAmount * price) * (1 - PRICE_SPREAD / 100)).toFixed(6));
+      if (!isFinite(xrpTarget) || xrpTarget <= 0) {
+        throw new Error('Invalid trade amount calculation');
       }
+
+      // Minimum acceptable XRP to receive (DeliverMin)
+      const minXrp = Math.max(MIN_TRADE_XRP, parseFloat((xrpTarget * (deliverFactor ?? 0.50)).toFixed(6)));
+
+      const payment = {
+        TransactionType: 'Payment',
+        Account: tradingWallet.classicAddress,
+        Destination: userAddress,
+        Amount: xrpl.xrpToDrops(xrpTarget.toString()), // target XRP to receive
+        SendMax: { // maximum WLO we're willing to send
+          currency: WALDO_CURRENCY,
+          value: parseFloat(wloAmount).toFixed(6),
+          issuer: WALDO_ISSUER
+        },
+        Flags: 0x00020000, // tfPartialPayment
+        DeliverMin: xrpl.xrpToDrops(minXrp.toString())
+      };
+
+      const prepared = await client.autofill(payment);
+      const signed = tradingWallet.sign(prepared);
+      const result = await client.submitAndWait(signed.tx_blob);
+
+      const code = result.result?.meta?.TransactionResult;
+      if (code === 'tesSUCCESS') {
+        await recordTrade('SELL', userAddress, xrpTarget, wloAmount, price);
+        return { success: true, hash: result.result.hash, xrpAmount: xrpTarget, price };
+      }
+
+      throw new Error(`Transaction failed: ${code || 'unknown'}`);
     };
 
-    const prepared = await client.autofill(payment);
-    const signed = tradingWallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
+    // Try main amount, then smaller fallbacks for thin books
+    try {
+      return await attempt(waldoAmount, 0.50);
+    } catch (e1) {
+      if ((e1.message || '').includes('tecPATH_PARTIAL')) {
+        logger.warn('⚠️ tecPATH_PARTIAL on sell - retrying with smaller WLO and lower DeliverMin');
 
-    if (result.result.meta.TransactionResult === 'tesSUCCESS') {
-      // Record trade
-      await recordTrade('SELL', userAddress, xrpAmount, waldoAmount, price);
-      return {
-        success: true,
-        hash: result.result.hash,
-        xrpAmount: xrpAmount,
-        price: price
-      };
-    } else {
-      throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
+        // 1) ~75% of original WLO
+        const wloMid = Math.max(1, parseFloat((waldoAmount * 0.75).toFixed(0)));
+        if (wloMid < waldoAmount) {
+          try { return await attempt(wloMid, 0.25); } catch (e2) { }
+        }
+
+        // 2) ~50% of original WLO
+        const wloHalf = Math.max(1, parseFloat((waldoAmount * 0.50).toFixed(0)));
+        if (wloHalf < waldoAmount) {
+          try { return await attempt(wloHalf, 0.15); } catch (e3) { }
+        }
+
+        // 3) Split into two sequential halves if big enough
+        if (waldoAmount >= 2) {
+          const part = Math.max(1, parseFloat((waldoAmount / 2).toFixed(0)));
+          try {
+            const first = await attempt(part, 0.15);
+            try { await attempt(part, 0.15); } catch (_) { }
+            return first;
+          } catch (_) { }
+        }
+
+        // 4) Final attempt with minimal 1 WLO
+        if (waldoAmount > 1) {
+          return await attempt(1, 0.05);
+        }
+      }
+      throw e1;
     }
   } catch (error) {
     logger.error('❌ Sell WALDO failed:', error);
