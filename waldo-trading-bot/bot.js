@@ -569,9 +569,9 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   // Store data for admin panel (volume bot controls)
   await redis.lPush('volume_bot:recent_trades', JSON.stringify({
     type: type,
-    amount: waldoAmount.toFixed(0),
+    amount: parseFloat(waldoAmount.toFixed(6)), // show up to 6 decimals instead of rounding to 0
     currency: 'WLO',
-    price: xrpAmount.toFixed(4),
+    price: parseFloat(xrpAmount.toFixed(6)),
     timestamp: new Date().toISOString(),
     hash: trade.hash || null
   }));
