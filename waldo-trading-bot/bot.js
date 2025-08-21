@@ -65,9 +65,33 @@ client.on('error', (err) => {
 });
 client.on('connectionError', (err) => {
   logger.warn('XRPL connection error:', err);
+  // Attempt automatic reconnection after connection error
+  setTimeout(async () => {
+    try {
+      if (!client.isConnected()) {
+        logger.info('🔄 Attempting automatic XRPL reconnection...');
+        await client.connect();
+        logger.info('✅ XRPL reconnection successful');
+      }
+    } catch (reconnectError) {
+      logger.error('❌ Automatic reconnection failed:', reconnectError);
+    }
+  }, 5000); // Wait 5 seconds before reconnecting
 });
 client.on('disconnected', (code) => {
   logger.warn(`XRPL disconnected: ${code}`);
+  // Attempt automatic reconnection after disconnection
+  setTimeout(async () => {
+    try {
+      if (!client.isConnected()) {
+        logger.info('🔄 Attempting automatic XRPL reconnection after disconnect...');
+        await client.connect();
+        logger.info('✅ XRPL reconnection successful');
+      }
+    } catch (reconnectError) {
+      logger.error('❌ Automatic reconnection failed:', reconnectError);
+    }
+  }, 3000); // Wait 3 seconds before reconnecting
 });
 
 await redis.connect();
@@ -100,8 +124,8 @@ try {
   // Initialize default trading mode if not set
   const currentTradingMode = await redis.get('volume_bot:trading_mode');
   if (!currentTradingMode) {
-    await redis.set('volume_bot:trading_mode', 'automated'); // Default to automated mode
-    logger.info('🎛️ Initialized default trading mode: Automated');
+    await redis.set('volume_bot:trading_mode', 'perpetual'); // Default to perpetual mode
+    logger.info('🎛️ Initialized default trading mode: Perpetual (weighted balance-aware)');
   } else {
     logger.info(`🎛️ Current trading mode: ${currentTradingMode}`);
   }
@@ -465,6 +489,13 @@ async function buyWaldo(userAddress, xrpAmount) {
 
 async function sellWaldo(userAddress, waldoAmount) {
   try {
+    // Ensure XRPL connection is active before attempting trade
+    if (!client.isConnected()) {
+      logger.warn('⚠️ XRPL client disconnected, attempting reconnection...');
+      await client.connect();
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for connection to stabilize
+    }
+
     const price = await getCurrentWaldoPrice();
 
     // Safety check: prevent zero or invalid price
@@ -472,28 +503,89 @@ async function sellWaldo(userAddress, waldoAmount) {
       throw new Error('Invalid price calculation - cannot execute trade');
     }
 
-    // Helper: attempt a partial-allowed SELL of WLO for XRP
-    const attempt = async (wloAmount, deliverFactor) => {
-      const xrpTarget = parseFloat(((wloAmount * price) * (1 - PRICE_SPREAD / 100)).toFixed(6));
+    // NEW APPROACH: Create passive sell offers instead of immediate execution
+    // This places orders on the book that buyers can fill gradually
+    const createPassiveSellOffer = async (wloAmount) => {
+      // Calculate slightly below market price to encourage fills
+      const discountedPrice = price * 0.98; // 2% below market for quick fills
+      const xrpTarget = parseFloat((wloAmount * discountedPrice).toFixed(6));
+
       if (!isFinite(xrpTarget) || xrpTarget <= 0) {
         throw new Error('Invalid trade amount calculation');
       }
 
-      // Minimum acceptable XRP to receive (DeliverMin)
-      const minXrp = Math.max(MIN_TRADE_XRP, parseFloat((xrpTarget * (deliverFactor ?? 0.50)).toFixed(6)));
+      const offer = {
+        TransactionType: 'OfferCreate',
+        Account: tradingWallet.classicAddress,
+        TakerGets: xrpl.xrpToDrops(xrpTarget.toString()), // XRP we want to receive
+        TakerPays: { // WLO we're offering to sell
+          currency: WALDO_CURRENCY,
+          value: parseFloat(wloAmount).toFixed(6),
+          issuer: WALDO_ISSUER
+        },
+        // No flags = passive offer that stays on the book
+        Expiration: Math.floor(Date.now() / 1000) + (60 * 60) // Expires in 1 hour
+      };
+
+      const prepared = await client.autofill(offer);
+      const signed = tradingWallet.sign(prepared);
+      const result = await client.submitAndWait(signed.tx_blob);
+
+      const code = result.result?.meta?.TransactionResult;
+      if (code === 'tesSUCCESS') {
+        // Record the trade even if it's a passive offer
+        await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
+        logger.info(`✅ Passive sell offer created: ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
+        return { success: true, hash: result.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
+      }
+
+      throw new Error(`Passive offer failed: ${code || 'unknown'}`);
+    };
+
+    // For automated trades, use micro-sells approach
+    if (userAddress === tradingWallet.classicAddress) {
+      // Break large sells into tiny amounts that are more likely to fill
+      const microSellAmount = Math.min(waldoAmount, 1000); // Max 1000 WLO per micro-sell
+
+      logger.info(`🔄 Creating micro-sell offer: ${microSellAmount} WLO (from ${waldoAmount} requested)`);
+
+      try {
+        const result = await createPassiveSellOffer(microSellAmount);
+
+        // If we have more to sell, schedule additional micro-sells
+        if (waldoAmount > microSellAmount) {
+          const remaining = waldoAmount - microSellAmount;
+          logger.info(`📋 Remaining ${remaining} WLO will be sold in future micro-sells`);
+
+          // Store remaining amount for future micro-sells
+          await redis.set('volume_bot:pending_sell_amount', remaining.toString());
+        }
+
+        return result;
+      } catch (error) {
+        logger.warn(`⚠️ Micro-sell failed: ${error.message}`);
+
+        // Fallback: try even smaller amount
+        const tinyAmount = Math.min(microSellAmount, 100); // Try just 100 WLO
+        logger.info(`🔄 Fallback: trying tiny sell of ${tinyAmount} WLO`);
+        return await createPassiveSellOffer(tinyAmount);
+      }
+    } else {
+      // For user trades, try the original payment approach with very small amounts
+      const smallAmount = Math.min(waldoAmount, 500); // Limit user sells to 500 WLO max
 
       const payment = {
         TransactionType: 'Payment',
         Account: tradingWallet.classicAddress,
         Destination: userAddress,
-        Amount: xrpl.xrpToDrops(xrpTarget.toString()), // target XRP to receive
-        SendMax: { // maximum WLO we're willing to send
+        Amount: xrpl.xrpToDrops((smallAmount * price * 0.95).toFixed(6)), // 5% discount for quick fill
+        SendMax: {
           currency: WALDO_CURRENCY,
-          value: parseFloat(wloAmount).toFixed(6),
+          value: parseFloat(smallAmount).toFixed(6),
           issuer: WALDO_ISSUER
         },
         Flags: 0x00020000, // tfPartialPayment
-        DeliverMin: xrpl.xrpToDrops(minXrp.toString())
+        DeliverMin: xrpl.xrpToDrops((smallAmount * price * 0.50).toFixed(6)) // Accept 50% minimum
       };
 
       const prepared = await client.autofill(payment);
@@ -502,48 +594,12 @@ async function sellWaldo(userAddress, waldoAmount) {
 
       const code = result.result?.meta?.TransactionResult;
       if (code === 'tesSUCCESS') {
-        await recordTrade('SELL', userAddress, xrpTarget, wloAmount, price);
-        return { success: true, hash: result.result.hash, xrpAmount: xrpTarget, price };
+        const actualXrp = parseFloat(xrpl.dropsToXrp(result.result.meta.delivered_amount || payment.Amount));
+        await recordTrade('SELL', userAddress, actualXrp, smallAmount, price);
+        return { success: true, hash: result.result.hash, xrpAmount: actualXrp, price };
       }
 
-      throw new Error(`Transaction failed: ${code || 'unknown'}`);
-    };
-
-    // Try main amount, then smaller fallbacks for thin books
-    try {
-      return await attempt(waldoAmount, 0.50);
-    } catch (e1) {
-      if ((e1.message || '').includes('tecPATH_PARTIAL')) {
-        logger.warn('⚠️ tecPATH_PARTIAL on sell - retrying with smaller WLO and lower DeliverMin');
-
-        // 1) ~75% of original WLO
-        const wloMid = Math.max(1, parseFloat((waldoAmount * 0.75).toFixed(0)));
-        if (wloMid < waldoAmount) {
-          try { return await attempt(wloMid, 0.25); } catch (e2) { }
-        }
-
-        // 2) ~50% of original WLO
-        const wloHalf = Math.max(1, parseFloat((waldoAmount * 0.50).toFixed(0)));
-        if (wloHalf < waldoAmount) {
-          try { return await attempt(wloHalf, 0.15); } catch (e3) { }
-        }
-
-        // 3) Split into two sequential halves if big enough
-        if (waldoAmount >= 2) {
-          const part = Math.max(1, parseFloat((waldoAmount / 2).toFixed(0)));
-          try {
-            const first = await attempt(part, 0.15);
-            try { await attempt(part, 0.15); } catch (_) { }
-            return first;
-          } catch (_) { }
-        }
-
-        // 4) Final attempt with minimal 1 WLO
-        if (waldoAmount > 1) {
-          return await attempt(1, 0.05);
-        }
-      }
-      throw e1;
+      throw new Error(`User sell failed: ${code || 'unknown'}`);
     }
   } catch (error) {
     logger.error('❌ Sell WALDO failed:', error);
@@ -780,6 +836,85 @@ if (MARKET_MAKING) {
       logger.error('❌ Wallet balance update error:', error);
     }
   });
+
+  // Connection health check every 5 minutes
+  cron.schedule('*/5 * * * *', async () => {
+    try {
+      if (!client.isConnected()) {
+        logger.warn('⚠️ XRPL client disconnected during health check, reconnecting...');
+        await client.connect();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        logger.info('✅ XRPL reconnection successful during health check');
+      }
+    } catch (error) {
+      logger.error('❌ Connection health check failed:', error);
+    }
+  });
+
+  // Process pending micro-sells every 3 minutes
+  cron.schedule('*/3 * * * *', async () => {
+    try {
+      await processPendingMicroSells();
+    } catch (error) {
+      logger.error('❌ Micro-sell processing error:', error);
+    }
+  });
+}
+
+// ===== MICRO-SELL PROCESSING =====
+async function processPendingMicroSells() {
+  try {
+    const pendingAmount = await redis.get('volume_bot:pending_sell_amount');
+    if (!pendingAmount || parseFloat(pendingAmount) <= 0) {
+      return; // No pending sells
+    }
+
+    const remaining = parseFloat(pendingAmount);
+    const microAmount = Math.min(remaining, 500); // Process 500 WLO at a time
+
+    logger.info(`🔄 Processing pending micro-sell: ${microAmount} WLO (${remaining} remaining)`);
+
+    // Try to create a small passive sell offer
+    const price = await getCurrentWaldoPrice();
+    const discountedPrice = price * 0.98; // 2% below market
+    const xrpTarget = parseFloat((microAmount * discountedPrice).toFixed(6));
+
+    const offer = {
+      TransactionType: 'OfferCreate',
+      Account: tradingWallet.classicAddress,
+      TakerGets: xrpl.xrpToDrops(xrpTarget.toString()),
+      TakerPays: {
+        currency: WALDO_CURRENCY,
+        value: parseFloat(microAmount).toFixed(6),
+        issuer: WALDO_ISSUER
+      },
+      Expiration: Math.floor(Date.now() / 1000) + (30 * 60) // 30 minute expiration
+    };
+
+    const prepared = await client.autofill(offer);
+    const signed = tradingWallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    const code = result.result?.meta?.TransactionResult;
+    if (code === 'tesSUCCESS') {
+      // Update remaining amount
+      const newRemaining = remaining - microAmount;
+      if (newRemaining > 0) {
+        await redis.set('volume_bot:pending_sell_amount', newRemaining.toString());
+        logger.info(`✅ Micro-sell offer created: ${microAmount} WLO, ${newRemaining} WLO remaining`);
+      } else {
+        await redis.del('volume_bot:pending_sell_amount');
+        logger.info(`✅ Final micro-sell offer created: ${microAmount} WLO, all pending sells processed`);
+      }
+
+      // Record the trade
+      await recordTrade('SELL', tradingWallet.classicAddress, xrpTarget, microAmount, discountedPrice);
+    } else {
+      logger.warn(`⚠️ Micro-sell offer failed: ${code}`);
+    }
+  } catch (error) {
+    logger.error('❌ Micro-sell processing failed:', error);
+  }
 }
 
 // ===== AUTOMATED TRADING FUNCTIONS =====
@@ -802,7 +937,25 @@ async function createAutomatedTrade() {
 
     let tradeType;
 
-    // Determine trade type based on admin mode and price conditions
+    // NEW WEIGHTED PERPETUAL TRADING STRATEGY
+    // Check current wallet balances to determine optimal trade direction
+    const xrpBalance = await getXRPBalance(tradingWallet.classicAddress);
+    const wloBalance = await getWLOBalance(tradingWallet.classicAddress);
+
+    // Calculate balance ratios and target allocations
+    const wloValueInXrp = wloBalance * currentPrice;
+    const totalValueXrp = xrpBalance + wloValueInXrp;
+    const xrpRatio = xrpBalance / totalValueXrp;
+    const wloRatio = wloValueInXrp / totalValueXrp;
+
+    // Target allocation: maintain roughly 60% XRP, 40% WLO for optimal trading
+    const targetXrpRatio = 0.60;
+    const targetWloRatio = 0.40;
+
+    logger.info(`💰 Current allocation: ${(xrpRatio * 100).toFixed(1)}% XRP (${xrpBalance.toFixed(2)}), ${(wloRatio * 100).toFixed(1)}% WLO (${wloBalance.toFixed(0)})`);
+    logger.info(`🎯 Target allocation: ${(targetXrpRatio * 100).toFixed(1)}% XRP, ${(targetWloRatio * 100).toFixed(1)}% WLO`);
+
+    // Determine trade type based on admin mode and balance weighting
     if (tradingMode === 'buy_only') {
       tradeType = 'BUY';
       logger.info(`🎛️ ADMIN MODE: Buy Only - executing BUY trade`);
@@ -830,16 +983,44 @@ async function createAutomatedTrade() {
         tradeType = 'SELL';
       }
       logger.info(`🎛️ ADMIN MODE: Buy & Sell (balanced) - executing ${tradeType} trade (last50 BUY=${buyCount}, SELL=${sellCount})`);
-    } else if (tradingMode === 'automated') {
-      // Automated mode with emergency detection
+    } else if (tradingMode === 'automated' || tradingMode === 'perpetual') {
+      // PERPETUAL WEIGHTED TRADING MODE
+
+      // Emergency price protection - always buy when price crashes
       if (currentPrice < emergencyPriceThreshold) {
-        tradeType = 'BUY'; // ONLY BUY when price is critically low
-        logger.warn(`🚨 AUTOMATED EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - BUY ONLY MODE`);
-      } else {
-        // Normal trading when price is healthy
-        const tradeTypes = ['BUY', 'SELL'];
-        tradeType = tradeTypes[Math.floor(Math.random() * tradeTypes.length)];
-        logger.info(`🤖 AUTOMATED MODE: Normal trading - executing ${tradeType} trade`);
+        tradeType = 'BUY';
+        logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - FORCED BUY`);
+      }
+      // If we have too much XRP (over 70%), favor buying WLO
+      else if (xrpRatio > 0.70) {
+        tradeType = 'BUY';
+        logger.info(`⚖️ REBALANCE: Too much XRP (${(xrpRatio * 100).toFixed(1)}%) - executing BUY to acquire WLO`);
+      }
+      // If we have too much WLO (over 50%), favor selling some
+      else if (wloRatio > 0.50) {
+        tradeType = 'SELL';
+        logger.info(`⚖️ REBALANCE: Too much WLO (${(wloRatio * 100).toFixed(1)}%) - executing SELL to acquire XRP`);
+      }
+      // If balances are reasonable, use weighted probability
+      else {
+        // Calculate trade probability based on how far we are from target
+        const xrpDeviation = Math.abs(xrpRatio - targetXrpRatio);
+        const wloDeviation = Math.abs(wloRatio - targetWloRatio);
+
+        // If XRP is below target, higher chance to sell WLO (get more XRP)
+        // If WLO is below target, higher chance to buy WLO
+        let buyProbability = 0.5; // Default 50/50
+
+        if (xrpRatio < targetXrpRatio) {
+          // Need more XRP, so favor selling WLO
+          buyProbability = 0.3; // 30% buy, 70% sell
+        } else if (wloRatio < targetWloRatio) {
+          // Need more WLO, so favor buying
+          buyProbability = 0.7; // 70% buy, 30% sell
+        }
+
+        tradeType = Math.random() < buyProbability ? 'BUY' : 'SELL';
+        logger.info(`⚖️ WEIGHTED: ${(buyProbability * 100).toFixed(0)}% buy probability - executing ${tradeType} trade`);
       }
     }
 
@@ -848,16 +1029,53 @@ async function createAutomatedTrade() {
     const adminMaxSize = await redis.get('volume_bot:max_trade_size');
 
     // Use admin settings if available, otherwise use defaults
-    const minTradeSize = adminMinSize ? parseFloat(adminMinSize) : 1.0;
-    const maxTradeSize = adminMaxSize ? parseFloat(adminMaxSize) : 2.0;
+    const baseMinTradeSize = adminMinSize ? parseFloat(adminMinSize) : 1.0;
+    const baseMaxTradeSize = adminMaxSize ? parseFloat(adminMaxSize) : 2.0;
 
-    logger.info(`🎛️ ADMIN CONTROLS: Using trade range ${minTradeSize}-${maxTradeSize} XRP from admin panel`);
+    // DYNAMIC TRADE SIZING FOR PERPETUAL TRADING
+    // Adjust trade sizes based on available balances to ensure sustainability
+    let minTradeSize = baseMinTradeSize;
+    let maxTradeSize = baseMaxTradeSize;
 
-    // Calculate trade amount using ADMIN SETTINGS
+    if (tradeType === 'BUY') {
+      // For buys, limit based on available XRP (keep 20% reserve for fees and future trades)
+      const maxBuyAmount = Math.max(0.5, (xrpBalance * 0.80) / 10); // Spread over 10 potential trades
+      maxTradeSize = Math.min(baseMaxTradeSize, maxBuyAmount);
+      minTradeSize = Math.min(baseMinTradeSize, maxTradeSize * 0.5);
+
+      logger.info(`💰 BUY sizing: Available XRP=${xrpBalance.toFixed(2)}, Max buy=${maxBuyAmount.toFixed(2)}`);
+    } else {
+      // For sells, limit based on available WLO value (keep 20% reserve)
+      const maxSellValueXrp = Math.max(0.5, (wloValueInXrp * 0.80) / 10); // Spread over 10 potential trades
+      maxTradeSize = Math.min(baseMaxTradeSize, maxSellValueXrp);
+      minTradeSize = Math.min(baseMinTradeSize, maxTradeSize * 0.5);
+
+      logger.info(`💰 SELL sizing: Available WLO value=${wloValueInXrp.toFixed(2)} XRP, Max sell=${maxSellValueXrp.toFixed(2)}`);
+    }
+
+    logger.info(`🎛️ DYNAMIC SIZING: Base range ${baseMinTradeSize}-${baseMaxTradeSize} XRP, Adjusted to ${minTradeSize.toFixed(2)}-${maxTradeSize.toFixed(2)} XRP`);
+
+    // Calculate trade amount using DYNAMIC SETTINGS
     const tradeAmount = parseFloat((minTradeSize + Math.random() * (maxTradeSize - minTradeSize)).toFixed(2));
 
-    // RESPECT ADMIN SETTINGS - No override clamps
-    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (from admin settings: ${minTradeSize}-${maxTradeSize} XRP)`);
+    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (dynamically sized for perpetual trading)`);
+
+    // SAFETY CHECKS FOR PERPETUAL TRADING
+    // Ensure we have minimum balances to continue trading
+    const minXrpReserve = 5.0; // Keep at least 5 XRP for fees and future trades
+    const minWloReserve = 1000; // Keep at least 1000 WLO for future trades
+
+    if (tradeType === 'BUY' && xrpBalance < (tradeAmount + minXrpReserve)) {
+      logger.warn(`⚠️ Insufficient XRP for safe trading: ${xrpBalance.toFixed(2)} XRP, need ${(tradeAmount + minXrpReserve).toFixed(2)} XRP`);
+      logger.info(`🛡️ SAFETY: Skipping BUY trade to preserve XRP reserves`);
+      return;
+    }
+
+    if (tradeType === 'SELL' && wloBalance < minWloReserve) {
+      logger.warn(`⚠️ Insufficient WLO for safe trading: ${wloBalance.toFixed(0)} WLO, need at least ${minWloReserve} WLO`);
+      logger.info(`🛡️ SAFETY: Skipping SELL trade to preserve WLO reserves`);
+      return;
+    }
 
     let message = '';
 
@@ -1423,6 +1641,131 @@ bot.onText(/\/profits/, async (msg) => {
   }
 });
 
+bot.onText(/\/balances/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Only respond to admin
+  if (chatId.toString() !== ADMIN_ID) {
+    return;
+  }
+
+  try {
+    if (STEALTH_MODE) {
+      bot.sendMessage(chatId, '🥷 **Stealth Mode**: Balance details hidden for security');
+      return;
+    }
+
+    const xrpBalance = await getXRPBalance(tradingWallet.classicAddress);
+    const wloBalance = await getWLOBalance(tradingWallet.classicAddress);
+    const currentPrice = await getCurrentWaldoPrice();
+
+    const wloValueInXrp = wloBalance * currentPrice;
+    const totalValueXrp = xrpBalance + wloValueInXrp;
+    const xrpRatio = (xrpBalance / totalValueXrp) * 100;
+    const wloRatio = (wloValueInXrp / totalValueXrp) * 100;
+
+    const message = `💰 **Trading Wallet Balances**\n\n` +
+      `**XRP Balance**: ${xrpBalance.toFixed(2)} XRP (${xrpRatio.toFixed(1)}%)\n` +
+      `**WLO Balance**: ${wloBalance.toFixed(0)} WLO (${wloRatio.toFixed(1)}%)\n` +
+      `**WLO Value**: ${wloValueInXrp.toFixed(2)} XRP\n` +
+      `**Total Value**: ${totalValueXrp.toFixed(2)} XRP\n\n` +
+      `**Target Allocation**:\n` +
+      `🎯 XRP: 60% (${(totalValueXrp * 0.6).toFixed(2)} XRP)\n` +
+      `🎯 WLO: 40% (${(totalValueXrp * 0.4).toFixed(2)} XRP value)\n\n` +
+      `**Status**: ${xrpRatio > 70 ? '⚖️ Rebalancing toward WLO' : wloRatio > 50 ? '⚖️ Rebalancing toward XRP' : '✅ Well balanced'}\n` +
+      `**Current Price**: ${currentPrice.toFixed(8)} XRP per WLO`;
+
+    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    bot.sendMessage(chatId, '❌ Error fetching balance data');
+  }
+});
+
+bot.onText(/\/pending/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Only respond to admin
+  if (chatId.toString() !== ADMIN_ID) {
+    return;
+  }
+
+  try {
+    const pendingAmount = await redis.get('volume_bot:pending_sell_amount') || '0';
+    const pending = parseFloat(pendingAmount);
+
+    const message = `📋 **Pending Micro-Sells**\n\n` +
+      `💰 **Remaining Amount**: ${pending.toFixed(0)} WLO\n` +
+      `🔄 **Processing**: Every 3 minutes\n` +
+      `📦 **Batch Size**: 500 WLO per batch\n` +
+      `⏱️ **Estimated Time**: ${Math.ceil(pending / 500) * 3} minutes\n\n` +
+      `${pending > 0 ? '🟡 **Status**: Processing...' : '✅ **Status**: All sells completed'}`;
+
+    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    bot.sendMessage(chatId, '❌ Error fetching pending sells data');
+  }
+});
+
+bot.onText(/\/emergency/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Only respond to admin
+  if (chatId.toString() !== ADMIN_ID) {
+    return;
+  }
+
+  try {
+    // Set emergency stop status
+    await redis.set('volume_bot:status', 'emergency_stopped');
+    await redis.set('volume_bot:emergency_stop_timestamp', new Date().toISOString());
+
+    const message = `🚨 **EMERGENCY STOP ACTIVATED**\n\n` +
+      `🛑 **Status**: All trading halted immediately\n` +
+      `⏰ **Time**: ${new Date().toLocaleString()}\n` +
+      `🔧 **Action**: Manual restart required\n\n` +
+      `**To Resume Trading:**\n` +
+      `1. Check system status\n` +
+      `2. Use admin panel to restart\n` +
+      `3. Or use /resume command`;
+
+    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    logger.error('🚨 EMERGENCY STOP activated via Telegram by admin');
+  } catch (error) {
+    bot.sendMessage(chatId, '❌ Error activating emergency stop');
+    logger.error('❌ Emergency stop command failed:', error);
+  }
+});
+
+bot.onText(/\/resume/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Only respond to admin
+  if (chatId.toString() !== ADMIN_ID) {
+    return;
+  }
+
+  try {
+    // Resume bot operation
+    await redis.set('volume_bot:status', 'running');
+    await redis.del('volume_bot:emergency_stop_timestamp');
+
+    const message = `✅ **TRADING RESUMED**\n\n` +
+      `🟢 **Status**: Bot is now active\n` +
+      `⏰ **Time**: ${new Date().toLocaleString()}\n` +
+      `🔄 **Mode**: Perpetual weighted trading\n\n` +
+      `**Next Actions:**\n` +
+      `• Check /balances for current allocation\n` +
+      `• Monitor /stats for activity\n` +
+      `• Use /emergency if issues arise`;
+
+    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    logger.info('✅ Trading resumed via Telegram by admin');
+  } catch (error) {
+    bot.sendMessage(chatId, '❌ Error resuming trading');
+    logger.error('❌ Resume command failed:', error);
+  }
+});
+
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
 
@@ -1437,7 +1780,16 @@ bot.onText(/\/help/, (msg) => {
     `📊 /price - Current WLO price\n` +
     `📈 /stats - Trading statistics\n` +
     `💰 /profits - Profit skimming report\n` +
+    `⚖️ /balances - Wallet balances & allocation\n` +
+    `📋 /pending - Pending micro-sells status\n` +
     `⚙️ /status - Bot status\n\n` +
+    `**Emergency Controls:**\n` +
+    `🚨 /emergency - EMERGENCY STOP (immediate halt)\n` +
+    `✅ /resume - Resume trading after stop\n\n` +
+    `**Perpetual Trading:**\n` +
+    `🎯 **Target**: 60% XRP, 40% WLO\n` +
+    `⚖️ **Strategy**: Weighted rebalancing\n` +
+    `🔄 **Mode**: Self-sustaining trades\n\n` +
     `**Settings:**\n` +
     `🚀 **Starting Balance**: ${STARTING_BALANCE} XRP\n` +
     `🎯 **Reserve Threshold**: ${PROFIT_RESERVE_THRESHOLD} XRP\n` +
