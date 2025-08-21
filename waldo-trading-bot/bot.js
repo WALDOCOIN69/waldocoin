@@ -12,7 +12,14 @@ dotenv.config();
 
 // ===== CONFIGURATION =====
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const XRPL_NODE = process.env.XRPL_NODE || 'wss://xrplcluster.com';
+// Use multiple XRPL nodes for better reliability
+const XRPL_NODES = [
+  'wss://xrplcluster.com',
+  'wss://s1.ripple.com',
+  'wss://s2.ripple.com',
+  'wss://xrpl.ws'
+];
+const XRPL_NODE = process.env.XRPL_NODE || XRPL_NODES[0];
 const TRADING_WALLET_SECRET = process.env.TRADING_WALLET_SECRET;
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WALDO_CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
@@ -49,50 +56,97 @@ const logger = winston.createLogger({
 
 // ===== INITIALIZE SERVICES =====
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-const client = new xrpl.Client(XRPL_NODE);
+let client = new xrpl.Client(XRPL_NODE);
 const redis = createClient({ url: process.env.REDIS_URL });
 
 let tradingWallet = null;
 let currentPrice = 0;
 let dailyVolume = 0;
+let currentNodeIndex = 0;
+let reconnectAttempts = 0;
+let isReconnecting = false;
 
 // ===== REDIS CONNECTION =====
 redis.on('error', (err) => logger.error('Redis error:', err));
 redis.on('connect', () => logger.info('Connected to Redis'));
-// Harden XRPL client to avoid unhandled events (e.g., 'noPermission')
-client.on('error', (err) => {
-  logger.warn('XRPL client error:', err);
-});
-client.on('connectionError', (err) => {
-  logger.warn('XRPL connection error:', err);
-  // Attempt automatic reconnection after connection error
-  setTimeout(async () => {
-    try {
-      if (!client.isConnected()) {
-        logger.info('🔄 Attempting automatic XRPL reconnection...');
-        await client.connect();
-        logger.info('✅ XRPL reconnection successful');
+// ===== ROBUST XRPL CONNECTION MANAGER =====
+async function connectToNextNode() {
+  if (isReconnecting) return false;
+
+  isReconnecting = true;
+
+  try {
+    // Try current node first, then cycle through alternatives
+    for (let attempts = 0; attempts < XRPL_NODES.length; attempts++) {
+      const nodeUrl = XRPL_NODES[currentNodeIndex];
+
+      try {
+        logger.info(`🔄 Attempting connection to XRPL node: ${nodeUrl}`);
+
+        // Disconnect existing client if connected
+        if (client.isConnected()) {
+          await client.disconnect();
+        }
+
+        // Create new client with current node
+        client = new xrpl.Client(nodeUrl);
+        setupClientEventHandlers();
+
+        // Attempt connection with timeout
+        await Promise.race([
+          client.connect(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 10000))
+        ]);
+
+        if (client.isConnected()) {
+          logger.info(`✅ Successfully connected to XRPL node: ${nodeUrl}`);
+          reconnectAttempts = 0;
+          isReconnecting = false;
+          return true;
+        }
+      } catch (nodeError) {
+        logger.warn(`❌ Failed to connect to ${nodeUrl}: ${nodeError.message}`);
+        currentNodeIndex = (currentNodeIndex + 1) % XRPL_NODES.length;
       }
-    } catch (reconnectError) {
-      logger.error('❌ Automatic reconnection failed:', reconnectError);
     }
-  }, 5000); // Wait 5 seconds before reconnecting
-});
-client.on('disconnected', (code) => {
-  logger.warn(`XRPL disconnected: ${code}`);
-  // Attempt automatic reconnection after disconnection
-  setTimeout(async () => {
-    try {
-      if (!client.isConnected()) {
-        logger.info('🔄 Attempting automatic XRPL reconnection after disconnect...');
-        await client.connect();
-        logger.info('✅ XRPL reconnection successful');
-      }
-    } catch (reconnectError) {
-      logger.error('❌ Automatic reconnection failed:', reconnectError);
-    }
-  }, 3000); // Wait 3 seconds before reconnecting
-});
+
+    // If all nodes failed, wait and try again
+    reconnectAttempts++;
+    const backoffDelay = Math.min(30000, 5000 * reconnectAttempts); // Max 30 seconds
+    logger.error(`❌ All XRPL nodes failed. Attempt ${reconnectAttempts}. Retrying in ${backoffDelay / 1000}s...`);
+
+    setTimeout(() => {
+      isReconnecting = false;
+      connectToNextNode();
+    }, backoffDelay);
+
+    return false;
+  } catch (error) {
+    logger.error('❌ Critical connection error:', error);
+    isReconnecting = false;
+    return false;
+  }
+}
+
+function setupClientEventHandlers() {
+  client.on('error', (err) => {
+    logger.warn('XRPL client error:', err);
+  });
+
+  client.on('connectionError', (err) => {
+    logger.warn('XRPL connection error:', err);
+    setTimeout(() => connectToNextNode(), 2000);
+  });
+
+  client.on('disconnected', (code) => {
+    logger.warn(`XRPL disconnected: ${code}`);
+    // Immediate reconnection for unexpected disconnects
+    setTimeout(() => connectToNextNode(), 1000);
+  });
+}
+
+// Initial setup
+setupClientEventHandlers();
 
 await redis.connect();
 
@@ -148,7 +202,12 @@ async function connectXRPL() {
       return true;
     }
 
-    await client.connect();
+    // Use the robust connection manager
+    const connected = await connectToNextNode();
+    if (!connected) {
+      throw new Error('Failed to connect to any XRPL node');
+    }
+
     tradingWallet = xrpl.Wallet.fromSeed(TRADING_WALLET_SECRET);
     logger.info(`🔗 Connected to XRPL - Trading wallet: ${tradingWallet.classicAddress}`);
     logger.info(`🪙 WALDO token configured: currency=${WALDO_CURRENCY} issuer=${WALDO_ISSUER}`);
@@ -391,6 +450,14 @@ async function getWLOBalance(address) {
 // ===== TRADING FUNCTIONS =====
 async function buyWaldo(userAddress, xrpAmount) {
   try {
+    // Ensure XRPL connection is active before attempting trade
+    if (!client.isConnected() && !isReconnecting) {
+      logger.warn('⚠️ XRPL client disconnected, attempting robust reconnection...');
+      const connected = await connectToNextNode();
+      if (!connected) {
+        throw new Error('Failed to establish XRPL connection for buy trade');
+      }
+    }
     // Read admin-configured min/max from Redis (fallback to defaults)
     const adminMinRaw = await redis.get('volume_bot:min_trade_size');
     const adminMaxRaw = await redis.get('volume_bot:max_trade_size');
@@ -490,10 +557,12 @@ async function buyWaldo(userAddress, xrpAmount) {
 async function sellWaldo(userAddress, waldoAmount) {
   try {
     // Ensure XRPL connection is active before attempting trade
-    if (!client.isConnected()) {
-      logger.warn('⚠️ XRPL client disconnected, attempting reconnection...');
-      await client.connect();
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for connection to stabilize
+    if (!client.isConnected() && !isReconnecting) {
+      logger.warn('⚠️ XRPL client disconnected, attempting robust reconnection...');
+      const connected = await connectToNextNode();
+      if (!connected) {
+        throw new Error('Failed to establish XRPL connection for sell trade');
+      }
     }
 
     const price = await getCurrentWaldoPrice();
@@ -837,14 +906,21 @@ if (MARKET_MAKING) {
     }
   });
 
-  // Connection health check every 5 minutes
-  cron.schedule('*/5 * * * *', async () => {
+  // Connection health check every 2 minutes
+  cron.schedule('*/2 * * * *', async () => {
     try {
-      if (!client.isConnected()) {
-        logger.warn('⚠️ XRPL client disconnected during health check, reconnecting...');
-        await client.connect();
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        logger.info('✅ XRPL reconnection successful during health check');
+      if (!client.isConnected() && !isReconnecting) {
+        logger.warn('⚠️ XRPL client disconnected during health check, triggering reconnection...');
+        await connectToNextNode();
+      } else if (client.isConnected()) {
+        // Test connection with a simple request
+        try {
+          await client.request({ command: 'server_info' });
+          logger.debug('✅ XRPL connection health check passed');
+        } catch (testError) {
+          logger.warn('⚠️ XRPL connection test failed, triggering reconnection...');
+          await connectToNextNode();
+        }
       }
     } catch (error) {
       logger.error('❌ Connection health check failed:', error);
@@ -1532,6 +1608,10 @@ bot.onText(/\/stats/, async (msg) => {
     const tradesCount = await redis.lLen('waldo:trades');
     const price = currentPrice;
 
+    // Get current XRPL node info
+    const currentNode = XRPL_NODES[currentNodeIndex];
+    const connectionStatus = client.isConnected() ? '🟢 Connected' : '🔴 Disconnected';
+
     const message = `📈 **WALDO Trading Statistics**\n\n` +
       `💰 **Current Price**: ${price.toFixed(8)} XRP per WLO\n` +
       `📊 **24h Volume**: ${parseFloat(volume).toFixed(2)} XRP\n` +
@@ -1539,6 +1619,9 @@ bot.onText(/\/stats/, async (msg) => {
       `🎯 **Spread**: ${PRICE_SPREAD}%\n` +
       `⚡ **Min Trade**: ${MIN_TRADE_XRP} XRP\n` +
       `🚀 **Max Trade**: ${MAX_TRADE_XRP} XRP\n\n` +
+      `🌐 **XRPL Node**: ${currentNode}\n` +
+      `🔗 **Connection**: ${connectionStatus}\n` +
+      `🔄 **Reconnect Attempts**: ${reconnectAttempts}\n\n` +
       `🤖 **Market Making**: ${MARKET_MAKING ? 'Active' : 'Inactive'}`;
 
     bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
