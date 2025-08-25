@@ -103,6 +103,7 @@ const startServer = async () => {
   app.use("/api/tweets", tweetsRoute);
   app.use("/api/userstats", userStatsRoute);
   app.use("/api/userMemes", (await import("./routes/userMemes.js")).default);
+  app.use("/api/policy", (await import("./routes/policy.js")).default);
   app.use("/api/userLevel", (await import("./routes/userLevel.js")).default);
   app.use("/api/tokenomics", (await import("./routes/tokenomics.js")).default);
   app.use("/api/security", (await import("./routes/security.js")).default);
