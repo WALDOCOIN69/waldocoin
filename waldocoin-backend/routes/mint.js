@@ -48,7 +48,9 @@ router.post("/", async (req, res) => {
       return res.status(403).json({ success: false, error: "Meme needs at least 60 XP to mint." });
     }
 
-    // Note: Whitepaper uses 50 WALDO mint cost; enforced below via payment
+    // NFT mint cost from config
+    const { getNftConfig } = await import("../utils/config.js");
+    const nftCfg = await getNftConfig();
 
     const paymentPayload = {
       txjson: {
@@ -57,12 +59,12 @@ router.post("/", async (req, res) => {
         Amount: {
           currency: "WLO",
           issuer: process.env.WALDO_ISSUER,
-          value: "50"
+          value: String(nftCfg.mintCostWLO)
         }
       },
       custom_meta: {
         identifier: `MINT:${tweetId}`,
-        instruction: "Pay 50 WALDO to mint your meme NFT."
+        instruction: `Pay ${nftCfg.mintCostWLO} WALDO to mint your meme NFT.`
       }
     };
 

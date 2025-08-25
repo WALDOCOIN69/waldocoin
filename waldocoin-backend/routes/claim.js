@@ -113,8 +113,10 @@ router.post("/", async (req, res) => {
     }
 
     const claimId = uuidv4();
-    const feeRate = finalStake ? 0.05 : 0.10;
-    const burnRate = 0.02;
+    const { getClaimConfig } = await import("../utils/config.js");
+    const claimCfg = await getClaimConfig();
+    const feeRate = finalStake ? claimCfg.stakedFeeRate : claimCfg.instantFeeRate;
+    const burnRate = claimCfg.burnRate;
 
     const gross = baseReward;
     const fee = Math.floor(gross * feeRate);

@@ -43,11 +43,30 @@ const PER_MEME_CONFIG = {
 };
 
 // Long-term staking configuration
-const LONG_TERM_CONFIG = {
-  minimumAmount: 1000,      // 1,000 WALDO minimum
-  earlyUnstakePenalty: 0.15, // 15% penalty
-  maxActiveStakes: 10       // Maximum active stakes per user
+let LONG_TERM_CONFIG = {
+  minimumAmount: 1000,
+  earlyUnstakePenalty: 0.15,
+  maxActiveStakes: 10
 };
+
+// Load dynamic staking config from Redis-configurable settings
+async function refreshLongTermConfig() {
+  try {
+    const { getStakingConfig } = await import("../utils/config.js");
+    const cfg = await getStakingConfig();
+    LONG_TERM_CONFIG = {
+      minimumAmount: cfg.minimumAmountLongTerm,
+      earlyUnstakePenalty: cfg.earlyUnstakePenalty,
+      maxActiveStakes: cfg.maxActiveStakes
+    };
+  } catch (e) {
+    console.warn('Using default LONG_TERM_CONFIG (could not load from config):', e.message || e);
+  }
+}
+
+// Prime config on module load, and refresh lazily in handlers
+await refreshLongTermConfig();
+
 
 // Calculate user's XP level
 function getUserLevel(xp) {
@@ -67,6 +86,10 @@ function getUserLevel(xp) {
 // Calculate APY with Level 5 bonus
 function calculateAPY(duration, userLevel) {
   const baseAPY = LONG_TERM_APY_RATES[duration];
+
+  // Ensure latest config
+  await refreshLongTermConfig();
+
   if (userLevel === 5) {
     return baseAPY + (LEGEND_BONUS * 100); // Add 2% for Level 5
   }

@@ -52,7 +52,10 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const { uuid, next } = await xummClient.payload.create(payload);
+    const { uuid, next } = await xummClient.payload.createAndSubscribe(payload, (event) => {
+      if (event.data.signed === true) return true;
+      if (event.data.signed === false) throw new Error("User rejected voting payment");
+    });
 
     // ⏱️ Save vote to prevent double voting (7-day expiry)
     await redis.set(voteKey, JSON.stringify({ vote, timestamp: Date.now() }), { EX: 60 * 60 * 24 * 7 });

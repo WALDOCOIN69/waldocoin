@@ -36,9 +36,10 @@ router.post("/", async (req, res) => {
 
     const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
     const WALDO_CURRENCY = "WLO";
-    const WALDO_PRICE_XRP = 0.01;
-    const REQUIRED_XRP = 100;
-    const requiredWaldo = REQUIRED_XRP / WALDO_PRICE_XRP;
+    // Load DAO requirement from config (WLO)
+    const { getDaoConfig } = await import("../../utils/config.js");
+    const daoCfg = await getDaoConfig();
+    const requiredWaldo = daoCfg.votingRequirementWLO;
 
     const waldoLine = lines.find(
       l => l.currency === WALDO_CURRENCY && l.account === WALDO_ISSUER
@@ -61,7 +62,7 @@ router.post("/", async (req, res) => {
         error: "You already voted on this proposal."
       });
     }
-      await addXP(wallet, 1);
+    await addXP(wallet, 1);
 
     // ✅ Save vote to Redis
     await redis.hSet(`proposalVotes:${proposalId}`, wallet, choice);
