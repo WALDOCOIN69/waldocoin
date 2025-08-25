@@ -2971,6 +2971,16 @@
       </div>
     </div>
 
+
+    <!-- Eligibility Badge Card (top status) -->
+    <div class="card" id="eligibilityCard">
+      <h2>✅ WALDO Eligibility</h2>
+      <div class="content-center">
+        <div class="large-number" id="eligibilityStatus">Checking…</div>
+        <div class="subtitle-text" id="eligibilityDetail">—</div>
+      </div>
+    </div>
+
     <!-- XP Trends -->
     <div class="card">
       <h2>📊 Meme XP Trends</h2>
@@ -5119,6 +5129,35 @@
       if (!wallet || isDashboardInitialized) return;
 
       isDashboardInitialized = true;
+
+      async function fetchPolicyWorth(wallet) {
+        try {
+          const res = await fetch(`${baseURL}/api/policy/worth?wallet=${wallet}`);
+          const data = await res.json();
+          const statusEl = $("eligibilityStatus");
+          const detailEl = $("eligibilityDetail");
+          if (!statusEl || !detailEl) return;
+          if (data && data.success) {
+            statusEl.textContent = data.ok ? "Eligible" : "Not Eligible";
+            statusEl.style.color = data.ok ? "#25c2a0" : "#ff6b6b";
+            const bal = Number(data.balance || 0).toLocaleString();
+            const req = Number(data.requiredWaldo || 0).toLocaleString();
+            const rate = Number(data.waldoPerXrp || 0).toLocaleString();
+            detailEl.textContent = data.ok
+              ? `You have ${bal} WALDO (min ${req} at ${rate} WALDO/XRP)`
+              : `You need ${req} WALDO (≈${data.minXrp} XRP at ${rate} WALDO/XRP). You have ${bal}.`;
+          } else {
+            statusEl.textContent = "Unknown";
+            detailEl.textContent = data?.error || "Policy status unavailable";
+          }
+        } catch (e) {
+          const statusEl = $("eligibilityStatus");
+          const detailEl = $("eligibilityDetail");
+          if (statusEl) statusEl.textContent = "Unknown";
+          if (detailEl) detailEl.textContent = "Policy status unavailable";
+        }
+      }
+
       console.log("🚀 Initializing WALDO Dashboard...");
 
       clearDashboardIntervals();
@@ -5130,6 +5169,7 @@
 
         const loadPromises = [
           fetchUserStats(wallet).catch(e => console.warn('User stats failed:', e)),
+          fetchPolicyWorth(wallet).catch(e => console.warn('Worth policy failed:', e)),
           // Add all other data fetches here
           fetchConversionRate().catch(e => console.warn('Conversion rate failed:', e)),
           loadTopMeme().catch(e => console.warn('Top meme failed:', e)),
