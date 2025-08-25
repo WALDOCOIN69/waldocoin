@@ -64,8 +64,8 @@ async function refreshLongTermConfig() {
   }
 }
 
-// Prime config on module load, and refresh lazily in handlers
-await refreshLongTermConfig();
+// Prime config on module load (non-blocking), and refresh lazily in handlers
+refreshLongTermConfig().catch(() => { });
 
 
 // Calculate user's XP level
@@ -86,10 +86,7 @@ function getUserLevel(xp) {
 // Calculate APY with Level 5 bonus
 function calculateAPY(duration, userLevel) {
   const baseAPY = LONG_TERM_APY_RATES[duration];
-
-  // Ensure latest config
-  await refreshLongTermConfig();
-
+  // No await here; config is refreshed elsewhere
   if (userLevel === 5) {
     return baseAPY + (LEGEND_BONUS * 100); // Add 2% for Level 5
   }

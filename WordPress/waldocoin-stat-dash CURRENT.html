@@ -1670,14 +1670,18 @@
 
     #levelProgress::-webkit-progress-value {
       background: linear-gradient(90deg, #25c2a0, #00ff88);
+      background-size: 200% 100%;
       border-radius: 10px;
       transition: width 0.5s ease;
+      animation: progressShimmer 6s linear infinite;
     }
 
     #levelProgress::-moz-progress-bar {
       background: linear-gradient(90deg, #25c2a0, #00ff88);
+      background-size: 200% 100%;
       border-radius: 10px;
       transition: width 0.5s ease;
+      animation: progressShimmer 6s linear infinite;
     }
 
     @media (max-width: 768px) {
@@ -1713,9 +1717,93 @@
     .my-memes-section h3 {
       color: #25c2a0;
       margin: 0 0 15px 0;
+
+      /* Global keyframes and helper classes for progress/indicator */
+      @keyframes progressShimmer {
+        0% {
+          background-position: 0% 0;
+        }
+
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      .level-progress-indicator.pulse {
+        animation: indicatorPulse 1.2s ease-out 1;
+      }
+
+      @keyframes indicatorPulse {
+        0% {
+          transform: translateX(-50%) scale(0.96);
+          filter: drop-shadow(0 0 0 rgba(37, 194, 160, 0));
+        }
+
+        60% {
+          transform: translateX(-50%) scale(1.06);
+          filter: drop-shadow(0 0 8px rgba(37, 194, 160, 0.6));
+        }
+
+        100% {
+          transform: translateX(-50%) scale(1);
+          filter: drop-shadow(0 0 0 rgba(37, 194, 160, 0));
+        }
+      }
+
       font-size: 1.2em;
       font-weight: 600;
     }
+
+    /* Eligibility card glow when eligible */
+    #eligibilityCard.eligible {
+      box-shadow: 0 0 18px rgba(37, 194, 160, 0.25), inset 0 0 12px rgba(37, 194, 160, 0.15);
+      animation: eligGlow 3.5s ease-in-out infinite;
+    }
+
+    @keyframes eligGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 12px rgba(37, 194, 160, 0.18), inset 0 0 8px rgba(37, 194, 160, 0.10);
+      }
+
+      50% {
+        box-shadow: 0 0 24px rgba(37, 194, 160, 0.35), inset 0 0 16px rgba(37, 194, 160, 0.18);
+      }
+    }
+
+    /* Spark particle that travels with the indicator on milestone updates */
+    .level-progress-indicator .spark {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #00ff88;
+      box-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
+      opacity: 0;
+      transform: translateX(-8px) translateY(-6px) scale(0.8);
+      animation: sparkFly 700ms ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes sparkFly {
+      0% {
+        opacity: 0;
+        transform: translateX(-8px) translateY(-6px) scale(0.8);
+      }
+
+      20% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(16px) translateY(6px) scale(0.9);
+      }
+    }
+
 
     .tiers-grid {
       display: grid;
@@ -3545,6 +3633,8 @@
             <img alt="Meme 1" class="meme-thumb" id="meme1Img"
               src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMyNWMyYTAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwMGZmODgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnKSIgcng9IjE1Ii8+PHRleHQgeD0iMTUwIiB5PSIxNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI0MCIgZmlsbD0iIzAwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TWVtZSAxPC90ZXh0Pjx0ZXh0IHg9IjE1MCIgeT0iMTgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iNjAiIGZpbGw9IiMwMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkLg8L3RleHQ+PC9zdmc+">
           </a>
+          <p id="battleFeeInfo" class="twitter-link-status" style="margin-top:8px;color:#aaa;">Loading battle fees…</p>
+
           <button type="button" onclick="voteBattle('meme1')" class="button-style" id="voteMeme1Btn">Vote for Meme 1 (5
             WALDO)</button>
         </div>
@@ -3897,6 +3987,24 @@
       <td>${t.base.toFixed(2)} WALDO</td>
       <td>${t.instant.toFixed(4)} WALDO</td>
       <td>${t.staking.toFixed(4)} WALDO</td>
+
+    /** === COUNT-UP UTILS === */
+    function animateCountUp(el, to, duration=800) {
+      try {
+        if (!el) return;
+        const start = Number(el.textContent.replace(/[^0-9.]/g,'')) || 0;
+        const diff = to - start;
+        const startTime = performance.now();
+        function step(now){
+          const p = Math.min(1, (now - startTime)/duration);
+          const val = Math.floor(start + diff * p);
+          el.textContent = val.toLocaleString();
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      } catch(e){ /* noop */ }
+    }
+
       <td>${t.maxNoStake.toFixed(2)} WALDO</td>
       <td>${t.maxStake.toFixed(4)} WALDO</td>
     `;
@@ -3959,11 +4067,31 @@
         if (indicator) {
           // Calculate position based on progress (0% = 0%, 100% = 95% to prevent overflow)
           const position = Math.min(95, xpProgress); // 0% at start, max 95% to prevent edge overflow
+          const prev = Number(indicator.getAttribute('data-prev') || 0);
           indicator.style.left = position + '%';
+          // Trigger subtle pulse when crossing 25/50/75/100 thresholds
+          const thresholds = [25, 50, 75, 100];
+          const crossed = thresholds.some(t => prev < t && position >= t);
+          if (crossed) {
+            indicator.classList.remove('pulse'); // restart animation if already applied
+            void indicator.offsetWidth; // reflow to restart CSS animation
+            indicator.classList.add('pulse');
+            // spawn a spark element
+            const spark = document.createElement('div');
+            spark.className = 'spark';
+            indicator.appendChild(spark);
+            setTimeout(() => {
+              indicator.classList.remove('pulse');
+              spark.remove();
+            }, 800);
+          }
+          indicator.setAttribute('data-prev', String(position));
         }
 
         // Update enhanced meme score display with dynamic background
         updateMemeScoreDisplay(xp, level);
+        // Count up the meme score number
+        animateCountUp(document.getElementById('memeScoreDisplay'), xp);
 
 
         // Update reward table if level is available from API
@@ -5125,6 +5253,23 @@
     let isDashboardInitialized = false;
 
     async function initWaldoDashboard() {
+      async function loadBattleFeesForUI() {
+        try {
+          const res = await fetch(`${baseURL}/api/config/public`);
+          const data = await res.json();
+          const info = document.getElementById('battleFeeInfo');
+          if (data && data.success && data.config && data.config.battle && info) {
+            const b = data.config.battle;
+            info.textContent = `Fees: Start ${b.startFeeWLO} WLO • Accept ${b.acceptFeeWLO} WLO • Vote ${b.voteFeeWLO} WLO ${b.useDefaults ? '(default)' : '(custom)'}`;
+          } else if (info) {
+            info.textContent = 'Fees unavailable';
+          }
+        } catch (e) {
+          const info = document.getElementById('battleFeeInfo');
+          if (info) info.textContent = 'Fees unavailable';
+        }
+      }
+
       const wallet = getWallet();
       if (!wallet || isDashboardInitialized) return;
 
@@ -5170,6 +5315,7 @@
         const loadPromises = [
           fetchUserStats(wallet).catch(e => console.warn('User stats failed:', e)),
           fetchPolicyWorth(wallet).catch(e => console.warn('Worth policy failed:', e)),
+          loadBattleFeesForUI().catch(e => console.warn('Battle config failed:', e)),
           // Add all other data fetches here
           fetchConversionRate().catch(e => console.warn('Conversion rate failed:', e)),
           loadTopMeme().catch(e => console.warn('Top meme failed:', e)),
