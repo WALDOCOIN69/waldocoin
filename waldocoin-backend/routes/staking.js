@@ -6,11 +6,11 @@ import getWaldoBalance from '../utils/getWaldoBalance.js';
 
 // XP level thresholds (using xpManager.js structure)
 const XP_LEVELS = {
-  1: { min: 0, max: 249, title: "Waldo Watcher" },
-  2: { min: 250, max: 849, title: "Waldo Scout" },
-  3: { min: 850, max: 1749, title: "Waldo Agent" },
-  4: { min: 1750, max: 2999, title: "Waldo Commander" },
-  5: { min: 3000, max: Infinity, title: "Waldo Legend" }
+  1: { min: 0, max: 999, title: "Waldo Watcher" },
+  2: { min: 1000, max: 2999, title: "Waldo Scout" },
+  3: { min: 3000, max: 6999, title: "Waldo Agent" },
+  4: { min: 7000, max: 14999, title: "Waldo Commander" },
+  5: { min: 15000, max: Infinity, title: "Waldo Legend" }
 };
 
 // Long-term staking APY rates by duration
