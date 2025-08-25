@@ -3047,10 +3047,39 @@
         <p id="memeScoreDisplay" class="meme-score-enhanced">0</p>
       </div>
       <div class="content-center">
-        <div class="level-info" id="currentLevel">Level 1: Fresh Poster</div>
+        <div class="level-info" id="currentLevel">Level 1: Waldo Watcher</div>
         <div class="next-level-info" id="nextLevelInfo">250 XP to Level 2</div>
       </div>
     </div>
+
+    <!-- Next Level Requirements Card -->
+    <div class="card" id="nextLevelRequirementsCard">
+      <h2>📈 Next Level Requirements</h2>
+      <div id="reqStatusSummary" style="color:#ccc;margin-bottom:8px;">Loading...</div>
+      <ul style="list-style:none;padding-left:0;margin:0;display:flex;flex-direction:column;gap:8px;">
+        <li>
+          <strong>XP Needed:</strong>
+          <span id="reqXpNeeded">—</span>
+        </li>
+        <li>
+          <strong>Memes Minted:</strong>
+          <span id="reqMintedProgress">—</span>
+        </li>
+        <li>
+          <strong>Battles Won:</strong>
+          <span id="reqBattlesProgress">—</span>
+        </li>
+        <li>
+          <strong>Referrals:</strong>
+          <span id="reqReferralsProgress">—</span>
+        </li>
+      </ul>
+      <div style="font-size:0.85rem;color:#888;margin-top:8px;">
+        Note: For the next level, you need XP threshold plus either Battles Won or Referrals (whichever you meet), and
+        minimum Memes Minted.
+      </div>
+    </div>
+
 
     <!-- WALDO/USD Trend -->
     <div class="card">
@@ -3715,9 +3744,13 @@
 
     /** === LEVELS === **/
     const levelTitles = {
-      1: "Fresh Poster", 2: "Shitposter", 3: "Meme Dealer", 4: "OG Degen", 5: "WALDO Master"
+      1: "Waldo Watcher",
+      2: "Waldo Scout",
+      3: "Waldo Agent",
+      4: "Waldo Commander",
+      5: "Waldo Legend"
     };
-    const levelThresholds = [0, 250, 850, 1750, 3000];
+    const levelThresholds = [0, 1000, 3000, 7000, 15000];
     const levelImages = {
       1: "https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg",
       2: "https://waldocoin.live/wp-content/uploads/2025/03/1737843965414.jpeg",
@@ -3822,15 +3855,12 @@
       }
     };
 
-    function getCurrentUserLevel() {
-      // Get user level from existing level calculation logic
-      const userXP = parseInt($("userXP")?.textContent || "0");
-
-      // Level thresholds (same as used in other parts of the dashboard)
-      if (userXP >= 10000) return 5; // Waldo Legend
-      if (userXP >= 5000) return 4;  // Waldo Commander
-      if (userXP >= 2000) return 3;  // Waldo Agent
-      if (userXP >= 500) return 2;   // Waldo Scout
+    function getCurrentUserLevel(xp) {
+      const val = Number.isFinite(xp) ? xp : 0;
+      if (val >= 10000) return 5; // Waldo Legend
+      if (val >= 5000) return 4;  // Waldo Commander
+      if (val >= 2000) return 3;  // Waldo Agent
+      if (val >= 500) return 2;   // Waldo Scout
       return 1; // Waldo Watcher (default)
     }
 
@@ -3893,14 +3923,14 @@
         $("walletAddress") && ($("walletAddress").textContent = `Wallet: ${wallet}`);
         $("refCount") && ($("refCount").textContent = stats.referrals?.length ?? 0);
         $("referralLink") && ($("referralLink").value = `https://waldocoin.live/?ref=${wallet}`);
-        // XP breakdown
+        // XP breakdown (match HTML IDs)
         const breakdown = stats.xpBreakdown || {};
-        $("xpLikes") && ($("xpLikes").textContent = `${breakdown.likes ?? 0} XP`);
-        $("xpRetweets") && ($("xpRetweets").textContent = `${breakdown.retweets ?? 0} XP`);
-        $("xpBattles") && ($("xpBattles").textContent = `${breakdown.battles ?? 0} XP`);
-        $("xpReferrals") && ($("xpReferrals").textContent = `${breakdown.referrals ?? 0} XP`);
-        $("xpVoting") && ($("xpVoting").textContent = `${breakdown.voting ?? 0} XP`);
-        $("xpStakingBonus") && ($("xpStakingBonus").textContent = `${breakdown.stakingBonus ?? 0}%`);
+        $("likesXP") && ($("likesXP").textContent = `${breakdown.likes ?? 0} XP`);
+        $("retweetsXP") && ($("retweetsXP").textContent = `${breakdown.retweets ?? 0} XP`);
+        $("battleWinsXP") && ($("battleWinsXP").textContent = `${breakdown.battles ?? 0} XP`);
+        $("referralsXP") && ($("referralsXP").textContent = `${breakdown.referrals ?? 0} XP`);
+        $("votingXP") && ($("votingXP").textContent = `${breakdown.voting ?? 0} XP`);
+        $("stakingBonusXP") && ($("stakingBonusXP").textContent = `${breakdown.stakingBonus ?? 0}%`);
 
         // Update XP multipliers
         updateXPMultipliers(stats);
@@ -3925,7 +3955,84 @@
         // Update enhanced meme score display with dynamic background
         updateMemeScoreDisplay(xp, level);
 
+
+        // Update reward table if level is available from API
+        if (Number.isFinite(level)) {
+
+          // === Next Level Requirements Logic ===
+          const levelMinRequirements = {
+            1: { minted: 0, battles: 0, referrals: 0 },
+            2: { minted: 1, battles: 0, referrals: 1 },
+            3: { minted: 3, battles: 1, referrals: 2 },
+            4: { minted: 7, battles: 3, referrals: 3 },
+            5: { minted: 10, battles: 5, referrals: 5 }
+          };
+
+          function updateNextLevelRequirements(xp, level, mintedCount, battlesWon, referralsCount) {
+            try {
+              const currentLevel = Math.max(1, Math.min(level || 1, 5));
+              const nextLevel = Math.min(currentLevel + 1, 5);
+
+              // XP to next
+              const xpNeeded = calculateXPToNextLevel(xp);
+              const xpText = nextLevel > currentLevel ? `${xpNeeded} XP to Level ${nextLevel}` : `Max level reached`;
+              const xpEl = document.getElementById("reqXpNeeded");
+              if (xpEl) xpEl.textContent = xpText;
+
+              // Requirements
+              const req = levelMinRequirements[nextLevel] || { minted: 0, battles: 0, referrals: 0 };
+              const mintedOk = (mintedCount || 0) >= (req.minted || 0);
+              const battlesOk = (battlesWon || 0) >= (req.battles || 0);
+              const referralsOk = (referralsCount || 0) >= (req.referrals || 0);
+
+              const mintedStr = `${mintedCount || 0}/${req.minted || 0} ${mintedOk ? '✅' : '❌'}`;
+              const battlesStr = `${battlesWon || 0}/${req.battles || 0} ${battlesOk ? '✅' : '❌'}`;
+              const referralsStr = `${referralsCount || 0}/${req.referrals || 0} ${referralsOk ? '✅' : '❌'}`;
+
+              const mintedEl = document.getElementById("reqMintedProgress");
+              const battlesEl = document.getElementById("reqBattlesProgress");
+              const referralsEl = document.getElementById("reqReferralsProgress");
+
+              if (mintedEl) mintedEl.textContent = mintedStr;
+              if (battlesEl) battlesEl.textContent = battlesStr;
+              if (referralsEl) referralsEl.textContent = referralsStr;
+
+              // Summary logic: need XP + minted + (battles OR referrals)
+              const meetsXP = xpNeeded <= 0;
+              const meetsMinted = mintedOk;
+              const meetsEngagement = battlesOk || referralsOk;
+
+              const summary = document.getElementById("reqStatusSummary");
+              if (summary) {
+                if (currentLevel === 5) {
+                  summary.textContent = "🎉 You are at max level (Waldo Legend).";
+                  summary.style.color = "#25c2a0";
+                } else {
+                  const ok = meetsXP && meetsMinted && meetsEngagement;
+                  summary.textContent = ok ? "✅ All requirements met for next level (awaiting backend update)" : "⏳ Keep going to reach next level";
+                  summary.style.color = ok ? "#25c2a0" : "#ffd93d";
+                }
+              }
+            } catch (e) {
+              console.warn("Next level requirements update failed:", e);
+            }
+          }
+
+          generateRewardTable(level);
+        }
+
         renderXPTrendChart(stats.memeXPTrend || []);
+
+        // Update Next Level Requirements card using fetched stats
+        try {
+          const mintedCount = (window.__waldoMintedCount || 0);
+          const referralsCount = Array.isArray(stats.referrals) ? stats.referrals.length : (stats.referrals || 0);
+          const battlesWon = stats.battles || 0;
+          updateNextLevelRequirements(xp, level, mintedCount, battlesWon, referralsCount);
+        } catch (e) {
+          console.warn('Next level card update skipped:', e);
+        }
+
       } catch (err) {
         showToast("Error loading user stats", "error");
       }
@@ -4539,6 +4646,9 @@
         if (data.success && data.memes) {
           const mintedNFTs = data.memes.filter(meme => meme.nft_minted === 'true' || meme.nft_minted === true);
 
+          // Expose minted count globally for requirements card
+          window.__waldoMintedCount = mintedNFTs.length;
+
           if (mintedNFTs.length === 0) {
             container.innerHTML = `
           <div class="nft-empty-state">
@@ -4996,8 +5106,8 @@
       clearDashboardIntervals();
 
       try {
-        // Generate reward table based on user level
-        const userLevel = getCurrentUserLevel(); // Get current user level
+        // Generate reward table based on user level (use stats value if available later)
+        const userLevel = getCurrentUserLevel(0);
         generateRewardTable(userLevel);
 
         const loadPromises = [
