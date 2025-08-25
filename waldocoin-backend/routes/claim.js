@@ -42,6 +42,23 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ success: false, error: "Stake must be a boolean value" });
   }
 
+
+  // Enforce minimum WALDO worth: 3 XRP
+  try {
+    const { ensureMinWaldoWorth } = await import("../utils/waldoWorth.js");
+    const worth = await ensureMinWaldoWorth(wallet, 3);
+    if (!worth.ok) {
+      return res.status(403).json({
+        success: false,
+        error: `Minimum balance required: ${worth.requiredWaldo.toLocaleString()} WALDO (~${worth.minXrp} XRP at ${worth.waldoPerXrp.toLocaleString()} WALDO/XRP). Your balance: ${worth.balance.toLocaleString()} WALDO`,
+        details: worth
+      });
+    }
+  } catch (e) {
+    console.warn('Worth check failed, denying claim:', e.message || e);
+    return res.status(503).json({ success: false, error: 'Temporary wallet worth check failure. Please try again.' });
+  }
+
   const now = dayjs();
   const monthKey = now.format("YYYY-MM");
   const logKey = `rewards:${wallet}:${monthKey}:log`;

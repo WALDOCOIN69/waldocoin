@@ -1,6 +1,7 @@
 import express from 'express';
 import { redis } from '../redisClient.js';
 import getWaldoBalance from '../utils/getWaldoBalance.js';
+import ensureMinWaldoWorth from '../utils/waldoWorth.js';
 
 // ✅ DUAL STAKING SYSTEM CONFIGURATION
 
@@ -85,6 +86,22 @@ router.post("/long-term", async (req, res) => {
         error: "Missing required fields: wallet, amount, duration"
       });
     }
+
+    // Enforce minimum WALDO worth: 3 XRP
+    try {
+      const worth = await ensureMinWaldoWorth(wallet, 3);
+      if (!worth.ok) {
+        return res.status(403).json({
+          success: false,
+          error: `Minimum balance required: ${worth.requiredWaldo.toLocaleString()} WALDO (~${worth.minXrp} XRP at ${worth.waldoPerXrp.toLocaleString()} WALDO/XRP). Your balance: ${worth.balance.toLocaleString()} WALDO`,
+          details: worth
+        });
+      }
+    } catch (e) {
+      console.warn('Worth check failed, denying long-term stake:', e.message || e);
+      return res.status(503).json({ success: false, error: 'Temporary wallet worth check failure. Please try again.' });
+    }
+
 
     // Validate amount
     const stakeAmount = parseFloat(amount);
@@ -960,6 +977,22 @@ router.post('/stake', async (req, res) => {
         error: "Missing required fields: wallet, amount, duration"
       });
     }
+
+    // Enforce minimum WALDO worth: 3 XRP
+    try {
+      const worth = await ensureMinWaldoWorth(wallet, 3);
+      if (!worth.ok) {
+        return res.status(403).json({
+          success: false,
+          error: `Minimum balance required: ${worth.requiredWaldo.toLocaleString()} WALDO (~${worth.minXrp} XRP at ${worth.waldoPerXrp.toLocaleString()} WALDO/XRP). Your balance: ${worth.balance.toLocaleString()} WALDO`,
+          details: worth
+        });
+      }
+    } catch (e) {
+      console.warn('Worth check failed, denying stake:', e.message || e);
+      return res.status(503).json({ success: false, error: 'Temporary wallet worth check failure. Please try again.' });
+    }
+
 
     // Validate amount and duration
     if (amount < 100) {
