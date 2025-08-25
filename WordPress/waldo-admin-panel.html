@@ -2190,6 +2190,36 @@
             <div>
               <h3 class="section-title">Emergency Controls</h3>
               <div class="alert alert-error alert-small">
+
+                <div class="admin-card">
+                  <div class="card-title">⚙️ Battle Fee Settings</div>
+                  <div class="alert alert-small">Toggle defaults or set custom WLO amounts for battle actions.</div>
+                  <div class="grid-2">
+                    <div>
+                      <label class="label">Use Defaults</label>
+                      <input type="checkbox" id="battleUseDefaults" />
+                    </div>
+                    <div></div>
+                    <div>
+                      <label class="label">Start Fee (WLO)</label>
+                      <input class="input" type="number" id="battleStartFee" min="0" step="1" />
+                    </div>
+                    <div>
+                      <label class="label">Accept Fee (WLO)</label>
+                      <input class="input" type="number" id="battleAcceptFee" min="0" step="1" />
+                    </div>
+                    <div>
+                      <label class="label">Vote Fee (WLO)</label>
+                      <input class="input" type="number" id="battleVoteFee" min="0" step="1" />
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-end;">
+                      <button class="btn" style="background:#25c2a0" onclick="saveBattleFees()">Save</button>
+                      <button class="btn" onclick="loadBattleFees()">Reload</button>
+                      <span id="battleFeeSaveStatus" class="label" style="color:#aaa"></span>
+                    </div>
+                  </div>
+                </div>
+
                 ⚠️ These actions cannot be undone and will affect active users
               </div>
               <button type="button" class="btn btn-warning" onclick="endCurrentBattle()">⏹️ Force End Battle</button>
@@ -3716,6 +3746,48 @@
     // Load data for specific section with error handling
     async function loadSectionData(section) {
       if (!checkAdminAuth()) return;
+
+
+      async function loadBattleFees() {
+        const adminKey = localStorage.getItem('adminKey');
+        try {
+          const res = await fetch(`${API_BASE}/api/config/public`);
+          const data = await res.json();
+          if (data && data.success && data.config && data.config.battle) {
+            const b = data.config.battle;
+            document.getElementById('battleUseDefaults').checked = !!b.useDefaults;
+            document.getElementById('battleStartFee').value = Number(b.startFeeWLO || 0);
+            document.getElementById('battleAcceptFee').value = Number(b.acceptFeeWLO || 0);
+            document.getElementById('battleVoteFee').value = Number(b.voteFeeWLO || 0);
+          }
+        } catch (e) {
+          console.warn('Failed to load battle fees:', e);
+        }
+      }
+      async function saveBattleFees() {
+        const adminKey = localStorage.getItem('adminKey');
+        if (!adminKey) { showAlert('Enter admin key first', 'error'); return; }
+        const useDefaults = document.getElementById('battleUseDefaults').checked;
+        const startFeeWLO = Number(document.getElementById('battleStartFee').value);
+        const acceptFeeWLO = Number(document.getElementById('battleAcceptFee').value);
+        const voteFeeWLO = Number(document.getElementById('battleVoteFee').value);
+        try {
+          const res = await fetch(`${API_BASE}/api/config/battle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+            body: JSON.stringify({ useDefaults, startFeeWLO, acceptFeeWLO, voteFeeWLO })
+          });
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById('battleFeeSaveStatus').textContent = 'Saved';
+            setTimeout(() => document.getElementById('battleFeeSaveStatus').textContent = '', 1500);
+          } else {
+            showAlert(data.error || 'Failed to save battle fees', 'error');
+          }
+        } catch (e) {
+          showAlert('Failed to save battle fees: ' + e.message, 'error');
+        }
+      }
 
       try {
         switch (section) {

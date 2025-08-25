@@ -5220,6 +5220,9 @@
       dashboardIntervals.push(
         setInterval(() => fetchStakingPositions(wallet).catch(e => console.warn('Periodic staking positions failed:', e)), 2 * 60 * 1000)
       );
+      dashboardIntervals.push(
+        setInterval(() => fetchPolicyWorth(wallet).catch(e => console.warn('Periodic worth policy failed:', e)), 2 * 60 * 1000)
+      );
     }
 
     let dashboardStarted = false;
