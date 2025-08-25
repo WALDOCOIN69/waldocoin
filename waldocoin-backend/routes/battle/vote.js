@@ -36,7 +36,8 @@ router.post("/", async (req, res) => {
       return res.status(403).json({ success: false, error: "You have already voted." });
     }
 
-    const feeWaldo = 5;
+    const { voteFeeWLO } = await (await import("../../utils/config.js")).getBattleFees();
+    const feeWaldo = voteFeeWLO;
 
     const payload = {
       txjson: {

@@ -32,7 +32,8 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Battle already accepted" });
     }
 
-    const feeWaldo = 50;
+    const { acceptFeeWLO } = await (await import("../../utils/config.js")).getBattleFees();
+    const feeWaldo = acceptFeeWLO;
     const now = dayjs();
 
     const payload = {

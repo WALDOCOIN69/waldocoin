@@ -32,7 +32,8 @@ router.post("/", async (req, res) => {
   try {
     const battleId = uuidv4();
     const now = dayjs();
-    const feeWaldo = 100;
+    const { startFeeWLO } = await (await import("../../utils/config.js")).getBattleFees();
+    const feeWaldo = startFeeWLO;
 
     let challengedWallet = null;
     let challengedHandle = null;

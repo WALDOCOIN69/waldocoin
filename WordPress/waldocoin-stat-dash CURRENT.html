@@ -4208,7 +4208,14 @@
         });
         const data = await res.json();
         if (data.success) showToast(data.message || "Claim successful!", "success");
-        else showToast(data.error || "Claim failed", "error");
+        else {
+          if (data && data.details && data.details.requiredWaldo !== undefined) {
+            const { waldoPerXrp, minXrp, requiredWaldo, balance } = data.details;
+            showToast(`You need at least ${requiredWaldo.toLocaleString()} WALDO (~${minXrp} XRP at ${waldoPerXrp.toLocaleString()} WALDO/XRP). You currently have ${Number(balance).toLocaleString()} WALDO.`, "error");
+          } else {
+            showToast(data.error || "Claim failed", "error");
+          }
+        }
         fetchMemes(getWallet()); // Refresh
       } catch (e) {
         console.error('Claim error:', e);
@@ -4245,7 +4252,12 @@
           fetchMemes(getWallet());
           fetchNFTCollection(getWallet());
         } else {
-          showToast(data.error || "Mint failed", "error");
+          if (data && data.details && data.details.requiredWaldo !== undefined) {
+            const { waldoPerXrp, minXrp, requiredWaldo, balance } = data.details;
+            showToast(`You need at least ${requiredWaldo.toLocaleString()} WALDO (~${minXrp} XRP at ${waldoPerXrp.toLocaleString()} WALDO/XRP). You currently have ${Number(balance).toLocaleString()} WALDO.`, "error");
+          } else {
+            showToast(data.error || "Mint failed", "error");
+          }
         }
       } catch (e) { showToast("Mint error", "error"); }
     }
@@ -4418,7 +4430,13 @@
           }, 2000);
 
         } else {
-          showToast(data.error || "Failed to create stake", "error");
+          // Worth policy friendly message
+          if (data && data.details && data.details.requiredWaldo !== undefined) {
+            const { waldoPerXrp, minXrp, requiredWaldo, balance } = data.details;
+            showToast(`You need at least ${requiredWaldo.toLocaleString()} WALDO (~${minXrp} XRP at ${waldoPerXrp.toLocaleString()} WALDO/XRP). You currently have ${Number(balance).toLocaleString()} WALDO.`, "error");
+          } else {
+            showToast(data.error || "Failed to create stake", "error");
+          }
         }
 
       } catch (error) {
