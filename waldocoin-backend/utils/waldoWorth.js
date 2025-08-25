@@ -1,14 +1,12 @@
-import { redis } from "../redisClient.js";
 import getWaldoBalance from "./getWaldoBalance.js";
+import getWaldoPerXrp from "./getWaldoPerXrp.js";
 
 /**
  * Ensure a wallet holds at least `minXrp` XRP worth of WALDO.
- * Uses admin-configurable Redis key conversion:waldo_per_xrp (WALDO per 1 XRP).
- * Falls back to 10000 WALDO/XRP if not set, to align with presale base rate.
+ * Uses Magnetic price via getWaldoPerXrp (cached in Redis) with 10,000 fallback.
  */
 export async function ensureMinWaldoWorth(wallet, minXrp = 3) {
-  const waldoPerXrpRaw = await redis.get("conversion:waldo_per_xrp");
-  const waldoPerXrp = parseInt(waldoPerXrpRaw) || 10000;
+  const waldoPerXrp = await getWaldoPerXrp();
   const requiredWaldo = Math.ceil(minXrp * waldoPerXrp);
   const balance = await getWaldoBalance(wallet);
   const ok = (balance || 0) >= requiredWaldo;
