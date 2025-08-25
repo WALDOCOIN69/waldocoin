@@ -224,8 +224,23 @@ async def send_waldo(wallet, amount):
 def status():
     return jsonify({"status": "✅ WALDO bot live", "mode": "LIVE" if LIVE_MODE else "TEST"})
 
+
+# 🔐 Simple auth decorator for internal endpoints
+from functools import wraps
+
+def require_admin_key(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        admin_key = request.headers.get('X-Admin-Key')
+        if not admin_key or admin_key != os.getenv('X_ADMIN_KEY'):
+            return jsonify({"error": "Unauthorized"}), 403
+        return f(*args, **kwargs)
+    return wrapper
+
 @app.route("/payout/<reward_type>/<tweet_id>", methods=["POST"])
-@limiter.limit("5 per minute")
+@require_admin_key
+
+@limiter.limit("3 per minute")
 def payout(reward_type, tweet_id):
     key = f"meme:{tweet_id}"
     data = r.hgetall(key)

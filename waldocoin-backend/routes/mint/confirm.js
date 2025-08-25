@@ -2,9 +2,10 @@ import express from "express";
 import dotenv from "dotenv";
 
 import xrpl from "xrpl";
-import { redis } from "../../redisClient.js"; 
+import { redis } from "../../redisClient.js";
 import { uploadToIPFS } from "../../utils/ipfsUploader.js";
 import { getXrplClient } from "../../utils/xrplClient.js"; // Optional: If you’re centralizing XRPL connections
+import { xummClient } from "../../utils/xummClient.js";
 
 dotenv.config();
 
@@ -22,6 +23,38 @@ router.post("/", async (req, res) => {
     const mintUuid = await redis.get(`meme:mint_pending:${tweetId}`);
     if (!mintUuid) {
       return res.status(403).json({ success: false, error: "No pending mint found or session expired." });
+    }
+
+
+    // ✅ Verify XUMM payload was signed and corresponds to the mint payment
+    const payload = await xummClient.payload.get(mintUuid);
+    if (!payload || !payload.meta || payload.meta.signed !== true) {
+      return res.status(402).json({ success: false, error: "Payment not confirmed via XUMM" });
+    }
+
+    // Optional: Verify XRPL transaction details if available
+    try {
+      const txid = payload?.response?.txid || payload?.response?.hex || null;
+      if (txid) {
+        const xrplClient = await getXrplClient();
+        const txResp = await xrplClient.request({ command: "tx", transaction: txid });
+        const tx = txResp.result;
+        if (tx.TransactionType !== "Payment" || tx.meta?.TransactionResult !== "tesSUCCESS") {
+          return res.status(400).json({ success: false, error: "Invalid payment transaction" });
+        }
+        // Validate payment details (50 WALDO to distributor from the signer)
+        const amount = tx.Amount;
+        const dest = tx.Destination;
+        const issuer = amount?.issuer || amount?.value?.issuer;
+        const currency = amount?.currency || amount?.value?.currency;
+        const value = parseFloat(amount?.value || 0);
+        if (!(currency === "WLO" && issuer === process.env.WALDO_ISSUER && dest === process.env.DISTRIBUTOR_WALLET && value >= 50)) {
+          return res.status(400).json({ success: false, error: "Payment details do not match mint requirements" });
+        }
+      }
+    } catch (e) {
+      // If XRPL tx lookup fails, still require payload signed; log the incident
+      console.warn("⚠️ XRPL tx verification skipped:", e?.message || e);
     }
 
     // 🖼 Upload meme metadata to IPFS

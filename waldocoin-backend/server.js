@@ -77,10 +77,21 @@ const startServer = async () => {
     windowMs: 60 * 1000,
     max: 100,
   });
-  app.use(cors());
-  app.use(helmet());
+  // Restrict CORS to trusted origins only
+  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "https://waldocoin.live,https://admin-vip-only-page.waldocoin.live").split(",").map(s => s.trim());
+  app.use(cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // allow curl/local
+      return cb(null, allowedOrigins.includes(origin));
+    },
+    credentials: false
+  }));
+
+  app.use(helmet({
+    contentSecurityPolicy: false // CSP typically handled at CDN/WordPress level
+  }));
   app.use(limiter);
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
   // 🚀 API Endpoints
   app.use("/api/login", loginRoute);
