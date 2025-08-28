@@ -44,13 +44,26 @@
 </div>
 
 
-/* Connect Modal Styles */
+/* Connect Modal Styles - crisp */
 .connect-modal { position: fixed; inset: 0; z-index: 9999; }
-.connect-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(2px); }
-.connect-modal-content { position: relative; margin: 10vh auto; background: #0d0d0d; border: 1px solid #1e1e1e;
-border-radius: 14px; padding: 20px; width: min(92vw, 500px); box-shadow: 0 0 24px rgba(37,194,160,0.25); }
-.connect-modal-close { position: absolute; top: 8px; right: 8px; background: transparent; border: none; color: #9adbcf;
+.connect-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(2px); }
+.connect-modal-content { position: relative; margin: 8vh auto; background: #0b0b0b; border: 1px solid #1a1a1a;
+border-radius: 16px; padding: 22px; width: min(92vw, 520px); box-shadow: 0 10px 40px rgba(0,0,0,0.55), 0 0 24px
+rgba(37,194,160,0.25); }
+.connect-modal-close { position: absolute; top: 8px; right: 8px; background: transparent; border: none; color: #a5e8d9;
 font-size: 18px; cursor: pointer; }
+.connect-modal h3 { margin: 4px 0 12px 0; color: #c6fff0; font-size: 18px; font-weight: 700; letter-spacing: 0.3px;
+text-transform: uppercase; }
+#xummQrInline { border: 1px solid #1f3b35; box-shadow: 0 0 0 6px rgba(37,194,160,0.05), 0 0 0 1px rgba(37,194,160,0.18),
+0 12px 30px rgba(0,0,0,0.45); }
+.add-trustline-button { background: linear-gradient(90deg, #25c2a0, #19e39a); box-shadow: 0 6px 18px rgba(25, 227, 154,
+0.25); color: #07120f; font-weight: 800; border: none; }
+.add-trustline-button:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 10px 26px rgba(25,
+227, 154, 0.32); }
+.hint { font-size: 13px; opacity: 0.9; }
+.loader { border: 4px solid #1c1c1c; border-top: 4px solid #25c2a0; border-radius: 50%; width: 32px; height: 32px;
+animation: spin 1s linear infinite; margin: 10px auto 0; }
+@keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
 
 <style>
   .button-container {
