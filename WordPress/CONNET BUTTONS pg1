@@ -1,6 +1,6 @@
 <!-- WALDO Connect/Trustline Custom Block pg1 under presale btn-->
 <div class="button-container">
-  <button type="button" onclick="window.location.href='https://stats-page.waldocoin.live/'"
+  <button type="button" onclick="window.location.href='https://stats-page.waldocoin.live/connect/'"
     class="connect-wallet-button" id="connectWalletBtn">
     🔗 Connect XAMAN Wallet
   </button>
