@@ -1,12 +1,9 @@
 <!-- WALDO Connect/Trustline Custom Block pg1 under presale btn-->
 <div class="button-container">
-<button
-  type="button"
-  onclick="window.location.href='https://stats-page.waldocoin.live/connect/'"
-  class="connect-wallet-button"
-  id="connectWalletBtn">
-  🔗 Connect XAMAN Wallet
-</button>
+  <button type="button" onclick="window.location.href='https://stats-page.waldocoin.live/'"
+    class="connect-wallet-button" id="connectWalletBtn">
+    🔗 Connect XAMAN Wallet
+  </button>
 
   <div id="trustlineWarning" class="trustline-warning">
     <h3 class="trustline-warning-title">⚠️ You Need a WALDO Trustline</h3>
@@ -20,9 +17,7 @@
     </a>
   </div>
 
-  <button
-    type="button"
-    onclick="window.location.href='https://waldocoin.live/hall-of-fame/'"
+  <button type="button" onclick="window.location.href='https://waldocoin.live/hall-of-fame/'"
     class="hall-of-fame-button">
     🌟 WALDO Hall of Fame
   </button>
@@ -36,6 +31,7 @@
     gap: 25px;
     margin-top: 60px;
   }
+
   .connect-wallet-button {
     background: #00c853;
     color: black;
@@ -46,6 +42,7 @@
     border-radius: 10px;
     cursor: pointer;
   }
+
   .hall-of-fame-button {
     background: gold;
     color: black;
@@ -56,6 +53,7 @@
     border: none;
     cursor: pointer;
   }
+
   .trustline-warning {
     display: none;
     background: #222;
@@ -65,15 +63,18 @@
     text-align: center;
     max-width: 500px;
   }
+
   .trustline-warning-title {
     color: #e63e3e;
     font-size: 22px;
     margin-bottom: 12px;
   }
+
   .trustline-desc {
     font-size: 16px;
     margin-bottom: 14px;
   }
+
   .add-trustline-button {
     background: #e63e3e;
     color: white;
@@ -84,9 +85,11 @@
     transition: transform 0.2s;
     cursor: pointer;
   }
+
   .add-trustline-button:hover {
     transform: scale(1.05);
   }
+
   .connect-wallet-button {
     background: #00c853;
     color: black;
@@ -97,13 +100,14 @@
     border-radius: 10px;
     cursor: pointer;
     box-shadow: 0 0 10px #00c85355;
-    transition: 
+    transition:
       background 0.2s,
       box-shadow 0.2s,
       transform 0.12s;
     outline: none;
   }
-  .connect-wallet-button:hover, 
+
+  .connect-wallet-button:hover,
   .connect-wallet-button:focus {
     background: #25c2a0;
     color: white;
@@ -121,13 +125,14 @@
     border: none;
     cursor: pointer;
     box-shadow: 0 0 10px #ffd70055;
-    transition: 
+    transition:
       background 0.2s,
       box-shadow 0.2s,
       transform 0.12s;
     outline: none;
   }
-  .hall-of-fame-button:hover, 
+
+  .hall-of-fame-button:hover,
   .hall-of-fame-button:focus {
     background: #fffbe3;
     color: #e63e3e;
@@ -147,15 +152,14 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     try {
       const wallet = localStorage.getItem("xummWallet");
       if (wallet) {
         checkTrustline(wallet);
         var btn = document.getElementById("connectWalletBtn");
-    
+
       }
-    } catch (e) {}
+    } catch (e) { }
   });
 </script>
-
