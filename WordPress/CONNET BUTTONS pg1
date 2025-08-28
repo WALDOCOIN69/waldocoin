@@ -240,7 +240,8 @@ font-size: 18px; cursor: pointer; }
     try {
       localStorage.setItem('xummWallet', wallet);
     } catch (e) { }
-    window.location.href = DASHBOARD_URL;
+    try { closeConnectModal(); } catch (e) { }
+    setTimeout(() => { window.location.href = DASHBOARD_URL; }, 250);
   }
 
   function pollLoginStatus(uuid) {
