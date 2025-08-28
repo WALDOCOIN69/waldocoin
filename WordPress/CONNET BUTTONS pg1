@@ -1,7 +1,6 @@
 <!-- WALDO Connect/Trustline Custom Block pg1 under presale btn-->
 <div class="button-container">
-  <button type="button" onclick="window.location.href='https://stats-page.waldocoin.live/connect/'"
-    class="connect-wallet-button" id="connectWalletBtn">
+  <button type="button" onclick="openConnectModal()" class="connect-wallet-button" id="connectWalletBtn">
     🔗 Connect XAMAN Wallet
   </button>
 
@@ -23,11 +22,42 @@
   </button>
 </div>
 
+<!-- Lightweight Connect Modal -->
+<div id="connectModal" class="connect-modal" style="display:none;">
+  <div class="connect-modal-backdrop" onclick="closeConnectModal()"></div>
+  <div class="connect-modal-content">
+    <button class="connect-modal-close" onclick="closeConnectModal()">✕</button>
+    <h3>🔗 Connect Your XAMAN Wallet</h3>
+    <div id="connectDesktop">
+      <img id="xummQrInline" alt="Scan with XUMM"
+        style="display:none; max-width: 280px; border-radius: 10px; box-shadow: 0 0 18px #25c2a055;" />
+      <div id="qrLoader" class="loader" style="display:none; margin-top:12px;"></div>
+      <p id="connectHint" class="hint" style="display:none; color:#9adbcf; margin-top:10px;">Scan the QR with your XUMM
+        app</p>
+      <div id="connectErrorInline" class="error" style="color:#ff6b6b; margin-top:10px;"></div>
+    </div>
+    <div id="connectMobile" style="display:none;">
+      <a id="xummDeepLink" class="add-trustline-button" href="#" target="_blank">👉 Tap to open XUMM and sign in</a>
+      <p class="hint" style="color:#9adbcf; margin-top:10px;">Return here after signing to continue</p>
+    </div>
+  </div>
+</div>
+
+
+/* Connect Modal Styles */
+.connect-modal { position: fixed; inset: 0; z-index: 9999; }
+.connect-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(2px); }
+.connect-modal-content { position: relative; margin: 10vh auto; background: #0d0d0d; border: 1px solid #1e1e1e;
+border-radius: 14px; padding: 20px; width: min(92vw, 500px); box-shadow: 0 0 24px rgba(37,194,160,0.25); }
+.connect-modal-close { position: absolute; top: 8px; right: 8px; background: transparent; border: none; color: #9adbcf;
+font-size: 18px; cursor: pointer; }
+
 <style>
   .button-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+
     gap: 25px;
     margin-top: 60px;
   }
@@ -152,13 +182,89 @@
     }
   }
 
+  // Modal logic
+  const baseURL = "https://waldocoin-backend-api.onrender.com";
+  const DASHBOARD_URL = "https://stats-page.waldocoin.live/";
+
+  function isMobileDevice() { return /iphone|android|ipad|mobile/i.test(navigator.userAgent); }
+
+  async function openConnectModal() {
+    const modal = document.getElementById('connectModal');
+    const qr = document.getElementById('xummQrInline');
+    const loader = document.getElementById('qrLoader');
+    const hint = document.getElementById('connectHint');
+    const err = document.getElementById('connectErrorInline');
+    const deepLink = document.getElementById('xummDeepLink');
+    const mobile = document.getElementById('connectMobile');
+    const desktop = document.getElementById('connectDesktop');
+
+    modal.style.display = 'block';
+    err.textContent = '';
+    qr.style.display = 'none';
+    loader.style.display = 'block';
+    hint.style.display = 'none';
+    mobile.style.display = 'none';
+    desktop.style.display = 'block';
+
+    try {
+      const res = await fetch(`${baseURL}/api/login`);
+      const { qr: qrUrl, uuid, refs } = await res.json();
+
+      if (isMobileDevice()) {
+        // Mobile: show deep link instead of QR
+        desktop.style.display = 'none';
+        mobile.style.display = 'block';
+        const link = refs?.qr_uri ? refs.qr_uri : `https://xumm.app/sign/${uuid}`;
+        deepLink.href = link;
+      } else {
+        // Desktop: show QR
+        qr.src = qrUrl;
+        qr.style.display = 'block';
+        hint.style.display = 'block';
+      }
+
+      // Start polling for login status
+      pollLoginStatus(uuid);
+    } catch (e) {
+      err.textContent = '🚨 Could not load XUMM login. Please try again.';
+    } finally {
+      loader.style.display = 'none';
+    }
+  }
+  function closeConnectModal() {
+    const modal = document.getElementById('connectModal');
+    modal.style.display = 'none';
+  }
+
+  function setLoginAndRedirect(wallet) {
+    try {
+      localStorage.setItem('xummWallet', wallet);
+    } catch (e) { }
+    window.location.href = DASHBOARD_URL;
+  }
+
+  function pollLoginStatus(uuid) {
+    const statusURL = `${baseURL}/api/login/status?uuid=${uuid}`;
+    let attempts = 0; const maxAttempts = 120;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(statusURL + `&_t=${Date.now()}`);
+        const data = await res.json();
+        if (data.signed && (data.account || data.wallet)) {
+          clearInterval(timer);
+          setLoginAndRedirect(data.account || data.wallet);
+        }
+        attempts++;
+        if (attempts >= maxAttempts) { clearInterval(timer); }
+      } catch (err) { clearInterval(timer); }
+    }, 1000);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     try {
       const wallet = localStorage.getItem("xummWallet");
       if (wallet) {
         checkTrustline(wallet);
-        var btn = document.getElementById("connectWalletBtn");
-
       }
     } catch (e) { }
   });
