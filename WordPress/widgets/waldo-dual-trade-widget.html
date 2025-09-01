@@ -788,9 +788,6 @@
       qr.style.display = 'none'; spin.style.display = 'block'; hint.style.display = 'none';
       if (isMobile) {
         // Mobile: do NOT show QR; force deep link via user gesture
-        // As a fallback for aggressive in-app browsers, try an invisible iframe trick
-        const iframe = document.createElement('iframe'); iframe.style.display = 'none';
-        link.addEventListener('click', () => { try { iframe.src = deepApp; document.body.appendChild(iframe); } catch (_) { } setTimeout(() => { try { window.location.href = deepWeb; } catch (_) { } }, 900); });
 
         el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
         // Build Xaman deep link: try custom scheme first, then universal link
@@ -799,15 +796,11 @@
         const deepApp = uuid ? `xumm://app/sign/${uuid}` : (any || '#');
         const deepWeb = any || '#';
         // Use native anchor navigation for best compatibility
-        link.href = deepApp; link.target = '_self'; link.rel = 'noopener';
+        link.href = deepApp; link.rel = 'noopener'; link.removeAttribute('target');
         // Hide spinner on mobile; user will tap the button
         spin.style.display = 'none';
-        // Force deep link on tap; fallback to universal link if needed
-        link.onclick = (e) => {
-          e.preventDefault();
-          try { window.location.href = deepApp; } catch (_) { }
-          setTimeout(() => { try { window.location.href = deepWeb; } catch (_) { } }, 800);
-        };
+        // Do not override click: let the native anchor open the app
+
       } else {
         // Desktop: show QR
         el('xummDesktop').style.display = 'block'; el('xummMobile').style.display = 'none';
