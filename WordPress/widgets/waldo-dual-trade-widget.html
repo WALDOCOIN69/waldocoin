@@ -487,6 +487,35 @@
     border-color: rgba(37, 194, 160, .35)
   }
 
+  /* First Ledger button neon hover like tabs */
+  .fl-actions .btn.buy {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease
+  }
+
+  .fl-actions .btn.buy::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity .18s ease;
+    background: radial-gradient(80% 80% at 30% 0%, rgba(0, 247, 255, .32), transparent 60%),
+      radial-gradient(80% 80% at 70% 100%, rgba(255, 61, 247, .28), transparent 60%)
+  }
+
+  .fl-actions .btn.buy:hover {
+    border-color: #21d7ff;
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 0 16px rgba(0, 247, 255, .25), 0 0 28px rgba(255, 61, 247, .18)
+  }
+
+  .fl-actions .btn.buy:hover::before {
+    opacity: 1
+  }
+
+
   .btn.sell {
     background: linear-gradient(90deg, #ff8c8c, var(--red));
     color: #170a0a;
