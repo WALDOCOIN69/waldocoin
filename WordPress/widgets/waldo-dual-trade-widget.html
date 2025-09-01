@@ -367,7 +367,7 @@
           try {
             const r = await fetch(url + `&_t=${Date.now()}`);
             const s = await r.json();
-            if (s?.signed) { clearInterval(id); showToast(successMsg || 'Success'); xummClose(); }
+            if (s?.signed) { clearInterval(id); showToast(successMsg || 'Success'); if (s?.txid) { window._waldoLastTx = s.txid; } xummClose(); }
             if (++tries >= max) clearInterval(id);
           } catch (_) { clearInterval(id); }
         }, 1000);
@@ -384,6 +384,19 @@
         xummOpen('Connect XUMM', j.refs);
         startStatusPoll(j.uuid, 'Connected!');
       } catch (e) { alert('Login failed'); }
+      function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
+      function appendReceipt(msg) {
+        try {
+          const box = el('tradeMsg');
+          const hash = window._waldoLastTx;
+          const link = hash ? ` <a href="${explorerLink(hash)}" target="_blank" rel="noopener">View tx</a>` : '';
+          box.innerHTML = `${msg}${link}`;
+        } catch (_) {/* noop */ }
+      }
+      // Inject receipts on buy/sell toasts (rely on _waldoLastTx set by status poll)
+      const _oldShowToast = showToast;
+      showToast = function (msg) { _oldShowToast(msg); if (/buy|sell|connected/i.test(msg) && window._waldoLastTx) { appendReceipt(msg); } }
+
     }
     window.waldoTrustline = async function () {
       try { const r = await fetch(`${API}/api/login/trustline-noripple`); const j = await r.json(); xummOpen('Add WALDO Trustline', j.refs); } catch (e) { alert('Trustline failed'); }
