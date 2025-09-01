@@ -551,6 +551,17 @@
     color: #bfeee3
   }
 
+  /* Ensure modal content is clickable above backdrop */
+  .xumm-modal .backdrop {
+    z-index: 1
+  }
+
+  .xumm-modal .content {
+    position: relative;
+    z-index: 2;
+    pointer-events: auto
+  }
+
   .xumm-modal {
     position: fixed;
     inset: 0;
@@ -777,6 +788,10 @@
       qr.style.display = 'none'; spin.style.display = 'block'; hint.style.display = 'none';
       if (isMobile) {
         // Mobile: do NOT show QR; force deep link via user gesture
+        // As a fallback for aggressive in-app browsers, try an invisible iframe trick
+        const iframe = document.createElement('iframe'); iframe.style.display = 'none';
+        link.addEventListener('click', () => { try { iframe.src = deepApp; document.body.appendChild(iframe); } catch (_) { } setTimeout(() => { try { window.location.href = deepWeb; } catch (_) { } }, 900); });
+
         el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
         // Build Xaman deep link: try custom scheme first, then universal link
         const any = refs?.qr_uri || next?.always || '';
