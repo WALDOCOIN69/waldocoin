@@ -20,6 +20,27 @@
           <input type="number" min="0" step="0.1" id="buyXrp" placeholder="Amount in XRP" />
           <button class="btn buy" onclick="waldoBuy()">Buy WLO</button>
         </div>
+        <div class="row">
+          <div class="chipbar">
+            <span>Quick Buy:</span>
+            <button class="chip" data-xrp="1">1 XRP</button>
+            <button class="chip" data-xrp="5">5 XRP</button>
+            <button class="chip" data-xrp="10">10 XRP</button>
+          </div>
+          <div class="chipbar">
+            <span>Quick Sell:</span>
+            <button class="chip" data-wlo="100">100</button>
+            <button class="chip" data-wlo="500">500</button>
+            <button class="chip" data-wlo="1000">1k</button>
+          </div>
+          <div class="chipbar">
+            <span>Slippage:</span>
+            <button class="chip" data-slip="0">0%</button>
+            <button class="chip" data-slip="50">0.5%</button>
+            <button class="chip" data-slip="100">1%</button>
+            <button class="chip" data-slip="200">2%</button>
+          </div>
+        </div>
         <div class="col">
           <label>Sell (WLO)</label>
           <input type="number" min="0" step="1" id="sellWlo" placeholder="Amount in WLO" />
@@ -151,6 +172,34 @@
     border-radius: 10px;
     padding: 12px
   }
+
+  .chipbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 6px 0
+  }
+
+  .chipbar span {
+    font-size: 12px;
+    color: #9adbcf
+  }
+
+  .chip {
+    background: #0c1513;
+    border: 1px solid #16342b;
+    color: #bff7ea;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-weight: 800;
+    cursor: pointer
+  }
+
+  .chip:hover {
+    filter: brightness(1.08)
+  }
+
 
   label {
     display: block;
@@ -369,6 +418,36 @@
         try {
           const r = await fetch(url + `&_t=${Date.now()}`);
           const s = await r.json();
+
+          // Quick chips
+          document.querySelectorAll('#waldoTrade .chip[data-xrp]').forEach(b => b.addEventListener('click', () => { el('buyXrp').value = b.getAttribute('data-xrp'); }));
+          document.querySelectorAll('#waldoTrade .chip[data-wlo]').forEach(b => b.addEventListener('click', () => { el('sellWlo').value = b.getAttribute('data-wlo'); }));
+          let currentSlip = 0;
+          document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => {
+            currentSlip = parseInt(b.getAttribute('data-slip'), 10) || 0;
+            document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+          }));
+
+          // Override trade calls to include slippageBps
+          const _origBuy = window.waldoBuy; const _origSell = window.waldoSell;
+          window.waldoBuy = async function () {
+            const amount = parseFloat(el('buyXrp').value);
+            if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
+            try {
+              const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount, slippageBps: currentSlip }) });
+              const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Buy WALDO', j.refs); startStatusPoll(j.uuid, 'Buy placed!', s => appendReceipt('Buy placed!'));
+            } catch (e) { el('tradeMsg').textContent = 'Buy failed: ' + e.message; }
+          }
+          window.waldoSell = async function () {
+            const amount = parseFloat(el('sellWlo').value);
+            if (!isFinite(amount) || amount <= 0) return alert('Enter WLO amount');
+            try {
+              const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'sell', amountWlo: amount, slippageBps: currentSlip }) });
+              const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!', s => appendReceipt('Sell placed!'));
+            } catch (e) { el('tradeMsg').textContent = 'Sell failed: ' + e.message; }
+          }
+
           if (s?.signed) { clearInterval(id); if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { }; if (s?.txid) { window._waldoLastTx = s.txid; } showToast(successMsg || 'Success'); xummClose(); }
           if (++tries >= max) clearInterval(id);
         } catch (_) { clearInterval(id); }
