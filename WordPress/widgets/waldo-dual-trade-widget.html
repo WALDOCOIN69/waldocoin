@@ -217,129 +217,156 @@
   }
 
   .tabs .tab {
-    background: #111;
+    background: #0e1225;
+    border: 1px solid #1d2859;
+    color: #bfeef0;
+    transition: transform .16s ease, box-shadow .16s ease, color .16s ease, border-color .16s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    --glowA: rgba(0, 247, 255, .32);
+    --glowB: rgba(255, 61, 247, .28);
+  }
 
-    .status-row {
-      margin-top: 4px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center
-    }
+  .tabs .tab::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity .18s ease;
+    background: radial-gradient(80% 80% at 30% 0%, var(--glowA), transparent 60%), radial-gradient(80% 80% at 70% 100%, var(--glowB), transparent 60%)
+  }
 
-    .conn {
-      font-size: 12px;
-      color: #9adbcf
-    }
+  .tabs .tab:hover {
+    border-color: #21d7ff;
+    color: #eaffff;
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 0 16px rgba(0, 247, 255, .25), 0 0 28px rgba(255, 61, 247, .18);
+  }
 
-    border: 1px solid #1c1c1c;
-    color: #bfeee3;
-    padding: 8px 12px;
+  .tabs .tab:active {
+    transform: translateY(0) scale(0.99)
+  }
 
-    /* Swap UI */
-    .swap-card {
-      position: relative;
-      border: 1px solid #202a4e;
-      border-radius: 12px;
-      padding: 12px;
-      background: linear-gradient(180deg, #0a0f26, #0b112d);
-      box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05)
-    }
+  .tabs .tab:hover::before {
+    opacity: 1
+  }
 
-    .swap-card:before,
-    .swap-card:after {
-      content: "";
-      position: absolute;
-      inset: -1px;
-      border-radius: 12px;
-      pointer-events: none
-    }
 
-    .swap-card:before {
-      background: linear-gradient(90deg, transparent, rgba(0, 247, 255, .25), transparent);
-      filter: blur(8px)
-    }
+  .status-row {
+    margin-top: 4px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center
+  }
 
-    .swap-card:after {
-      background: linear-gradient(90deg, transparent, rgba(255, 61, 247, .2), transparent);
-      opacity: .7;
-      mix-blend-mode: screen
-    }
+  .conn {
+    font-size: 12px;
+    color: #9adbcf
+  }
 
-    .swap-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center
-    }
+  /* Swap UI */
+  .swap-card {
+    position: relative;
+    border: 1px solid #202a4e;
+    border-radius: 12px;
+    padding: 12px;
+    background: linear-gradient(180deg, #0a0f26, #0b112d);
+    box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05)
+  }
 
-    .token {
-      flex: 1 1 260px
-    }
+  .swap-card:before,
+  .swap-card:after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    pointer-events: none
+  }
 
-    .token input {
-      height: 36px
-    }
+  .swap-card:before {
+    background: linear-gradient(90deg, transparent, rgba(0, 247, 255, .25), transparent);
+    filter: blur(8px)
+  }
 
-    .token .sym {
-      min-width: 46px;
-      text-align: center
-    }
+  .swap-card:after {
+    background: linear-gradient(90deg, transparent, rgba(255, 61, 247, .2), transparent);
+    opacity: .7;
+    mix-blend-mode: screen
+  }
 
-    .swap-card .token-box {
-      max-width: 240px
-    }
+  .swap-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center
+  }
 
-    .swap-row {
-      justify-content: center
-    }
+  .token {
+    flex: 1 1 260px
+  }
 
-    .token-box {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid #202a4e;
-      border-radius: 12px;
-      padding: 8px 10px;
-      background: linear-gradient(180deg, #0a0f26, #0b112d);
-      box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05), 0 0 14px rgba(0, 247, 255, .06);
-      max-width: 100%;
-    }
+  .token input {
+    height: 36px
+  }
 
-    .token .sym {
-      font-weight: 900;
-      color: #a9ffee
-    }
+  .token .sym {
+    min-width: 46px;
+    text-align: center
+  }
 
-    .token input {
+  .swap-card .token-box {
+    max-width: 240px
+  }
 
-      /* Brighter field for FROM input */
-      #fromAmount {
-        background: linear-gradient(180deg, rgba(0, 247, 255, .08), rgba(255, 61, 247, .06));
-        border-radius: 8px;
-        padding: 0 8px
-      }
+  .swap-row {
+    justify-content: center
+  }
 
-      flex: 1;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: #eafff9;
-      font-size: 16px;
-      appearance: textfield
-    }
+  .token-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #202a4e;
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, #0a0f26, #0b112d);
+    box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05), 0 0 14px rgba(0, 247, 255, .06);
+    max-width: 100%;
+  }
 
-    .token input::-webkit-outer-spin-button,
-    .token input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0
-    }
+  .token .sym {
+    font-weight: 900;
+    color: #a9ffee
+  }
 
-    .token #toAmount {
-      opacity: .85
-    }
+  .token input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #eafff9;
+    font-size: 16px;
+    appearance: textfield
+  }
 
+  /* Brighter field for FROM input */
+  #fromAmount {
+    background: linear-gradient(180deg, rgba(0, 247, 255, .08), rgba(255, 61, 247, .06));
+    border-radius: 8px;
+    padding: 0 8px
+  }
+
+  .token input::-webkit-outer-spin-button,
+  .token input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0
+  }
+
+  .token #toAmount {
+    opacity: .85
   }
 
   .flip {
@@ -512,16 +539,40 @@
 
     /* First Ledger link-only card (flashy) */
     .fl-card {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      gap: 8px;
-      padding: 24px;
-      border: 1px solid #1a1a1a;
+      gap: 10px;
+      padding: 16px;
+      border: 1px solid #202a4e;
       border-radius: 12px;
-      background: radial-gradient(1200px 200px at 50% -10%, rgba(37, 194, 160, .15), transparent 60%), #0b0b0b
+      background: linear-gradient(180deg, #0a0f26, #0b112d);
+      box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05), 0 0 14px rgba(0, 247, 255, .06);
+
+      .fl-card::before,
+      .fl-card::after {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: 12px;
+        pointer-events: none;
+      }
+
+      .fl-card::before {
+        background: linear-gradient(90deg, transparent, rgba(0, 247, 255, .25), transparent);
+        filter: blur(8px)
+      }
+
+      .fl-card::after {
+        background: linear-gradient(90deg, transparent, rgba(255, 61, 247, .2), transparent);
+        opacity: .7;
+        mix-blend-mode: screen
+      }
+
+
     }
 
     .fl-icon {
