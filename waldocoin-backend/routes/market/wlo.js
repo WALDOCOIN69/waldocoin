@@ -34,39 +34,52 @@ router.get("/", async (_req, res) => {
     const ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
     const CURRENCY = "WLO";
 
-    // Ask: people selling WLO for XRP (taker gets XRP, pays WLO)
-    const asks = await client.request({
+    // Ask: people selling WLO for XRP (WLO->XRP book)
+    const wloToXrp = await client.request({
       command: "book_offers",
-      taker_gets: { currency: "XRP" },
-      taker_pays: { currency: CURRENCY, issuer: ISSUER },
+      taker_gets: { currency: "XRP" }, // taker receives XRP
+      taker_pays: { currency: CURRENCY, issuer: ISSUER }, // taker pays WLO
       limit: 10,
     });
 
-    let askPrice = null; // XRP per WLO
-    if (asks.result?.offers?.length) {
-      const best = asks.result.offers[0];
-      // quality is TakerPays (WLO) per TakerGets (XRP drops) — use inverse to get XRP/WLO
-      const q = best.quality
-        ? parseFloat(best.quality)
-        : (parseFloat(best.TakerPays.value) / (parseFloat(best.TakerGets) / 1_000_000));
-      if (q > 0 && isFinite(q)) askPrice = 1 / q;
+    let askPrice = null; // XRP per WLO (best ask)
+    if (wloToXrp.result?.offers?.length) {
+      const best = wloToXrp.result.offers[0];
+      if (best.quality) {
+        // quality here is WLO per 1 XRP → invert to XRP per WLO
+        const qp = parseFloat(best.quality);
+        if (qp > 0 && isFinite(qp)) askPrice = 1 / qp;
+      } else {
+        // fallback: XRP/WLO = (TakerGets XRP drops / 1e6) / (TakerPays WLO)
+        const getsXrp = parseFloat(best.TakerGets) / 1_000_000;
+        const paysWlo = parseFloat(best.TakerPays.value);
+        const p = getsXrp / paysWlo;
+        if (p > 0 && isFinite(p)) askPrice = p;
+      }
     }
 
-    // Bid: people buying WLO with XRP (taker gets WLO, pays XRP)
-    const bids = await client.request({
+    // Bid: people buying WLO with XRP (XRP->WLO book)
+    const xrpToWlo = await client.request({
       command: "book_offers",
-      taker_gets: { currency: CURRENCY, issuer: ISSUER },
-      taker_pays: { currency: "XRP" },
+      taker_gets: { currency: CURRENCY, issuer: ISSUER }, // taker receives WLO
+      taker_pays: { currency: "XRP" }, // taker pays XRP
       limit: 10,
     });
 
-    let bidPrice = null; // XRP per WLO
-    if (bids.result?.offers?.length) {
-      const best = bids.result.offers[0];
-      const q = best.quality
-        ? parseFloat(best.quality)
-        : (parseFloat(best.TakerPays) / 1_000_000) / parseFloat(best.TakerGets.value); // XRP/WLO
-      if (q > 0 && isFinite(q)) bidPrice = q;
+    let bidPrice = null; // XRP per WLO (best bid)
+    if (xrpToWlo.result?.offers?.length) {
+      const best = xrpToWlo.result.offers[0];
+      if (best.quality) {
+        // quality here is XRP per 1 WLO directly (for this book)
+        const qp = parseFloat(best.quality);
+        if (qp > 0 && isFinite(qp)) bidPrice = qp;
+      } else {
+        // fallback: XRP/WLO = (TakerPays XRP drops / 1e6) / (TakerGets WLO)
+        const paysXrp = parseFloat(best.TakerPays) / 1_000_000;
+        const getsWlo = parseFloat(best.TakerGets.value);
+        const p = paysXrp / getsWlo;
+        if (p > 0 && isFinite(p)) bidPrice = p;
+      }
     }
 
     await client.disconnect();
@@ -83,7 +96,7 @@ router.get("/", async (_req, res) => {
     const botVol = await redis.get("volume_bot:volume_24h");
     const v = vol || botVol;
     if (v) result.volume24h = isNaN(Number(v)) ? v : Number(v);
-  } catch (e) {}
+  } catch (e) { }
 
   return res.json(result);
 });

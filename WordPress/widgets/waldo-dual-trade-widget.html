@@ -398,7 +398,7 @@
       try {
         const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
         const j = await r.json();
-        const xrpPerWlo = j?.best?.mid || j?.xrpPerWlo;
+        const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
         el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
         const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
       } catch (e) { el('priceXrp').textContent = '—'; el('vol24').textContent = '—'; }
