@@ -18,6 +18,7 @@
         <div class="col">
           <label>Buy (XRP)</label>
           <input type="number" min="0" step="0.1" id="buyXrp" placeholder="Amount in XRP" />
+          <div class="minline">Min receive: <span id="buyMinOut">—</span> WLO</div>
           <button class="btn buy" onclick="waldoBuy()">Buy WLO</button>
         </div>
         <div class="row">
@@ -42,6 +43,7 @@
           </div>
         </div>
         <div class="col">
+          <div class="minline">Min receive: <span id="sellMinOut">—</span> XRP</div>
           <label>Sell (WLO)</label>
           <input type="number" min="0" step="1" id="sellWlo" placeholder="Amount in WLO" />
           <button class="btn sell" onclick="waldoSell()">Sell WLO</button>
@@ -75,8 +77,14 @@
         <div id="xummLoad" class="spin" style="display:none;"></div>
         <p id="xummHint" class="hint" style="display:none;">Scan the QR with your XUMM app</p>
       </div>
-      <div id="xummMobile" style="display:none;">
-        <a id="xummLink" class="btn" href="#" target="_blank">👉 Tap to open XUMM</a>
+      <div id="xummMobile" style="display:none; display:flex; flex-direction:column; gap:8px; align-items:center;">
+        <a id="xummLink" class="btn" href="#" target="_blank" rel="noopener">👉 Tap to open XUMM</a>
+        <div style="display:flex; gap:8px;">
+          <button id="xummCopy" class="btn" type="button">Copy link</button>
+          <button id="xummShowQr" class="btn" type="button">Show QR</button>
+        </div>
+        <small class="hint" style="color:#9adbcf; opacity:.9;">If the app doesn’t open, copy the link and paste into
+          XUMM.</small>
       </div>
     </div>
     <!-- Toast -->
@@ -185,6 +193,13 @@
     font-size: 12px;
     color: #9adbcf
   }
+
+  .minline {
+    font-size: 12px;
+    color: #8ae9cf;
+    margin: 6px 0 8px
+  }
+
 
   .chip {
     background: #0c1513;
@@ -541,11 +556,55 @@
       showToast = function (msg) { _oldShowToast(msg); if (/buy|sell|connected/i.test(msg) && window._waldoLastTx) { appendReceipt(msg); } }
 
     }
+    // Min preview state
+    let currentSlip = 0; let lastMid = null;
+    async function refreshMarket() {
+      try {
+        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
+        const j = await r.json();
+        const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
+        lastMid = xrpPerWlo || lastMid;
+        el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
+        const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
+        updateMins();
+      } catch (_) { }
+    }
+    function updateMins() {
+      const slip = currentSlip / 10000;
+      if (lastMid && isFinite(lastMid)) {
+        const bx = parseFloat(el('buyXrp').value);
+        el('buyMinOut').textContent = (isFinite(bx) && bx > 0) ? (bx / (lastMid * (1 + slip))).toFixed(2) : '—';
+        const sw = parseFloat(el('sellWlo').value);
+        el('sellMinOut').textContent = (isFinite(sw) && sw > 0) ? (sw * (lastMid * (1 - slip))).toFixed(6) : '—';
+      }
+    }
+    document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => { currentSlip = parseInt(b.getAttribute('data-slip'), 10) || 0; updateMins(); }));
+    el('buyXrp').addEventListener('input', updateMins);
+    el('sellWlo').addEventListener('input', updateMins);
+    refreshMarket(); setInterval(refreshMarket, 60_000);
+
     window.waldoTrustline = async function () {
       try { const r = await fetch(`${API}/api/login/trustline-noripple`); const j = await r.json(); xummOpen('Add WALDO Trustline', j.refs); } catch (e) { alert('Trustline failed'); }
     }
     window.waldoBuy = async function () {
       const amount = parseFloat(el('buyXrp').value);
+      // Mobile helpers: copy / show QR
+      (function () {
+        const copyBtn = document.getElementById('xummCopy');
+        const showQrBtn = document.getElementById('xummShowQr');
+        const qr = document.getElementById('xummQr');
+        const link = document.getElementById('xummLink');
+        if (copyBtn) copyBtn.addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(link?.href || ''); showToast('Link copied'); } catch { showToast('Copy failed'); }
+        });
+        if (showQrBtn) showQrBtn.addEventListener('click', () => {
+          // Force QR mode on mobile
+          document.getElementById('xummDesktop').style.display = 'block';
+          document.getElementById('xummMobile').style.display = 'none';
+          qr.style.display = 'block';
+        });
+      })();
+
       if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
       try {
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount }) });
