@@ -20,10 +20,7 @@ router.get("/", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        return_url: {
-          app: "https://waldocoin-backend-api.onrender.com/xumm-complete.html",
-          web: "https://waldocoin-backend-api.onrender.com/xumm-complete.html"
-        }
+        return_url: { app: "xumm://xumm.app/done", web: null }
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
@@ -110,10 +107,7 @@ router.get("/trustline", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        return_url: {
-          app: "https://waldocoin-backend-api.onrender.com/xumm-complete.html",
-          web: "https://waldocoin-backend-api.onrender.com/xumm-complete.html"
-        }
+        return_url: { app: "xumm://xumm.app/done", web: null }
       }
     };
 

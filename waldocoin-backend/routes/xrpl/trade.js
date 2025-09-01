@@ -50,8 +50,8 @@ router.post("/offer", async (req, res) => {
 
     const created = await xummClient.payload.create({
       txjson,
-      options: { submit: true, expire: 300 },
-      custom_meta: { identifier: `WALDO_TRADE_${side.toUpperCase()}` }
+      options: { submit: true, expire: 300, return_url: { app: 'xumm://xumm.app/done', web: null } },
+      custom_meta: { identifier: `WALDO_TRADE_${side.toUpperCase()}`, instruction: 'Sign in XUMM and return to the app' }
     });
 
     return res.json({ success: true, uuid: created.uuid, refs: created.refs, next: created.next });

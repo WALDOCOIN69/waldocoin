@@ -1,9 +1,10 @@
 <!-- WALDO Dual Trading Widget: XRPL DEX + First Ledger (drop-in) -->
-<div class="waldo-trade" id="waldoTrade">
+<div class="waldo-trade collapsed" id="waldoTrade">
   <div class="trade-head">
     <div class="title"><span class="accent">🟢</span> WALDO Trading</div>
     <div class="sub">Price: <span id="priceXrp">—</span> • Vol 24h: <span id="vol24">—</span></div>
     <div class="tabs">
+      <button id="widgetToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
       <button class="tab active" data-tab="xrpl">XRPL DEX</button>
       <button class="tab" data-tab="fl">First Ledger</button>
     </div>
@@ -13,6 +14,11 @@
       <div class="row">
         <button class="btn" onclick="waldoConnect()">Connect Xaman</button>
         <button class="btn" onclick="waldoTrustline()">Add Trustline</button>
+        <button class="btn" id="btnDisconnect" onclick="waldoDisconnect()" style="display:none;">Disconnect</button>
+      </div>
+      <div class="row status-row">
+        <div id="connStatus" class="conn">Not connected</div>
+        <div id="tlStatus" class="conn">Trustline: —</div>
       </div>
       <div class="swap-card">
         <div class="swap-row">
@@ -23,7 +29,7 @@
               <input type="number" min="0" step="0.000001" id="fromAmount" placeholder="0.0" />
             </div>
           </div>
-          <button class="flip" onclick="swapFlip()" title="Flip">⇅</button>
+          <button class="flip" onclick="window.swapFlip()" title="Flip">⇅</button>
           <div class="token">
             <label>To</label>
             <div class="token-box">
@@ -91,14 +97,68 @@
     --mint: #25c2a0;
     --red: #ff6b6b;
     --line: #1a1a1a;
-    background: #0f0f0f;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, .35), 0 0 18px rgba(37, 194, 160, .12);
-    max-width: 980px;
-    margin: 12px auto;
+    --neonAqua: #00f7ff;
+    --neonMagenta: #ff3df7;
+    background: radial-gradient(600px 200px at 10% -10%, rgba(255, 61, 247, .10), transparent 60%),
+      radial-gradient(600px 180px at 90% -10%, rgba(0, 247, 255, .10), transparent 60%),
+      linear-gradient(180deg, #0a0c1a 0%, #0b0f23 100%);
+    border: 1px solid #18213d;
+    border-radius: 16px;
+    box-shadow: 0 0 22px rgba(0, 247, 255, .08), 0 0 42px rgba(255, 61, 247, .06);
+    max-width: 520px;
+    margin: 14px auto;
     color: #eafff9;
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  .trade-head {
+    text-align: center;
+    position: relative
+  }
+
+  .tabs {
+    justify-content: center
+  }
+
+  .toggle {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid #26335f;
+    background: radial-gradient(circle, #00f7ff 0, #00f7ff 50%, transparent 51%);
+    box-shadow: 0 0 10px rgba(0, 247, 255, .4);
+    cursor: pointer
+  }
+
+  .collapsed .panel,
+  .collapsed .status-row {
+    display: none;
+  }
+
+  .collapsed .tabs {
+    display: flex
+  }
+
+  .collapsed .trade-head {
+    padding-bottom: 10px
+  }
+
+  .collapsed .trade-head {
+    padding-bottom: 10px
+  }
+
+  .collapsed .tabs {
+    display: flex
+  }
+
+  @media (max-width: 520px) {
+    .waldo-trade {
+      max-width: 94vw
+    }
   }
 
   .trade-head {
@@ -106,16 +166,32 @@
   }
 
   .title {
+    position: relative;
     text-transform: uppercase;
-    letter-spacing: .5px;
-    font-weight: 900;
-    font-size: 14px;
-    background: linear-gradient(90deg, #dffff7, #a6ffea, #dffff7);
+    letter-spacing: .8px;
+    font-weight: 1000;
+    font-size: 18px;
+    background: linear-gradient(90deg, var(--neonAqua), var(--neonMagenta), var(--neonAqua));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-size: 200% 100%;
-    animation: shimmer 6s linear infinite
+    background-size: 300% 100%;
+    animation: shimmer 5s linear infinite;
+    text-shadow: 0 0 12px rgba(0, 247, 255, .35), 0 0 20px rgba(255, 61, 247, .25);
+  }
+
+  .title:after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -6px;
+    width: 60%;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(0, 247, 255, .9), rgba(255, 61, 247, .9), rgba(0, 247, 255, .9));
+    box-shadow: 0 0 10px rgba(0, 247, 255, .4), 0 0 16px rgba(255, 61, 247, .3);
+    animation: shimmer 6s linear infinite;
   }
 
   @keyframes shimmer {
@@ -142,37 +218,93 @@
 
   .tabs .tab {
     background: #111;
+
+    .status-row {
+      margin-top: 4px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .conn {
+      font-size: 12px;
+      color: #9adbcf
+    }
+
     border: 1px solid #1c1c1c;
     color: #bfeee3;
     padding: 8px 12px;
 
     /* Swap UI */
     .swap-card {
-      border: 1px solid #1a1a1a;
+      position: relative;
+      border: 1px solid #202a4e;
       border-radius: 12px;
       padding: 12px;
-      background: radial-gradient(800px 120px at 50% -10%, rgba(37, 194, 160, .12), transparent 60%), #0b0b0b
+      background: linear-gradient(180deg, #0a0f26, #0b112d);
+      box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05)
+    }
+
+    .swap-card:before,
+    .swap-card:after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: 12px;
+      pointer-events: none
+    }
+
+    .swap-card:before {
+      background: linear-gradient(90deg, transparent, rgba(0, 247, 255, .25), transparent);
+      filter: blur(8px)
+    }
+
+    .swap-card:after {
+      background: linear-gradient(90deg, transparent, rgba(255, 61, 247, .2), transparent);
+      opacity: .7;
+      mix-blend-mode: screen
     }
 
     .swap-row {
       display: flex;
       align-items: flex-end;
       gap: 10px;
-      flex-wrap: wrap
+      flex-wrap: wrap;
+      justify-content: center
     }
 
     .token {
-      flex: 1 1 280px
+      flex: 1 1 260px
+    }
+
+    .token input {
+      height: 36px
+    }
+
+    .token .sym {
+      min-width: 46px;
+      text-align: center
+    }
+
+    .swap-card .token-box {
+      max-width: 240px
+    }
+
+    .swap-row {
+      justify-content: center
     }
 
     .token-box {
       display: flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid #1c1c1c;
-      background: #0d0d0d;
-      border-radius: 10px;
-      padding: 10px
+      border: 1px solid #202a4e;
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #0a0f26, #0b112d);
+      box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05), 0 0 14px rgba(0, 247, 255, .06);
+      max-width: 100%;
     }
 
     .token .sym {
@@ -181,39 +313,55 @@
     }
 
     .token input {
+
+      /* Brighter field for FROM input */
+      #fromAmount {
+        background: linear-gradient(180deg, rgba(0, 247, 255, .08), rgba(255, 61, 247, .06));
+        border-radius: 8px;
+        padding: 0 8px
+      }
+
       flex: 1;
       border: none;
       outline: none;
       background: transparent;
       color: #eafff9;
-      font-size: 16px
+      font-size: 16px;
+      appearance: textfield
     }
 
-    .flip {
-      align-self: center;
-      background: #111;
-      border: 1px solid #1c1c1c;
-      color: #c6fff0;
-      border-radius: 10px;
-      padding: 10px 12px;
-      cursor: pointer
+    .token input::-webkit-outer-spin-button,
+    .token input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0
     }
 
-    .subline {
-      font-size: 12px;
-      color: #9adbcf;
-      margin-top: 6px
+    .token #toAmount {
+      opacity: .85
     }
 
-    .actions {
-      margin-top: 10px;
-      display: flex;
-      justify-content: center
-    }
+  }
 
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 700
+  .flip {
+    align-self: center;
+    background: #111;
+    border: 1px solid #1c1c1c;
+    color: #c6fff0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer
+  }
+
+  .subline {
+    font-size: 12px;
+    color: #9adbcf;
+    margin-top: 6px
+  }
+
+  .actions {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center
   }
 
   .tabs .tab.active {
@@ -479,6 +627,14 @@
     const el = id => document.getElementById(id);
     const isMobile = /iphone|android|ipad|mobile/i.test(navigator.userAgent);
 
+    // Collapsible (start closed)
+    const root = document.getElementById('waldoTrade');
+    const toggle = document.getElementById('widgetToggle');
+    let collapsed = true;
+    function applyCollapsed() { root.classList.toggle('collapsed', collapsed); }
+    if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
+    applyCollapsed();
+
     // Toast & Status (top-level)
     function showToast(msg) {
       const t = el('waldoToast'); if (!t) return;
@@ -493,36 +649,6 @@
         try {
           const r = await fetch(url + `&_t=${Date.now()}`);
           const s = await r.json();
-
-          // Quick chips
-          document.querySelectorAll('#waldoTrade .chip[data-xrp]').forEach(b => b.addEventListener('click', () => { el('buyXrp').value = b.getAttribute('data-xrp'); }));
-          document.querySelectorAll('#waldoTrade .chip[data-wlo]').forEach(b => b.addEventListener('click', () => { el('sellWlo').value = b.getAttribute('data-wlo'); }));
-          let currentSlip = 0;
-          document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => {
-            currentSlip = parseInt(b.getAttribute('data-slip'), 10) || 0;
-            document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(x => x.classList.remove('active'));
-            b.classList.add('active');
-          }));
-
-          // Override trade calls to include slippageBps
-          const _origBuy = window.waldoBuy; const _origSell = window.waldoSell;
-          window.waldoBuy = async function () {
-            const amount = parseFloat(el('buyXrp').value);
-            if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
-            try {
-              const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount, slippageBps: currentSlip }) });
-              const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Buy WALDO', j.refs); startStatusPoll(j.uuid, 'Buy placed!', s => appendReceipt('Buy placed!'));
-            } catch (e) { el('tradeMsg').textContent = 'Buy failed: ' + e.message; }
-          }
-          window.waldoSell = async function () {
-            const amount = parseFloat(el('sellWlo').value);
-            if (!isFinite(amount) || amount <= 0) return alert('Enter WLO amount');
-            try {
-              const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'sell', amountWlo: amount, slippageBps: currentSlip }) });
-              const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!', s => appendReceipt('Sell placed!'));
-            } catch (e) { el('tradeMsg').textContent = 'Sell failed: ' + e.message; }
-          }
-
           if (s?.signed) { clearInterval(id); if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { }; if (s?.txid) { window._waldoLastTx = s.txid; } showToast(successMsg || 'Success'); xummClose(); }
           if (++tries >= max) clearInterval(id);
         } catch (_) { clearInterval(id); }
@@ -543,6 +669,9 @@
       document.querySelectorAll('#waldoTrade .tab').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
       const tab = t.dataset.tab;
+      // auto-expand if collapsed
+      const root = document.getElementById('waldoTrade');
+      if (root.classList.contains('collapsed')) { collapsed = false; root.classList.remove('collapsed'); }
       el('panelXrpl').style.display = tab === 'xrpl' ? 'block' : 'none';
       el('panelFl').style.display = tab === 'fl' ? 'block' : 'none';
     }));
@@ -560,14 +689,16 @@
     loadMarket(); setInterval(loadMarket, 60_000);
 
     // XUMM modal
-    function xummOpen(title, refs) {
+    function xummOpen(title, data) {
+      const refs = data?.refs || data; const next = data?.next;
       el('xummTitle').textContent = title || 'XUMM';
       const m = el('xummModal'); m.style.display = 'block';
       const qr = el('xummQr'); const spin = el('xummLoad'); const hint = el('xummHint'); const link = el('xummLink');
       qr.style.display = 'none'; spin.style.display = 'block'; hint.style.display = 'none';
       if (isMobile) {
         el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
-        link.href = refs?.qr_uri || '#';
+        const deep = refs?.qr_uri || next?.always || '#';
+        link.href = deep;
       } else {
         el('xummDesktop').style.display = 'block'; el('xummMobile').style.display = 'none';
         qr.src = refs?.qr_png || refs?.qr; qr.style.display = 'block'; hint.style.display = 'block'; spin.style.display = 'none';
@@ -577,22 +708,103 @@
         t.textContent = msg; t.style.display = 'block'; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
         setTimeout(() => { t.style.display = 'none'; }, 1400);
       }
-      async function startStatusPoll(uuid, successMsg) {
-        if (!uuid) return;
-        const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
-        let tries = 0; const max = 300; // up to 5 mins
-        const id = setInterval(async () => {
-          try {
-            const r = await fetch(url + `&_t=${Date.now()}`);
-            const s = await r.json();
-            if (s?.signed) { clearInterval(id); showToast(successMsg || 'Success'); if (s?.txid) { window._waldoLastTx = s.txid; } xummClose(); }
-            if (++tries >= max) clearInterval(id);
-          } catch (_) { clearInterval(id); }
-        }, 1000);
-      }
-
     }
+
+    // Global connection helpers
+    function setConnected(account) {
+      const s = el('connStatus'); const btn = document.getElementById('btnDisconnect');
+      if (account) { const suffix = account.slice(-6); s.textContent = `Connected: …${suffix}`; btn.style.display = 'inline-flex'; }
+      else { s.textContent = 'Not connected'; btn.style.display = 'none'; }
+    }
+    window.waldoDisconnect = function () { setConnected(null); showToast('Disconnected'); }
+    async function checkTrustline(account) {
+      try { const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' }); const j = await r.json(); el('tlStatus').textContent = `Trustline: ${j?.trustline ? 'Yes' : 'No'}`; }
+      catch (_) { el('tlStatus').textContent = 'Trustline: ?'; }
+    }
+
+
+    async function startStatusPoll(uuid, successMsg) {
+      if (!uuid) return;
+      const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
+      let tries = 0; const max = 300; // up to 5 mins
+      const id = setInterval(async () => {
+        try {
+          const r = await fetch(url + `&_t=${Date.now()}`);
+          const s = await r.json();
+          if (s?.signed) { clearInterval(id); showToast(successMsg || 'Success'); if (s?.txid) { window._waldoLastTx = s.txid; } if (s?.account) { setConnected(s.account); checkTrustline(s.account); } xummClose(); }
+          if (++tries >= max) clearInterval(id);
+        } catch (_) { clearInterval(id); }
+      }, 1000);
+    }
+
     window.xummClose = function () { el('xummModal').style.display = 'none'; }
+
+    // Swap logic (global scope)
+    let swapFrom = 'XRP'; let swapTo = 'WLO'; let swapSlip = 0; let swapMid = null;
+
+    window.swapFlip = function () {
+      const f = swapFrom; swapFrom = swapTo; swapTo = f;
+      el('fromSymbol').textContent = swapFrom; el('toSymbol').textContent = swapTo;
+      recomputeSwap();
+    }
+
+    async function refreshSwapMarket() {
+      try {
+        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
+        const j = await r.json();
+        swapMid = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
+        updateSwapPrice(); recomputeSwap();
+      } catch (_) { }
+    }
+
+    function updateSwapPrice() {
+      if (swapMid) {
+        const priceTxt = (swapFrom === 'XRP') ? `${swapMid.toFixed(8)} XRP/WLO` : `${(1 / swapMid).toFixed(2)} WLO/XRP`;
+        el('swapPrice').textContent = priceTxt;
+      }
+    }
+
+    function recomputeSwap() {
+      const amt = parseFloat(el('fromAmount').value);
+      if (!isFinite(amt) || !swapMid) {
+        el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return;
+      }
+      const slip = swapSlip / 10000;
+      if (swapFrom === 'XRP') {
+        const out = amt / (swapMid * (1 + slip));
+        el('toAmount').value = out.toFixed(2);
+        el('swapMinOut').textContent = `${out.toFixed(2)} WLO`;
+      } else {
+        const out = amt * (swapMid * (1 - slip));
+        el('toAmount').value = out.toFixed(6);
+        el('swapMinOut').textContent = `${out.toFixed(6)} XRP`;
+      }
+    }
+
+    // Initialize swap
+    document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => {
+      swapSlip = parseInt(b.getAttribute('data-slip'), 10) || 0;
+      document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      recomputeSwap();
+    }));
+    el('fromAmount').addEventListener('input', recomputeSwap);
+    refreshSwapMarket(); setInterval(refreshSwapMarket, 60_000);
+
+    window.waldoSwap = async function () {
+      const amt = parseFloat(el('fromAmount').value);
+      if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
+      const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip };
+      try {
+        const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error || 'Trade failed');
+        xummOpen('Swap', j.refs);
+        startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
+      } catch (e) {
+        el('tradeMsg').textContent = 'Swap failed: ' + e.message;
+      }
+    }
 
     // Actions
     window.waldoConnect = async function () {
@@ -600,35 +812,6 @@
         const r = await fetch(`${API}/api/login`);
         const j = await r.json();
         xummOpen('Connect XUMM', j.refs);
-        // Swap logic
-        let swapFrom = 'XRP'; let swapTo = 'WLO'; let swapSlip = 0; let swapMid = null;
-        function swapFlip() { const f = swapFrom; swapFrom = swapTo; swapTo = f; el('fromSymbol').textContent = swapFrom; el('toSymbol').textContent = swapTo; recomputeSwap(); }
-        async function refreshSwapMarket() {
-          try {
-            const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' }); const j = await r.json();
-            swapMid = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
-            updateSwapPrice(); recomputeSwap();
-          } catch (_) { }
-        }
-        function updateSwapPrice() { if (swapMid) { const priceTxt = (swapFrom === 'XRP') ? `${swapMid.toFixed(8)} XRP/WLO` : `${(1 / swapMid).toFixed(2)} WLO/XRP`; el('swapPrice').textContent = priceTxt; } }
-        function recomputeSwap() {
-          const amt = parseFloat(el('fromAmount').value); if (!isFinite(amt) || !swapMid) { el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return; }
-          const slip = swapSlip / 10000; if (swapFrom === 'XRP') { const out = amt / (swapMid * (1 + slip)); el('toAmount').value = out.toFixed(2); el('swapMinOut').textContent = `${out.toFixed(2)} WLO`; }
-          else { const out = amt * (swapMid * (1 - slip)); el('toAmount').value = out.toFixed(6); el('swapMinOut').textContent = `${out.toFixed(6)} XRP`; }
-        }
-        document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => { swapSlip = parseInt(b.getAttribute('data-slip'), 10) || 0; recomputeSwap(); }));
-        el('fromAmount').addEventListener('input', recomputeSwap);
-        refreshSwapMarket(); setInterval(refreshSwapMarket, 60_000);
-
-        window.waldoSwap = async function () {
-          const amt = parseFloat(el('fromAmount').value); if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
-          const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip };
-          try {
-            const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Swap', j.refs); startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
-          } catch (e) { el('tradeMsg').textContent = 'Swap failed: ' + e.message; }
-        }
-
         startStatusPoll(j.uuid, 'Connected!', s => { /* could store s.account */ });
       } catch (e) { alert('Login failed'); }
       function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
@@ -707,6 +890,7 @@
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'sell', amountWlo: amount }) });
         const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!', s => appendReceipt('Sell placed!'));
       } catch (e) { el('tradeMsg').textContent = 'Sell failed: ' + e.message; }
+
     }
   })();
 </script>
