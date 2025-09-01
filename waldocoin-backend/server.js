@@ -78,7 +78,7 @@ const startServer = async () => {
     max: 100,
   });
   // Restrict CORS to trusted origins only
-  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "https://waldocoin.live,https://admin-vip-only-page.waldocoin.live").split(",").map(s => s.trim());
+  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "https://waldocoin.live,https://waldo.live,https://admin-vip-only-page.waldocoin.live").split(",").map(s => s.trim());
   app.use(cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // allow curl/local

@@ -30,13 +30,12 @@
     </div>
 
     <div class="panel" id="panelFl" style="display:none;">
-      <div class="iframe-wrap">
-        <iframe id="flFrame" title="First Ledger WLO" loading="lazy" allow="clipboard-write; fullscreen"
-          referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
-          src="https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO"></iframe>
-        <div id="flFallback" class="fallback" style="display:none;">
-          <div class="msg">We couldn’t display First Ledger here.</div>
-          <a class="btn" target="_blank" rel="noopener"
+      <div class="fl-card">
+        <div class="fl-icon">💱</div>
+        <div class="fl-title">First Ledger</div>
+        <div class="fl-sub">Trade WLO on First Ledger in a new tab</div>
+        <div class="fl-actions">
+          <a class="btn buy" target="_blank" rel="noopener"
             href="https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO">Open First Ledger</a>
         </div>
       </div>
@@ -238,6 +237,42 @@
   }
 
   .xumm-modal .content {
+
+    /* First Ledger link-only card (flashy) */
+    .fl-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 8px;
+      padding: 24px;
+      border: 1px solid #1a1a1a;
+      border-radius: 12px;
+      background: radial-gradient(1200px 200px at 50% -10%, rgba(37, 194, 160, .15), transparent 60%), #0b0b0b
+    }
+
+    .fl-icon {
+      font-size: 28px;
+      filter: drop-shadow(0 0 10px rgba(37, 194, 160, .25))
+    }
+
+    .fl-title {
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      font-weight: 900;
+      color: #c6fff0
+    }
+
+    .fl-sub {
+      font-size: 13px;
+      color: #bfeee3
+    }
+
+    .fl-actions .btn.buy {
+      min-width: 220px
+    }
+
     position: relative;
     margin: 10vh auto;
     background: #0d0d0d;
