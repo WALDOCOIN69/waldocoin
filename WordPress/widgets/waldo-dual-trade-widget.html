@@ -320,6 +320,35 @@
     const el = id => document.getElementById(id);
     const isMobile = /iphone|android|ipad|mobile/i.test(navigator.userAgent);
 
+    // Toast & Status (top-level)
+    function showToast(msg) {
+      const t = el('waldoToast'); if (!t) return;
+      t.textContent = msg; t.style.display = 'block'; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+      setTimeout(() => { t.style.display = 'none'; }, 1400);
+    }
+    async function startStatusPoll(uuid, successMsg, onSuccess) {
+      if (!uuid) return;
+      const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
+      let tries = 0; const max = 300; // up to 5 mins
+      const id = setInterval(async () => {
+        try {
+          const r = await fetch(url + `&_t=${Date.now()}`);
+          const s = await r.json();
+          if (s?.signed) { clearInterval(id); if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { }; if (s?.txid) { window._waldoLastTx = s.txid; } showToast(successMsg || 'Success'); xummClose(); }
+          if (++tries >= max) clearInterval(id);
+        } catch (_) { clearInterval(id); }
+      }, 1000);
+    }
+    function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
+    function appendReceipt(msg) {
+      try {
+        const box = el('tradeMsg');
+        const hash = window._waldoLastTx;
+        const link = hash ? ` <a href="${explorerLink(hash)}" target="_blank" rel="noopener">View tx</a>` : '';
+        box.innerHTML = `${msg}${link}`;
+      } catch (_) {/* noop */ }
+    }
+
     // Tabs
     document.querySelectorAll('#waldoTrade .tab').forEach(t => t.addEventListener('click', () => {
       document.querySelectorAll('#waldoTrade .tab').forEach(x => x.classList.remove('active'));
@@ -382,7 +411,7 @@
         const r = await fetch(`${API}/api/login`);
         const j = await r.json();
         xummOpen('Connect XUMM', j.refs);
-        startStatusPoll(j.uuid, 'Connected!');
+        startStatusPoll(j.uuid, 'Connected!', s => { /* could store s.account */ });
       } catch (e) { alert('Login failed'); }
       function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
       function appendReceipt(msg) {
@@ -406,7 +435,7 @@
       if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
       try {
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount }) });
-        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Buy WALDO', j.refs); startStatusPoll(j.uuid, 'Buy placed!');
+        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Buy WALDO', j.refs); startStatusPoll(j.uuid, 'Buy placed!', s => appendReceipt('Buy placed!'));
       } catch (e) { el('tradeMsg').textContent = 'Buy failed: ' + e.message; }
     }
     window.waldoSell = async function () {
@@ -414,7 +443,7 @@
       if (!isFinite(amount) || amount <= 0) return alert('Enter WLO amount');
       try {
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'sell', amountWlo: amount }) });
-        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!');
+        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!', s => appendReceipt('Sell placed!'));
       } catch (e) { el('tradeMsg').textContent = 'Sell failed: ' + e.message; }
     }
   })();
