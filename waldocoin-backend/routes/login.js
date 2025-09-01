@@ -8,7 +8,7 @@ router.get("/ping", (_, res) => {
   res.json({ status: "✅ Login route is alive" });
 });
 
-// Create login QR with deep link support
+// Create login QR with deep link support (Xaman)
 router.get("/", async (req, res) => {
   try {
     // Try XUMM app URL to stay in wallet

@@ -65,26 +65,26 @@
     </div>
   </div>
 
-  <!-- XUMM Modal -->
-  <div id="xummModal" class="xumm-modal" style="display:none;">
+  <!-- Xaman Modal -->
+  <div id="xummModal" class="xumm-modal" style="display:none;" aria-label="Xaman modal">
     <div class="backdrop" onclick="xummClose()"></div>
     <div class="content">
       <button class="close" onclick="xummClose()">✕</button>
       <h4 id="xummTitle">XAMAN</h4>
       <div id="xummDesktop">
-        <img id="xummQr" alt="Scan with XUMM"
+        <img id="xummQr" alt="Scan with Xaman"
           style="display:none; max-width:280px; border-radius:10px; box-shadow: 0 0 18px #25c2a055;" />
         <div id="xummLoad" class="spin" style="display:none;"></div>
-        <p id="xummHint" class="hint" style="display:none;">Scan the QR with your XAMAN app</p>
+        <p id="xummHint" class="hint" style="display:none;">Scan the QR with your Xaman app</p>
       </div>
       <div id="xummMobile" style="display:none; display:flex; flex-direction:column; gap:8px; align-items:center;">
-        <a id="xummLink" class="btn" href="#" target="_blank" rel="noopener">👉 Tap to open XUMM</a>
+        <a id="xummLink" class="btn" href="#" target="_self" rel="noopener">👉 Tap to open Xaman</a>
         <div style="display:flex; gap:8px;">
           <button id="xummCopy" class="btn" type="button">Copy link</button>
           <button id="xummShowQr" class="btn" type="button">Show QR</button>
         </div>
         <small class="hint" style="color:#9adbcf; opacity:.9;">If the app doesn’t open, copy the link and paste into
-          XUMM.</small>
+          Xaman.</small>
       </div>
     </div>
     <!-- Toast -->
@@ -768,10 +768,10 @@
     }
     loadMarket(); setInterval(loadMarket, 60_000);
 
-    // XUMM modal
+    // Xaman modal
     function xummOpen(title, data) {
       const refs = data?.refs || data; const next = data?.next;
-      el('xummTitle').textContent = title || 'XUMM';
+      el('xummTitle').textContent = title || 'Xaman';
       const m = el('xummModal'); m.style.display = 'block';
       const qr = el('xummQr'); const spin = el('xummLoad'); const hint = el('xummHint'); const link = el('xummLink');
       qr.style.display = 'none'; spin.style.display = 'block'; hint.style.display = 'none';
