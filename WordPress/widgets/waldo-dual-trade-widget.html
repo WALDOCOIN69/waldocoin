@@ -14,40 +14,34 @@
         <button class="btn" onclick="waldoConnect()">Connect Xaman</button>
         <button class="btn" onclick="waldoTrustline()">Add Trustline</button>
       </div>
-      <div class="row">
-        <div class="col">
-          <label>Buy (XRP)</label>
-          <input type="number" min="0" step="0.1" id="buyXrp" placeholder="Amount in XRP" />
-          <div class="minline">Min receive: <span id="buyMinOut">—</span> WLO</div>
-          <button class="btn buy" onclick="waldoBuy()">Buy WLO</button>
-        </div>
-        <div class="row">
-          <div class="chipbar">
-            <span>Quick Buy:</span>
-            <button class="chip" data-xrp="1">1 XRP</button>
-            <button class="chip" data-xrp="5">5 XRP</button>
-            <button class="chip" data-xrp="10">10 XRP</button>
+      <div class="swap-card">
+        <div class="swap-row">
+          <div class="token">
+            <label>From</label>
+            <div class="token-box">
+              <span class="sym" id="fromSymbol">XRP</span>
+              <input type="number" min="0" step="0.000001" id="fromAmount" placeholder="0.0" />
+            </div>
           </div>
-          <div class="chipbar">
-            <span>Quick Sell:</span>
-            <button class="chip" data-wlo="100">100</button>
-            <button class="chip" data-wlo="500">500</button>
-            <button class="chip" data-wlo="1000">1k</button>
-          </div>
-          <div class="chipbar">
-            <span>Slippage:</span>
-            <button class="chip" data-slip="0">0%</button>
-            <button class="chip" data-slip="50">0.5%</button>
-            <button class="chip" data-slip="100">1%</button>
-            <button class="chip" data-slip="200">2%</button>
+          <button class="flip" onclick="swapFlip()" title="Flip">⇅</button>
+          <div class="token">
+            <label>To</label>
+            <div class="token-box">
+              <span class="sym" id="toSymbol">WLO</span>
+              <input type="text" id="toAmount" placeholder="0" readonly />
+            </div>
           </div>
         </div>
-        <div class="col">
-          <div class="minline">Min receive: <span id="sellMinOut">—</span> XRP</div>
-          <label>Sell (WLO)</label>
-          <input type="number" min="0" step="1" id="sellWlo" placeholder="Amount in WLO" />
-          <button class="btn sell" onclick="waldoSell()">Sell WLO</button>
+        <div class="chipbar">
+          <span>Slippage:</span>
+          <button class="chip" data-slip="0">0%</button>
+          <button class="chip" data-slip="50">0.5%</button>
+          <button class="chip" data-slip="100">1%</button>
+          <button class="chip" data-slip="200">2%</button>
         </div>
+        <div class="minline">Min receive: <span id="swapMinOut">—</span></div>
+        <div class="subline">Price: <span id="swapPrice">—</span> • Impact: <span id="swapImpact">—</span></div>
+        <div class="actions"><button class="btn buy" onclick="waldoSwap()">Swap</button></div>
       </div>
       <div id="tradeMsg" class="msg"></div>
     </div>
@@ -151,6 +145,72 @@
     border: 1px solid #1c1c1c;
     color: #bfeee3;
     padding: 8px 12px;
+
+    /* Swap UI */
+    .swap-card {
+      border: 1px solid #1a1a1a;
+      border-radius: 12px;
+      padding: 12px;
+      background: radial-gradient(800px 120px at 50% -10%, rgba(37, 194, 160, .12), transparent 60%), #0b0b0b
+    }
+
+    .swap-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .token {
+      flex: 1 1 280px
+    }
+
+    .token-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #1c1c1c;
+      background: #0d0d0d;
+      border-radius: 10px;
+      padding: 10px
+    }
+
+    .token .sym {
+      font-weight: 900;
+      color: #a9ffee
+    }
+
+    .token input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #eafff9;
+      font-size: 16px
+    }
+
+    .flip {
+      align-self: center;
+      background: #111;
+      border: 1px solid #1c1c1c;
+      color: #c6fff0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer
+    }
+
+    .subline {
+      font-size: 12px;
+      color: #9adbcf;
+      margin-top: 6px
+    }
+
+    .actions {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center
+    }
+
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700
@@ -540,6 +600,35 @@
         const r = await fetch(`${API}/api/login`);
         const j = await r.json();
         xummOpen('Connect XUMM', j.refs);
+        // Swap logic
+        let swapFrom = 'XRP'; let swapTo = 'WLO'; let swapSlip = 0; let swapMid = null;
+        function swapFlip() { const f = swapFrom; swapFrom = swapTo; swapTo = f; el('fromSymbol').textContent = swapFrom; el('toSymbol').textContent = swapTo; recomputeSwap(); }
+        async function refreshSwapMarket() {
+          try {
+            const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' }); const j = await r.json();
+            swapMid = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
+            updateSwapPrice(); recomputeSwap();
+          } catch (_) { }
+        }
+        function updateSwapPrice() { if (swapMid) { const priceTxt = (swapFrom === 'XRP') ? `${swapMid.toFixed(8)} XRP/WLO` : `${(1 / swapMid).toFixed(2)} WLO/XRP`; el('swapPrice').textContent = priceTxt; } }
+        function recomputeSwap() {
+          const amt = parseFloat(el('fromAmount').value); if (!isFinite(amt) || !swapMid) { el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return; }
+          const slip = swapSlip / 10000; if (swapFrom === 'XRP') { const out = amt / (swapMid * (1 + slip)); el('toAmount').value = out.toFixed(2); el('swapMinOut').textContent = `${out.toFixed(2)} WLO`; }
+          else { const out = amt * (swapMid * (1 - slip)); el('toAmount').value = out.toFixed(6); el('swapMinOut').textContent = `${out.toFixed(6)} XRP`; }
+        }
+        document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => { swapSlip = parseInt(b.getAttribute('data-slip'), 10) || 0; recomputeSwap(); }));
+        el('fromAmount').addEventListener('input', recomputeSwap);
+        refreshSwapMarket(); setInterval(refreshSwapMarket, 60_000);
+
+        window.waldoSwap = async function () {
+          const amt = parseFloat(el('fromAmount').value); if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
+          const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip };
+          try {
+            const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Swap', j.refs); startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
+          } catch (e) { el('tradeMsg').textContent = 'Swap failed: ' + e.message; }
+        }
+
         startStatusPoll(j.uuid, 'Connected!', s => { /* could store s.account */ });
       } catch (e) { alert('Login failed'); }
       function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
