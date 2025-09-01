@@ -70,12 +70,12 @@
     <div class="backdrop" onclick="xummClose()"></div>
     <div class="content">
       <button class="close" onclick="xummClose()">✕</button>
-      <h4 id="xummTitle">XUMM</h4>
+      <h4 id="xummTitle">XAMAN</h4>
       <div id="xummDesktop">
         <img id="xummQr" alt="Scan with XUMM"
           style="display:none; max-width:280px; border-radius:10px; box-shadow: 0 0 18px #25c2a055;" />
         <div id="xummLoad" class="spin" style="display:none;"></div>
-        <p id="xummHint" class="hint" style="display:none;">Scan the QR with your XUMM app</p>
+        <p id="xummHint" class="hint" style="display:none;">Scan the QR with your XAMAN app</p>
       </div>
       <div id="xummMobile" style="display:none; display:flex; flex-direction:column; gap:8px; align-items:center;">
         <a id="xummLink" class="btn" href="#" target="_blank" rel="noopener">👉 Tap to open XUMM</a>
@@ -778,7 +778,12 @@
       if (isMobile) {
         el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
         const deep = refs?.qr_uri || next?.always || '#';
-        link.href = deep;
+        link.href = deep; link.target = '_self'; link.rel = 'noopener';
+        const showFallback = () => {
+          el('xummDesktop').style.display = 'block'; el('xummMobile').style.display = 'none';
+          qr.src = refs?.qr_png || refs?.qr; qr.style.display = 'block'; hint.style.display = 'block'; spin.style.display = 'none';
+        };
+        link.onclick = (e) => { e.preventDefault(); try { window.location.assign(deep); } catch (_) { window.location.href = deep; } setTimeout(showFallback, 1500); };
       } else {
         el('xummDesktop').style.display = 'block'; el('xummMobile').style.display = 'none';
         qr.src = refs?.qr_png || refs?.qr; qr.style.display = 'block'; hint.style.display = 'block'; spin.style.display = 'none';
