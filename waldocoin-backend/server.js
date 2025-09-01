@@ -121,6 +121,9 @@ const startServer = async () => {
   app.use("/api/linkTwitter", linkTwitterRoute);
   app.use("/api/activity", activityRoute);
   app.use("/api/system", (await import("./routes/system.js")).default);
+  app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
+  app.use("/api/xrpl/trade", (await import("./routes/xrpl/trade.js")).default);
+
 
   app.use("/api/battle/start", battleStartRoute);
   app.use("/api/battle/accept", battleAcceptRoute);
