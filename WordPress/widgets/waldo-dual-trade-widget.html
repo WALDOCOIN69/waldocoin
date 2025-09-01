@@ -790,16 +790,11 @@
         // Mobile: do NOT show QR; force deep link via user gesture
 
         el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
-        // Build Xaman deep link: try custom scheme first, then universal link
-        const any = refs?.qr_uri || next?.always || '';
-        const uuid = (any.split('/sign/')[1] || '').split('?')[0].split('_')[0];
-        const deepApp = uuid ? `xumm://app/sign/${uuid}` : (any || '#');
-        const deepWeb = any || '#';
-        // Use native anchor navigation for best compatibility
-        link.href = deepApp; link.rel = 'noopener'; link.removeAttribute('target');
-        // Hide spinner on mobile; user will tap the button
+        // Use universal link to open Xaman (most reliable)
+        const universal = next?.always || refs?.qr_uri || '#';
+        link.href = universal; link.rel = 'external noopener'; link.removeAttribute('target');
+        // Hide spinner on mobile
         spin.style.display = 'none';
-        // Do not override click: let the native anchor open the app
 
       } else {
         // Desktop: show QR
@@ -914,7 +909,11 @@
       try {
         const r = await fetch(`${API}/api/login`);
         const j = await r.json();
-        xummOpen('Connect XUMM', j.refs);
+        if (isMobile) {
+          const deep = j?.next?.always || j?.refs?.qr_uri || '#';
+          if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } return; }
+        }
+        xummOpen('Connect Xaman', j);
         startStatusPoll(j.uuid, 'Connected!', s => { /* could store s.account */ });
       } catch (e) { alert('Login failed'); }
       function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
