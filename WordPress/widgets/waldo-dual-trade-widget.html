@@ -740,7 +740,13 @@
         try {
           const r = await fetch(url + `&_t=${Date.now()}`);
           const s = await r.json();
-          if (s?.signed) { clearInterval(id); if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { }; if (s?.txid) { window._waldoLastTx = s.txid; } showToast(successMsg || 'Success'); xummClose(); }
+          if (s?.signed) {
+            clearInterval(id);
+            if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
+            if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
+            if (s?.txid) { window._waldoLastTx = s.txid; }
+            showToast(successMsg || 'Success'); xummClose();
+          }
           if (++tries >= max) clearInterval(id);
         } catch (_) { clearInterval(id); }
       }, 1000);
@@ -909,12 +915,15 @@
       try {
         const r = await fetch(`${API}/api/login`);
         const j = await r.json();
+        // Start polling BEFORE opening Xaman so status updates when you return
+        window._waldoLoginUuid = j.uuid;
+        startStatusPoll(j.uuid, 'Connected!', s => { /* store if needed */ });
         if (isMobile) {
           const deep = j?.next?.always || j?.refs?.qr_uri || '#';
-          if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } return; }
+          if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } }
+        } else {
+          xummOpen('Connect Xaman', j);
         }
-        xummOpen('Connect Xaman', j);
-        startStatusPoll(j.uuid, 'Connected!', s => { /* could store s.account */ });
       } catch (e) { alert('Login failed'); }
       function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
       function appendReceipt(msg) {
