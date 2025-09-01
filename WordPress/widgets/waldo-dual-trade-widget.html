@@ -903,8 +903,14 @@
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Trade failed');
-        xummOpen('Swap', j.refs);
+        // Start polling before opening Xaman to catch the result when you return
         startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
+        if (isMobile) {
+          const deep = j?.next?.always || j?.refs?.qr_uri || '#';
+          if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } return; }
+        }
+        // Desktop: show QR modal
+        xummOpen('Swap', j);
       } catch (e) {
         el('tradeMsg').textContent = 'Swap failed: ' + e.message;
       }

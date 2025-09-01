@@ -11,16 +11,14 @@ router.get("/ping", (_, res) => {
 // Create login QR with deep link support (Xaman)
 router.get("/", async (req, res) => {
   try {
-    // Try XUMM app URL to stay in wallet
+    const returnWeb = typeof req.query.return === 'string' ? req.query.return : null;
     const payload = {
-      txjson: {
-        TransactionType: "SignIn"
-      },
+      txjson: { TransactionType: "SignIn" },
       options: {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        return_url: { app: "xumm://xumm.app/done", web: null }
+        return_url: { app: "xumm://xumm.app/done", web: returnWeb }
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",

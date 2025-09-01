@@ -28,24 +28,24 @@ router.post("/offer", async (req, res) => {
       if (!Number.isFinite(xrp) || xrp <= 0) return res.status(400).json({ success: false, error: "amountXrp required for buy" });
       const pMax = mid * (1 + slip); // max XRP per WLO we're willing to pay
       const minWlo = xrp / pMax; // ensure price <= pMax
-      takerPays = String(Math.round(xrp * 1_000_000)); // we pay this many drops
-      takerGets = { currency: CURRENCY, issuer: ISSUER, value: String(minWlo.toFixed(6)) }; // we want at least this WLO
+      // To BUY WLO with XRP: we OFFER XRP and we WANT WLO
+      takerGets = String(Math.round(xrp * 1_000_000)); // we offer to give this many drops (XRP)
+      takerPays = { currency: CURRENCY, issuer: ISSUER, value: String(minWlo.toFixed(6)) }; // we want at least this WLO
     } else {
       const wlo = Number(amountWlo);
       if (!Number.isFinite(wlo) || wlo <= 0) return res.status(400).json({ success: false, error: "amountWlo required for sell" });
       const pMin = mid * (1 - slip); // min XRP per WLO we'll accept
       const minXrp = wlo * pMin;
-      takerPays = { currency: CURRENCY, issuer: ISSUER, value: String(wlo.toFixed(6)) }; // we sell this WLO
-      takerGets = String(Math.round(minXrp * 1_000_000)); // we require at least this many drops
+      // To SELL WLO for XRP: we OFFER WLO and we WANT XRP
+      takerGets = { currency: CURRENCY, issuer: ISSUER, value: String(wlo.toFixed(6)) }; // we offer to give this WLO
+      takerPays = String(Math.round(minXrp * 1_000_000)); // we want at least this many drops (XRP)
     }
-
-    const flagsIOC = 0x00020000; // tfImmediateOrCancel
 
     const txjson = {
       TransactionType: "OfferCreate",
       TakerGets: takerGets,
-      TakerPays: takerPays,
-      Flags: flagsIOC
+      TakerPays: takerPays
+      // No ImmediateOrCancel: allow resting order if not fully filled
     };
 
     const created = await xummClient.payload.create({
