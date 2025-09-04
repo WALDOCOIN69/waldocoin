@@ -17,10 +17,8 @@ router.post("/offer", async (req, res) => {
     const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
     const CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
 
-    const waldoPerXrp = await getWaldoPerXrp();
-    const mid = waldoPerXrp > 0 ? 1 / waldoPerXrp : 0.00001; // XRP per WLO
-    const bps = Number.isFinite(Number(slippageBps)) ? Number(slippageBps) : 0;
-    // Also compute mid from XRPL order books (fallback when Magnetic not configured)
+    const waldoPerXrpRaw = await getWaldoPerXrp().catch(() => null);
+    // Prefer XRPL order book mid; if unavailable, fall back to Magnetic (if configured), else tiny default
     async function getXrpPerWloFromBooks() {
       const client = new xrpl.Client("wss://xrplcluster.com");
       await client.connect();
@@ -34,7 +32,10 @@ router.post("/offer", async (req, res) => {
       if (b.result?.offers?.length) { const o = b.result.offers[0]; const px = (Number(o.TakerPays) / 1_000_000) / Number(o.TakerGets.value); if (px > 0 && isFinite(px)) bid = px; }
       return (bid && ask) ? (bid + ask) / 2 : (bid || ask || null);
     }
+    const bookMid = await getXrpPerWloFromBooks().catch(() => null);
+    const mid = (bookMid && isFinite(bookMid)) ? bookMid : ((waldoPerXrpRaw && isFinite(waldoPerXrpRaw)) ? (1 / waldoPerXrpRaw) : 0.00001); // XRP per WLO
 
+    const bps = Number.isFinite(Number(slippageBps)) ? Number(slippageBps) : 0;
     const slip = Math.max(0, bps) / 10_000; // 0.01 = 1%
 
     // Payment via paths to use AMM LP + order book
