@@ -46,6 +46,8 @@
           <button class="chip" data-slip="200">2%</button>
         </div>
         <div class="minline">Min receive: <span id="swapMinOut">—</span></div>
+        <div id="tlWarn" class="warn" style="display:none;">Add WALDO trustline first</div>
+
         <div class="subline">Price: <span id="swapPrice">—</span> • Impact: <span id="swapImpact">—</span></div>
         <div class="actions"><button class="btn buy" onclick="waldoSwap()">Swap</button></div>
       </div>
@@ -171,13 +173,21 @@
     letter-spacing: .8px;
     font-weight: 1000;
     font-size: 18px;
+
+    .warn {
+      color: #ff8080;
+      font-size: 12px;
+      margin-top: 4px
+    }
+
     background: linear-gradient(90deg, var(--neonAqua), var(--neonMagenta), var(--neonAqua));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     background-size: 300% 100%;
     animation: shimmer 5s linear infinite;
-    text-shadow: 0 0 12px rgba(0, 247, 255, .35), 0 0 20px rgba(255, 61, 247, .25);
+    text-shadow: 0 0 12px rgba(0, 247, 255, .35),
+    0 0 20px rgba(255, 61, 247, .25);
   }
 
   .title:after {
@@ -817,13 +827,30 @@
     // Global connection helpers
     function setConnected(account) {
       const s = el('connStatus'); const btn = document.getElementById('btnDisconnect');
-      if (account) { const suffix = account.slice(-6); s.textContent = `Connected: …${suffix}`; btn.style.display = 'inline-flex'; }
-      else { s.textContent = 'Not connected'; btn.style.display = 'none'; }
+      if (account) {
+        window._waldoAccount = account;
+        const suffix = account.slice(-6);
+        s.textContent = `Connected: …${suffix}`;
+        btn.style.display = 'inline-flex';
+      } else {
+        window._waldoAccount = undefined;
+        s.textContent = 'Not connected';
+        btn.style.display = 'none';
+      }
+      let trustlineOk = false;
+
     }
     window.waldoDisconnect = function () { setConnected(null); showToast('Disconnected'); }
     async function checkTrustline(account) {
-      try { const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' }); const j = await r.json(); el('tlStatus').textContent = `Trustline: ${j?.trustline ? 'Yes' : 'No'}`; }
-      catch (_) { el('tlStatus').textContent = 'Trustline: ?'; }
+      try {
+        const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' });
+        const j = await r.json();
+        trustlineOk = !!j?.trustline;
+        el('tlStatus').textContent = `Trustline: ${trustlineOk ? 'Yes' : 'No'}`;
+        el('tlWarn').style.display = trustlineOk ? 'none' : 'block';
+      } catch (_) {
+        el('tlStatus').textContent = 'Trustline: ?';
+      }
     }
 
 
@@ -898,8 +925,9 @@
     window.waldoSwap = async function () {
       const amt = parseFloat(el('fromAmount').value);
       if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
-      const dest = el('connStatus')?.textContent?.includes('Connected') ? (window._waldoAccount || undefined) : undefined;
-      const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip, destination: dest } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip, destination: dest };
+      if (!window._waldoAccount) return alert('Connect your wallet first');
+      if (!trustlineOk && swapFrom === 'XRP') { el('tlWarn').style.display = 'block'; return alert('Add WALDO trustline first'); }
+      const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip };
       try {
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const j = await r.json();

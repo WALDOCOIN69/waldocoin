@@ -47,7 +47,7 @@ router.post("/offer", async (req, res) => {
       const deliverMinWlo = xrp / pMax; // minimum WLO to receive after slippage
       txjson = {
         TransactionType: "Payment",
-        Destination: destination || undefined, // filled by client (widget) with connected account
+        Destination: undefined, // force signer self-payment
         Amount: { currency: CURRENCY, issuer: ISSUER, value: String((xrp / mid).toFixed(6)) },
         DeliverMin: { currency: CURRENCY, issuer: ISSUER, value: String(deliverMinWlo.toFixed(6)) },
         SendMax: String(Math.round(xrp * 1_000_000)), // drops
@@ -60,7 +60,7 @@ router.post("/offer", async (req, res) => {
       const deliverMinXrp = wlo * pMin; // minimum XRP to receive
       txjson = {
         TransactionType: "Payment",
-        Destination: destination || undefined, // your own account
+        Destination: undefined, // signer self-payment
         Amount: String(Math.round((wlo * mid) * 1_000_000)), // target XRP (drops)
         DeliverMin: String(Math.round(deliverMinXrp * 1_000_000)), // min XRP (drops)
         SendMax: { currency: CURRENCY, issuer: ISSUER, value: String(wlo.toFixed(6)) },
