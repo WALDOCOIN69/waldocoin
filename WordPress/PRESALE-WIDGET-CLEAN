@@ -81,40 +81,40 @@
                 style="color: white; font-weight: bold; display: block; margin-bottom: 10px; text-align: center;">Select
                 XRP Amount:</label>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px;">
-                <button onclick="selectAmount(5)"
+                <button onclick="selectAmount(5, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">5
                     XRP</button>
-                <button onclick="selectAmount(10)"
+                <button onclick="selectAmount(10, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">10
                     XRP</button>
-                <button onclick="selectAmount(15)"
+                <button onclick="selectAmount(15, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">15
                     XRP</button>
-                <button onclick="selectAmount(20)"
+                <button onclick="selectAmount(20, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">20
                     XRP</button>
-                <button onclick="selectAmount(25)"
+                <button onclick="selectAmount(25, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">25
                     XRP</button>
-                <button onclick="selectAmount(30)"
+                <button onclick="selectAmount(30, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">30
                     XRP</button>
-                <button onclick="selectAmount(40)"
+                <button onclick="selectAmount(40, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">40
                     XRP</button>
-                <button onclick="selectAmount(45)"
+                <button onclick="selectAmount(45, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">45
                     XRP</button>
-                <button onclick="selectAmount(50)"
+                <button onclick="selectAmount(50, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #25c2a0; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">50
                     XRP</button>
-                <button onclick="selectAmount(80)"
+                <button onclick="selectAmount(80, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #ffd93d; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">80
                     XRP<br><small style="color: #ffd93d;">+15% BONUS</small></button>
-                <button onclick="selectAmount(90)"
+                <button onclick="selectAmount(90, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #ffd93d; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">90
                     XRP<br><small style="color: #ffd93d;">+22% BONUS</small></button>
-                <button onclick="selectAmount(100)"
+                <button onclick="selectAmount(100, this)"
                     style="background: #1a4d2e; color: white; border: 2px solid #ff6b6b; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">100
                     XRP<br><small style="color: #ff6b6b;">+30% BONUS</small></button>
             </div>
@@ -172,8 +172,13 @@
                     // Add proper event listener - NO REDIRECT
                     setTimeout(() => {
                         document.getElementById('mobileXummBtn').addEventListener('click', () => {
-                            console.log('🔗 XUMM sign-in link:', data.next.always);
-                            alert('Please manually open XUMM app to sign in');
+                            const deep = (data.next && data.next.always) ? data.next.always : (data.refs && data.refs.qr_uri ? data.refs.qr_uri : null);
+                            if (deep) {
+                                console.log('🔗 Opening XUMM sign-in link:', deep);
+                                window.location.href = deep;
+                            } else {
+                                alert('Deep link unavailable. Please open XUMM and scan the QR.');
+                            }
                         });
                     }, 100);
                 } else {
@@ -405,8 +410,13 @@
                     // Add proper event listener - NO REDIRECT
                     setTimeout(() => {
                         document.getElementById('mobileTrustlineBtn').addEventListener('click', () => {
-                            console.log('🔗 XUMM trustline link:', data.next.always);
-                            alert('Please manually open XUMM app to add trustline');
+                            const deep = (data.next && data.next.always) ? data.next.always : (data.refs && data.refs.qr_uri ? data.refs.qr_uri : null);
+                            if (deep) {
+                                console.log('🔗 Opening XUMM trustline link:', deep);
+                                window.location.href = deep;
+                            } else {
+                                alert('Deep link unavailable. Please open XUMM and scan the QR.');
+                            }
                         });
                     }, 100);
                 } else {
@@ -528,6 +538,19 @@
                 }
             } catch (error) {
                 console.error('❌ Direct trustline polling error:', error);
+    // If WordPress strips inline onclick, bind programmatically
+    function bindAmountButtons() {
+        const grid = document.querySelector('div[style*="grid-template-columns"]');
+        if (!grid) return;
+        const labels = [5,10,15,20,25,30,40,45,50,80,90,100];
+        let idx = 0;
+        grid.querySelectorAll('button').forEach(btn => {
+            const amount = labels[idx++];
+            if (!amount) return;
+            btn.addEventListener('click', () => selectAmount(amount, btn));
+        });
+    }
+
             }
         }, 3000);
 
@@ -538,14 +561,14 @@
         }, 180000);
     }
 
-    function selectAmount(amount) {
+    function selectAmount(amount, el) {
         selectedAmount = amount;
 
         // Update button styles
         document.querySelectorAll('button[onclick^="selectAmount"]').forEach(btn => {
             btn.style.background = '#1a4d2e';
         });
-        event.target.style.background = '#25c2a0';
+        if (el) el.style.background = '#25c2a0';
 
         // Calculate WALDO amount with correct rate
         let waldoAmount = amount * 10000; // Base rate: 10,000 WALDO per XRP
@@ -579,7 +602,7 @@
 
             if (data.success) {
                 const totalXRP = data.totalXRP || 0;
-                const totalWaldo = data.totalWaldo || 0;
+                const totalWaldo = data.totalWALDO || 0;
                 const totalPurchases = data.totalPurchases || 0;
 
                 document.getElementById('progressText').innerHTML =
@@ -615,8 +638,13 @@
 
             if (data.success && data.deeplink) {
                 document.getElementById('purchaseBtn').innerText = '✅ Check XUMM App';
-                // Don't redirect - let user manually go to XUMM
-                console.log('🔗 XUMM purchase link:', data.deeplink);
+
+                // Open the deep link so the user can sign in XUMM (mobile) or see QR (desktop)
+                try {
+                    window.location.href = data.deeplink;
+                } catch (e) {
+                    console.log('Deep link open failed, link:', data.deeplink);
+                }
 
                 if (data.uuid) {
                     pollTransactionStatus(data.uuid);
@@ -751,13 +779,25 @@
         }
     }
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', function () {
+    // Initialize with late-load safety (works if snippet is injected after DOMContentLoaded)
+    function initWaldoPresaleWidget() {
         // First check for existing session
         if (!checkExistingSession()) {
             // No existing session, start fresh
             showStep(1);
             connectXummWallet();
         }
-    });
+        // Bind amount selection buttons (in case inline onclicks were stripped by WP)
+        if (typeof bindAmountButtons === 'function') {
+            bindAmountButtons();
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWaldoPresaleWidget);
+    } else {
+        // DOM already loaded
+        initWaldoPresaleWidget();
+    }
+    // Expose manual init for external buttons if needed
+    window.waldoPresaleInit = initWaldoPresaleWidget;
 </script>
