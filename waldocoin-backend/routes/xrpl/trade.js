@@ -2,6 +2,7 @@
 import express from "express";
 import { xummClient } from "../../utils/xummClient.js";
 import getWaldoPerXrp from "../../utils/getWaldoPerXrp.js";
+import xrpl from "xrpl";
 
 const router = express.Router();
 
@@ -19,6 +20,21 @@ router.post("/offer", async (req, res) => {
     const waldoPerXrp = await getWaldoPerXrp();
     const mid = waldoPerXrp > 0 ? 1 / waldoPerXrp : 0.00001; // XRP per WLO
     const bps = Number.isFinite(Number(slippageBps)) ? Number(slippageBps) : 0;
+    // Also compute mid from XRPL order books (fallback when Magnetic not configured)
+    async function getXrpPerWloFromBooks() {
+      const client = new xrpl.Client("wss://xrplcluster.com");
+      await client.connect();
+      const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
+      const CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
+      const a = await client.request({ command: 'book_offers', taker_gets: { currency: 'XRP' }, taker_pays: { currency: CURRENCY, issuer: ISSUER }, limit: 5 });
+      const b = await client.request({ command: 'book_offers', taker_gets: { currency: CURRENCY, issuer: ISSUER }, taker_pays: { currency: 'XRP' }, limit: 5 });
+      await client.disconnect();
+      let ask = null, bid = null;
+      if (a.result?.offers?.length) { const o = a.result.offers[0]; const px = (Number(o.TakerGets) / 1_000_000) / Number(o.TakerPays.value); if (px > 0 && isFinite(px)) ask = px; }
+      if (b.result?.offers?.length) { const o = b.result.offers[0]; const px = (Number(o.TakerPays) / 1_000_000) / Number(o.TakerGets.value); if (px > 0 && isFinite(px)) bid = px; }
+      return (bid && ask) ? (bid + ask) / 2 : (bid || ask || null);
+    }
+
     const slip = Math.max(0, bps) / 10_000; // 0.01 = 1%
 
     // Payment via paths to use AMM LP + order book

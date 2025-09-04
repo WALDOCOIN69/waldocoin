@@ -10,7 +10,7 @@ const router = express.Router();
 router.get("/", async (_req, res) => {
   const result = {
     success: true,
-    source: { price: "xrpl+magnetic", volume: "redis|unknown" },
+    source: { price: "xrpl+magnetic", volume: "redis|unknown", magnetic: Boolean(process.env.MAGNETIC_PRICE_URL) },
     waldoPerXrp: null,
     xrpPerWlo: null,
     best: { bid: null, ask: null, mid: null },
@@ -19,10 +19,12 @@ router.get("/", async (_req, res) => {
   };
 
   try {
-    // Magnetic-derived rate (cached)
-    const waldoPerXrp = await getWaldoPerXrp();
-    result.waldoPerXrp = waldoPerXrp;
-    result.xrpPerWlo = waldoPerXrp > 0 ? 1 / waldoPerXrp : null;
+    // Magnetic-derived rate (cached). Only expose if Magnetic is configured.
+    if (process.env.MAGNETIC_PRICE_URL) {
+      const waldoPerXrp = await getWaldoPerXrp();
+      result.waldoPerXrp = waldoPerXrp;
+      result.xrpPerWlo = waldoPerXrp > 0 ? 1 / waldoPerXrp : null;
+    }
   } catch (e) {
     // ignore; keep null
   }
@@ -37,55 +39,47 @@ router.get("/", async (_req, res) => {
     // Ask: people selling WLO for XRP (WLO->XRP book)
     const wloToXrp = await client.request({
       command: "book_offers",
-      taker_gets: { currency: "XRP" }, // taker receives XRP
-      taker_pays: { currency: CURRENCY, issuer: ISSUER }, // taker pays WLO
+      taker_gets: { currency: "XRP" }, // taker receives XRP (drops)
+      taker_pays: { currency: CURRENCY, issuer: ISSUER }, // taker pays WLO (issued)
       limit: 10,
     });
 
     let askPrice = null; // XRP per WLO (best ask)
     if (wloToXrp.result?.offers?.length) {
       const best = wloToXrp.result.offers[0];
-      if (best.quality) {
-        // quality here is WLO per 1 XRP → invert to XRP per WLO
-        const qp = parseFloat(best.quality);
-        if (qp > 0 && isFinite(qp)) askPrice = 1 / qp;
-      } else {
-        // fallback: XRP/WLO = (TakerGets XRP drops / 1e6) / (TakerPays WLO)
-        const getsXrp = parseFloat(best.TakerGets) / 1_000_000;
-        const paysWlo = parseFloat(best.TakerPays.value);
-        const p = getsXrp / paysWlo;
-        if (p > 0 && isFinite(p)) askPrice = p;
-      }
+      // Compute strictly from amounts to avoid quality interpretation surprises
+      const getsXrp = Number(best.TakerGets) / 1_000_000; // drops -> XRP
+      const paysWlo = Number(best.TakerPays?.value);
+      const p = getsXrp > 0 && paysWlo > 0 ? (getsXrp / paysWlo) : null;
+      if (p && isFinite(p) && p > 0) askPrice = p;
     }
 
     // Bid: people buying WLO with XRP (XRP->WLO book)
     const xrpToWlo = await client.request({
       command: "book_offers",
-      taker_gets: { currency: CURRENCY, issuer: ISSUER }, // taker receives WLO
-      taker_pays: { currency: "XRP" }, // taker pays XRP
+      taker_gets: { currency: CURRENCY, issuer: ISSUER }, // taker receives WLO (issued)
+      taker_pays: { currency: "XRP" }, // taker pays XRP (drops)
       limit: 10,
     });
 
     let bidPrice = null; // XRP per WLO (best bid)
     if (xrpToWlo.result?.offers?.length) {
       const best = xrpToWlo.result.offers[0];
-      if (best.quality) {
-        // quality here is XRP per 1 WLO directly (for this book)
-        const qp = parseFloat(best.quality);
-        if (qp > 0 && isFinite(qp)) bidPrice = qp;
-      } else {
-        // fallback: XRP/WLO = (TakerPays XRP drops / 1e6) / (TakerGets WLO)
-        const paysXrp = parseFloat(best.TakerPays) / 1_000_000;
-        const getsWlo = parseFloat(best.TakerGets.value);
-        const p = paysXrp / getsWlo;
-        if (p > 0 && isFinite(p)) bidPrice = p;
-      }
+      const paysXrp = Number(best.TakerPays) / 1_000_000; // drops -> XRP
+      const getsWlo = Number(best.TakerGets?.value);
+      const p = paysXrp > 0 && getsWlo > 0 ? (paysXrp / getsWlo) : null;
+      if (p && isFinite(p) && p > 0) bidPrice = p;
     }
 
     await client.disconnect();
 
     const mid = bidPrice && askPrice ? (bidPrice + askPrice) / 2 : (bidPrice || askPrice || null);
     result.best = { bid: bidPrice, ask: askPrice, mid };
+    // Prefer XRPL book mid as displayed price
+    if (mid && isFinite(mid)) {
+      result.xrpPerWlo = mid;
+      if (!result.waldoPerXrp) result.waldoPerXrp = 1 / mid;
+    }
   } catch (e) {
     // XRPL query failed; keep best.* null
   }
