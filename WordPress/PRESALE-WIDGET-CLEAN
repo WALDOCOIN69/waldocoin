@@ -552,6 +552,7 @@
     }
 
             }
+
         }, 3000);
 
         // Stop polling after 3 minutes
