@@ -782,6 +782,9 @@
 
     // Initialize with late-load safety (works if snippet is injected after DOMContentLoaded)
     function initWaldoPresaleWidget() {
+        // Always try to load presale progress so numbers show even before Step 3
+        try { if (typeof loadPresaleProgress === 'function') loadPresaleProgress(); } catch (_) {}
+
         // First check for existing session
         if (!checkExistingSession()) {
             // No existing session, start fresh
@@ -801,4 +804,5 @@
     }
     // Expose manual init for external buttons if needed
     window.waldoPresaleInit = initWaldoPresaleWidget;
+    window.waldoOpenPresale = initWaldoPresaleWidget;
 </script>
