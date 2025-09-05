@@ -729,13 +729,21 @@
   let trustlineOk = false;
 
 
-  // Collapsible (start closed)
-  const root = document.getElementById('waldoTrade');
-  const toggle = document.getElementById('widgetToggle');
   let collapsed = true;
-  function applyCollapsed() { root.classList.toggle('collapsed', collapsed); }
-  if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
-  applyCollapsed();
+
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', function () {
+    // Collapsible (start closed)
+    const root = document.getElementById('waldoTrade');
+    const toggle = document.getElementById('widgetToggle');
+    function applyCollapsed() { if (root) root.classList.toggle('collapsed', collapsed); }
+    if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
+    applyCollapsed();
+
+    // Load market data
+    loadMarket();
+    setInterval(loadMarket, 60000);
+  });
 
   // Toast & Status (top-level)
   function showToast(msg) {
@@ -799,7 +807,6 @@
       const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
     } catch (e) { el('priceXrp').textContent = '—'; el('vol24').textContent = '—'; }
   }
-  loadMarket(); setInterval(loadMarket, 60000);
 
   // Xaman modal
   function xummOpen(title, data) {
