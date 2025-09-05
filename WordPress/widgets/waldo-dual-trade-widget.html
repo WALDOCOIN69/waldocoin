@@ -1,13 +1,18 @@
-<!-- WALDO Dual Trading Widget: XRPL DEX + First Ledger (drop-in) -->
-<div class="waldo-trade collapsed" id="waldoTrade">
-  <div class="trade-head">
-    <div class="title"><span class="accent">🟢</span> WALDO Trading</div>
-    <div class="sub">Price: <span id="priceXrp">—</span> • Vol 24h: <span id="vol24">—</span></div>
-    <div class="tabs">
-      <button id="widgetToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
-      <button class="tab active" data-tab="xrpl" onclick="waldoTab('xrpl')">XRPL DEX</button>
-      <button class="tab" data-tab="fl" onclick="waldoTab('fl')">First Ledger</button>
-    </div>
+<!-- WALDO Trading Widget - Simple Working Version -->
+<div id="waldoWidget"
+  style="max-width:500px;margin:20px auto;background:#0a0c1a;border:1px solid #25c2a0;border-radius:12px;padding:20px;color:#fff;font-family:Arial,sans-serif;">
+  <div style="text-align:center;margin-bottom:20px;">
+    <h3 style="color:#25c2a0;margin:0 0 10px 0;">🟢 WALDO Trading</h3>
+    <div>Price: <span id="priceDisplay">Loading...</span> • Vol: <span id="volDisplay">—</span></div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px;">
+    <button onclick="showXRPL()" id="xrplBtn"
+      style="flex:1;padding:10px;background:#25c2a0;color:#000;border:none;border-radius:6px;cursor:pointer;">XRPL
+      DEX</button>
+    <button onclick="showFL()" id="flBtn"
+      style="flex:1;padding:10px;background:#333;color:#fff;border:none;border-radius:6px;cursor:pointer;">First
+      Ledger</button>
   </div>
   <div class="trade-body">
     <div class="panel" id="panelXrpl">
@@ -173,13 +178,6 @@
     letter-spacing: .8px;
     font-weight: 1000;
     font-size: 18px;
-
-    .warn {
-      color: #ff8080;
-      font-size: 12px;
-      margin-top: 4px
-    }
-
     background: linear-gradient(90deg, var(--neonAqua), var(--neonMagenta), var(--neonAqua));
     -webkit-background-clip: text;
     background-clip: text;
@@ -187,7 +185,13 @@
     background-size: 300% 100%;
     animation: shimmer 5s linear infinite;
     text-shadow: 0 0 12px rgba(0, 247, 255, .35),
-    0 0 20px rgba(255, 61, 247, .25);
+      0 0 20px rgba(255, 61, 247, .25);
+  }
+
+  .warn {
+    color: #ff8080;
+    font-size: 12px;
+    margin-top: 4px;
   }
 
   .title:after {
