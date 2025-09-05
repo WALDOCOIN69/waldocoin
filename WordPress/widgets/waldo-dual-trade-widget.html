@@ -1000,9 +1000,7 @@
   window.waldoTrustline = async function () {
     try { const r = await fetch(`${API}/api/login/trustline-noripple`); const j = await r.json(); xummOpen('Add WALDO Trustline', j.refs); } catch (e) { alert('Trustline failed'); }
   }
-  window.waldoBuy = async function () {
-    const amount = parseFloat(el('buyXrp').value);
-    // Mobile helpers: copy / show QR
+    // Mobile helpers: copy / show QR (global setup)
     (function () {
       const copyBtn = document.getElementById('xummCopy');
       const showQrBtn = document.getElementById('xummShowQr');
@@ -1019,6 +1017,8 @@
       });
     })();
 
+  window.waldoBuy = async function () {
+    const amount = parseFloat(el('buyXrp').value);
     if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
     try {
       const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount }) });
