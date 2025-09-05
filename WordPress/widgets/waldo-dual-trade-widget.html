@@ -5,8 +5,8 @@
     <div class="sub">Price: <span id="priceXrp">—</span> • Vol 24h: <span id="vol24">—</span></div>
     <div class="tabs">
       <button id="widgetToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
-      <button class="tab active" data-tab="xrpl">XRPL DEX</button>
-      <button class="tab" data-tab="fl">First Ledger</button>
+      <button class="tab active" data-tab="xrpl" onclick="waldoTab('xrpl')">XRPL DEX</button>
+      <button class="tab" data-tab="fl" onclick="waldoTab('fl')">First Ledger</button>
     </div>
   </div>
   <div class="trade-body">
@@ -727,6 +727,8 @@
     const API = "https://waldocoin-backend-api.onrender.com";
     const el = id => document.getElementById(id);
     const isMobile = /iphone|android|ipad|mobile/i.test(navigator.userAgent);
+    let trustlineOk = false;
+
 
     // Collapsible (start closed)
     const root = document.getElementById('waldoTrade');
@@ -772,15 +774,20 @@
     }
 
     // Tabs
+    window.waldoTab = function (tab) {
+      try {
+        document.querySelectorAll('#waldoTrade .tab').forEach(x => x.classList.remove('active'));
+        const btn = document.querySelector(`#waldoTrade .tab[data-tab="${tab}"]`);
+        if (btn) btn.classList.add('active');
+        const rootEl = document.getElementById('waldoTrade');
+        if (rootEl && rootEl.classList.contains('collapsed')) { collapsed = false; rootEl.classList.remove('collapsed'); }
+        el('panelXrpl').style.display = tab === 'xrpl' ? 'block' : 'none';
+        el('panelFl').style.display = tab === 'fl' ? 'block' : 'none';
+      } catch (_) { /* no-op */ }
+    }
     document.querySelectorAll('#waldoTrade .tab').forEach(t => t.addEventListener('click', () => {
-      document.querySelectorAll('#waldoTrade .tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
       const tab = t.dataset.tab;
-      // auto-expand if collapsed
-      const root = document.getElementById('waldoTrade');
-      if (root.classList.contains('collapsed')) { collapsed = false; root.classList.remove('collapsed'); }
-      el('panelXrpl').style.display = tab === 'xrpl' ? 'block' : 'none';
-      el('panelFl').style.display = tab === 'fl' ? 'block' : 'none';
+      waldoTab(tab);
     }));
 
     // Market data
@@ -793,7 +800,7 @@
         const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
       } catch (e) { el('priceXrp').textContent = '—'; el('vol24').textContent = '—'; }
     }
-    loadMarket(); setInterval(loadMarket, 60_000);
+    loadMarket(); setInterval(loadMarket, 60000);
 
     // Xaman modal
     function xummOpen(title, data) {
@@ -811,6 +818,7 @@
         link.href = universal; link.rel = 'external noopener'; link.removeAttribute('target');
         // Hide spinner on mobile
         spin.style.display = 'none';
+
 
       } else {
         // Desktop: show QR
@@ -837,7 +845,6 @@
         s.textContent = 'Not connected';
         btn.style.display = 'none';
       }
-      let trustlineOk = false;
 
     }
     window.waldoDisconnect = function () { setConnected(null); showToast('Disconnected'); }
@@ -854,19 +861,7 @@
     }
 
 
-    async function startStatusPoll(uuid, successMsg) {
-      if (!uuid) return;
-      const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
-      let tries = 0; const max = 300; // up to 5 mins
-      const id = setInterval(async () => {
-        try {
-          const r = await fetch(url + `&_t=${Date.now()}`);
-          const s = await r.json();
-          if (s?.signed) { clearInterval(id); showToast(successMsg || 'Success'); if (s?.txid) { window._waldoLastTx = s.txid; } if (s?.account) { setConnected(s.account); checkTrustline(s.account); } xummClose(); }
-          if (++tries >= max) clearInterval(id);
-        } catch (_) { clearInterval(id); }
-      }, 1000);
-    }
+
 
     window.xummClose = function () { el('xummModal').style.display = 'none'; }
 
@@ -920,7 +915,7 @@
       recomputeSwap();
     }));
     el('fromAmount').addEventListener('input', recomputeSwap);
-    refreshSwapMarket(); setInterval(refreshSwapMarket, 60_000);
+    refreshSwapMarket(); setInterval(refreshSwapMarket, 60000);
 
     window.waldoSwap = async function () {
       const amt = parseFloat(el('fromAmount').value);
@@ -999,7 +994,7 @@
     document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => { currentSlip = parseInt(b.getAttribute('data-slip'), 10) || 0; updateMins(); }));
     el('buyXrp').addEventListener('input', updateMins);
     el('sellWlo').addEventListener('input', updateMins);
-    refreshMarket(); setInterval(refreshMarket, 60_000);
+    refreshMarket(); setInterval(refreshMarket, 60000);
 
     window.waldoTrustline = async function () {
       try { const r = await fetch(`${API}/api/login/trustline-noripple`); const j = await r.json(); xummOpen('Add WALDO Trustline', j.refs); } catch (e) { alert('Trustline failed'); }
