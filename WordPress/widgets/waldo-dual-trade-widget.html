@@ -723,46 +723,241 @@
 </style>
 
 <script>
-  (function () {
-    const API = "https://waldocoin-backend-api.onrender.com";
-    const el = id => document.getElementById(id);
-    const isMobile = /iphone|android|ipad|mobile/i.test(navigator.userAgent);
-    let trustlineOk = false;
+  const API = "https://waldocoin-backend-api.onrender.com";
+  const el = id => document.getElementById(id);
+  const isMobile = /iphone|android|ipad|mobile/i.test(navigator.userAgent);
+  let trustlineOk = false;
 
 
-    // Collapsible (start closed)
-    const root = document.getElementById('waldoTrade');
-    const toggle = document.getElementById('widgetToggle');
-    let collapsed = true;
-    function applyCollapsed() { root.classList.toggle('collapsed', collapsed); }
-    if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
-    applyCollapsed();
+  // Collapsible (start closed)
+  const root = document.getElementById('waldoTrade');
+  const toggle = document.getElementById('widgetToggle');
+  let collapsed = true;
+  function applyCollapsed() { root.classList.toggle('collapsed', collapsed); }
+  if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
+  applyCollapsed();
 
-    // Toast & Status (top-level)
+  // Toast & Status (top-level)
+  function showToast(msg) {
+    const t = el('waldoToast'); if (!t) return;
+    t.textContent = msg; t.style.display = 'block'; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+    setTimeout(() => { t.style.display = 'none'; }, 1400);
+  }
+  async function startStatusPoll(uuid, successMsg, onSuccess) {
+    if (!uuid) return;
+    const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
+    let tries = 0; const max = 300; // up to 5 mins
+    const id = setInterval(async () => {
+      try {
+        const r = await fetch(url + `&_t=${Date.now()}`);
+        const s = await r.json();
+        if (s?.signed) {
+          clearInterval(id);
+          if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
+          if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
+          if (s?.txid) { window._waldoLastTx = s.txid; }
+          showToast(successMsg || 'Success'); xummClose();
+        }
+        if (++tries >= max) clearInterval(id);
+      } catch (_) { clearInterval(id); }
+    }, 1000);
+  }
+  function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
+  function appendReceipt(msg) {
+    try {
+      const box = el('tradeMsg');
+      const hash = window._waldoLastTx;
+      const link = hash ? ` <a href="${explorerLink(hash)}" target="_blank" rel="noopener">View tx</a>` : '';
+      box.innerHTML = `${msg}${link}`;
+    } catch (_) {/* noop */ }
+  }
+
+  // Tabs
+  window.waldoTab = function (tab) {
+    try {
+      document.querySelectorAll('#waldoTrade .tab').forEach(x => x.classList.remove('active'));
+      const btn = document.querySelector(`#waldoTrade .tab[data-tab="${tab}"]`);
+      if (btn) btn.classList.add('active');
+      const rootEl = document.getElementById('waldoTrade');
+      if (rootEl && rootEl.classList.contains('collapsed')) { collapsed = false; rootEl.classList.remove('collapsed'); }
+      el('panelXrpl').style.display = tab === 'xrpl' ? 'block' : 'none';
+      el('panelFl').style.display = tab === 'fl' ? 'block' : 'none';
+    } catch (_) { /* no-op */ }
+  }
+  document.querySelectorAll('#waldoTrade .tab').forEach(t => t.addEventListener('click', () => {
+    const tab = t.dataset.tab;
+    if (tab) waldoTab(tab);
+  }));
+
+  // Market data
+  async function loadMarket() {
+    try {
+      const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
+      const j = await r.json();
+      const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
+      el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
+      const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
+    } catch (e) { el('priceXrp').textContent = '—'; el('vol24').textContent = '—'; }
+  }
+  loadMarket(); setInterval(loadMarket, 60000);
+
+  // Xaman modal
+  function xummOpen(title, data) {
+    const refs = data?.refs || data; const next = data?.next;
+    el('xummTitle').textContent = title || 'Xaman';
+    const m = el('xummModal'); m.style.display = 'block';
+    const qr = el('xummQr'); const spin = el('xummLoad'); const hint = el('xummHint'); const link = el('xummLink');
+    qr.style.display = 'none'; spin.style.display = 'block'; hint.style.display = 'none';
+    if (isMobile) {
+      // Mobile: do NOT show QR; force deep link via user gesture
+
+      el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
+      // Use universal link to open Xaman (most reliable)
+      const universal = next?.always || refs?.qr_uri || '#';
+      link.href = universal; link.rel = 'external noopener'; link.removeAttribute('target');
+      // Hide spinner on mobile
+      spin.style.display = 'none';
+
+
+    } else {
+      // Desktop: show QR
+      el('xummDesktop').style.display = 'block'; el('xummMobile').style.display = 'none';
+      qr.src = refs?.qr_png || refs?.qr; qr.style.display = 'block'; hint.style.display = 'block'; spin.style.display = 'none';
+    }
     function showToast(msg) {
       const t = el('waldoToast'); if (!t) return;
       t.textContent = msg; t.style.display = 'block'; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
       setTimeout(() => { t.style.display = 'none'; }, 1400);
     }
-    async function startStatusPoll(uuid, successMsg, onSuccess) {
-      if (!uuid) return;
-      const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
-      let tries = 0; const max = 300; // up to 5 mins
-      const id = setInterval(async () => {
-        try {
-          const r = await fetch(url + `&_t=${Date.now()}`);
-          const s = await r.json();
-          if (s?.signed) {
-            clearInterval(id);
-            if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
-            if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
-            if (s?.txid) { window._waldoLastTx = s.txid; }
-            showToast(successMsg || 'Success'); xummClose();
-          }
-          if (++tries >= max) clearInterval(id);
-        } catch (_) { clearInterval(id); }
-      }, 1000);
+  }
+
+  // Global connection helpers
+  function setConnected(account) {
+    const s = el('connStatus'); const btn = document.getElementById('btnDisconnect');
+    if (account) {
+      window._waldoAccount = account;
+      const suffix = account.slice(-6);
+      s.textContent = `Connected: …${suffix}`;
+      btn.style.display = 'inline-flex';
+    } else {
+      window._waldoAccount = undefined;
+      s.textContent = 'Not connected';
+      btn.style.display = 'none';
     }
+
+  }
+  window.waldoDisconnect = function () { setConnected(null); showToast('Disconnected'); }
+  async function checkTrustline(account) {
+    try {
+      const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' });
+      const j = await r.json();
+      trustlineOk = !!j?.trustline;
+      el('tlStatus').textContent = `Trustline: ${trustlineOk ? 'Yes' : 'No'}`;
+      el('tlWarn').style.display = trustlineOk ? 'none' : 'block';
+    } catch (_) {
+      el('tlStatus').textContent = 'Trustline: ?';
+    }
+  }
+
+
+
+
+  window.xummClose = function () { el('xummModal').style.display = 'none'; }
+
+  // Swap logic (global scope)
+  let swapFrom = 'XRP'; let swapTo = 'WLO'; let swapSlip = 0; let swapMid = null;
+
+  window.swapFlip = function () {
+    const f = swapFrom; swapFrom = swapTo; swapTo = f;
+    el('fromSymbol').textContent = swapFrom; el('toSymbol').textContent = swapTo;
+    recomputeSwap();
+  }
+
+  async function refreshSwapMarket() {
+    try {
+      const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
+      const j = await r.json();
+      swapMid = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
+      updateSwapPrice(); recomputeSwap();
+    } catch (_) { }
+  }
+
+  function updateSwapPrice() {
+    if (swapMid) {
+      const priceTxt = (swapFrom === 'XRP') ? `${swapMid.toFixed(8)} XRP/WLO` : `${(1 / swapMid).toFixed(2)} WLO/XRP`;
+      el('swapPrice').textContent = priceTxt;
+    }
+  }
+
+  function recomputeSwap() {
+    const amt = parseFloat(el('fromAmount').value);
+    if (!isFinite(amt) || !swapMid) {
+      el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return;
+    }
+    const slip = swapSlip / 10000;
+    if (swapFrom === 'XRP') {
+      const out = amt / (swapMid * (1 + slip));
+      el('toAmount').value = out.toFixed(2);
+      el('swapMinOut').textContent = `${out.toFixed(2)} WLO`;
+    } else {
+      const out = amt * (swapMid * (1 - slip));
+      el('toAmount').value = out.toFixed(6);
+      el('swapMinOut').textContent = `${out.toFixed(6)} XRP`;
+    }
+  }
+
+  // Initialize swap
+  document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => {
+    swapSlip = parseInt(b.getAttribute('data-slip'), 10) || 0;
+    document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    recomputeSwap();
+  }));
+  el('fromAmount').addEventListener('input', recomputeSwap);
+  refreshSwapMarket(); setInterval(refreshSwapMarket, 60000);
+
+  window.waldoSwap = async function () {
+    const amt = parseFloat(el('fromAmount').value);
+    if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
+    if (!window._waldoAccount) return alert('Connect your wallet first');
+    if (!trustlineOk && swapFrom === 'XRP') { el('tlWarn').style.display = 'block'; return alert('Add WALDO trustline first'); }
+    const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip };
+    try {
+      const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!j.success) throw new Error(j.error || 'Trade failed');
+      // Start polling before opening Xaman to catch the result when you return
+      startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
+      if (isMobile) {
+        const deep = j?.next?.always || j?.refs?.qr_uri || '#';
+        if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } return; }
+      }
+      // Desktop: show QR modal
+      xummOpen('Swap', j);
+    } catch (e) {
+      el('tradeMsg').textContent = 'Swap failed: ' + e.message;
+    }
+  }
+
+  // Actions
+  window.waldoConnect = async function () {
+    try {
+      const r = await fetch(`${API}/api/login`);
+      const j = await r.json();
+      // Start polling BEFORE opening Xaman so status updates when you return
+      startStatusPoll(j.uuid, 'Connected!', s => {
+        if (s?.account) {
+          setConnected(s.account);
+          checkTrustline(s.account);
+        }
+      });
+      if (isMobile) {
+        const deep = j?.next?.always || j?.refs?.qr_uri || '#';
+        if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } }
+      } else {
+        xummOpen('Connect Xaman', j);
+      }
+    } catch (e) { alert('Login failed: ' + e.message); }
     function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
     function appendReceipt(msg) {
       try {
@@ -772,272 +967,72 @@
         box.innerHTML = `${msg}${link}`;
       } catch (_) {/* noop */ }
     }
+    // Inject receipts on buy/sell toasts (rely on _waldoLastTx set by status poll)
+    const _oldShowToast = showToast;
+    showToast = function (msg) { _oldShowToast(msg); if (/buy|sell|connected/i.test(msg) && window._waldoLastTx) { appendReceipt(msg); } }
 
-    // Tabs
-    window.waldoTab = function (tab) {
-      try {
-        document.querySelectorAll('#waldoTrade .tab').forEach(x => x.classList.remove('active'));
-        const btn = document.querySelector(`#waldoTrade .tab[data-tab="${tab}"]`);
-        if (btn) btn.classList.add('active');
-        const rootEl = document.getElementById('waldoTrade');
-        if (rootEl && rootEl.classList.contains('collapsed')) { collapsed = false; rootEl.classList.remove('collapsed'); }
-        const panelXrpl = document.getElementById('panelXrpl');
-        const panelFl = document.getElementById('panelFl');
-        if (panelXrpl) panelXrpl.style.display = tab === 'xrpl' ? 'block' : 'none';
-        if (panelFl) panelFl.style.display = tab === 'fl' ? 'block' : 'none';
-      } catch (_) { /* no-op */ }
+  }
+  // Min preview state
+  let currentSlip = 0; let lastMid = null;
+  async function refreshMarket() {
+    try {
+      const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
+      const j = await r.json();
+      const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
+      lastMid = xrpPerWlo || lastMid;
+      el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
+      const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
+      updateMins();
+    } catch (_) { }
+  }
+  function updateMins() {
+    const slip = currentSlip / 10000;
+    if (lastMid && isFinite(lastMid)) {
+      const bx = parseFloat(el('buyXrp').value);
+      el('buyMinOut').textContent = (isFinite(bx) && bx > 0) ? (bx / (lastMid * (1 + slip))).toFixed(2) : '—';
+      const sw = parseFloat(el('sellWlo').value);
+      el('sellMinOut').textContent = (isFinite(sw) && sw > 0) ? (sw * (lastMid * (1 - slip))).toFixed(6) : '—';
     }
-    document.querySelectorAll('#waldoTrade .tab').forEach(t => t.addEventListener('click', () => {
-      const tab = t.dataset.tab;
-      if (tab) waldoTab(tab);
-    }));
+  }
+  document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => { currentSlip = parseInt(b.getAttribute('data-slip'), 10) || 0; updateMins(); }));
+  el('buyXrp').addEventListener('input', updateMins);
+  el('sellWlo').addEventListener('input', updateMins);
+  refreshMarket(); setInterval(refreshMarket, 60000);
 
-    // Market data
-    async function loadMarket() {
-      try {
-        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
-        const j = await r.json();
-        const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
-        el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
-        const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
-      } catch (e) { el('priceXrp').textContent = '—'; el('vol24').textContent = '—'; }
-    }
-    loadMarket(); setInterval(loadMarket, 60000);
+  window.waldoTrustline = async function () {
+    try { const r = await fetch(`${API}/api/login/trustline-noripple`); const j = await r.json(); xummOpen('Add WALDO Trustline', j.refs); } catch (e) { alert('Trustline failed'); }
+  }
+  window.waldoBuy = async function () {
+    const amount = parseFloat(el('buyXrp').value);
+    // Mobile helpers: copy / show QR
+    (function () {
+      const copyBtn = document.getElementById('xummCopy');
+      const showQrBtn = document.getElementById('xummShowQr');
+      const qr = document.getElementById('xummQr');
+      const link = document.getElementById('xummLink');
+      if (copyBtn) copyBtn.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(link?.href || ''); showToast('Link copied'); } catch { showToast('Copy failed'); }
+      });
+      if (showQrBtn) showQrBtn.addEventListener('click', () => {
+        // Force QR mode on mobile
+        document.getElementById('xummDesktop').style.display = 'block';
+        document.getElementById('xummMobile').style.display = 'none';
+        qr.style.display = 'block';
+      });
+    })();
 
-    // Xaman modal
-    function xummOpen(title, data) {
-      const refs = data?.refs || data; const next = data?.next;
-      el('xummTitle').textContent = title || 'Xaman';
-      const m = el('xummModal'); m.style.display = 'block';
-      const qr = el('xummQr'); const spin = el('xummLoad'); const hint = el('xummHint'); const link = el('xummLink');
-      qr.style.display = 'none'; spin.style.display = 'block'; hint.style.display = 'none';
-      if (isMobile) {
-        // Mobile: do NOT show QR; force deep link via user gesture
-
-        el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
-        // Use universal link to open Xaman (most reliable)
-        const universal = next?.always || refs?.qr_uri || '#';
-        link.href = universal; link.rel = 'external noopener'; link.removeAttribute('target');
-        // Hide spinner on mobile
-        spin.style.display = 'none';
-
-
-      } else {
-        // Desktop: show QR
-        el('xummDesktop').style.display = 'block'; el('xummMobile').style.display = 'none';
-        qr.src = refs?.qr_png || refs?.qr; qr.style.display = 'block'; hint.style.display = 'block'; spin.style.display = 'none';
-      }
-      function showToast(msg) {
-        const t = el('waldoToast'); if (!t) return;
-        t.textContent = msg; t.style.display = 'block'; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
-        setTimeout(() => { t.style.display = 'none'; }, 1400);
-      }
-    }
-
-    // Global connection helpers
-    function setConnected(account) {
-      const s = el('connStatus'); const btn = document.getElementById('btnDisconnect');
-      if (account) {
-        window._waldoAccount = account;
-        const suffix = account.slice(-6);
-        s.textContent = `Connected: …${suffix}`;
-        btn.style.display = 'inline-flex';
-      } else {
-        window._waldoAccount = undefined;
-        s.textContent = 'Not connected';
-        btn.style.display = 'none';
-      }
-
-    }
-    window.waldoDisconnect = function () { setConnected(null); showToast('Disconnected'); }
-    async function checkTrustline(account) {
-      try {
-        const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' });
-        const j = await r.json();
-        trustlineOk = !!j?.trustline;
-        el('tlStatus').textContent = `Trustline: ${trustlineOk ? 'Yes' : 'No'}`;
-        el('tlWarn').style.display = trustlineOk ? 'none' : 'block';
-      } catch (_) {
-        el('tlStatus').textContent = 'Trustline: ?';
-      }
-    }
-
-
-
-
-    window.xummClose = function () { el('xummModal').style.display = 'none'; }
-
-    // Swap logic (global scope)
-    let swapFrom = 'XRP'; let swapTo = 'WLO'; let swapSlip = 0; let swapMid = null;
-
-    window.swapFlip = function () {
-      const f = swapFrom; swapFrom = swapTo; swapTo = f;
-      el('fromSymbol').textContent = swapFrom; el('toSymbol').textContent = swapTo;
-      recomputeSwap();
-    }
-
-    async function refreshSwapMarket() {
-      try {
-        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
-        const j = await r.json();
-        swapMid = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
-        updateSwapPrice(); recomputeSwap();
-      } catch (_) { }
-    }
-
-    function updateSwapPrice() {
-      if (swapMid) {
-        const priceTxt = (swapFrom === 'XRP') ? `${swapMid.toFixed(8)} XRP/WLO` : `${(1 / swapMid).toFixed(2)} WLO/XRP`;
-        el('swapPrice').textContent = priceTxt;
-      }
-    }
-
-    function recomputeSwap() {
-      const amt = parseFloat(el('fromAmount').value);
-      if (!isFinite(amt) || !swapMid) {
-        el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return;
-      }
-      const slip = swapSlip / 10000;
-      if (swapFrom === 'XRP') {
-        const out = amt / (swapMid * (1 + slip));
-        el('toAmount').value = out.toFixed(2);
-        el('swapMinOut').textContent = `${out.toFixed(2)} WLO`;
-      } else {
-        const out = amt * (swapMid * (1 - slip));
-        el('toAmount').value = out.toFixed(6);
-        el('swapMinOut').textContent = `${out.toFixed(6)} XRP`;
-      }
-    }
-
-    // Initialize swap
-    document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => {
-      swapSlip = parseInt(b.getAttribute('data-slip'), 10) || 0;
-      document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      recomputeSwap();
-    }));
-    el('fromAmount').addEventListener('input', recomputeSwap);
-    refreshSwapMarket(); setInterval(refreshSwapMarket, 60000);
-
-    window.waldoSwap = async function () {
-      const amt = parseFloat(el('fromAmount').value);
-      if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
-      if (!window._waldoAccount) return alert('Connect your wallet first');
-      if (!trustlineOk && swapFrom === 'XRP') { el('tlWarn').style.display = 'block'; return alert('Add WALDO trustline first'); }
-      const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip };
-      try {
-        const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const j = await r.json();
-        if (!j.success) throw new Error(j.error || 'Trade failed');
-        // Start polling before opening Xaman to catch the result when you return
-        startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
-        if (isMobile) {
-          const deep = j?.next?.always || j?.refs?.qr_uri || '#';
-          if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } return; }
-        }
-        // Desktop: show QR modal
-        xummOpen('Swap', j);
-      } catch (e) {
-        el('tradeMsg').textContent = 'Swap failed: ' + e.message;
-      }
-    }
-
-    // Actions
-    window.waldoConnect = async function () {
-      try {
-        const r = await fetch(`${API}/api/login`);
-        const j = await r.json();
-        // Start polling BEFORE opening Xaman so status updates when you return
-        startStatusPoll(j.uuid, 'Connected!', s => {
-          if (s?.account) {
-            setConnected(s.account);
-            checkTrustline(s.account);
-          }
-        });
-        if (isMobile) {
-          const deep = j?.next?.always || j?.refs?.qr_uri || '#';
-          if (deep && deep !== '#') { try { window.location.href = deep; } catch (_) { } }
-        } else {
-          xummOpen('Connect Xaman', j);
-        }
-      } catch (e) { alert('Login failed: ' + e.message); }
-      function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
-      function appendReceipt(msg) {
-        try {
-          const box = el('tradeMsg');
-          const hash = window._waldoLastTx;
-          const link = hash ? ` <a href="${explorerLink(hash)}" target="_blank" rel="noopener">View tx</a>` : '';
-          box.innerHTML = `${msg}${link}`;
-        } catch (_) {/* noop */ }
-      }
-      // Inject receipts on buy/sell toasts (rely on _waldoLastTx set by status poll)
-      const _oldShowToast = showToast;
-      showToast = function (msg) { _oldShowToast(msg); if (/buy|sell|connected/i.test(msg) && window._waldoLastTx) { appendReceipt(msg); } }
-
-    }
-    // Min preview state
-    let currentSlip = 0; let lastMid = null;
-    async function refreshMarket() {
-      try {
-        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
-        const j = await r.json();
-        const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
-        lastMid = xrpPerWlo || lastMid;
-        el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
-        const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
-        updateMins();
-      } catch (_) { }
-    }
-    function updateMins() {
-      const slip = currentSlip / 10000;
-      if (lastMid && isFinite(lastMid)) {
-        const bx = parseFloat(el('buyXrp').value);
-        el('buyMinOut').textContent = (isFinite(bx) && bx > 0) ? (bx / (lastMid * (1 + slip))).toFixed(2) : '—';
-        const sw = parseFloat(el('sellWlo').value);
-        el('sellMinOut').textContent = (isFinite(sw) && sw > 0) ? (sw * (lastMid * (1 - slip))).toFixed(6) : '—';
-      }
-    }
-    document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => { currentSlip = parseInt(b.getAttribute('data-slip'), 10) || 0; updateMins(); }));
-    el('buyXrp').addEventListener('input', updateMins);
-    el('sellWlo').addEventListener('input', updateMins);
-    refreshMarket(); setInterval(refreshMarket, 60000);
-
-    window.waldoTrustline = async function () {
-      try { const r = await fetch(`${API}/api/login/trustline-noripple`); const j = await r.json(); xummOpen('Add WALDO Trustline', j.refs); } catch (e) { alert('Trustline failed'); }
-    }
-    window.waldoBuy = async function () {
-      const amount = parseFloat(el('buyXrp').value);
-      // Mobile helpers: copy / show QR
-      (function () {
-        const copyBtn = document.getElementById('xummCopy');
-        const showQrBtn = document.getElementById('xummShowQr');
-        const qr = document.getElementById('xummQr');
-        const link = document.getElementById('xummLink');
-        if (copyBtn) copyBtn.addEventListener('click', async () => {
-          try { await navigator.clipboard.writeText(link?.href || ''); showToast('Link copied'); } catch { showToast('Copy failed'); }
-        });
-        if (showQrBtn) showQrBtn.addEventListener('click', () => {
-          // Force QR mode on mobile
-          document.getElementById('xummDesktop').style.display = 'block';
-          document.getElementById('xummMobile').style.display = 'none';
-          qr.style.display = 'block';
-        });
-      })();
-
-      if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
-      try {
-        const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount }) });
-        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Buy WALDO', j.refs); startStatusPoll(j.uuid, 'Buy placed!', s => appendReceipt('Buy placed!'));
-      } catch (e) { el('tradeMsg').textContent = 'Buy failed: ' + e.message; }
-    }
-    window.waldoSell = async function () {
-      const amount = parseFloat(el('sellWlo').value);
-      if (!isFinite(amount) || amount <= 0) return alert('Enter WLO amount');
-      try {
-        const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'sell', amountWlo: amount }) });
-        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!', s => appendReceipt('Sell placed!'));
-      } catch (e) { el('tradeMsg').textContent = 'Sell failed: ' + e.message; }
-
-    }
-  })();
+    if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
+    try {
+      const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount }) });
+      const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Buy WALDO', j.refs); startStatusPoll(j.uuid, 'Buy placed!', s => appendReceipt('Buy placed!'));
+    } catch (e) { el('tradeMsg').textContent = 'Buy failed: ' + e.message; }
+  }
+  window.waldoSell = async function () {
+    const amount = parseFloat(el('sellWlo').value);
+    if (!isFinite(amount) || amount <= 0) return alert('Enter WLO amount');
+    try {
+      const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'sell', amountWlo: amount }) });
+      const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!', s => appendReceipt('Sell placed!'));
+    } catch (e) { el('tradeMsg').textContent = 'Sell failed: ' + e.message; }
+  }
 </script>
