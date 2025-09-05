@@ -36,7 +36,7 @@ router.post("/offer", async (req, res) => {
     const bookMid = await getXrpPerWloFromBooks().catch(() => null);
     const baseMid = (bookMid && isFinite(bookMid)) ? bookMid : ((waldoPerXrpRaw && isFinite(waldoPerXrpRaw)) ? (1 / waldoPerXrpRaw) : 0.00001); // XRP per WLO
 
-    // Optional price adjustments (raise price) via env
+    // Optional price adjustments (raise price) via env or Redis (handled in bot/market too)
     const multRaw = process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
     const floorRaw = process.env.PRICE_FLOOR_XRP_PER_WLO;
     const multiplier = Number(multRaw);
@@ -48,29 +48,41 @@ router.post("/offer", async (req, res) => {
     const bps = Number.isFinite(Number(slippageBps)) ? Number(slippageBps) : 0;
     const slip = Math.max(0, bps) / 10_000; // 0.01 = 1%
 
+    // Optional default destination for SELL payouts (e.g., treasury)
+    const DEFAULT_DEST = process.env.SWAP_DESTINATION || process.env.SWAP_PAYOUT_DESTINATION;
+
     // Payment via paths to use AMM LP + order book
     let txjson;
     if (side === "buy") {
       const xrp = Number(amountXrp);
       if (!Number.isFinite(xrp) || xrp <= 0) return res.status(400).json({ success: false, error: "amountXrp required for buy" });
-      const pMax = mid * (1 + slip); // max XRP per WLO
-      const deliverMinWlo = xrp / pMax; // minimum WLO to receive after slippage
+
+      // For buy: Create a simple XRP to WLO payment
+      // Use the distributor as destination to handle the swap
+      const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET;
       txjson = {
         TransactionType: "Payment",
-        Destination: DEST, // signer self-payment unless destination provided
-        Amount: { currency: CURRENCY, issuer: ISSUER, value: String((xrp / mid).toFixed(6)) },
-        DeliverMin: { currency: CURRENCY, issuer: ISSUER, value: String(deliverMinWlo.toFixed(6)) },
-        SendMax: String(Math.round(xrp * 1_000_000)), // drops
-        Flags: 0x00020000, // tfPartialPayment
+        Destination: distributorWallet,
+        Amount: String(Math.round(xrp * 1_000_000)), // XRP in drops
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('WALDO_BUY').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`Buy ${(xrp / mid).toFixed(6)} WLO for ${xrp} XRP`).toString('hex').toUpperCase()
+          }
+        }]
       };
     } else {
       const wlo = Number(amountWlo);
       if (!Number.isFinite(wlo) || wlo <= 0) return res.status(400).json({ success: false, error: "amountWlo required for sell" });
       const pMin = mid * (1 - slip); // min XRP per WLO to accept
       const deliverMinXrp = wlo * pMin; // minimum XRP to receive
+      // Use ONLY server-configured destination. Ignore client-provided DEST to avoid misrouting to LPs.
+      const destCandidate = process.env.SWAP_DESTINATION || process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET;
+      const destTag = Number(process.env.SWAP_DESTINATION_TAG);
       txjson = {
         TransactionType: "Payment",
-        Destination: DEST, // signer self-payment unless destination provided
+        Destination: destCandidate || undefined,
+        ...(isFinite(destTag) ? { DestinationTag: destTag } : {}),
         Amount: String(Math.round((wlo * mid) * 1_000_000)), // target XRP (drops)
         DeliverMin: String(Math.round(deliverMinXrp * 1_000_000)), // min XRP (drops)
         SendMax: { currency: CURRENCY, issuer: ISSUER, value: String(wlo.toFixed(6)) },
