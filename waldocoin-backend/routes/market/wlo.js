@@ -84,6 +84,26 @@ router.get("/", async (_req, res) => {
     // XRPL query failed; keep best.* null
   }
 
+  // Apply optional price adjustments controlled by Admin Panel (Redis), with env fallback
+  try {
+    const multKey = await redis.get('price:xrp_per_wlo:multiplier');
+    const floorKey = await redis.get('price:xrp_per_wlo:floor');
+    const multRaw = multKey ?? process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
+    const floorRaw = floorKey ?? process.env.PRICE_FLOOR_XRP_PER_WLO;
+    const multiplier = Number(multRaw);
+    const floor = Number(floorRaw);
+    let base = (typeof result.xrpPerWlo === 'number' && isFinite(result.xrpPerWlo)) ? result.xrpPerWlo : ((typeof result.best?.mid === 'number' && isFinite(result.best.mid)) ? result.best.mid : null);
+    if (base && isFinite(base)) {
+      let adj = base;
+      if (isFinite(multiplier) && multiplier > 0) adj = adj * multiplier;
+      if (isFinite(floor) && floor > 0) adj = Math.max(adj, floor);
+      result.xrpPerWlo = adj;
+      result.best.mid = adj;
+      result.waldoPerXrp = 1 / adj;
+    }
+  } catch (_) { }
+
+
   try {
     // Try 24h volume from Redis (if maintained by bot or analytics)
     const vol = await redis.get("market:volume24h");

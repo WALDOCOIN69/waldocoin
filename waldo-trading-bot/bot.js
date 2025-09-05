@@ -291,15 +291,38 @@ async function getCurrentWaldoPrice() {
       limit: 10
     };
 
+    // In stealth mode, prefer backend price to avoid XRPL calls
+    if (STEALTH_MODE) {
+      try {
+        const api = process.env.BACKEND_API_URL || 'https://waldocoin-backend-api.onrender.com';
+        const r = await globalThis.fetch(`${api}/api/market/wlo`, { cache: 'no-store' });
+        const j = await r.json();
+        let selected = j?.xrpPerWlo || j?.best?.mid || null;
+        // Apply optional env multiplier/floor to match backend controls
+        const mult = Number(process.env.PRICE_MULTIPLIER_XRP_PER_WLO);
+        const floor = Number(process.env.PRICE_FLOOR_XRP_PER_WLO);
+        if (isFinite(mult) && mult > 0) selected = selected * mult;
+        if (isFinite(floor) && floor > 0) selected = Math.max(selected, floor);
+        if (selected && isFinite(selected) && selected > 0) {
+          currentPrice = selected; await redis.set('waldo:current_price', String(selected));
+          logger.info(`📊 Stealth mode price from backend: ${selected.toFixed(8)} XRP/WLO`);
+          return selected;
+        }
+      } catch (e) { logger.warn('⚠️ Stealth price fetch failed, falling back to XRPL'); }
+    }
+
     const response = await client.request(orderBookRequest);
 
     // Compute best ASK from WLO->XRP book (offers selling WLO for XRP)
     let askPrice = null;
     if (response.result && response.result.offers && response.result.offers.length > 0) {
       const bestOffer = response.result.offers[0];
-      const quality = bestOffer.quality ? parseFloat(bestOffer.quality) : (parseFloat(bestOffer.TakerPays.value) / (parseFloat(bestOffer.TakerGets) / 1000000));
-      if (quality > 0 && isFinite(quality)) {
-        askPrice = 1 / quality; // XRP per WLO
+      // Compute price strictly from amounts to avoid quality scaling issues
+      const getsDrops = Number(bestOffer.TakerGets);
+      const paysWlo = Number(bestOffer.TakerPays?.value);
+      const pAsk = (getsDrops > 0 && paysWlo > 0) ? ((getsDrops / 1_000_000) / paysWlo) : null;
+      if (pAsk && isFinite(pAsk) && pAsk > 0) {
+        askPrice = pAsk; // XRP per WLO
       }
     }
 
@@ -321,9 +344,12 @@ async function getCurrentWaldoPrice() {
     let bidPrice = null;
     if (reverseResponse.result && reverseResponse.result.offers && reverseResponse.result.offers.length > 0) {
       const bestOffer = reverseResponse.result.offers[0];
-      const quality = bestOffer.quality ? parseFloat(bestOffer.quality) : ((parseFloat(bestOffer.TakerPays) / 1000000) / parseFloat(bestOffer.TakerGets.value));
-      if (quality > 0 && isFinite(quality)) {
-        bidPrice = quality; // XRP per WLO
+      // Compute price strictly from amounts to avoid quality scaling issues
+      const paysDrops = Number(bestOffer.TakerPays);
+      const getsWlo = Number(bestOffer.TakerGets?.value);
+      const pBid = (paysDrops > 0 && getsWlo > 0) ? ((paysDrops / 1_000_000) / getsWlo) : null;
+      if (pBid && isFinite(pBid) && pBid > 0) {
+        bidPrice = pBid; // XRP per WLO
       }
     }
 
@@ -351,7 +377,15 @@ async function getCurrentWaldoPrice() {
     };
 
     if (selected && isFinite(selected) && selected > 0) {
-      const guarded = applyGuardrails(selected);
+      // Apply admin price controls from Redis (UI-controlled), fallback to env
+      const multKey = await redis.get('price:xrp_per_wlo:multiplier');
+      const floorKey = await redis.get('price:xrp_per_wlo:floor');
+      let adj = selected;
+      const mult = Number(multKey ?? process.env.PRICE_MULTIPLIER_XRP_PER_WLO);
+      const floor = Number(floorKey ?? process.env.PRICE_FLOOR_XRP_PER_WLO);
+      if (isFinite(mult) && mult > 0) adj *= mult;
+      if (isFinite(floor) && floor > 0) adj = Math.max(adj, floor);
+      const guarded = applyGuardrails(adj);
       currentPrice = guarded;
       await redis.set('waldo:current_price', currentPrice.toString());
       logger.info(`📊 Real-time price selected: ${currentPrice.toFixed(8)} XRP per WLO`);
@@ -592,7 +626,7 @@ async function sellWaldo(userAddress, waldoAmount) {
           value: parseFloat(wloAmount).toFixed(6),
           issuer: WALDO_ISSUER
         },
-        // No flags = passive offer that stays on the book
+        Flags: 0x00000001 | 0x00010000, // tfSell | tfPassive
         Expiration: Math.floor(Date.now() / 1000) + (60 * 60) // Expires in 1 hour
       };
 
@@ -964,6 +998,7 @@ async function processPendingMicroSells() {
         value: parseFloat(microAmount).toFixed(6),
         issuer: WALDO_ISSUER
       },
+      Flags: 0x00000001 | 0x00010000, // tfSell | tfPassive
       Expiration: Math.floor(Date.now() / 1000) + (30 * 60) // 30 minute expiration
     };
 
@@ -1005,7 +1040,6 @@ async function createAutomatedTrade() {
     }
 
     const currentPrice = await getCurrentWaldoPrice();
-    const volume = dailyVolume;
 
     // Get admin-controlled trading mode
     const tradingMode = await redis.get('volume_bot:trading_mode') || 'automated';
@@ -1080,8 +1114,7 @@ async function createAutomatedTrade() {
       // If balances are reasonable, use weighted probability
       else {
         // Calculate trade probability based on how far we are from target
-        const xrpDeviation = Math.abs(xrpRatio - targetXrpRatio);
-        const wloDeviation = Math.abs(wloRatio - targetWloRatio);
+        // (using ratios below to bias probability)
 
         // If XRP is below target, higher chance to sell WLO (get more XRP)
         // If WLO is below target, higher chance to buy WLO
@@ -1132,9 +1165,15 @@ async function createAutomatedTrade() {
     logger.info(`🎛️ DYNAMIC SIZING: Base range ${baseMinTradeSize}-${baseMaxTradeSize} XRP, Adjusted to ${minTradeSize.toFixed(2)}-${maxTradeSize.toFixed(2)} XRP`);
 
     // Calculate trade amount using DYNAMIC SETTINGS
-    const tradeAmount = parseFloat((minTradeSize + Math.random() * (maxTradeSize - minTradeSize)).toFixed(2));
+    let tradeAmount = parseFloat((minTradeSize + Math.random() * (maxTradeSize - minTradeSize)).toFixed(2));
 
-    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (dynamically sized for perpetual trading)`);
+    // Clamp to admin min/max to respect panel controls and avoid validation errors
+    const effMin = baseMinTradeSize;
+    const effMax = baseMaxTradeSize;
+    if (tradeAmount < effMin) tradeAmount = effMin;
+    if (tradeAmount > effMax) tradeAmount = effMax;
+
+    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (after clamping to admin ${effMin}-${effMax})`);
 
     // SAFETY CHECKS FOR PERPETUAL TRADING
     // Ensure we have minimum balances to continue trading

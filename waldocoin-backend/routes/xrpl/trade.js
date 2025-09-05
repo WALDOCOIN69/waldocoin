@@ -14,6 +14,7 @@ router.post("/offer", async (req, res) => {
     if (!side || !["buy", "sell"].includes(side)) {
       return res.status(400).json({ success: false, error: "side must be 'buy' or 'sell'" });
     }
+    const DEST = (typeof destination === 'string' && destination.startsWith('r')) ? destination : undefined;
     const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
     const CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
 
@@ -33,7 +34,16 @@ router.post("/offer", async (req, res) => {
       return (bid && ask) ? (bid + ask) / 2 : (bid || ask || null);
     }
     const bookMid = await getXrpPerWloFromBooks().catch(() => null);
-    const mid = (bookMid && isFinite(bookMid)) ? bookMid : ((waldoPerXrpRaw && isFinite(waldoPerXrpRaw)) ? (1 / waldoPerXrpRaw) : 0.00001); // XRP per WLO
+    const baseMid = (bookMid && isFinite(bookMid)) ? bookMid : ((waldoPerXrpRaw && isFinite(waldoPerXrpRaw)) ? (1 / waldoPerXrpRaw) : 0.00001); // XRP per WLO
+
+    // Optional price adjustments (raise price) via env
+    const multRaw = process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
+    const floorRaw = process.env.PRICE_FLOOR_XRP_PER_WLO;
+    const multiplier = Number(multRaw);
+    const floor = Number(floorRaw);
+    let mid = baseMid;
+    if (isFinite(multiplier) && multiplier > 0) mid = mid * multiplier;
+    if (isFinite(floor) && floor > 0) mid = Math.max(mid, floor);
 
     const bps = Number.isFinite(Number(slippageBps)) ? Number(slippageBps) : 0;
     const slip = Math.max(0, bps) / 10_000; // 0.01 = 1%
@@ -47,7 +57,7 @@ router.post("/offer", async (req, res) => {
       const deliverMinWlo = xrp / pMax; // minimum WLO to receive after slippage
       txjson = {
         TransactionType: "Payment",
-        Destination: undefined, // force signer self-payment
+        Destination: DEST, // signer self-payment unless destination provided
         Amount: { currency: CURRENCY, issuer: ISSUER, value: String((xrp / mid).toFixed(6)) },
         DeliverMin: { currency: CURRENCY, issuer: ISSUER, value: String(deliverMinWlo.toFixed(6)) },
         SendMax: String(Math.round(xrp * 1_000_000)), // drops
@@ -60,7 +70,7 @@ router.post("/offer", async (req, res) => {
       const deliverMinXrp = wlo * pMin; // minimum XRP to receive
       txjson = {
         TransactionType: "Payment",
-        Destination: undefined, // signer self-payment
+        Destination: DEST, // signer self-payment unless destination provided
         Amount: String(Math.round((wlo * mid) * 1_000_000)), // target XRP (drops)
         DeliverMin: String(Math.round(deliverMinXrp * 1_000_000)), // min XRP (drops)
         SendMax: { currency: CURRENCY, issuer: ISSUER, value: String(wlo.toFixed(6)) },

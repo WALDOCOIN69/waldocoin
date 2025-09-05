@@ -27,6 +27,8 @@ router.get("/status", requireAdmin, async (req, res) => {
     const lastTrade = await redis.get('volume_bot:last_trade');
     const tradesCount = await redis.get('volume_bot:trades_today') || '0';
     const volume24h = await redis.get('volume_bot:volume_24h') || '0';
+    const priceFloor = await redis.get('price:xrp_per_wlo:floor');
+    const priceMultiplier = await redis.get('price:xrp_per_wlo:multiplier');
 
     // Get current settings (include active trading mode)
     const settings = {
@@ -48,7 +50,7 @@ router.get("/status", requireAdmin, async (req, res) => {
       tradesCount: tradesCount,
       volume24h: `${volume24h} XRP`,
       lastTrade: lastTrade,
-      settings: settings
+      settings: { ...settings, priceFloor, priceMultiplier }
     });
   } catch (error) {
     console.error("❌ Error getting bot status:", error);
@@ -59,7 +61,7 @@ router.get("/status", requireAdmin, async (req, res) => {
 // POST /api/admin/volume-bot/settings - Update bot settings
 router.post("/settings", requireAdmin, async (req, res) => {
   try {
-    const { frequency, tradingMode, minTradeSize, maxTradeSize, priceSpread } = req.body;
+    const { frequency, tradingMode, minTradeSize, maxTradeSize, priceSpread, priceMultiplier, priceFloor } = req.body;
 
     // Validate inputs - support new frequency options
     const validFrequencies = [5, 10, 15, 30, 45, 60, 120, 'random'];
@@ -97,12 +99,15 @@ router.post("/settings", requireAdmin, async (req, res) => {
     if (minTradeSize) await redis.set('volume_bot:min_trade_size', minTradeSize.toString());
     if (maxTradeSize) await redis.set('volume_bot:max_trade_size', maxTradeSize.toString());
     if (priceSpread !== undefined) await redis.set('volume_bot:price_spread', priceSpread.toString());
+    // Price controls shared by bot + market API
+    if (priceMultiplier !== undefined) await redis.set('price:xrp_per_wlo:multiplier', String(priceMultiplier));
+    if (priceFloor !== undefined) await redis.set('price:xrp_per_wlo:floor', String(priceFloor));
 
     // Log the settings change
     await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
       action: 'settings_updated',
-      changes: { frequency, minTradeSize, maxTradeSize, priceSpread },
+      changes: { frequency, minTradeSize, maxTradeSize, priceSpread, priceMultiplier, priceFloor },
       admin: 'admin_panel'
     }));
 
