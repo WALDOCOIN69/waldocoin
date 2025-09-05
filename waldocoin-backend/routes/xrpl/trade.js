@@ -74,19 +74,20 @@ router.post("/offer", async (req, res) => {
     } else {
       const wlo = Number(amountWlo);
       if (!Number.isFinite(wlo) || wlo <= 0) return res.status(400).json({ success: false, error: "amountWlo required for sell" });
-      const pMin = mid * (1 - slip); // min XRP per WLO to accept
-      const deliverMinXrp = wlo * pMin; // minimum XRP to receive
-      // Use ONLY server-configured destination. Ignore client-provided DEST to avoid misrouting to LPs.
-      const destCandidate = process.env.SWAP_DESTINATION || process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET;
-      const destTag = Number(process.env.SWAP_DESTINATION_TAG);
+
+      // For sell: Create a simple WLO to distributor payment
+      // The distributor will handle sending XRP back
+      const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET;
       txjson = {
         TransactionType: "Payment",
-        Destination: destCandidate || undefined,
-        ...(isFinite(destTag) ? { DestinationTag: destTag } : {}),
-        Amount: String(Math.round((wlo * mid) * 1_000_000)), // target XRP (drops)
-        DeliverMin: String(Math.round(deliverMinXrp * 1_000_000)), // min XRP (drops)
-        SendMax: { currency: CURRENCY, issuer: ISSUER, value: String(wlo.toFixed(6)) },
-        Flags: 0x00020000, // tfPartialPayment
+        Destination: distributorWallet,
+        Amount: { currency: CURRENCY, issuer: ISSUER, value: String(wlo.toFixed(6)) },
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('WALDO_SELL').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`Sell ${wlo} WLO for ${(wlo * mid).toFixed(6)} XRP`).toString('hex').toUpperCase()
+          }
+        }]
       };
     }
 
