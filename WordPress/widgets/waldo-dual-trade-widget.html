@@ -635,6 +635,13 @@
     if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
     applyCollapsed();
 
+    // Expose programmatic controls for external CTA buttons
+    window.waldoTradeOpen = function () {
+      try { collapsed = false; applyCollapsed(); root.focus(); root.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) { collapsed = false; applyCollapsed(); }
+    };
+    window.waldoTradeToggle = function () { collapsed = !collapsed; applyCollapsed(); };
+    window.waldoTradeIsCollapsed = function () { return root.classList.contains('collapsed'); };
+
     // Toast & Status (top-level)
     function showToast(msg) {
       const t = el('waldoToast'); if (!t) return;
