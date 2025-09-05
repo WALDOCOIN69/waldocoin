@@ -1,0 +1,84 @@
+<!-- WALDO Trading Widget - SIMPLE WORKING VERSION -->
+<div id="waldoWidget" style="max-width:500px;margin:20px auto;background:#0a0c1a;border:1px solid #25c2a0;border-radius:12px;padding:20px;color:#fff;font-family:Arial,sans-serif;">
+  <div style="text-align:center;margin-bottom:20px;">
+    <h3 style="color:#25c2a0;margin:0 0 10px 0;">🟢 WALDO Trading</h3>
+    <div>Price: <span id="priceDisplay">Loading...</span> • Vol: <span id="volDisplay">—</span></div>
+  </div>
+  
+  <div style="display:flex;gap:10px;margin-bottom:20px;">
+    <button onclick="switchTab('xrpl')" id="xrplBtn" style="flex:1;padding:10px;background:#25c2a0;color:#000;border:none;border-radius:6px;cursor:pointer;">XRPL DEX</button>
+    <button onclick="switchTab('fl')" id="flBtn" style="flex:1;padding:10px;background:#333;color:#fff;border:none;border-radius:6px;cursor:pointer;">First Ledger</button>
+  </div>
+  
+  <div id="xrplPanel">
+    <button onclick="connectWallet()" style="width:100%;padding:12px;background:#25c2a0;color:#000;border:none;border-radius:6px;cursor:pointer;margin-bottom:10px;">Connect Xaman</button>
+    <div style="background:#111;padding:15px;border-radius:8px;">
+      <div>Status: <span id="statusText">Not connected</span></div>
+    </div>
+  </div>
+  
+  <div id="flPanel" style="display:none;">
+    <div style="text-align:center;padding:20px;background:#111;border-radius:8px;">
+      <p>Trade WALDO on First Ledger</p>
+      <a href="https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO" target="_blank" style="display:inline-block;padding:12px 20px;background:#25c2a0;color:#000;text-decoration:none;border-radius:6px;">Open First Ledger</a>
+    </div>
+  </div>
+</div>
+
+<script>
+console.log('WALDO widget loading...');
+
+// Define functions FIRST
+window.switchTab = function(tab) {
+  console.log('switchTab called with:', tab);
+  const xrplPanel = document.getElementById('xrplPanel');
+  const flPanel = document.getElementById('flPanel');
+  const xrplBtn = document.getElementById('xrplBtn');
+  const flBtn = document.getElementById('flBtn');
+  
+  if (tab === 'xrpl') {
+    xrplPanel.style.display = 'block';
+    flPanel.style.display = 'none';
+    xrplBtn.style.background = '#25c2a0';
+    flBtn.style.background = '#333';
+  } else {
+    xrplPanel.style.display = 'none';
+    flPanel.style.display = 'block';
+    xrplBtn.style.background = '#333';
+    flBtn.style.background = '#25c2a0';
+  }
+};
+
+window.connectWallet = function() {
+  console.log('connectWallet called');
+  document.getElementById('statusText').textContent = 'Connecting...';
+  setTimeout(() => {
+    document.getElementById('statusText').textContent = 'Connected (Demo)';
+  }, 1000);
+};
+
+// Load price
+async function loadPrice() {
+  try {
+    console.log('Loading price...');
+    const response = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
+    const data = await response.json();
+    console.log('Price data:', data);
+    
+    const price = data.xrpPerWlo;
+    const vol = data.volume24h;
+    
+    document.getElementById('priceDisplay').textContent = price ? `${price.toFixed(8)} XRP` : '—';
+    document.getElementById('volDisplay').textContent = vol ? vol.toLocaleString() : '—';
+  } catch (error) {
+    console.error('Price load error:', error);
+    document.getElementById('priceDisplay').textContent = 'Error';
+  }
+}
+
+// Start immediately
+loadPrice();
+setInterval(loadPrice, 60000);
+
+console.log('WALDO widget loaded. Functions:', typeof window.switchTab, typeof window.connectWallet);
+</script>
