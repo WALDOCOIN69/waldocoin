@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Widget Test</title>
+</head>
+<body>
+    <h1>Testing WALDO Widget</h1>
+    
+    <!-- Simple test buttons -->
+    <button onclick="testWaldoTab()">Test waldoTab</button>
+    <button onclick="alert('Basic onclick works')">Test Basic Click</button>
+    
+    <div id="test-output"></div>
+    
+    <script>
+        console.log('Test script loading...');
+        
+        // Test if we can define a simple global function
+        window.testWaldoTab = function() {
+            document.getElementById('test-output').innerHTML = 'testWaldoTab works!';
+            console.log('testWaldoTab called successfully');
+        };
+        
+        // Test if we can define waldoTab
+        window.waldoTab = function(tab) {
+            document.getElementById('test-output').innerHTML = 'waldoTab called with: ' + tab;
+            console.log('waldoTab called with:', tab);
+        };
+        
+        console.log('Test script loaded. waldoTab type:', typeof window.waldoTab);
+    </script>
+</body>
+</html>
