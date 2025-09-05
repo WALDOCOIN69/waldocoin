@@ -969,19 +969,6 @@
         xummOpen('Connect Xaman', j);
       }
     } catch (e) { alert('Login failed: ' + e.message); }
-    function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
-    function appendReceipt(msg) {
-      try {
-        const box = el('tradeMsg');
-        const hash = window._waldoLastTx;
-        const link = hash ? ` <a href="${explorerLink(hash)}" target="_blank" rel="noopener">View tx</a>` : '';
-        box.innerHTML = `${msg}${link}`;
-      } catch (_) {/* noop */ }
-    }
-    // Inject receipts on buy/sell toasts (rely on _waldoLastTx set by status poll)
-    const _oldShowToast = showToast;
-    showToast = function (msg) { _oldShowToast(msg); if (/buy|sell|connected/i.test(msg) && window._waldoLastTx) { appendReceipt(msg); } }
-
   }
   // Min preview state
   let currentSlip = 0; let lastMid = null;
