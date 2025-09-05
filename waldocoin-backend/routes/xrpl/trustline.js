@@ -11,7 +11,7 @@ router.get("/status", async (req, res) => {
     return res.status(400).json({ success: false, error: "account is required" });
   }
   const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-  const CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
+  const CURRENCY = (process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
 
   try {
     const client = new xrpl.Client("wss://xrplcluster.com");
@@ -19,12 +19,17 @@ router.get("/status", async (req, res) => {
     const resp = await client.request({
       command: "account_lines",
       account,
+      ledger_index: 'validated',
       limit: 400,
     });
     await client.disconnect();
 
     const lines = resp?.result?.lines || [];
-    const has = lines.some((l) => (l.account === ISSUER || l.account === ISSUER) && l.currency === CURRENCY);
+    const has = lines.some((l) => {
+      const cur = String(l.currency || '').trim().toUpperCase();
+      const counterparty = l.account || l.issuer || l.counterparty || '';
+      return cur === CURRENCY && counterparty === ISSUER;
+    });
 
     return res.json({ success: true, account, issuer: ISSUER, currency: CURRENCY, trustline: has });
   } catch (e) {

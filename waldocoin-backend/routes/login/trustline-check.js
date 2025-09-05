@@ -21,13 +21,17 @@ router.get("/", async (req, res) => {
     const response = await client.request({
       command: "account_lines",
       account: wallet,
+      ledger_index: 'validated'
     });
 
-    const hasWaldoTrustline = response.result.lines.some(
-      (line) =>
-        line.currency === "WLO" &&
-        line.account === "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
-    );
+    const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
+    const CURRENCY = (process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
+
+    const hasWaldoTrustline = (response.result.lines || []).some((line) => {
+      const cur = String(line.currency || '').trim().toUpperCase();
+      const counterparty = line.account || line.issuer || line.counterparty || '';
+      return cur === CURRENCY && counterparty === ISSUER;
+    });
 
     // Cache it
     trustlineCache[wallet] = { value: hasWaldoTrustline, ts: Date.now() };
