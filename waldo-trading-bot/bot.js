@@ -36,8 +36,8 @@ const PROFIT_RESERVE_PERCENTAGE = parseFloat(process.env.PROFIT_RESERVE_PERCENTA
 const PROFIT_CHECK_INTERVAL = parseInt(process.env.PROFIT_CHECK_INTERVAL) || 60;
 
 // ===== TRADING PARAMETERS =====
-const MIN_TRADE_XRP = parseFloat(process.env.MIN_TRADE_AMOUNT_XRP) || 1;
-const MAX_TRADE_XRP = parseFloat(process.env.MAX_TRADE_AMOUNT_XRP) || 100;
+const MIN_TRADE_XRP = parseFloat(process.env.MIN_TRADE_AMOUNT_XRP) || 0.5; // Optimized for 10 XRP perpetual trading
+const MAX_TRADE_XRP = parseFloat(process.env.MAX_TRADE_AMOUNT_XRP) || 1.5; // Reduced for sustainability
 const PRICE_SPREAD = parseFloat(process.env.PRICE_SPREAD_PERCENTAGE) || 0; // No spread for longevity
 const MARKET_MAKING = process.env.MARKET_MAKING_ENABLED === 'true';
 
@@ -1116,20 +1116,21 @@ async function createAutomatedTrade() {
         // Calculate trade probability based on how far we are from target
         // (using ratios below to bias probability)
 
+        // PRICE LIFTING STRATEGY: Bias toward BUY orders to help lift WALDO price
         // If XRP is below target, higher chance to sell WLO (get more XRP)
         // If WLO is below target, higher chance to buy WLO
-        let buyProbability = 0.5; // Default 50/50
+        let buyProbability = 0.65; // Default 65% buy bias for price lifting
 
         if (xrpRatio < targetXrpRatio) {
-          // Need more XRP, so favor selling WLO
-          buyProbability = 0.3; // 30% buy, 70% sell
+          // Need more XRP, so favor selling WLO (but still maintain buy bias)
+          buyProbability = 0.45; // 45% buy, 55% sell
         } else if (wloRatio < targetWloRatio) {
-          // Need more WLO, so favor buying
-          buyProbability = 0.7; // 70% buy, 30% sell
+          // Need more WLO, so strongly favor buying
+          buyProbability = 0.80; // 80% buy, 20% sell (strong price lifting)
         }
 
         tradeType = Math.random() < buyProbability ? 'BUY' : 'SELL';
-        logger.info(`⚖️ WEIGHTED: ${(buyProbability * 100).toFixed(0)}% buy probability - executing ${tradeType} trade`);
+        logger.info(`🚀 PRICE LIFTING: ${(buyProbability * 100).toFixed(0)}% buy probability - executing ${tradeType} trade`);
       }
     }
 
@@ -1137,9 +1138,9 @@ async function createAutomatedTrade() {
     const adminMinSize = await redis.get('volume_bot:min_trade_size');
     const adminMaxSize = await redis.get('volume_bot:max_trade_size');
 
-    // Use admin settings if available, otherwise use defaults
-    const baseMinTradeSize = adminMinSize ? parseFloat(adminMinSize) : 1.0;
-    const baseMaxTradeSize = adminMaxSize ? parseFloat(adminMaxSize) : 2.0;
+    // Use admin settings if available, otherwise use optimized defaults for low balance perpetual trading
+    const baseMinTradeSize = adminMinSize ? parseFloat(adminMinSize) : 0.5; // Reduced for 10 XRP perpetual trading
+    const baseMaxTradeSize = adminMaxSize ? parseFloat(adminMaxSize) : 1.5; // Reduced for sustainability
 
     // DYNAMIC TRADE SIZING FOR PERPETUAL TRADING
     // Adjust trade sizes based on available balances to ensure sustainability
@@ -1177,8 +1178,8 @@ async function createAutomatedTrade() {
 
     // SAFETY CHECKS FOR PERPETUAL TRADING
     // Ensure we have minimum balances to continue trading
-    const minXrpReserve = 5.0; // Keep at least 5 XRP for fees and future trades
-    const minWloReserve = 1000; // Keep at least 1000 WLO for future trades
+    const minXrpReserve = 2.0; // Keep at least 2 XRP for fees and future trades (optimized for low balance)
+    const minWloReserve = 500; // Keep at least 500 WLO for future trades (reduced for efficiency)
 
     if (tradeType === 'BUY' && xrpBalance < (tradeAmount + minXrpReserve)) {
       logger.warn(`⚠️ Insufficient XRP for safe trading: ${xrpBalance.toFixed(2)} XRP, need ${(tradeAmount + minXrpReserve).toFixed(2)} XRP`);
