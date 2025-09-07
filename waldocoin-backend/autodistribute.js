@@ -9,9 +9,21 @@ const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const client = new xrpl.Client("wss://xrplcluster.com");
 
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
+const distributorSecret = process.env.WALDO_DISTRIBUTOR_SECRET;
 const issuerWallet = process.env.ISSUER_WALLET;
 const WALDO_ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
 const WALDO_CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
+
+// Validate required environment variables
+if (!distributorWallet) {
+  console.error("❌ DISTRIBUTOR_WALLET environment variable not set");
+  process.exit(1);
+}
+
+if (!distributorSecret) {
+  console.error("❌ WALDO_DISTRIBUTOR_SECRET environment variable not set");
+  process.exit(1);
+}
 
 const isNativeXRP = (tx) =>
   tx.TransactionType === "Payment" &&
@@ -106,32 +118,35 @@ function parseTradingMemo(tx) {
 
       console.log(`✅ WALDO trustline confirmed for ${sender}`);
 
-      // Create XUMM payload for WALDO send
-      const payload = {
-        txjson: {
+      try {
+        // Send WALDO directly using distributor wallet (automated)
+        const distributorWalletObj = xrpl.Wallet.fromSeed(distributorSecret);
+
+        const payment = {
           TransactionType: "Payment",
-          Account: distributorWallet,
+          Account: distributorWalletObj.classicAddress,
           Destination: sender,
           Amount: {
             currency: WALDO_CURRENCY,
             issuer: WALDO_ISSUER,
             value: waldoAmount.toString(),
           },
-        },
-      };
+        };
 
-      const { created } = await xumm.payload.createAndSubscribe(payload, (event) => {
-        if (event.data.signed === true) {
-          console.log(`✅ WALDO distribution completed: ${waldoAmount} WALDO sent to ${sender}`);
-          return true;
-        }
-        if (event.data.signed === false) {
-          console.error(`❌ WALDO distribution failed: User rejected transaction for ${sender}`);
-          return false;
-        }
-      });
+        console.log(`🚀 Sending ${waldoAmount} WALDO to ${sender}...`);
 
-      console.log(`🚀 WALDO distribution initiated: ${waldoAmount} WALDO to ${sender} | Original TX: ${txHash}`);
+        const prepared = await client.autofill(payment);
+        const signed = distributorWalletObj.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob);
+
+        if (result.result.meta.TransactionResult === "tesSUCCESS") {
+          console.log(`✅ WALDO distribution completed: ${waldoAmount} WALDO sent to ${sender} | TX: ${result.result.hash}`);
+        } else {
+          console.error(`❌ WALDO distribution failed: ${result.result.meta.TransactionResult} for ${sender}`);
+        }
+      } catch (distributionError) {
+        console.error(`❌ Error during WALDO distribution to ${sender}:`, distributionError.message);
+      }
     });
   } catch (err) {
     console.error("❌ Error in autodistribute.js:", err.message);
