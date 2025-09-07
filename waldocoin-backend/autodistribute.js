@@ -2,7 +2,8 @@
 import xrpl from "xrpl";
 import dotenv from "dotenv";
 import pkg from 'xumm-sdk';
-import getWaldoPerXrp from "./utils/getWaldoPerXrp.js";
+import fetch from 'node-fetch';
+// Enhanced autodistribute - uses same market pricing as trading widget
 dotenv.config();
 const { XummSdk } = pkg;
 const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
@@ -30,37 +31,7 @@ const isNativeXRP = (tx) =>
   tx.Destination === distributorWallet &&
   typeof tx.Amount === "string";
 
-// Parse memo to extract WALDO amount for trading widget transactions
-function parseTradingMemo(tx) {
-  if (!tx.Memos || !Array.isArray(tx.Memos)) return null;
-
-  for (const memoWrapper of tx.Memos) {
-    const memo = memoWrapper.Memo;
-    if (!memo) continue;
-
-    try {
-      const memoType = memo.MemoType ? Buffer.from(memo.MemoType, 'hex').toString('utf8') : '';
-      const memoData = memo.MemoData ? Buffer.from(memo.MemoData, 'hex').toString('utf8') : '';
-
-      console.log('📝 Memo found:', { memoType, memoData });
-
-      if (memoType === 'WALDO_BUY') {
-        // Parse memo data like "Buy 1234.567890 WLO for 10 XRP"
-        const match = memoData.match(/Buy\s+([\d.]+)\s+WLO\s+for\s+([\d.]+)\s+XRP/i);
-        if (match) {
-          const waldoAmount = parseFloat(match[1]);
-          const xrpAmount = parseFloat(match[2]);
-          console.log('🎯 Parsed trading memo:', { waldoAmount, xrpAmount });
-          return { waldoAmount, xrpAmount, isTradingWidget: true };
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error parsing memo:', error);
-    }
-  }
-
-  return null;
-}
+// Simple approach: Any XRP payment to distributor wallet gets WALDO back
 
 (async () => {
   try {
@@ -86,19 +57,25 @@ function parseTradingMemo(tx) {
 
       console.log(`💰 XRP Payment received: ${xrpAmount} XRP from ${sender} | TX: ${txHash}`);
 
-      // Check if this is a trading widget transaction with memo
-      const tradingMemo = parseTradingMemo(tx);
+      // Get current market rate from same endpoint as trading widget
       let waldoAmount;
+      try {
+        const marketResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
+        const marketData = await marketResponse.json();
+        const xrpPerWlo = marketData?.xrpPerWlo || marketData?.best?.mid;
 
-      if (tradingMemo && tradingMemo.isTradingWidget) {
-        // Use the exact WALDO amount from the trading widget memo
-        waldoAmount = tradingMemo.waldoAmount;
-        console.log(`🎯 Trading widget transaction: ${waldoAmount} WALDO for ${xrpAmount} XRP`);
-      } else {
-        // Legacy calculation for direct payments (presale, etc.)
-        const bonus = xrpAmount >= 100 ? 0.2 : xrpAmount >= 50 ? 0.1 : 0;
-        waldoAmount = Math.floor(xrpAmount * 100000 * (1 + bonus));
-        console.log(`📊 Legacy calculation: ${waldoAmount} WALDO (${bonus * 100}% bonus)`);
+        if (xrpPerWlo && isFinite(xrpPerWlo) && xrpPerWlo > 0) {
+          // Same calculation as trading widget: waldoAmount = xrpAmount / xrpPerWlo
+          waldoAmount = Math.floor(xrpAmount / xrpPerWlo);
+          console.log(`🎯 Market rate: ${xrpPerWlo} XRP/WLO → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
+        } else {
+          throw new Error('Invalid market rate');
+        }
+      } catch (error) {
+        console.warn(`⚠️ Market rate fetch failed, using fallback: ${error.message}`);
+        // Fallback rate: 10,000 WALDO per XRP (same as presale)
+        waldoAmount = Math.floor(xrpAmount * 10000);
+        console.log(`🎯 Fallback rate: 10,000 WALDO/XRP → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
       }
 
       // Check for WALDO trustline
