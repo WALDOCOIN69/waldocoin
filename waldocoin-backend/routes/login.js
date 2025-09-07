@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        return_url: { app: "xumm://xumm.app/done", web: returnWeb }
+        return_url: { app: "xaman://xaman.app/done", web: returnWeb }
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
@@ -105,7 +105,7 @@ router.get("/trustline", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        return_url: { app: "xumm://xumm.app/done", web: null }
+        return_url: { app: "xaman://xaman.app/done", web: null }
       }
     };
 
@@ -148,7 +148,7 @@ router.get("/trustline-noripple", async (req, res) => {
         submit: true,
         multisign: false,
         expire: 300, // 5 minutes
-        return_url: { app: "xumm://xumm.app/done", web: null }
+        return_url: { app: "xaman://xaman.app/done", web: null }
       }
     };
 

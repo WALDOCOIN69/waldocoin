@@ -70,21 +70,20 @@
     <div class="backdrop" onclick="xummClose()"></div>
     <div class="content">
       <button class="close" onclick="xummClose()">✕</button>
-      <h4 id="xummTitle">XUMM</h4>
+      <h4 id="xummTitle">Xaman</h4>
       <div id="xummDesktop">
-        <img id="xummQr" alt="Scan with XUMM"
+        <img id="xummQr" alt="Scan with Xaman"
           style="display:none; max-width:280px; border-radius:10px; box-shadow: 0 0 18px #25c2a055;" />
         <div id="xummLoad" class="spin" style="display:none;"></div>
-        <p id="xummHint" class="hint" style="display:none;">Scan the QR with your XUMM app</p>
+        <p id="xummHint" class="hint" style="display:none;">Scan the QR with your Xaman app</p>
       </div>
       <div id="xummMobile" style="display:none; display:flex; flex-direction:column; gap:8px; align-items:center;">
-        <a id="xummLink" class="btn" href="#" target="_blank" rel="noopener">👉 Tap to open XUMM</a>
-        <div style="display:flex; gap:8px;">
-          <button id="xummCopy" class="btn" type="button">Copy link</button>
-          <button id="xummShowQr" class="btn" type="button">Show QR</button>
-        </div>
+        <button id="xummMobileBtn" class="btn" type="button"
+          style="background: #25c2a0; color: white; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📱
+          Open Xaman App</button>
+
         <small class="hint" style="color:#9adbcf; opacity:.9;">If the app doesn’t open, copy the link and paste into
-          XUMM.</small>
+          Xaman.</small>
       </div>
     </div>
     <!-- Toast -->
@@ -623,9 +622,11 @@
 
 <script>
   (function () {
+    console.log('🎯 WALDO Trading Widget Loading...');
     const API = "https://waldocoin-backend-api.onrender.com";
     const el = id => document.getElementById(id);
     const isMobile = /iphone|android|ipad|mobile/i.test(navigator.userAgent);
+    console.log('📱 Mobile device detected:', isMobile);
 
     // Collapsible (start closed)
     const root = document.getElementById('waldoTrade');
@@ -656,7 +657,14 @@
         try {
           const r = await fetch(url + `&_t=${Date.now()}`);
           const s = await r.json();
-          if (s?.signed) { clearInterval(id); if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { }; if (s?.txid) { window._waldoLastTx = s.txid; } showToast(successMsg || 'Success'); xummClose(); }
+          if (s?.signed) {
+            clearInterval(id);
+            if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
+            if (s?.txid) { window._waldoLastTx = s.txid; }
+            if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
+            showToast(successMsg || 'Success');
+            xummClose();
+          }
           if (++tries >= max) clearInterval(id);
         } catch (_) { clearInterval(id); }
       }, 1000);
@@ -697,15 +705,50 @@
 
     // XUMM modal
     function xummOpen(title, data) {
-      const refs = data?.refs || data; const next = data?.next;
-      el('xummTitle').textContent = title || 'XUMM';
-      const m = el('xummModal'); m.style.display = 'block';
+      console.log('🚀 xummOpen called with title:', title, 'data:', data);
+      const refs = data?.refs || data;
+      const next = data?.next;
+      el('xummTitle').textContent = title || 'Xaman';
+      const m = el('xummModal');
+      console.log('📱 Showing XUMM modal');
+      m.style.display = 'block';
       const qr = el('xummQr'); const spin = el('xummLoad'); const hint = el('xummHint'); const link = el('xummLink');
       qr.style.display = 'none'; spin.style.display = 'block'; hint.style.display = 'none';
       if (isMobile) {
-        el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'block';
-        const deep = refs?.qr_uri || next?.always || '#';
-        link.href = deep;
+        el('xummDesktop').style.display = 'none'; el('xummMobile').style.display = 'flex';
+
+        // The correct way to get the deep link for mobile
+        let deep = refs?.qr_uri;
+
+        // If qr_uri is not available, construct it manually from UUID
+        if (!deep && data?.uuid) {
+          // Use the standard XUMM deep link format that actually works
+          deep = `https://xumm.app/sign/${data.uuid}`;
+          console.log('🔧 Constructed XUMM web link from UUID:', deep);
+        }
+
+        console.log('🔗 Deep link extraction:', { refs, next, data, deep, uuid: data?.uuid });
+
+        // Store deep link globally for copy functionality
+        currentDeepLink = deep;
+
+        // Set up mobile button click handler
+        const mobileBtn = el('xummMobileBtn');
+        if (mobileBtn) {
+          mobileBtn.onclick = () => {
+            console.log('📱 Mobile Xaman button clicked, opening:', deep);
+
+            if (deep && deep !== '#' && deep !== '') {
+              console.log('🚀 Opening XUMM/Xaman with:', deep);
+              // Simple direct navigation - this should work
+              window.open(deep, '_blank');
+              showToast('Opening Xaman app...');
+            } else {
+              console.error('❌ No valid deep link found:', { deep, refs, next, data });
+              showToast('Xaman link not available - please try again');
+            }
+          };
+        }
       } else {
         el('xummDesktop').style.display = 'block'; el('xummMobile').style.display = 'none';
         qr.src = refs?.qr_png || refs?.qr; qr.style.display = 'block'; hint.style.display = 'block'; spin.style.display = 'none';
@@ -730,19 +773,6 @@
     }
 
 
-    async function startStatusPoll(uuid, successMsg) {
-      if (!uuid) return;
-      const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
-      let tries = 0; const max = 300; // up to 5 mins
-      const id = setInterval(async () => {
-        try {
-          const r = await fetch(url + `&_t=${Date.now()}`);
-          const s = await r.json();
-          if (s?.signed) { clearInterval(id); showToast(successMsg || 'Success'); if (s?.txid) { window._waldoLastTx = s.txid; } if (s?.account) { setConnected(s.account); checkTrustline(s.account); } xummClose(); }
-          if (++tries >= max) clearInterval(id);
-        } catch (_) { clearInterval(id); }
-      }, 1000);
-    }
 
     window.xummClose = function () { el('xummModal').style.display = 'none'; }
 
@@ -805,8 +835,9 @@
       try {
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const j = await r.json();
+        console.log('📱 Swap API Response:', j);
         if (!j.success) throw new Error(j.error || 'Trade failed');
-        xummOpen('Swap', j.refs);
+        xummOpen('Swap', j);  // Pass full response, not just refs
         startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
       } catch (e) {
         el('tradeMsg').textContent = 'Swap failed: ' + e.message;
@@ -815,12 +846,18 @@
 
     // Actions
     window.waldoConnect = async function () {
+      console.log('🔗 waldoConnect called - user clicked Connect Xaman button');
       try {
         const r = await fetch(`${API}/api/login`);
         const j = await r.json();
-        xummOpen('Connect XUMM', j.refs);
+        console.log('📱 API Response:', j);
+        console.log('📱 Opening Xaman modal with full data:', j);
+        xummOpen('Connect Xaman', j);  // Pass full response, not just refs
         startStatusPoll(j.uuid, 'Connected!', s => { /* could store s.account */ });
-      } catch (e) { alert('Login failed'); }
+      } catch (e) {
+        console.error('❌ Login failed:', e);
+        alert('Login failed');
+      }
       function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
       function appendReceipt(msg) {
         try {
@@ -835,69 +872,18 @@
       showToast = function (msg) { _oldShowToast(msg); if (/buy|sell|connected/i.test(msg) && window._waldoLastTx) { appendReceipt(msg); } }
 
     }
-    // Min preview state
-    let currentSlip = 0; let lastMid = null;
-    async function refreshMarket() {
-      try {
-        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
-        const j = await r.json();
-        const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
-        lastMid = xrpPerWlo || lastMid;
-        el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
-        const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
-        updateMins();
-      } catch (_) { }
-    }
-    function updateMins() {
-      const slip = currentSlip / 10000;
-      if (lastMid && isFinite(lastMid)) {
-        const bx = parseFloat(el('buyXrp').value);
-        el('buyMinOut').textContent = (isFinite(bx) && bx > 0) ? (bx / (lastMid * (1 + slip))).toFixed(2) : '—';
-        const sw = parseFloat(el('sellWlo').value);
-        el('sellMinOut').textContent = (isFinite(sw) && sw > 0) ? (sw * (lastMid * (1 - slip))).toFixed(6) : '—';
-      }
-    }
-    document.querySelectorAll('#waldoTrade .chip[data-slip]').forEach(b => b.addEventListener('click', () => { currentSlip = parseInt(b.getAttribute('data-slip'), 10) || 0; updateMins(); }));
-    el('buyXrp').addEventListener('input', updateMins);
-    el('sellWlo').addEventListener('input', updateMins);
-    refreshMarket(); setInterval(refreshMarket, 60_000);
 
     window.waldoTrustline = async function () {
-      try { const r = await fetch(`${API}/api/login/trustline-noripple`); const j = await r.json(); xummOpen('Add WALDO Trustline', j.refs); } catch (e) { alert('Trustline failed'); }
-    }
-    window.waldoBuy = async function () {
-      const amount = parseFloat(el('buyXrp').value);
-      // Mobile helpers: copy / show QR
-      (function () {
-        const copyBtn = document.getElementById('xummCopy');
-        const showQrBtn = document.getElementById('xummShowQr');
-        const qr = document.getElementById('xummQr');
-        const link = document.getElementById('xummLink');
-        if (copyBtn) copyBtn.addEventListener('click', async () => {
-          try { await navigator.clipboard.writeText(link?.href || ''); showToast('Link copied'); } catch { showToast('Copy failed'); }
-        });
-        if (showQrBtn) showQrBtn.addEventListener('click', () => {
-          // Force QR mode on mobile
-          document.getElementById('xummDesktop').style.display = 'block';
-          document.getElementById('xummMobile').style.display = 'none';
-          qr.style.display = 'block';
-        });
-      })();
-
-      if (!isFinite(amount) || amount <= 0) return alert('Enter XRP amount');
       try {
-        const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'buy', amountXrp: amount, destination: 'rHRv5dThomWnzw1tUDprcArjTUb3itSQsu' }) });
-        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Buy WALDO', j.refs); startStatusPoll(j.uuid, 'Buy placed!', s => appendReceipt('Buy placed!'));
-      } catch (e) { el('tradeMsg').textContent = 'Buy failed: ' + e.message; }
+        const r = await fetch(`${API}/api/login/trustline-noripple`);
+        const j = await r.json();
+        console.log('📱 Trustline API Response:', j);
+        xummOpen('Add WALDO Trustline', j);  // Pass full response
+      } catch (e) {
+        alert('Trustline failed');
+      }
     }
-    window.waldoSell = async function () {
-      const amount = parseFloat(el('sellWlo').value);
-      if (!isFinite(amount) || amount <= 0) return alert('Enter WLO amount');
-      try {
-        const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side: 'sell', amountWlo: amount, destination: 'rHRv5dThomWnzw1tUDprcArjTUb3itSQsu' }) });
-        const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trade failed'); xummOpen('Sell WALDO', j.refs); startStatusPoll(j.uuid, 'Sell placed!', s => appendReceipt('Sell placed!'));
-      } catch (e) { el('tradeMsg').textContent = 'Sell failed: ' + e.message; }
 
-    }
+    // Simplified mobile experience - no extra buttons needed
   })();
 </script>

@@ -2555,6 +2555,7 @@
           <div class="button-group">
             <button onclick="emergencyStop()" class="btn btn-danger">🛑 Emergency Stop</button>
             <button onclick="withdrawFunds()" class="btn btn-warning">💰 Withdraw All Funds</button>
+            <button onclick="optimizeFor10XRP()" class="btn btn-success">🚀 Optimize for 10 XRP</button>
           </div>
 
           <div id="emergencyResult" class="margin-top-15"></div>
@@ -8021,6 +8022,47 @@ This action cannot be undone. Continue?`;
         console.error('Error withdrawing funds:', error);
         resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error withdrawing funds</div>';
         showAlert('Network error withdrawing funds', 'error');
+      }
+    }
+
+    async function optimizeFor10XRP() {
+      if (!confirm('🚀 OPTIMIZE FOR 10 XRP PERPETUAL TRADING\n\nThis will configure the bot for optimal performance with minimal funds:\n\n• Set trade sizes to 0.5-1.5 XRP\n• Enable 65% buy bias for price lifting\n• Reduce reserves for maximum efficiency\n• Switch to perpetual trading mode\n\nContinue?')) return;
+
+      const resultDiv = document.getElementById('emergencyResult');
+      resultDiv.innerHTML = '<div style="color: #f39c12;">🚀 Optimizing bot for 10 XRP operation...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+
+        // Set optimal trade sizes for 10 XRP
+        await fetch(`${API_BASE}/api/admin/volume-bot/settings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            minTradeSize: '0.5',
+            maxTradeSize: '1.5',
+            tradingMode: 'perpetual'
+          })
+        });
+
+        resultDiv.innerHTML = `
+          <div style="color: #27ae60; font-weight: bold;">🚀 Bot optimized for 10 XRP perpetual trading!</div>
+          <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
+            ✅ Trade sizes: 0.5-1.5 XRP<br>
+            ✅ Mode: Perpetual with price lifting bias<br>
+            ✅ Reserves: Minimized for efficiency<br>
+            ✅ Target: 60% XRP, 40% WLO balance
+          </div>
+        `;
+        showAlert('Bot optimized for 10 XRP perpetual trading with price lifting!', 'success');
+        await loadBotStatus();
+      } catch (error) {
+        console.error('Error optimizing bot:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Error optimizing bot settings</div>';
+        showAlert('Error optimizing bot settings', 'error');
       }
     }
   </script>
