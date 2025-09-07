@@ -831,7 +831,7 @@
     window.waldoSwap = async function () {
       const amt = parseFloat(el('fromAmount').value);
       if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
-      const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip, destination: 'rHRv5dThomWnzw1tUDprcArjTUb3itSQsu' } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip, destination: 'rHRv5dThomWnzw1tUDprcArjTUb3itSQsu' };
+      const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip, destination: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL' } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip, destination: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL' };
       try {
         const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const j = await r.json();
