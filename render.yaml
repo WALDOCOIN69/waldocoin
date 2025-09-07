@@ -78,11 +78,21 @@ services:
         sync: false
       - key: WALDO_CURRENCY
         sync: false
+      - key: WALDOCOIN_TOKEN
+        sync: false
       - key: STAKING_VAULT_WALLET
         sync: false
       - key: DISTRIBUTOR_WALLET
         sync: false
       - key: DISTRIBUTOR_SECRET
+        sync: false
+      - key: WALDO_DISTRIBUTOR_SECRET
+        sync: false
+      - key: ISSUER_WALLET
+        sync: false
+      - key: XUMM_API_KEY
+        sync: false
+      - key: XUMM_API_SECRET
         sync: false
       - key: REDIS_URL
         sync: false
