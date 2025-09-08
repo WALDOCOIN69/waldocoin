@@ -11,6 +11,8 @@ const distributorSecret = process.env.WALDO_DISTRIBUTOR_SECRET || process.env.DI
 const issuerWallet = process.env.ISSUER_WALLET;
 const WALDO_ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
 const WALDO_CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
+// Wallet that will actually SEND WALDO (can be issuer/treasury). Falls back to distributorSecret.
+const senderSecret = process.env.WALDO_SENDER_SECRET || process.env.ISSUER_SECRET || distributorSecret;
 
 // Validate required environment variables
 if (!distributorWallet) {
@@ -34,7 +36,9 @@ const isNativeXRP = (tx) =>
   try {
     await client.connect();
     console.log("✅ XRPL connected");
+    const senderWalletObj = xrpl.Wallet.fromSeed(senderSecret);
     console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
+    console.log(`✉️  WALDO sender address: ${senderWalletObj.classicAddress}`);
 
     await client.request({
       command: "subscribe",
@@ -94,12 +98,12 @@ const isNativeXRP = (tx) =>
       console.log(`✅ WALDO trustline confirmed for ${sender}`);
 
       try {
-        // Send WALDO directly using distributor wallet (automated)
-        const distributorWalletObj = xrpl.Wallet.fromSeed(distributorSecret);
+        // Send WALDO using configured sender (issuer/treasury/distributor)
+        const senderWalletObj = xrpl.Wallet.fromSeed(senderSecret);
 
         const payment = {
           TransactionType: "Payment",
-          Account: distributorWalletObj.classicAddress,
+          Account: senderWalletObj.classicAddress,
           Destination: sender,
           Amount: {
             currency: WALDO_CURRENCY,
@@ -111,10 +115,11 @@ const isNativeXRP = (tx) =>
         console.log(`🚀 Sending ${waldoAmount} WALDO to ${sender}...`);
 
         const prepared = await client.autofill(payment);
-        const signed = distributorWalletObj.sign(prepared);
+        const signed = senderWalletObj.sign(prepared);
         const result = await client.submitAndWait(signed.tx_blob);
 
-        if (result.result.meta.TransactionResult === "tesSUCCESS") {
+        const engine = result?.result?.engine_result || result?.result?.meta?.TransactionResult;
+        if (engine === "tesSUCCESS") {
           console.log(`✅ WALDO distribution completed: ${waldoAmount} WALDO sent to ${sender} | TX: ${result.result.hash}`);
         } else {
           console.error(`❌ WALDO distribution failed: ${result.result.meta.TransactionResult} for ${sender}`);

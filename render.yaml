@@ -88,11 +88,11 @@ services:
         sync: false
       - key: WALDO_DISTRIBUTOR_SECRET
         sync: false
+      - key: WALDO_SENDER_SECRET
+        sync: false
+      - key: ISSUER_SECRET
+        sync: false
       - key: ISSUER_WALLET
-        sync: false
-      - key: XUMM_API_KEY
-        sync: false
-      - key: XUMM_API_SECRET
         sync: false
       - key: REDIS_URL
         sync: false
