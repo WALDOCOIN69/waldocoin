@@ -1,12 +1,9 @@
 // 📁 autodistribute.js - Enhanced for Trading Widget Support
 import xrpl from "xrpl";
 import dotenv from "dotenv";
-import pkg from 'xumm-sdk';
 import fetch from 'node-fetch';
 // Enhanced autodistribute - uses same market pricing as trading widget
 dotenv.config();
-const { XummSdk } = pkg;
-const xumm = new XummSdk(process.env.XUMM_API_KEY, process.env.XUMM_API_SECRET);
 const client = new xrpl.Client("wss://xrplcluster.com");
 
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
@@ -45,6 +42,7 @@ const isNativeXRP = (tx) =>
     });
 
     client.on("transaction", async (event) => {
+      if (!event.validated) { return; }
       const tx = event.transaction;
       if (!isNativeXRP(tx)) {
         console.warn("⚠️ Ignored event - not a valid XRP Payment TX");

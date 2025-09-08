@@ -17,7 +17,7 @@ async function sendWaldo(recipientWallet, waldoAmount) {
   }
 
   const client = new xrpl.Client("wss://xrplcluster.com");
-  
+
   try {
     await client.connect();
     console.log("✅ Connected to XRPL");
@@ -57,25 +57,50 @@ async function sendWaldo(recipientWallet, waldoAmount) {
   }
 }
 
-// Usage: node manual-send-waldo.js <wallet> <amount>
+// Auto-calculate WALDO amount based on XRP sent
+async function calculateWaldoFromXrp(xrpAmount) {
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
+    const data = await response.json();
+    const xrpPerWlo = data?.xrpPerWlo || data?.best?.mid;
+
+    if (xrpPerWlo && isFinite(xrpPerWlo) && xrpPerWlo > 0) {
+      return Math.floor(xrpAmount / xrpPerWlo);
+    } else {
+      // Fallback rate
+      return Math.floor(xrpAmount * 10000);
+    }
+  } catch (error) {
+    console.warn("Using fallback rate due to error:", error.message);
+    return Math.floor(xrpAmount * 10000);
+  }
+}
+
+// Usage: node manual-send-waldo.js <wallet> <xrp_amount_sent>
 const args = process.argv.slice(2);
 if (args.length !== 2) {
-  console.log("Usage: node manual-send-waldo.js <wallet_address> <waldo_amount>");
-  console.log("Example: node manual-send-waldo.js rABC123... 50000");
+  console.log("Usage: node manual-send-waldo.js <wallet_address> <xrp_amount_sent>");
+  console.log("Example: node manual-send-waldo.js rABC123... 10");
+  console.log("This will calculate the WALDO amount based on current market rate");
   process.exit(1);
 }
 
-const [wallet, amount] = args;
-const waldoAmount = parseFloat(amount);
+const [wallet, xrpAmountStr] = args;
+const xrpAmount = parseFloat(xrpAmountStr);
 
 if (!wallet.startsWith('r') || wallet.length < 25) {
   console.error("❌ Invalid wallet address");
   process.exit(1);
 }
 
-if (!waldoAmount || waldoAmount <= 0) {
-  console.error("❌ Invalid WALDO amount");
+if (!xrpAmount || xrpAmount <= 0) {
+  console.error("❌ Invalid XRP amount");
   process.exit(1);
 }
+
+console.log(`🔄 Calculating WALDO amount for ${xrpAmount} XRP...`);
+const waldoAmount = await calculateWaldoFromXrp(xrpAmount);
+console.log(`💰 Will send ${waldoAmount} WALDO to ${wallet}`);
 
 sendWaldo(wallet, waldoAmount);
