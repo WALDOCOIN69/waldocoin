@@ -13,7 +13,8 @@ const issuerWallet = process.env.ISSUER_WALLET;
 const WALDO_ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
 const WALDO_CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
 // Wallet that will actually SEND WALDO (can be issuer/treasury). Falls back to distributorSecret.
-const senderSecret = process.env.WALDO_SENDER_SECRET || process.env.ISSUER_SECRET || distributorSecret;
+// Prefer issuer for simplest delivery (no path issues), then treasury, then distributor
+const senderSecret = process.env.ISSUER_SECRET || process.env.WALDO_SENDER_SECRET || distributorSecret;
 
 // Validate required environment variables
 if (!distributorWallet) {
@@ -35,7 +36,8 @@ const isNativeXRP = (tx) =>
 
 (async () => {
   try {
-    await connectRedis().catch(() => { });
+    // Try Redis for debug logs (non-fatal if missing)
+    try { await connectRedis(); } catch (_) { console.warn('Redis not available; continuing'); }
     await client.connect();
     console.log("✅ XRPL connected");
     const senderWalletObj = xrpl.Wallet.fromSeed(senderSecret);
