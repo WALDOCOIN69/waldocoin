@@ -2,6 +2,7 @@
 import xrpl from "xrpl";
 import dotenv from "dotenv";
 import fetch from 'node-fetch';
+import { redis, connectRedis } from './redisClient.js';
 // Enhanced autodistribute - uses same market pricing as trading widget
 dotenv.config();
 const client = new xrpl.Client("wss://xrplcluster.com");
@@ -34,11 +35,13 @@ const isNativeXRP = (tx) =>
 
 (async () => {
   try {
+    await connectRedis().catch(() => { });
     await client.connect();
     console.log("✅ XRPL connected");
     const senderWalletObj = xrpl.Wallet.fromSeed(senderSecret);
     console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
     console.log(`✉️  WALDO sender address: ${senderWalletObj.classicAddress}`);
+    try { await redis.set('autodistribute:status', JSON.stringify({ ts: Date.now(), listening: distributorWallet, sender: senderWalletObj.classicAddress })); } catch (_) { }
 
     await client.request({
       command: "subscribe",
@@ -58,6 +61,7 @@ const isNativeXRP = (tx) =>
       const xrpAmount = parseFloat(xrpl.dropsToXrp(tx.Amount));
 
       console.log(`💰 XRP Payment received: ${xrpAmount} XRP from ${sender} | TX: ${txHash}`);
+      try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'xrp_in', sender, txHash, xrpAmount })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
 
       // Get current market rate from same endpoint as trading widget
       let waldoAmount;
@@ -70,6 +74,7 @@ const isNativeXRP = (tx) =>
           // Same calculation as trading widget: waldoAmount = xrpAmount / xrpPerWlo
           waldoAmount = Math.floor(xrpAmount / xrpPerWlo);
           console.log(`🎯 Market rate: ${xrpPerWlo} XRP/WLO → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'calc', sender, txHash, xrpAmount, xrpPerWlo, waldoAmount })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
         } else {
           throw new Error('Invalid market rate');
         }
@@ -92,10 +97,12 @@ const isNativeXRP = (tx) =>
 
       if (!trustsWaldo) {
         console.warn(`🚫 No WALDO trustline for ${sender} (currency: ${WALDO_CURRENCY}, issuer: ${WALDO_ISSUER})`);
+        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'no_trustline', sender })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
         return;
       }
 
       console.log(`✅ WALDO trustline confirmed for ${sender}`);
+      try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'trustline_ok', sender })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
 
       try {
         // Send WALDO using configured sender (issuer/treasury/distributor)
@@ -119,13 +126,19 @@ const isNativeXRP = (tx) =>
         const result = await client.submitAndWait(signed.tx_blob);
 
         const engine = result?.result?.engine_result || result?.result?.meta?.TransactionResult;
+        const hash = result?.result?.tx_json?.hash || result?.result?.hash;
         if (engine === "tesSUCCESS") {
-          console.log(`✅ WALDO distribution completed: ${waldoAmount} WALDO sent to ${sender} | TX: ${result.result.hash}`);
+          console.log(`✅ WALDO distribution completed: ${waldoAmount} WALDO sent to ${sender} | TX: ${hash}`);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_ok', sender, waldoAmount, hash })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
         } else {
-          console.error(`❌ WALDO distribution failed: ${result.result.meta.TransactionResult} for ${sender}`);
+          const code = engine || result?.result?.meta?.TransactionResult || 'UNKNOWN';
+          const details = result?.result;
+          console.error(`❌ WALDO distribution failed: ${code} for ${sender}`);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_fail', sender, waldoAmount, code, details })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
         }
       } catch (distributionError) {
         console.error(`❌ Error during WALDO distribution to ${sender}:`, distributionError.message);
+        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'error', sender, err: distributionError.message })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
       }
     });
   } catch (err) {

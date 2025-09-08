@@ -133,6 +133,7 @@ const startServer = async () => {
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
   app.use("/api/xrpl/trade", (await import("./routes/xrpl/trade.js")).default);
   app.use("/api/xrpl/trustline", (await import("./routes/xrpl/trustline.js")).default);
+  app.use("/api/debug/autodistribute", (await import("./routes/debug/autodistribute.js")).default);
 
 
 
