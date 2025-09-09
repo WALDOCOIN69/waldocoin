@@ -875,9 +875,10 @@
 
     window.waldoTrustline = async function () {
       try {
-        const r = await fetch(`${API}/api/login/trustline-noripple`);
+        const r = await fetch(`${API}/api/xrpl/trustline/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const j = await r.json();
         console.log('📱 Trustline API Response:', j);
+        if (!j.success) throw new Error(j.error || 'Trustline failed');
         xummOpen('Add WALDO Trustline', j);  // Pass full response
       } catch (e) {
         alert('Trustline failed');

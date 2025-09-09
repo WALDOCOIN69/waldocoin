@@ -4174,7 +4174,7 @@
       /** === DASHBOARD POPULATION === **/
       async function fetchUserStats(wallet) {
         try {
-          const res = await fetch(`${baseURL}/api/userStats?wallet=${wallet}`);
+          const res = await fetch(`${baseURL}/api/userstats?wallet=${wallet}`);
           const stats = await res.json();
           $("walletAddress") && ($("walletAddress").textContent = `Wallet: ${wallet}`);
           $("refCount") && ($("refCount").textContent = stats.referrals?.length ?? 0);

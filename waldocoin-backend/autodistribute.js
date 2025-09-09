@@ -11,7 +11,7 @@ const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DI
 const distributorSecret = process.env.WALDO_DISTRIBUTOR_SECRET || process.env.DISTRIBUTOR_SECRET;
 const issuerWallet = process.env.ISSUER_WALLET;
 const WALDO_ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-const WALDO_CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
+const WALDO_CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
 // Wallet that will actually SEND WALDO (can be issuer/treasury). Falls back to distributorSecret.
 // Prefer treasury/hot wallet (holds WLO) first, then distributor as fallback. Do NOT use ISSUER (blackholed)
 const senderSecret = process.env.WALDO_SENDER_SECRET || distributorSecret;
@@ -22,8 +22,8 @@ if (!distributorWallet) {
   process.exit(1);
 }
 
-if (!distributorSecret) {
-  console.error("❌ WALDO_DISTRIBUTOR_SECRET environment variable not set");
+if (!senderSecret) {
+  console.error("❌ Missing WALDO_SENDER_SECRET (preferred) or DISTRIBUTOR_SECRET. Set WALDO_SENDER_SECRET to your hot/treasury s… seed that holds WLO.");
   process.exit(1);
 }
 
@@ -44,6 +44,102 @@ const isNativeXRP = (tx) =>
     console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
     console.log(`✉️  WALDO sender address: ${senderWalletObj.classicAddress}`);
     try { await redis.set('autodistribute:status', JSON.stringify({ ts: Date.now(), listening: distributorWallet, sender: senderWalletObj.classicAddress })); } catch (_) { }
+    // Catch-up poller in case subscription misses events (or worker restarts)
+    async function processIncomingPayment(tx) {
+      try {
+        if (!(tx && tx.TransactionType === 'Payment' && tx.Destination === distributorWallet && typeof tx.Amount === 'string')) return;
+        const sender = tx.Account;
+        const txHash = tx.hash;
+        const xrpAmount = parseFloat(xrpl.dropsToXrp(tx.Amount));
+        console.log(`💰 (poll) XRP Payment detected: ${xrpAmount} XRP from ${sender} | TX: ${txHash}`);
+        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'xrp_in_poll', sender, txHash, xrpAmount })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+
+        // Pricing
+        let waldoAmount;
+        try {
+          const marketResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
+          const marketData = await marketResponse.json();
+          const xrpPerWlo = marketData?.xrpPerWlo || marketData?.best?.mid;
+          if (xrpPerWlo && isFinite(xrpPerWlo) && xrpPerWlo > 0) {
+            waldoAmount = Math.floor(xrpAmount / xrpPerWlo);
+            console.log(`🎯 (poll) Market rate: ${xrpPerWlo} XRP/WLO → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
+          } else { throw new Error('Invalid market rate'); }
+        } catch (e) {
+          console.warn(`⚠️ (poll) Market rate fetch failed, using fallback: ${e.message}`);
+          waldoAmount = Math.floor(xrpAmount * 10000);
+        }
+
+        // Trustline check
+        const trustlines = await client.request({ command: 'account_lines', account: sender });
+        const trustsWaldo = trustlines.result.lines.some((line) => line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER);
+        if (!trustsWaldo) {
+          console.warn(`🚫 (poll) No WALDO trustline for ${sender}`);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'no_trustline_poll', sender })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+          return;
+        }
+
+        // Send WALDO
+        const senderWalletObj = xrpl.Wallet.fromSeed(senderSecret);
+        const payment = {
+          TransactionType: 'Payment',
+          Account: senderWalletObj.classicAddress,
+          Destination: sender,
+          Amount: { currency: WALDO_CURRENCY, issuer: WALDO_ISSUER, value: waldoAmount.toString() },
+        };
+        const prepared = await client.autofill(payment);
+        const signed = senderWalletObj.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob);
+        const engine = result?.result?.engine_result || result?.result?.meta?.TransactionResult;
+        const hash = result?.result?.tx_json?.hash || result?.result?.hash;
+        if (engine === 'tesSUCCESS') {
+          console.log(`✅ (poll) WALDO sent: ${waldoAmount} → ${sender} | TX: ${hash}`);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_ok_poll', sender, waldoAmount, hash })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+        } else {
+          console.error(`❌ (poll) WALDO send failed: ${engine} for ${sender}`);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_fail_poll', sender, waldoAmount, code: engine })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+        }
+      } catch (err) {
+        console.error('❌ (poll) Error processing payment:', err.message);
+      }
+    }
+
+    setInterval(async () => {
+      try {
+        // Get latest ledger and last processed marker
+        const info = await client.request({ command: 'ledger_current' });
+        const latest = info.result?.ledger_current_index;
+        let last = 0;
+        try { last = Number(await redis.get('autodistribute:last_ledger')) || 0; } catch (_) { }
+        const minLedger = (last && isFinite(last) && last > 0) ? last : (latest - 2000);
+        const resp = await client.request({
+          command: 'account_tx',
+          account: distributorWallet,
+          ledger_index_min: minLedger,
+          ledger_index_max: latest,
+          binary: false,
+          limit: 50,
+          forward: true
+        });
+        const txs = resp?.result?.transactions || [];
+        for (const entry of txs) {
+          const tx = entry?.tx;
+          const meta = entry?.meta;
+          const validated = entry?.validated !== false;
+          if (!validated || !tx || meta?.TransactionResult !== 'tesSUCCESS') continue;
+          if (tx.TransactionType !== 'Payment' || tx.Destination !== distributorWallet || typeof tx.Amount !== 'string') continue;
+          const txHash = tx?.hash || entry?.hash;
+          let seen = false;
+          try { seen = await redis.sIsMember('autodistribute:processed', txHash); } catch (_) { }
+          if (txHash && seen) continue;
+          await processIncomingPayment(tx);
+          try { if (txHash) await redis.sAdd('autodistribute:processed', txHash); } catch (_) { }
+          try { if (entry?.ledger_index) await redis.set('autodistribute:last_ledger', String(entry.ledger_index)); } catch (_) { }
+        }
+      } catch (e) {
+        console.warn('⚠️ Poller error:', e.message);
+      }
+    }, 15000);
+
 
     // Validate sender has WALDO trustline and balance (issuer: ${WALDO_ISSUER})
     try {
