@@ -33,8 +33,8 @@ router.get("/", async (_req, res) => {
     const client = new xrpl.Client("wss://xrplcluster.com");
     await client.connect();
 
-    const ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-    const CURRENCY = "WLO";
+    const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
+    const CURRENCY = (process.env.WALDO_CURRENCY || "WLO").toUpperCase();
 
     // Ask: people selling WLO for XRP (WLO->XRP book)
     const wloToXrp = await client.request({

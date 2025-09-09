@@ -5,7 +5,7 @@ let client;
 export async function getXrplClient() {
   try {
     if (!client || !client.isConnected()) {
-      client = new Client("wss://xrplcluster.com"); // 🌐 XRPL MAINNET
+      client = new Client(process.env.XRPL_ENDPOINT || process.env.XRPL_NODE || "wss://xrplcluster.com"); // 🌐 XRPL MAINNET
       await client.connect();
       console.log("✅ Connected to XRPL mainnet");
       // Attach disconnect handler once

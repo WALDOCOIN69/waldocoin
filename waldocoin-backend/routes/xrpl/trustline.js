@@ -1,6 +1,7 @@
 // routes/xrpl/trustline.js
 import express from "express";
 import xrpl from "xrpl";
+import { xummClient } from "../../utils/xummClient.js";
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.get("/status", async (req, res) => {
     return res.status(400).json({ success: false, error: "account is required" });
   }
   const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-  const CURRENCY = (process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
+  const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
 
   try {
     const client = new xrpl.Client("wss://xrplcluster.com");
@@ -32,6 +33,31 @@ router.get("/status", async (req, res) => {
     });
 
     return res.json({ success: true, account, issuer: ISSUER, currency: CURRENCY, trustline: has });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/xrpl/trustline/create - Create a Xaman TrustSet payload
+router.post("/create", async (req, res) => {
+  try {
+    const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
+    const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
+    const limit = String(req.body?.limit || "1000000000"); // default: 1,000,000,000 WLO
+
+    const txjson = {
+      TransactionType: "TrustSet",
+      LimitAmount: { currency: CURRENCY, issuer: ISSUER, value: limit },
+      // Flags: 0 // optionally set tfSetNoRipple if you want, but default Xaman UX is fine
+    };
+
+    const created = await xummClient.payload.create({
+      txjson,
+      options: { submit: true, expire: 600, return_url: { app: 'xumm://xumm.app/done', web: null } },
+      custom_meta: { identifier: "WALDO_TRUSTLINE", instruction: "Add WALDO Trustline and stay in Xaman" }
+    });
+
+    return res.json({ success: true, uuid: created.uuid, refs: created.refs, next: created.next });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
   }

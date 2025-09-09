@@ -25,7 +25,7 @@ router.get("/", async (req, res) => {
     });
 
     const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-    const CURRENCY = (process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
+    const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
 
     const hasWaldoTrustline = (response.result.lines || []).some((line) => {
       const cur = String(line.currency || '').trim().toUpperCase();

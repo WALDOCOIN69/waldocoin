@@ -16,7 +16,7 @@ router.post("/offer", async (req, res) => {
     }
     const DEST = (typeof destination === 'string' && destination.startsWith('r')) ? destination : undefined;
     const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-    const CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
+    const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
 
     const waldoPerXrpRaw = await getWaldoPerXrp().catch(() => null);
     // Prefer XRPL order book mid; if unavailable, fall back to Magnetic (if configured), else tiny default
@@ -24,7 +24,7 @@ router.post("/offer", async (req, res) => {
       const client = new xrpl.Client("wss://xrplcluster.com");
       await client.connect();
       const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
-      const CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
+      const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
       const a = await client.request({ command: 'book_offers', taker_gets: { currency: 'XRP' }, taker_pays: { currency: CURRENCY, issuer: ISSUER }, limit: 5 });
       const b = await client.request({ command: 'book_offers', taker_gets: { currency: CURRENCY, issuer: ISSUER }, taker_pays: { currency: 'XRP' }, limit: 5 });
       await client.disconnect();
