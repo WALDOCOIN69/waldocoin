@@ -13,8 +13,8 @@ const issuerWallet = process.env.ISSUER_WALLET;
 const WALDO_ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
 const WALDO_CURRENCY = process.env.WALDOCOIN_TOKEN || "WLO";
 // Wallet that will actually SEND WALDO (can be issuer/treasury). Falls back to distributorSecret.
-// Prefer issuer for simplest delivery (no path issues), then treasury, then distributor
-const senderSecret = process.env.ISSUER_SECRET || process.env.WALDO_SENDER_SECRET || distributorSecret;
+// Prefer treasury/hot wallet (holds WLO) first, then distributor as fallback. Do NOT use ISSUER (blackholed)
+const senderSecret = process.env.WALDO_SENDER_SECRET || distributorSecret;
 
 // Validate required environment variables
 if (!distributorWallet) {
@@ -44,6 +44,21 @@ const isNativeXRP = (tx) =>
     console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
     console.log(`✉️  WALDO sender address: ${senderWalletObj.classicAddress}`);
     try { await redis.set('autodistribute:status', JSON.stringify({ ts: Date.now(), listening: distributorWallet, sender: senderWalletObj.classicAddress })); } catch (_) { }
+
+    // Validate sender has WALDO trustline and balance (issuer: ${WALDO_ISSUER})
+    try {
+      const lines = await client.request({ command: 'account_lines', account: senderWalletObj.classicAddress });
+      const waldoLine = lines.result.lines.find(l => l.currency === WALDO_CURRENCY && l.account === WALDO_ISSUER);
+      const bal = waldoLine ? Number(waldoLine.balance) : 0;
+      if (!waldoLine) {
+        console.warn(`⚠️ Sender has NO trustline to WALDO issuer (${WALDO_CURRENCY}/${WALDO_ISSUER}). WALDO sends will fail.`);
+      } else {
+        console.log(`📊 Sender WALDO balance: ${bal} ${WALDO_CURRENCY}`);
+        if (!(bal > 0)) console.warn('⚠️ Sender WALDO balance is 0. Top up the treasury wallet.');
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not verify sender WALDO trustline/balance:', e.message);
+    }
 
     await client.request({
       command: "subscribe",
