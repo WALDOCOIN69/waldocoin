@@ -18,6 +18,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', service: 'WALDO Staking Page' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🏦 WALDO Staking page running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📁 Serving files from: ${__dirname}`);
 });
