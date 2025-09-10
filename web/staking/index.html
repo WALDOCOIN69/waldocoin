@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WALDO Staking</title>
+  <meta name="color-scheme" content="dark" />
+  <style>
+    html,body{background:#05060f;color:#eafff9;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:0}
+    .wrap{max-width:880px;margin:20px auto;padding:0 12px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .brand{font-weight:1000;letter-spacing:.6px}
+    .brand b{background:linear-gradient(90deg,#00f7ff,#ff3df7,#00f7ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;background-size:300% 100%;animation:shimmer 6s linear infinite}
+    @keyframes shimmer{0%{background-position:0 0}100%{background-position:-200% 0}}
+    .subtitle{opacity:.85;font-size:13px}
+    .hint{opacity:.75;font-size:12px}
+    .card{border:1px solid #18213d;background:linear-gradient(180deg,#0a0c1a,#0b0f23);border-radius:14px;padding:12px}
+    .footer{opacity:.7;font-size:12px;text-align:center;margin:18px 0}
+    a{color:#9adbcf}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <div class="brand"><b>WALDO</b> Staking</div>
+        <div class="subtitle">Earn 12%–35% APY • Early unstake penalty 15%</div>
+      </div>
+      <div class="hint">Runs standalone on a secure subdomain</div>
+    </div>
+
+    <div class="card">
+      <!-- Inject staking widget below -->
+      <script>
+        // Point the widget to your production API base
+        window.WALDO_API = 'https://waldocoin-backend-api.onrender.com';
+      </script>
+      <!-- Staking widget HTML starts -->
+      <!-- (Copied from WordPress/widgets/waldo-staking-widget.html for standalone hosting) -->
+      <div id="widgetHost"></div>
+      <script>
+        // Minimal loader to fetch the widget source from repo at build/deploy time
+        // For simplicity in static hosting, we inline the widget markup here.
+      </script>
+      <div class="widget-slot">
+        <!-- BEGIN: widget inline copy -->
+        <!-- WALDO Staking Widget (matches trading widget look) -->
+<div class="waldo-stake collapsed" id="waldoStake">
+  <div class="stake-head">
+    <div class="title"><span class="accent">🟢</span> WALDO Staking</div>
+    <div class="sub">Earn 12%–35% APY • Early unstake penalty 15%</div>
+    <div class="tabs">
+      <button id="stakeToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
+      <button class="tab active" data-tab="long">Long-Term</button>
+      <button class="tab" data-tab="meme">Per-Meme</button>
+    </div>
+  </div>
+
+  <div class="stake-body">
+    <!-- Controls -->
+    <div class="row">
+      <button class="btn" onclick="stakeConnect()">Connect Xaman</button>
+      <button class="btn" onclick="stakeTrustline()">Add Trustline</button>
+      <button class="btn" id="btnStakeDisconnect" onclick="stakeDisconnect()" style="display:none;">Disconnect</button>
+    </div>
+    <div class="row status-row">
+      <div id="stakeConnStatus" class="conn">Not connected</div>
+      <div id="stakeTlStatus" class="conn">Trustline: —</div>
+    </div>
+
+    <!-- Wallet input (fallback if not connected) -->
+    <div class="row">
+      <div class="col">
+        <label for="stakeWallet">Wallet (XRPL r…)</label>
+        <input id="stakeWallet" type="text" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXX" />
+      </div>
+      <div class="col small">
+        <label>&nbsp;</label>
+        <button class="btn" onclick="stakeLoadInfo()">Load Info</button>
+      </div>
+    </div>
+
+    <!-- Long-term panel -->
+    <div class="panel" id="panelLong">
+      <div class="card">
+        <div class="grid">
+          <div class="field">
+            <label>Amount (WALDO)</label>
+            <input id="ltAmount" type="number" min="1000" step="1" placeholder="Minimum 1,000" />
+          </div>
+          <div class="field">
+            <label>Duration</label>
+            <select id="ltDuration">
+              <option value="">Select (based on your level)</option>
+              <option value="30">30 days — 12% APY</option>
+              <option value="90">90 days — 18% APY</option>
+              <option value="180">180 days — 25% APY</option>
+              <option value="365">365 days — 35% APY</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions"><button class="btn buy" onclick="createLongTermStake()">Stake</button></div>
+        <div id="ltMsg" class="msg"></div>
+      </div>
+
+      <div class="list">
+        <h4>Your Active Long-Term Stakes</h4>
+        <div id="ltList"></div>
+      </div>
+    </div>
+
+    <!-- Per-meme panel -->
+    <div class="panel" id="panelMeme" style="display:none;">
+      <div class="card">
+        <div class="grid">
+          <div class="field">
+            <label>Amount (WALDO)</label>
+            <input id="pmAmount" type="number" min="1" step="1" placeholder="Any amount" />
+          </div>
+          <div class="field">
+            <label>Meme ID</label>
+            <input id="pmMemeId" type="text" placeholder="tweet123" />
+          </div>
+        </div>
+        <div class="subline">Per‑Meme: 30 days • 5% staking fee vs 10% instant • +15% bonus</div>
+        <div class="actions"><button class="btn buy" onclick="createPerMemeStake()">Stake Per‑Meme</button></div>
+        <div id="pmMsg" class="msg"></div>
+      </div>
+
+      <div class="list">
+        <h4>Your Active Per‑Meme Stakes</h4>
+        <div id="pmList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- XUMM Modal (minimal) -->
+  <div id="xummModalStake" class="xumm-modal" style="display:none;">
+    <div class="backdrop" onclick="xummCloseStake()"></div>
+    <div class="content">
+      <button class="close" onclick="xummCloseStake()">✕</button>
+      <h4 id="xummTitleStake">Xaman</h4>
+      <div id="xummDesktopStake">
+        <img id="xummQrStake" alt="Scan with Xaman" style="display:none; max-width:280px; border-radius:10px; box-shadow: 0 0 18px #25c2a055;" />
+        <div id="xummLoadStake" class="spin" style="display:none;"></div>
+        <p id="xummHintStake" class="hint" style="display:none;">Scan the QR with your Xaman app</p>
+      </div>
+      <div id="xummMobileStake" style="display:none; display:flex; flex-direction:column; gap:8px; align-items:center;">
+        <button id="xummMobileBtnStake" class="btn" type="button" style="background:#25c2a0;color:white;border:none;padding:15px 20px;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;width:100%;">📱 Open Xaman App</button>
+        <small class="hint" style="color:#9adbcf; opacity:.9;">If the app doesn’t open, copy the link and paste into Xaman.</small>
+      </div>
+    </div>
+    <div id="waldoToastStake" class="toast" style="display:none;">Done</div>
+  </div>
+</div>
+
+<style>
+  .waldo-stake {
+    --mint:#25c2a0; --line:#1a1a1a; --neonAqua:#00f7ff; --neonMagenta:#ff3df7;
+    background: radial-gradient(600px 200px at 10% -10%, rgba(255,61,247,.10), transparent 60%),
+      radial-gradient(600px 180px at 90% -10%, rgba(0,247,255,.10), transparent 60%),
+      linear-gradient(180deg, #0a0c1a 0%, #0b0f23 100%);
+    border:1px solid #18213d; border-radius:16px; box-shadow:0 0 22px rgba(0,247,255,.08),0 0 42px rgba(255,61,247,.06);
+    max-width:520px; margin:14px auto; color:#eafff9; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; overflow:hidden;
+  }
+  .stake-head{ text-align:center; position:relative; padding:12px 16px 0 }
+  .title{ text-transform:uppercase; letter-spacing:.8px; font-weight:1000; font-size:18px;
+    background:linear-gradient(90deg,var(--neonAqua),var(--neonMagenta),var(--neonAqua)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    background-size:300% 100%; animation:shimmer 5s linear infinite; text-shadow:0 0 12px rgba(0,247,255,.35),0 0 20px rgba(255,61,247,.25);
+  }
+  .title:after{content:""; position:absolute; left:50%; transform:translateX(-50%); bottom:-6px; width:60%; height:3px; border-radius:999px;
+    background:linear-gradient(90deg,rgba(0,247,255,.9),rgba(255,61,247,.9),rgba(0,247,255,.9)); box-shadow:0 0 10px rgba(0,247,255,.4),0 0 16px rgba(255,61,247,.3);
+    animation:shimmer 6s linear infinite; }
+  @keyframes shimmer{0%{background-position:0% 0}100%{background-position:-200% 0}}
+  .tabs{ display:flex; gap:8px; justify-content:center; margin-top:10px }
+  .toggle{ position:absolute; right:8px; top:8px; width:12px; height:12px; border-radius:50%; border:1px solid #26335f; background:radial-gradient(circle,#00f7ff 0,#00f7ff 50%,transparent 51%); box-shadow:0 0 10px rgba(0,247,255,.4); cursor:pointer }
+  .collapsed .panel,.collapsed .status-row{ display:none }
+  .trade-body,.stake-body{ padding:12px 16px 16px }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px }
+  .col{ flex:1 1 260px; background:#101010; border:1px solid #1a1a1a; border-radius:10px; padding:12px }
+  .col.small{ flex:0 0 140px; display:flex; align-items:end }
+  .conn{ font-size:12px; color:#9adbcf }
+  .panel .card{ border:1px solid #202a4e; border-radius:12px; padding:12px; background:linear-gradient(180deg,#0a0f26,#0b112d); box-shadow:inset 0 0 0 1px rgba(0,247,255,.05) }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
+  @media (max-width:520px){ .waldo-stake{max-width:94vw} .grid{grid-template-columns:1fr} }
+  .field input,.field select{ width:100%; height:36px; border:1px solid #202a4e; border-radius:10px; padding:8px; background:#0a0f26; color:#eafff9; box-shadow:inset 0 0 0 1px rgba(0,247,255,.05) }
+  .actions{ margin-top:10px; display:flex; justify-content:center }
+  .list{ margin-top:12px }
+  .stake-item{ background:#111; border:1px solid #1c1c1c; border-radius:10px; padding:12px; margin:8px 0 }
+  .subline{ font-size:12px; color:#9adbcf; margin-top:6px }
+  .btn{ background:#111; border:1px solid #1c1c1c; color:#bfeee3; padding:10px 12px; border-radius:10px; cursor:pointer }
+  .btn.buy{ background:linear-gradient(90deg,var(--mint),#19e39a); color:#07120f; border-color:rgba(37,194,160,.35) }
+  .msg{ margin-top:8px; font-size:13px }
+  .xumm-modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:9999 }
+  .xumm-modal .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.7) }
+  .xumm-modal .content{ position:relative; z-index:1; background:#0d1022; border:1px solid #202a4e; border-radius:12px; padding:16px; width:92%; max-width:360px; box-shadow:0 0 22px rgba(0,247,255,.12) }
+  .xumm-modal .close{ position:absolute; right:8px; top:8px; background:#111; border:1px solid #1c1c1c; color:#bfeee3; border-radius:8px; padding:4px 8px; cursor:pointer }
+</style>
+
+<script>
+(function(){
+  const API = window.WALDO_API || '';
+  const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+  const CURRENCY = 'WLO';
+  let WALLET = '';
+  let DURATIONS = [30];
+
+  // Collapse/expand
+  document.getElementById('stakeToggle')?.addEventListener('click',()=>{
+    document.getElementById('waldoStake').classList.toggle('collapsed');
+  });
+
+  // Tabs
+  document.querySelectorAll('.waldo-stake .tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.waldo-stake .tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('panelLong').style.display = tab==='long'?'block':'none';
+      document.getElementById('panelMeme').style.display = tab==='meme'?'block':'none';
+    })
+  });
+
+  // Xumm helpers (minimal)
+  function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+  function xummOpenStake(title, payload){
+    const M = document.getElementById('xummModalStake');
+    const QR = document.getElementById('xummQrStake');
+    const LD = document.getElementById('xummLoadStake');
+    const HT = document.getElementById('xummHintStake');
+    const MB = document.getElementById('xummMobileStake');
+    const B = document.getElementById('xummMobileBtnStake');
+    document.getElementById('xummTitleStake').textContent = title || 'Xaman';
+    M.style.display = 'block';
+    if(isMobile()){
+      MB.style.display='flex'; QR.style.display='none'; LD.style.display='none'; HT.style.display='none';
+      B.onclick = ()=>{ window.location.href = payload?.next?.always || payload?.next?.app || payload?.refs?.qr; };
+    } else {
+      MB.style.display='none'; QR.style.display='block'; LD.style.display='none'; HT.style.display='block';
+      QR.src = payload?.refs?.qr || '';
+    }
+  }
+  window.xummCloseStake = ()=>{ document.getElementById('xummModalStake').style.display='none'; };
+
+  // Connect/Disconnect (display only — wallet still editable)
+  window.stakeConnect = async function(){
+    // If you have /api/login, call it here. For now just keep manual wallet input.
+    document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
+    document.getElementById('btnStakeDisconnect').style.display='inline-block';
+    const w = document.getElementById('stakeWallet').value.trim();
+    if(w) { WALLET = w; await stakeLoadInfo(); }
+  }
+  window.stakeDisconnect = function(){
+    WALLET = ''; document.getElementById('stakeWallet').value='';
+    document.getElementById('stakeConnStatus').textContent = 'Not connected';
+    document.getElementById('btnStakeDisconnect').style.display='none';
+    document.getElementById('stakeTlStatus').textContent = 'Trustline: —';
+  }
+
+  // Trustline
+  window.stakeTrustline = async function(){
+    try{
+      const r = await fetch(`${API}/api/xrpl/trustline/create`, { method:'POST', headers:{'Content-Type':'application/json'} });
+      const j = await r.json();
+      if(!j.success) throw new Error(j.error || 'Trustline failed');
+      xummOpenStake('Add WALDO Trustline', j);
+    }catch(e){ alert('Trustline error: ' + e.message); }
+  }
+
+  // Load user info + lock durations
+  window.stakeLoadInfo = async function(){
+    try{
+      const w = document.getElementById('stakeWallet').value.trim();
+      if(!w || !w.startsWith('r')) return alert('Enter a valid XRPL wallet');
+      WALLET = w;
+      const r = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
+      const j = await r.json();
+      if(!j.success) throw new Error(j.error || 'Failed to load user info');
+      // Update TL status
+      const tl = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
+      const tlj = await tl.json();
+      document.getElementById('stakeTlStatus').textContent = `Trustline: ${tlj.trustline? 'Yes' : 'No'}`;
+      // Apply durations based on level
+      DURATIONS = j.userInfo.availableDurations || [30];
+      const sel = document.getElementById('ltDuration');
+      Array.from(sel.options).forEach((op,idx)=>{
+        if(idx===0) return; const val = parseInt(op.value); op.disabled = !DURATIONS.includes(val);
+        if(op.disabled && !op.textContent.includes('(Locked)')) op.textContent += ' (Locked)';
+      });
+      // Render lists
+      renderLongTerm(j.longTermStaking.activeStakes||[]);
+      renderPerMeme(j.perMemeStaking.activeStakes||[]);
+      document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0,6)}…${WALLET.slice(-4)}`;
+    }catch(e){ alert('Load failed: ' + e.message); }
+  }
+
+  function renderLongTerm(list){
+    const root = document.getElementById('ltList');
+    root.innerHTML = list.map(s=>`
+      <div class="stake-item">
+        <strong>Long‑Term</strong><br/>
+        Amount: ${s.amount} WALDO • Duration: ${s.duration}d • APY: ${s.apy}<br/>
+        Days Remaining: ${s.daysRemaining} • Expected Reward: ${s.expectedReward}
+        <div class="actions"><button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unstake</button></div>
+      </div>
+    `).join('') || '<div class="subline">No active long‑term stakes</div>';
+  }
+  function renderPerMeme(list){
+    const root = document.getElementById('pmList');
+    root.innerHTML = list.map(s=>`
+      <div class="stake-item">
+        <strong>Per‑Meme</strong><br/>
+        Meme: ${s.memeId} • Staked: ${s.stakedAmount} • Bonus: ${s.bonusAmount} • Total: ${s.totalReward}<br/>
+        Days Remaining: ${s.daysRemaining}
+        <div class="actions"><button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unstake</button></div>
+      </div>
+    `).join('') || '<div class="subline">No active per‑meme stakes</div>';
+  }
+
+  // Create stakes
+  window.createLongTermStake = async function(){
+    const amt = parseFloat(document.getElementById('ltAmount').value||'0');
+    const dur = parseInt(document.getElementById('ltDuration').value||'0');
+    const msg = document.getElementById('ltMsg');
+    if(!WALLET) return msg.textContent = 'Load your wallet info first';
+    if(!amt || !dur) return msg.textContent = 'Enter amount and select duration';
+    try{
+      const r = await fetch(`${API}/api/staking/long-term`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur })});
+      const j = await r.json();
+      if(!j.success) throw new Error(j.error || 'Stake failed');
+      msg.textContent = `Long-term stake created! Expected reward: ${j.stakeData.expectedReward} WALDO`;
+      await stakeLoadInfo();
+    }catch(e){ msg.textContent = 'Error: ' + e.message; }
+  }
+
+  window.createPerMemeStake = async function(){
+    const amt = parseFloat(document.getElementById('pmAmount').value||'0');
+    const memeId = document.getElementById('pmMemeId').value.trim();
+    const msg = document.getElementById('pmMsg');
+    if(!WALLET) return msg.textContent = 'Load your wallet info first';
+    if(!amt || !memeId) return msg.textContent = 'Enter amount and meme ID';
+    try{
+      const r = await fetch(`${API}/api/staking/per-meme`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ wallet: WALLET, amount: amt, memeId })});
+      const j = await r.json();
+      if(!j.success) throw new Error(j.error || 'Stake failed');
+      msg.textContent = `Per‑meme stake created! Total reward: ${j.stakeData.totalReward} WALDO`;
+      await stakeLoadInfo();
+    }catch(e){ msg.textContent = 'Error: ' + e.message; }
+  }
+
+  // Unstake
+  window.stakeUnstake = async function(stakeId){
+    if(!confirm('Unstake now? Early unstaking incurs a 15% penalty.')) return;
+    try{
+      const r = await fetch(`${API}/api/staking/unstake`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ wallet: WALLET, stakeId })});
+      const j = await r.json();
+      if(!j.success) throw new Error(j.error || 'Unstake failed');
+      alert('Unstake complete!');
+      await stakeLoadInfo();
+    }catch(e){ alert('Unstake error: ' + e.message); }
+  }
+})();
+</script>
+        <!-- END: widget inline copy -->
+      </div>
+    </div>
+
+    <div class="footer">© WALDOCOIN • Powered by XRPL • <a target="_blank" rel="noopener" href="https://waldocoin.live">waldocoin.live</a></div>
+  </div>
+</body>
+</html>
+
