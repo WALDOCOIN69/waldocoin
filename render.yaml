@@ -97,16 +97,5 @@ services:
       - key: REDIS_URL
         sync: false
 
-  # === WALDO Staking Page ===
-  - type: web
-    name: waldo-staking
-    runtime: node
-    rootDir: web/staking
-    buildCommand: "npm init -y && npm install express"
-    startCommand: "node server.js"
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
+
 

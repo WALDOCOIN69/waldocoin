@@ -1,0 +1,19 @@
+{
+  "name": "waldo-staking-page",
+  "version": "1.0.0",
+  "description": "WALDO Staking Page - Standalone deployment",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": ["waldo", "staking", "xrpl", "crypto"],
+  "author": "WALDOCOIN",
+  "license": "MIT"
+}
