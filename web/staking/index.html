@@ -135,7 +135,7 @@
             </div>
 
             <!-- Wallet input (fallback if not connected) -->
-            <div class="row">
+            <div class="row wallet-row">
               <div class="col">
                 <label for="stakeWallet">Wallet (XRPL r…)</label>
                 <input id="stakeWallet" type="text" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXX" />
@@ -314,7 +314,8 @@
           }
 
           .collapsed .panel,
-          .collapsed .status-row {
+          .collapsed .status-row,
+          .collapsed .wallet-row {
             display: none
           }
 

@@ -18,56 +18,13 @@
       <button class="btn" id="btnStakeDisconnect" onclick="stakeDisconnect()" style="display:none;">Disconnect</button>
     </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <div class="row status-row">
       <div id="stakeConnStatus" class="conn">Not connected</div>
       <div id="stakeTlStatus" class="conn">Trustline: —</div>
     </div>
 
     <!-- Wallet input (fallback if not connected) -->
-    <div class="row">
+    <div class="row wallet-row">
       <div class="col">
         <label for="stakeWallet">Wallet (XRPL r…)</label>
         <input id="stakeWallet" type="text" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXX" />
@@ -244,7 +201,8 @@
   }
 
   .collapsed .panel,
-  .collapsed .status-row {
+  .collapsed .status-row,
+  .collapsed .wallet-row {
     display: none
   }
 
@@ -430,8 +388,11 @@
 </style>
 
 <script>
+  // Set API endpoint for WordPress widget
+  window.WALDO_API = window.WALDO_API || 'https://waldocoin-backend-api.onrender.com';
+
   (function () {
-    const API = window.WALDO_API || '';
+    const API = window.WALDO_API;
     const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = 'WLO';
     let WALLET = '';
