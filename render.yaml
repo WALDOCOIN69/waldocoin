@@ -97,3 +97,14 @@ services:
       - key: REDIS_URL
         sync: false
 
+  # === WALDO Staking Page ===
+  - type: web
+    name: waldo-staking
+    runtime: static
+    rootDir: web/staking
+    buildCommand: "echo 'Static site - no build needed'"
+    staticPublishPath: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+
