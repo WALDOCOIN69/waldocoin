@@ -14,64 +14,53 @@
     <!-- Controls -->
     <div class="row">
       <button class="btn cta connect" onclick="stakeConnect()">🔗 Connect Xaman</button>
-      <button class="btn cta trust" onclick="stakeTrustline()">
-
-
-
-
-
-
-        <!-- Controls (enhanced) -->
-        <div class="row">
-          <button class="btn cta connect" onclick="stakeConnect()">🔗 Connect Xaman</button>
-          <button class="btn cta trust" onclick="stakeTrustline()">➕ Add Trustline</button>
-          <button class="btn" id="btnStakeDisconnect2" onclick="stakeDisconnect()"
-            style="display:none;opacity:.85;">Disconnect</button>
-        </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        ➕ Add Trustline
-      </button>
+      <button class="btn cta trust" onclick="stakeTrustline()">➕ Add Trustline</button>
       <button class="btn" id="btnStakeDisconnect" onclick="stakeDisconnect()" style="display:none;">Disconnect</button>
     </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <div class="row status-row">
       <div id="stakeConnStatus" class="conn">Not connected</div>
       <div id="stakeTlStatus" class="conn">Trustline: —</div>
@@ -405,10 +394,7 @@
     border: 1px solid #1c1c1c;
     color: #bfeee3;
 
-    /* Enhance prominence for Connect/Trustline and hide old broken controls row */
-    .stake-body>.row:first-of-type {
-      display: none;
-    }
+    /* Enhanced prominence for Connect/Trustline buttons */
 
     .btn.cta {
       background: linear-gradient(90deg, #00f7ff, #ff3df7, #00f7ff);
@@ -494,7 +480,7 @@
       // If you have /api/login, call it here. For now just keep manual wallet input.
       document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
       document.getElementById('btnStakeDisconnect')?.style.display = 'inline-block';
-      document.getElementById('btnStakeDisconnect2')?.style.display = 'inline-block';
+
       const w = document.getElementById('stakeWallet').value.trim();
       if (w) { WALLET = w; await stakeLoadInfo(); }
     }
@@ -502,7 +488,7 @@
       WALLET = ''; document.getElementById('stakeWallet').value = '';
       document.getElementById('stakeConnStatus').textContent = 'Not connected';
       document.getElementById('btnStakeDisconnect')?.style.display = 'none';
-      document.getElementById('btnStakeDisconnect2')?.style.display = 'none';
+
       document.getElementById('stakeTlStatus').textContent = 'Trustline: —';
     }
 
