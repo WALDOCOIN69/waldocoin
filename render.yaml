@@ -100,11 +100,13 @@ services:
   # === WALDO Staking Page ===
   - type: web
     name: waldo-staking
-    runtime: static
+    runtime: node
     rootDir: web/staking
-    buildCommand: "echo 'Static site - no build needed'"
-    staticPublishPath: .
+    buildCommand: "npm init -y && npm install express"
+    startCommand: "node server.js"
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
 
