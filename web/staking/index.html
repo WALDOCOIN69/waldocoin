@@ -278,6 +278,7 @@
       width: 92%;
       max-width: 360px;
       box-shadow: 0 0 22px rgba(0, 247, 255, .12);
+      text-align: center;
     }
 
     .xumm-modal .close {
@@ -409,7 +410,7 @@
               </div>
             </div>
             <div class="subline">Per‑Meme: 30 days • 5% staking fee vs 10% instant • +15% bonus</div>
-            <div class="actions"><button class="btn buy" onclick="createPerMemeStake()">Stake Per‑Meme</button></div>
+            <div class="actions"></div>
             <div id="pmMsg" class="msg"></div>
           </div>
 
@@ -469,7 +470,7 @@
       const mobileBtn = document.getElementById('xummMobileBtnStake');
 
       if (titleEl) titleEl.textContent = title || 'Xaman';
-      if (modal) modal.style.display = 'block';
+      if (modal) modal.style.display = 'flex';
 
       if (isMobile()) {
         // Mobile: show button to open app
