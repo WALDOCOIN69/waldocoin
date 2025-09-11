@@ -85,7 +85,10 @@
       margin: 14px auto;
       color: #eafff9;
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      overflow: hidden;
+      overflow: visible;
+      pointer-events: auto;
+      position: relative;
+      z-index: 1;
     }
 
     .stake-head {
@@ -219,6 +222,9 @@
       padding: 10px 12px;
       border-radius: 10px;
       cursor: pointer;
+      pointer-events: auto;
+      position: relative;
+      z-index: 10;
     }
 
     .btn.buy {
@@ -486,6 +492,8 @@
 
       // Connect/Disconnect (display only — wallet still editable)
       window.stakeConnect = async function () {
+        console.log('🔗 Connect button clicked!');
+        alert('Connect button works!');
         document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
         document.getElementById('btnStakeDisconnect').style.display = 'inline-block';
         const w = document.getElementById('stakeWallet').value.trim();
