@@ -445,205 +445,22 @@
         href="https://waldocoin.live">waldocoin.live</a></div>
   </div>
 
+  <!-- Load external JavaScript file -->
+  <script src="staking.js"></script>
+
+  <!-- Inline test to verify script loading -->
   <script>
-    // MINIMAL TEST - Check if JavaScript loads at all
-    alert('🚀 Script is loading!');
-    console.log('🚀 WALDO Staking Script Loading...');
+    console.log('📄 Inline script executing...');
 
-    // Test if basic JavaScript works
-    function testButton() {
-      alert('JavaScript is working!');
-      console.log('✅ JavaScript test successful');
-    }
-    window.testButton = testButton;
-
-    (function () {
-      console.log('📡 API URL:', window.WALDO_API);
-      const API = window.WALDO_API || '';
-      const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
-      const CURRENCY = 'WLO';
-      let WALLET = '';
-      let DURATIONS = [30];
-      let CURRENT_BAL = 0;
-
-      // Collapse/expand
-      document.getElementById('stakeToggle')?.addEventListener('click', () => {
-        document.getElementById('waldoStake').classList.toggle('collapsed');
-      });
-
-      // Tabs
-      document.querySelectorAll('.waldo-stake .tab').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.waldo-stake .tab').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const tab = btn.dataset.tab;
-          document.getElementById('panelLong').style.display = tab === 'long' ? 'block' : 'none';
-          document.getElementById('panelMeme').style.display = tab === 'meme' ? 'block' : 'none';
-        })
-      });
-
-      // Xumm helpers (minimal)
-      function isMobile() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-      function xummOpenStake(title, payload) {
-        const M = document.getElementById('xummModalStake');
-        const QR = document.getElementById('xummQrStake');
-        const LD = document.getElementById('xummLoadStake');
-        const HT = document.getElementById('xummHintStake');
-        const MB = document.getElementById('xummMobileStake');
-        const B = document.getElementById('xummMobileBtnStake');
-        document.getElementById('xummTitleStake').textContent = title || 'Xaman';
-        M.style.display = 'block';
-        if (isMobile()) {
-          MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
-          B.onclick = () => { window.location.href = payload?.next?.always || payload?.next?.app || payload?.refs?.qr; };
-        } else {
-          MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
-          QR.src = payload?.refs?.qr || '';
-        }
+    // Test if external script loaded
+    setTimeout(function () {
+      if (typeof window.testButton === 'function') {
+        console.log('✅ External script loaded successfully');
+      } else {
+        console.log('❌ External script failed to load');
+        alert('❌ External JavaScript failed to load');
       }
-      window.xummCloseStake = () => { document.getElementById('xummModalStake').style.display = 'none'; };
-
-      // Simple connect function
-      function stakeConnect() {
-        alert('🔗 Connect button clicked!');
-        console.log('🔗 Connect button clicked!');
-      }
-      window.stakeConnect = stakeConnect;
-
-      // Simple trustline function
-      function stakeTrustline() {
-        alert('➕ Add Trustline clicked!');
-        console.log('➕ Add Trustline clicked!');
-      }
-      window.stakeTrustline = stakeTrustline;
-
-      // Simple load info function
-      function stakeLoadInfo() {
-        alert('📊 Load Info clicked!');
-        console.log('📊 Load Info clicked!');
-      }
-      window.stakeLoadInfo = stakeLoadInfo;
-      window.stakeDisconnect = function () {
-        WALLET = ''; document.getElementById('stakeWallet').value = '';
-        document.getElementById('stakeConnStatus').textContent = 'Not connected';
-        document.getElementById('btnStakeDisconnect').style.display = 'none';
-        document.getElementById('stakeTlStatus').textContent = 'Trustline: —';
-      }
-
-      // Trustline
-      window.stakeTrustline = async function () {
-        try {
-          const r = await fetch(`${API}/api/xrpl/trustline/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-          const j = await r.json();
-          if (!j.success) throw new Error(j.error || 'Trustline failed');
-          xummOpenStake('Add WALDO Trustline', j);
-        } catch (e) { alert('Trustline error: ' + e.message); }
-      }
-
-      // Quick actions (top-level)
-      window.ltSetMax = function () {
-        if (typeof CURRENT_BAL === 'number') {
-          const v = Math.floor(CURRENT_BAL);
-          document.getElementById('ltAmount').value = v > 0 ? v : 0;
-        }
-      }
-      window.pmSetMax = function () {
-        if (typeof CURRENT_BAL === 'number') {
-          const v = Math.floor(CURRENT_BAL);
-          document.getElementById('pmAmount').value = v > 0 ? v : 0;
-        }
-      }
-
-      window.stakeLoadInfo = async function () {
-        try {
-          const w = document.getElementById('stakeWallet').value.trim();
-          if (!w || !w.startsWith('r')) return alert('Enter a valid XRPL wallet');
-          WALLET = w;
-          const r = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
-          const j = await r.json();
-          if (!j.success) throw new Error(j.error || 'Failed to load user info');
-          // Update TL status
-          const tl = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
-          const tlj = await tl.json();
-          document.getElementById('stakeTlStatus').textContent = `Trustline: ${tlj.trustline ? 'Yes' : 'No'}`;
-          // Update WALDO balance and show in UI
-          CURRENT_BAL = (j.userInfo && typeof j.userInfo.currentBalance === 'number') ? j.userInfo.currentBalance : 0;
-          const balStr = Math.floor(CURRENT_BAL).toLocaleString();
-          document.getElementById('ltBal')?.textContent = balStr;
-          document.getElementById('pmBal')?.textContent = balStr;
-          // Render lists
-          renderLongTerm(j.longTermStaking.activeStakes || []);
-          renderPerMeme(j.perMemeStaking.activeStakes || []);
-          document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
-        } catch (e) { alert('Load failed: ' + e.message); }
-      }
-
-      function renderLongTerm(list) {
-        const root = document.getElementById('ltList');
-        root.innerHTML = list.map(s => `
-          <div class="stake-item">
-            <div>Long‑Term</div>
-            <div class="subline">Amount: ${s.amount} WALDO • Duration: ${s.duration}d • APY: ${s.apy}</div>
-            <div class="subline">Days Remaining: ${s.daysRemaining} • Expected Reward: ${s.expectedReward}</div>
-            <button class="btn mini" onclick="stakeUnstake('${s.stakeId}')">Unstake</button>
-          </div>
-        `).join('') || 'No active long‑term stakes';
-      }
-      function renderPerMeme(list) {
-        const root = document.getElementById('pmList');
-        root.innerHTML = list.map(s => `
-          <div class="stake-item">
-            <div>Per‑Meme</div>
-            <div class="subline">Meme: ${s.memeId} • Staked: ${s.stakedAmount} • Bonus: ${s.bonusAmount} • Total: ${s.totalReward}</div>
-            <div class="subline">Days Remaining: ${s.daysRemaining}</div>
-            <button class="btn mini" onclick="stakeUnstake('${s.stakeId}')">Unstake</button>
-          </div>
-        `).join('') || 'No active per‑meme stakes';
-      }
-
-      // Create stakes
-      window.createLongTermStake = async function () {
-        const amt = parseFloat(document.getElementById('ltAmount').value || '0');
-        const dur = parseInt(document.getElementById('ltDuration').value || '0');
-        const msg = document.getElementById('ltMsg');
-        if (!WALLET) return msg.textContent = 'Load your wallet info first';
-        if (!amt || !dur) return msg.textContent = 'Enter amount and select duration';
-        try {
-          const r = await fetch(`${API}/api/staking/long-term`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur }) });
-          const j = await r.json();
-          if (!j.success) throw new Error(j.error || 'Stake failed');
-          msg.textContent = `Long-term stake created! Expected reward: ${j.stakeData.expectedReward} WALDO`;
-          await stakeLoadInfo();
-        } catch (e) { msg.textContent = 'Error: ' + e.message; }
-      }
-
-      window.createPerMemeStake = async function () {
-        const amt = parseFloat(document.getElementById('pmAmount').value || '0');
-        const memeId = document.getElementById('pmMemeId').value.trim();
-        const msg = document.getElementById('pmMsg');
-        if (!WALLET) return msg.textContent = 'Load your wallet info first';
-        if (!amt || !memeId) return msg.textContent = 'Enter amount and meme ID';
-        try {
-          const r = await fetch(`${API}/api/staking/per-meme`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, memeId }) });
-          const j = await r.json();
-          if (!j.success) throw new Error(j.error || 'Stake failed');
-          msg.textContent = `Per‑meme stake created! Total reward: ${j.stakeData.totalReward} WALDO`;
-          await stakeLoadInfo();
-        } catch (e) { msg.textContent = 'Error: ' + e.message; }
-      }
-
-      // Unstake
-      window.stakeUnstake = async function (stakeId) {
-        if (!confirm('Unstake now? Early unstaking incurs a 15% penalty.')) return;
-        try {
-          const r = await fetch(`${API}/api/staking/unstake`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
-          const j = await r.json();
-          if (!j.success) throw new Error(j.error || 'Unstake failed');
-          alert('Unstake complete!');
-          await stakeLoadInfo();
-        } catch (e) { alert('Unstake error: ' + e.message); }
-      }
-    })();
+    }, 100);
   </script>
 </body>
 
