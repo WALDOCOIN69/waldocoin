@@ -23,9 +23,9 @@ app.use(express.static(__dirname, {
 
 // Routes
 app.get('/', (req, res) => {
-  const workingPath = path.join(__dirname, 'working.html');
-  if (fs.existsSync(workingPath)) {
-    res.sendFile(workingPath);
+  const indexPath = path.join(__dirname, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
   } else {
     res.status(404).send('Staking page not found');
   }
