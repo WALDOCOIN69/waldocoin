@@ -339,7 +339,6 @@
       <div class="stake-body">
         <!-- Controls -->
         <div class="row">
-          <button class="btn" onclick="testButton()" style="background: red; color: white;">🧪 TEST JS</button>
           <button class="btn cta connect" onclick="stakeConnect()">🔗 Connect Xaman</button>
           <button class="btn cta trust" onclick="stakeTrustline()">➕ Add Trustline</button>
           <button class="btn" id="btnStakeDisconnect" onclick="stakeDisconnect()"
@@ -457,38 +456,122 @@
 
     console.log('📡 API URL:', API);
 
-    // Test if basic JavaScript works
-    function testButton() {
-      alert('JavaScript is working!');
-      console.log('✅ JavaScript test successful');
+    // XUMM Modal functions
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     }
-    window.testButton = testButton;
 
-    // Real connect function
-    function stakeConnect() {
+    function showXummModal(title, payload) {
+      const modal = document.getElementById('xummModalStake');
+      const titleEl = document.getElementById('xummTitleStake');
+      const qrImg = document.getElementById('xummQrStake');
+      const mobileDiv = document.getElementById('xummMobileStake');
+      const mobileBtn = document.getElementById('xummMobileBtnStake');
+
+      if (titleEl) titleEl.textContent = title || 'Xaman';
+      if (modal) modal.style.display = 'block';
+
+      if (isMobile()) {
+        // Mobile: show button to open app
+        if (mobileDiv) mobileDiv.style.display = 'flex';
+        if (qrImg) qrImg.style.display = 'none';
+        if (mobileBtn) {
+          mobileBtn.onclick = () => {
+            const deepLink = payload?.next?.always || payload?.next?.app || payload?.refs?.qr_uri;
+            if (deepLink) window.location.href = deepLink;
+          };
+        }
+      } else {
+        // Desktop: show QR code
+        if (mobileDiv) mobileDiv.style.display = 'none';
+        if (qrImg) {
+          qrImg.style.display = 'block';
+          qrImg.src = payload?.refs?.qr_png || '';
+        }
+      }
+
+      console.log('XUMM Modal opened:', payload);
+    }
+
+    function xummCloseStake() {
+      const modal = document.getElementById('xummModalStake');
+      if (modal) modal.style.display = 'none';
+    }
+    window.xummCloseStake = xummCloseStake;
+
+    // Real connect function - makes API call like trade widget
+    async function stakeConnect() {
       console.log('🔗 Connect button clicked!');
+      console.log('📡 Making API call to:', `${API}/api/login`);
+
       try {
-        // Update UI to show connected status
-        const statusEl = document.getElementById('stakeConnStatus');
-        const disconnectBtn = document.getElementById('btnStakeDisconnect');
+        const response = await fetch(`${API}/api/login`);
 
-        if (statusEl) statusEl.textContent = 'Connected (manual)';
-        if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
-
-        // Get wallet from input field
-        const walletInput = document.getElementById('stakeWallet');
-        if (walletInput && walletInput.value.trim()) {
-          WALLET = walletInput.value.trim();
-          stakeLoadInfo(); // Auto-load info if wallet is entered
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        alert('✅ Connected! Enter your wallet address and click Load Info.');
+        const result = await response.json();
+        console.log('✅ Connect API response:', result);
+
+        if (!result.success) {
+          throw new Error(result.error || 'Login failed');
+        }
+
+        // Show XUMM modal with QR code
+        showXummModal('Connect Xaman', result);
+
+        // Start polling for connection status (simplified)
+        if (result.uuid) {
+          pollConnectionStatus(result.uuid);
+        }
+
       } catch (error) {
         console.error('❌ Connect error:', error);
         alert('Connect error: ' + error.message);
       }
     }
     window.stakeConnect = stakeConnect;
+
+    // Poll for connection status
+    function pollConnectionStatus(uuid) {
+      const checkStatus = async () => {
+        try {
+          const response = await fetch(`${API}/api/xumm/status/${uuid}`);
+          const result = await response.json();
+
+          if (result.signed && result.account) {
+            // Connection successful
+            const statusEl = document.getElementById('stakeConnStatus');
+            const disconnectBtn = document.getElementById('btnStakeDisconnect');
+            const walletInput = document.getElementById('stakeWallet');
+
+            if (statusEl) statusEl.textContent = `Connected: …${result.account.slice(-6)}`;
+            if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
+            if (walletInput) walletInput.value = result.account;
+
+            WALLET = result.account;
+            xummCloseStake();
+
+            // Auto-load wallet info
+            stakeLoadInfo();
+
+          } else if (!result.signed && !result.expired) {
+            // Still waiting, check again
+            setTimeout(checkStatus, 2000);
+          } else {
+            // Expired or rejected
+            console.log('Connection expired or rejected');
+            xummCloseStake();
+          }
+        } catch (error) {
+          console.error('Status check error:', error);
+        }
+      };
+
+      // Start checking after 2 seconds
+      setTimeout(checkStatus, 2000);
+    }
 
     // Real trustline function
     async function stakeTrustline() {
@@ -598,7 +681,144 @@
     }
     window.stakeLoadInfo = stakeLoadInfo;
 
-    console.log('✅ Core functions loaded');
+    // Disconnect function
+    function stakeDisconnect() {
+      console.log('🔌 Disconnect clicked!');
+      WALLET = '';
+
+      const walletInput = document.getElementById('stakeWallet');
+      const statusEl = document.getElementById('stakeConnStatus');
+      const disconnectBtn = document.getElementById('btnStakeDisconnect');
+      const tlStatusEl = document.getElementById('stakeTlStatus');
+
+      if (walletInput) walletInput.value = '';
+      if (statusEl) statusEl.textContent = 'Not connected';
+      if (disconnectBtn) disconnectBtn.style.display = 'none';
+      if (tlStatusEl) tlStatusEl.textContent = 'Trustline: —';
+    }
+    window.stakeDisconnect = stakeDisconnect;
+
+    // Max button functions
+    function ltSetMax() {
+      console.log('⚡ Long-term Max clicked!');
+      if (typeof CURRENT_BAL === 'number' && CURRENT_BAL > 0) {
+        const amountInput = document.getElementById('ltAmount');
+        if (amountInput) {
+          amountInput.value = Math.floor(CURRENT_BAL);
+        }
+      } else {
+        alert('Load your wallet info first to see balance');
+      }
+    }
+    window.ltSetMax = ltSetMax;
+
+    function pmSetMax() {
+      console.log('⚡ Per-meme Max clicked!');
+      if (typeof CURRENT_BAL === 'number' && CURRENT_BAL > 0) {
+        const amountInput = document.getElementById('pmAmount');
+        if (amountInput) {
+          amountInput.value = Math.floor(CURRENT_BAL);
+        }
+      } else {
+        alert('Load your wallet info first to see balance');
+      }
+    }
+    window.pmSetMax = pmSetMax;
+
+    // Stake functions
+    async function createLongTermStake() {
+      console.log('🏦 Long-term stake clicked!');
+      try {
+        if (!WALLET) {
+          alert('Please connect and load your wallet info first');
+          return;
+        }
+
+        const amountInput = document.getElementById('ltAmount');
+        const durationSelect = document.getElementById('ltDuration');
+        const msgEl = document.getElementById('ltMsg');
+
+        const amount = amountInput ? parseFloat(amountInput.value || '0') : 0;
+        const duration = durationSelect ? parseInt(durationSelect.value || '0') : 0;
+
+        if (!amount || !duration) {
+          if (msgEl) msgEl.textContent = 'Enter amount and select duration';
+          return;
+        }
+
+        if (msgEl) msgEl.textContent = 'Creating stake...';
+
+        const response = await fetch(`${API}/api/staking/long-term`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: WALLET, amount: amount, duration: duration })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          if (msgEl) msgEl.textContent = `✅ Long-term stake created! Expected reward: ${result.stakeData.expectedReward} WALDO`;
+          // Reload wallet info
+          stakeLoadInfo();
+        } else {
+          throw new Error(result.error || 'Stake creation failed');
+        }
+
+      } catch (error) {
+        console.error('❌ Long-term stake error:', error);
+        const msgEl = document.getElementById('ltMsg');
+        if (msgEl) msgEl.textContent = 'Error: ' + error.message;
+      }
+    }
+    window.createLongTermStake = createLongTermStake;
+
+    async function createPerMemeStake() {
+      console.log('🎭 Per-meme stake clicked!');
+      try {
+        if (!WALLET) {
+          alert('Please connect and load your wallet info first');
+          return;
+        }
+
+        const amountInput = document.getElementById('pmAmount');
+        const memeIdInput = document.getElementById('pmMemeId');
+        const msgEl = document.getElementById('pmMsg');
+
+        const amount = amountInput ? parseFloat(amountInput.value || '0') : 0;
+        const memeId = memeIdInput ? memeIdInput.value.trim() : '';
+
+        if (!amount || !memeId) {
+          if (msgEl) msgEl.textContent = 'Enter amount and meme ID';
+          return;
+        }
+
+        if (msgEl) msgEl.textContent = 'Creating per-meme stake...';
+
+        const response = await fetch(`${API}/api/staking/per-meme`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: WALLET, amount: amount, memeId: memeId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          if (msgEl) msgEl.textContent = `✅ Per-meme stake created! Total reward: ${result.stakeData.totalReward} WALDO`;
+          // Reload wallet info
+          stakeLoadInfo();
+        } else {
+          throw new Error(result.error || 'Stake creation failed');
+        }
+
+      } catch (error) {
+        console.error('❌ Per-meme stake error:', error);
+        const msgEl = document.getElementById('pmMsg');
+        if (msgEl) msgEl.textContent = 'Error: ' + error.message;
+      }
+    }
+    window.createPerMemeStake = createPerMemeStake;
+
+    console.log('✅ All staking functions loaded');
   </script>
 </body>
 
