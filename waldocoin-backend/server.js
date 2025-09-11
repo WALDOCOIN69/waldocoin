@@ -77,9 +77,9 @@ const startServer = async () => {
     windowMs: 60 * 1000,
     max: 100,
   });
-  // Restrict CORS to trusted origins only (allow root + subdomains of waldo/waldocoin)
-  const allowedOriginsRaw = (process.env.CORS_ALLOWED_ORIGINS || "https://waldocoin.live,https://waldo.live,https://admin-vip-only-page.waldocoin.live").split(",").map(s => s.trim());
-  const allowedHosts = ["waldo.live", "waldocoin.live", "admin-vip-only-page.waldocoin.live"]; // base hosts
+  // Restrict CORS to trusted origins only (allow root + subdomains of waldo/waldocoin + render domains)
+  const allowedOriginsRaw = (process.env.CORS_ALLOWED_ORIGINS || "https://waldocoin.live,https://waldo.live,https://admin-vip-only-page.waldocoin.live,https://waldocoin.onrender.com").split(",").map(s => s.trim());
+  const allowedHosts = ["waldo.live", "waldocoin.live", "admin-vip-only-page.waldocoin.live", "waldocoin.onrender.com"]; // base hosts
   app.use(cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // allow curl/local
