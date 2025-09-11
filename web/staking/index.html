@@ -445,22 +445,160 @@
         href="https://waldocoin.live">waldocoin.live</a></div>
   </div>
 
-  <!-- Load external JavaScript file -->
-  <script src="staking.js"></script>
-
-  <!-- Inline test to verify script loading -->
   <script>
-    console.log('📄 Inline script executing...');
+    console.log('🚀 WALDO Staking Script Loading...');
 
-    // Test if external script loaded
-    setTimeout(function () {
-      if (typeof window.testButton === 'function') {
-        console.log('✅ External script loaded successfully');
-      } else {
-        console.log('❌ External script failed to load');
-        alert('❌ External JavaScript failed to load');
+    // Configuration - hardcoded like the working trade widget
+    const API = "https://waldocoin-backend-api.onrender.com";
+    const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+    const CURRENCY = 'WLO';
+    let WALLET = '';
+    let CURRENT_BAL = 0;
+
+    console.log('📡 API URL:', API);
+
+    // Test if basic JavaScript works
+    function testButton() {
+      alert('JavaScript is working!');
+      console.log('✅ JavaScript test successful');
+    }
+    window.testButton = testButton;
+
+    // Real connect function
+    function stakeConnect() {
+      console.log('🔗 Connect button clicked!');
+      try {
+        // Update UI to show connected status
+        const statusEl = document.getElementById('stakeConnStatus');
+        const disconnectBtn = document.getElementById('btnStakeDisconnect');
+
+        if (statusEl) statusEl.textContent = 'Connected (manual)';
+        if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
+
+        // Get wallet from input field
+        const walletInput = document.getElementById('stakeWallet');
+        if (walletInput && walletInput.value.trim()) {
+          WALLET = walletInput.value.trim();
+          stakeLoadInfo(); // Auto-load info if wallet is entered
+        }
+
+        alert('✅ Connected! Enter your wallet address and click Load Info.');
+      } catch (error) {
+        console.error('❌ Connect error:', error);
+        alert('Connect error: ' + error.message);
       }
-    }, 100);
+    }
+    window.stakeConnect = stakeConnect;
+
+    // Real trustline function
+    async function stakeTrustline() {
+      console.log('➕ Add Trustline clicked!');
+      console.log('📡 Making API call to:', `${API}/api/xrpl/trustline/create`);
+
+      try {
+        const response = await fetch(`${API}/api/xrpl/trustline/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Trustline API response:', result);
+
+        if (!result.success) {
+          throw new Error(result.error || 'Trustline creation failed');
+        }
+
+        // Show XUMM modal with QR code
+        showXummModal('Add WALDO Trustline', result);
+        alert('✅ Trustline request created! Scan QR code in Xaman app.');
+
+      } catch (error) {
+        console.error('❌ Trustline error:', error);
+        alert('Trustline error: ' + error.message);
+      }
+    }
+    window.stakeTrustline = stakeTrustline;
+
+    // Real load info function
+    async function stakeLoadInfo() {
+      console.log('📊 Load Info clicked!');
+      try {
+        const walletInput = document.getElementById('stakeWallet');
+        const wallet = walletInput ? walletInput.value.trim() : '';
+
+        if (!wallet || !wallet.startsWith('r')) {
+          alert('Please enter a valid XRPL wallet address (starts with r)');
+          return;
+        }
+
+        WALLET = wallet;
+        console.log('📊 Loading info for wallet:', WALLET);
+
+        // Check trustline status
+        console.log('📡 Checking trustline:', `${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
+        const tlResponse = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
+
+        if (!tlResponse.ok) {
+          throw new Error(`Trustline check failed: HTTP ${tlResponse.status}`);
+        }
+
+        const tlResult = await tlResponse.json();
+        console.log('✅ Trustline result:', tlResult);
+
+        const tlStatusEl = document.getElementById('stakeTlStatus');
+        if (tlStatusEl) {
+          tlStatusEl.textContent = `Trustline: ${tlResult.trustline ? 'Yes' : 'No'}`;
+        }
+
+        // Get staking info
+        console.log('📡 Getting staking info:', `${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
+        const stakingResponse = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
+
+        if (!stakingResponse.ok) {
+          throw new Error(`Staking info failed: HTTP ${stakingResponse.status}`);
+        }
+
+        const stakingResult = await stakingResponse.json();
+        console.log('✅ Staking result:', stakingResult);
+
+        if (stakingResult.success) {
+          // Update balance
+          CURRENT_BAL = (stakingResult.userInfo && typeof stakingResult.userInfo.currentBalance === 'number')
+            ? stakingResult.userInfo.currentBalance : 0;
+
+          const balStr = Math.floor(CURRENT_BAL).toLocaleString();
+          const ltBalEl = document.getElementById('ltBal');
+          const pmBalEl = document.getElementById('pmBal');
+
+          if (ltBalEl) ltBalEl.textContent = balStr;
+          if (pmBalEl) pmBalEl.textContent = balStr;
+
+          // Update connection status
+          const statusEl = document.getElementById('stakeConnStatus');
+          if (statusEl) {
+            statusEl.textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
+          }
+
+          alert(`✅ Wallet loaded! Balance: ${balStr} WLO`);
+        } else {
+          throw new Error(stakingResult.error || 'Failed to load wallet info');
+        }
+
+      } catch (error) {
+        console.error('❌ Load info error:', error);
+        alert('Load info error: ' + error.message);
+      }
+    }
+    window.stakeLoadInfo = stakeLoadInfo;
+
+    console.log('✅ Core functions loaded');
   </script>
 </body>
 
