@@ -333,7 +333,7 @@
         <div class="tabs">
           <button id="stakeToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
           <button class="tab active" data-tab="long">Long-Term</button>
-          <button class="tab" data-tab="meme">Per-Meme</button>
+
         </div>
       </div>
 
@@ -394,31 +394,7 @@
           </div>
         </div>
 
-        <!-- Per-meme panel -->
-        <div class="panel" id="panelMeme" style="display:none;">
-          <div class="card">
-            <div class="grid">
-              <div class="field">
-                <div class="subline balance-line">Balance: <span id="pmBal">—</span> WLO <button class="btn mini"
-                    type="button" onclick="pmSetMax()">Max</button></div>
-                <label>Amount (WALDO)</label>
-                <input id="pmAmount" type="number" min="1" step="1" placeholder="Any amount" />
-              </div>
-              <div class="field">
-                <label>Meme ID</label>
-                <input id="pmMemeId" type="text" placeholder="tweet123" />
-              </div>
-            </div>
-            <div class="subline">Per‑Meme: 30 days • 5% staking fee vs 10% instant • +15% bonus</div>
-            <div class="actions"></div>
-            <div id="pmMsg" class="msg"></div>
-          </div>
 
-          <div class="list">
-            <h4>Your Active Per‑Meme Stakes</h4>
-            <div id="pmList"></div>
-          </div>
-        </div>
       </div>
 
       <!-- XUMM Modal (minimal) -->
