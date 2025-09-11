@@ -594,9 +594,9 @@
           throw new Error(result.error || 'Trustline creation failed');
         }
 
-        // Show XUMM modal with QR code
+        // Show XUMM modal with QR code (no desktop alert)
         showXummModal('Add WALDO Trustline', result);
-        alert('✅ Trustline request created! Scan QR code in Xaman app.');
+        // No alert on desktop; mobile users can tap the "Open Xaman App" button in the modal
 
       } catch (error) {
         console.error('❌ Trustline error:', error);
