@@ -486,7 +486,7 @@
         if (mobileDiv) mobileDiv.style.display = 'none';
         if (qrImg) {
           qrImg.style.display = 'block';
-          qrImg.src = payload?.refs?.qr_png || '';
+          qrImg.src = payload?.refs?.qr_png || payload?.qr || payload?.refs?.qr || payload?.refs?.qr_uri || '';
         }
       }
 
@@ -514,11 +514,7 @@
         const result = await response.json();
         console.log('✅ Connect API response:', result);
 
-        if (!result.success) {
-          throw new Error(result.error || 'Login failed');
-        }
-
-        // Show XUMM modal with QR code
+        // Show XUMM modal with QR code (payload contains refs/qr)
         showXummModal('Connect Xaman', result);
 
         // Start polling for connection status (simplified)
@@ -537,7 +533,7 @@
     function pollConnectionStatus(uuid) {
       const checkStatus = async () => {
         try {
-          const response = await fetch(`${API}/api/xumm/status/${uuid}`);
+          const response = await fetch(`${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`);
           const result = await response.json();
 
           if (result.signed && result.account) {
