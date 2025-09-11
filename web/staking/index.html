@@ -339,6 +339,7 @@
       <div class="stake-body">
         <!-- Controls -->
         <div class="row">
+          <button class="btn" onclick="testButton()" style="background: red; color: white;">🧪 TEST JS</button>
           <button class="btn cta connect" onclick="stakeConnect()">🔗 Connect Xaman</button>
           <button class="btn cta trust" onclick="stakeTrustline()">➕ Add Trustline</button>
           <button class="btn" id="btnStakeDisconnect" onclick="stakeDisconnect()"
@@ -445,7 +446,16 @@
   </div>
 
   <script>
+    console.log('🚀 WALDO Staking Script Loading...');
+
+    // Test if basic JavaScript works
+    window.testButton = function () {
+      alert('JavaScript is working!');
+      console.log('✅ JavaScript test successful');
+    };
+
     (function () {
+      console.log('📡 API URL:', window.WALDO_API);
       const API = window.WALDO_API || '';
       const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
       const CURRENCY = 'WLO';
@@ -492,12 +502,18 @@
 
       // Connect/Disconnect (display only — wallet still editable)
       window.stakeConnect = async function () {
-        console.log('🔗 Connect button clicked!');
-        alert('Connect button works!');
-        document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
-        document.getElementById('btnStakeDisconnect').style.display = 'inline-block';
-        const w = document.getElementById('stakeWallet').value.trim();
-        if (w) { WALLET = w; await stakeLoadInfo(); }
+        try {
+          console.log('🔗 Connect button clicked!');
+          console.log('📡 API URL:', API);
+          alert('Connect button works! API: ' + API);
+          document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
+          document.getElementById('btnStakeDisconnect').style.display = 'inline-block';
+          const w = document.getElementById('stakeWallet').value.trim();
+          if (w) { WALLET = w; await stakeLoadInfo(); }
+        } catch (error) {
+          console.error('❌ Connect error:', error);
+          alert('Connect error: ' + error.message);
+        }
       }
       window.stakeDisconnect = function () {
         WALLET = ''; document.getElementById('stakeWallet').value = '';
