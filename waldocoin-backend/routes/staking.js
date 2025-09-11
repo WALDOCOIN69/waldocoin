@@ -203,8 +203,9 @@ router.post("/long-term", async (req, res) => {
     };
 
     console.log('[LT] Writing stake to Redis', { key: `staking:${stakeId}` });
-    // Store staking record
-    await redis.hSet(`staking:${stakeId}`, stakeData);
+    // Store staking record (stringify values to satisfy Redis types)
+    const stakeDataStr = Object.fromEntries(Object.entries(stakeData).map(([k, v]) => [k, typeof v === 'string' ? v : String(v)]));
+    await redis.hSet(`staking:${stakeId}`, stakeDataStr);
 
     console.log('[LT] Adding stake to user set');
     // Add to user's active long-term stakes
