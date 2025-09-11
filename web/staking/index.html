@@ -649,6 +649,27 @@
             statusEl.textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
           }
 
+          // Render active long-term stakes
+          const ltListEl = document.getElementById('ltList');
+          const stakes = (stakingResult && stakingResult.longTermStaking && Array.isArray(stakingResult.longTermStaking.activeStakes)) ? stakingResult.longTermStaking.activeStakes : [];
+          if (ltListEl) {
+            if (!stakes.length) {
+              ltListEl.innerHTML = '<div class="subline">No active long-term stakes yet.</div>';
+            } else {
+              ltListEl.innerHTML = stakes.map(s => {
+                const amt = Number(s.amount || 0).toLocaleString();
+                const days = s.duration || 0;
+                const apy = s.apy || '';
+                const reward = Number(s.expectedReward || 0).toLocaleString();
+                const remaining = (s.daysRemaining != null) ? `${s.daysRemaining} days remaining` : '';
+                return `<div class="row" style="display:flex;justify-content:space-between;border-bottom:1px solid #1c1c1c;padding:6px 0;">
+                  <div><strong>${amt}</strong> WALDO • ${days}d • ${apy}</div>
+                  <div>${remaining} • +${reward}</div>
+                </div>`;
+              }).join('');
+            }
+          }
+
           alert(`✅ Wallet loaded! Balance: ${balStr} WLO`);
         } else {
           throw new Error(stakingResult.error || 'Failed to load wallet info');
