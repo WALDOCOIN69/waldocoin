@@ -1,8 +1,8 @@
 // WALDO Staking Widget JavaScript
 console.log('🚀 External JavaScript file loading...');
 
-// Configuration
-const API = window.WALDO_API || 'https://waldocoin-backend-api.onrender.com';
+// Configuration - hardcoded like the working trade widget
+const API = "https://waldocoin-backend-api.onrender.com";
 const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const CURRENCY = 'WLO';
 let WALLET = '';
@@ -44,14 +44,23 @@ function stakeConnect() {
 // Real trustline function
 async function stakeTrustline() {
   console.log('➕ Add Trustline clicked!');
+  console.log('📡 Making API call to:', `${API}/api/xrpl/trustline/create`);
+
   try {
     const response = await fetch(`${API}/api/xrpl/trustline/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
 
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response ok:', response.ok);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
     const result = await response.json();
-    console.log('Trustline API response:', result);
+    console.log('✅ Trustline API response:', result);
 
     if (!result.success) {
       throw new Error(result.error || 'Trustline creation failed');
@@ -59,6 +68,7 @@ async function stakeTrustline() {
 
     // Show XUMM modal with QR code
     showXummModal('Add WALDO Trustline', result);
+    alert('✅ Trustline request created! Scan QR code in Xaman app.');
 
   } catch (error) {
     console.error('❌ Trustline error:', error);
@@ -79,11 +89,18 @@ async function stakeLoadInfo() {
     }
 
     WALLET = wallet;
-    console.log('Loading info for wallet:', WALLET);
+    console.log('📊 Loading info for wallet:', WALLET);
 
     // Check trustline status
+    console.log('📡 Checking trustline:', `${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
     const tlResponse = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
+
+    if (!tlResponse.ok) {
+      throw new Error(`Trustline check failed: HTTP ${tlResponse.status}`);
+    }
+
     const tlResult = await tlResponse.json();
+    console.log('✅ Trustline result:', tlResult);
 
     const tlStatusEl = document.getElementById('stakeTlStatus');
     if (tlStatusEl) {
@@ -91,8 +108,15 @@ async function stakeLoadInfo() {
     }
 
     // Get staking info
+    console.log('📡 Getting staking info:', `${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
     const stakingResponse = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
+
+    if (!stakingResponse.ok) {
+      throw new Error(`Staking info failed: HTTP ${stakingResponse.status}`);
+    }
+
     const stakingResult = await stakingResponse.json();
+    console.log('✅ Staking result:', stakingResult);
 
     if (stakingResult.success) {
       // Update balance
