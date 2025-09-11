@@ -731,7 +731,8 @@
           // Reload wallet info
           stakeLoadInfo();
         } else {
-          throw new Error(result.error || 'Stake creation failed');
+          const detail = result.details ? ` - ${result.details}` : '';
+          throw new Error((result.error || 'Stake creation failed') + detail);
         }
 
       } catch (error) {
