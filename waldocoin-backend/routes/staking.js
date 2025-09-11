@@ -100,12 +100,14 @@ router.post("/long-term", async (req, res) => {
   try {
     const { wallet, amount, duration } = req.body;
 
-    if (!wallet || !amount || !duration) {
+    if (!wallet || amount == null || duration == null) {
       return res.status(400).json({
         success: false,
         error: "Missing required fields: wallet, amount, duration"
       });
     }
+
+    console.log('[LT] Incoming request', { wallet, amount, duration });
 
     // Enforce minimum WALDO worth: 3 XRP
     try {
@@ -125,7 +127,7 @@ router.post("/long-term", async (req, res) => {
 
     // Validate amount
     const stakeAmount = parseFloat(amount);
-    if (isNaN(stakeAmount) || stakeAmount < LONG_TERM_CONFIG.minimumAmount) {
+    if (!Number.isFinite(stakeAmount) || stakeAmount < LONG_TERM_CONFIG.minimumAmount) {
       return res.status(400).json({
         success: false,
         error: `Minimum stake amount is ${LONG_TERM_CONFIG.minimumAmount} WALDO`
@@ -142,6 +144,7 @@ router.post("/long-term", async (req, res) => {
 
     // Get user's current WALDO balance
     const currentBalance = await getWaldoBalance(wallet);
+    console.log('[LT] Current balance', currentBalance);
     if (currentBalance < stakeAmount) {
       return res.status(400).json({
         success: false,
@@ -199,12 +202,15 @@ router.post("/long-term", async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
+    console.log('[LT] Writing stake to Redis', { key: `staking:${stakeId}` });
     // Store staking record
     await redis.hSet(`staking:${stakeId}`, stakeData);
 
+    console.log('[LT] Adding stake to user set');
     // Add to user's active long-term stakes
     await redis.sAdd(`user:${wallet}:long_term_stakes`, stakeId);
 
+    console.log('[LT] Updating global totals');
     // Update global staking totals
     await redis.incrByFloat('staking:total_long_term_staked', stakeAmount);
     await redis.incr('staking:total_long_term_stakes');
@@ -242,10 +248,11 @@ router.post("/long-term", async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error creating long-term stake:', error);
+    console.error('❌ Error creating long-term stake:', error?.stack || error);
     res.status(500).json({
       success: false,
-      error: "Failed to create long-term staking position"
+      error: "Failed to create long-term staking position",
+      details: error?.message || String(error)
     });
   }
 });
