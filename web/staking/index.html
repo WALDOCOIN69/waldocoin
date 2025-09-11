@@ -446,13 +446,16 @@
   </div>
 
   <script>
+    // MINIMAL TEST - Check if JavaScript loads at all
+    alert('🚀 Script is loading!');
     console.log('🚀 WALDO Staking Script Loading...');
 
     // Test if basic JavaScript works
-    window.testButton = function () {
+    function testButton() {
       alert('JavaScript is working!');
       console.log('✅ JavaScript test successful');
-    };
+    }
+    window.testButton = testButton;
 
     (function () {
       console.log('📡 API URL:', window.WALDO_API);
@@ -500,21 +503,26 @@
       }
       window.xummCloseStake = () => { document.getElementById('xummModalStake').style.display = 'none'; };
 
-      // Connect/Disconnect (display only — wallet still editable)
-      window.stakeConnect = async function () {
-        try {
-          console.log('🔗 Connect button clicked!');
-          console.log('📡 API URL:', API);
-          alert('Connect button works! API: ' + API);
-          document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
-          document.getElementById('btnStakeDisconnect').style.display = 'inline-block';
-          const w = document.getElementById('stakeWallet').value.trim();
-          if (w) { WALLET = w; await stakeLoadInfo(); }
-        } catch (error) {
-          console.error('❌ Connect error:', error);
-          alert('Connect error: ' + error.message);
-        }
+      // Simple connect function
+      function stakeConnect() {
+        alert('🔗 Connect button clicked!');
+        console.log('🔗 Connect button clicked!');
       }
+      window.stakeConnect = stakeConnect;
+
+      // Simple trustline function
+      function stakeTrustline() {
+        alert('➕ Add Trustline clicked!');
+        console.log('➕ Add Trustline clicked!');
+      }
+      window.stakeTrustline = stakeTrustline;
+
+      // Simple load info function
+      function stakeLoadInfo() {
+        alert('📊 Load Info clicked!');
+        console.log('📊 Load Info clicked!');
+      }
+      window.stakeLoadInfo = stakeLoadInfo;
       window.stakeDisconnect = function () {
         WALLET = ''; document.getElementById('stakeWallet').value = '';
         document.getElementById('stakeConnStatus').textContent = 'Not connected';
