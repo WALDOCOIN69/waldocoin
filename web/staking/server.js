@@ -113,7 +113,7 @@ app.get('/', (req, res) => {
       <p>This will be completed shortly. Thank you for your patience!</p>
       <a href="https://waldocoin.live" class="btn">← Back to Main Site</a>
       <br><br>
-      <p><small>Status: Server running ✅ | Widget deployment: In progress ⏳</small></p>
+      <p><small>Status: Server running ✅ | Git sync: Testing ⏳ | Time: ${new Date().toISOString()}</small></p>
     </div>
 
     <div class="footer">© WALDOCOIN • Powered by XRPL • <a target="_blank" rel="noopener" href="https://waldocoin.live">waldocoin.live</a></div>
