@@ -281,6 +281,13 @@
       text-align: center;
     }
 
+    /* Center QR image robustly inside modal */
+    .xumm-modal #xummQrStake {
+      display: block;
+      margin: 12px auto;
+    }
+
+
     .xumm-modal .close {
       position: absolute;
       right: 8px;
@@ -685,18 +692,8 @@
     }
     window.ltSetMax = ltSetMax;
 
-    function pmSetMax() {
-      console.log('⚡ Per-meme Max clicked!');
-      if (typeof CURRENT_BAL === 'number' && CURRENT_BAL > 0) {
-        const amountInput = document.getElementById('pmAmount');
-        if (amountInput) {
-          amountInput.value = Math.floor(CURRENT_BAL);
-        }
-      } else {
-        alert('Load your wallet info first to see balance');
-      }
-    }
-    window.pmSetMax = pmSetMax;
+    // Per-meme staking removed from this page; max helper not needed anymore
+
 
     // Stake functions
     async function createLongTermStake() {
@@ -745,51 +742,8 @@
     }
     window.createLongTermStake = createLongTermStake;
 
-    async function createPerMemeStake() {
-      console.log('🎭 Per-meme stake clicked!');
-      try {
-        if (!WALLET) {
-          alert('Please connect and load your wallet info first');
-          return;
-        }
+    // Per-meme staking removed from this page; action moved to Stats page
 
-        const amountInput = document.getElementById('pmAmount');
-        const memeIdInput = document.getElementById('pmMemeId');
-        const msgEl = document.getElementById('pmMsg');
-
-        const amount = amountInput ? parseFloat(amountInput.value || '0') : 0;
-        const memeId = memeIdInput ? memeIdInput.value.trim() : '';
-
-        if (!amount || !memeId) {
-          if (msgEl) msgEl.textContent = 'Enter amount and meme ID';
-          return;
-        }
-
-        if (msgEl) msgEl.textContent = 'Creating per-meme stake...';
-
-        const response = await fetch(`${API}/api/staking/per-meme`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: WALLET, amount: amount, memeId: memeId })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          if (msgEl) msgEl.textContent = `✅ Per-meme stake created! Total reward: ${result.stakeData.totalReward} WALDO`;
-          // Reload wallet info
-          stakeLoadInfo();
-        } else {
-          throw new Error(result.error || 'Stake creation failed');
-        }
-
-      } catch (error) {
-        console.error('❌ Per-meme stake error:', error);
-        const msgEl = document.getElementById('pmMsg');
-        if (msgEl) msgEl.textContent = 'Error: ' + error.message;
-      }
-    }
-    window.createPerMemeStake = createPerMemeStake;
 
     console.log('✅ All staking functions loaded');
   </script>
