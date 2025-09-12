@@ -668,7 +668,31 @@
           if (++tries >= max) clearInterval(id);
         } catch (_) { clearInterval(id); }
       }, 1000);
+
+
     }
+
+    // Trade-specific status poll: triggers WLO delivery when signed
+    async function startTradeStatusPoll(uuid, successMsg, onSuccess) {
+      if (!uuid) return;
+      const url = `${API}/api/xrpl/trade/status/${encodeURIComponent(uuid)}`;
+      let tries = 0; const max = 300; // up to 5 mins
+      const id = setInterval(async () => {
+        try {
+          const r = await fetch(url + `?_t=${Date.now()}`);
+          const s = await r.json();
+          if (s?.signed) {
+            clearInterval(id);
+            if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
+            if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
+            showToast(successMsg || 'Success');
+            xummClose();
+          }
+          if (++tries >= max) clearInterval(id);
+        } catch (_) { clearInterval(id); }
+      }, 1000);
+    }
+
     function explorerLink(hash) { return `https://livenet.xrpl.org/transactions/${hash}`; }
     function appendReceipt(msg) {
       try {
@@ -689,6 +713,9 @@
       if (root.classList.contains('collapsed')) { collapsed = false; root.classList.remove('collapsed'); }
       el('panelXrpl').style.display = tab === 'xrpl' ? 'block' : 'none';
       el('panelFl').style.display = tab === 'fl' ? 'block' : 'none';
+
+
+
     }));
 
     // Market data
@@ -849,7 +876,7 @@
         console.log('📱 Swap API Response:', j);
         if (!j.success) throw new Error(j.error || 'Trade failed');
         xummOpen('Swap', j);  // Pass full response, not just refs
-        startStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
+        startTradeStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
       } catch (e) {
         el('tradeMsg').textContent = 'Swap failed: ' + e.message;
       }

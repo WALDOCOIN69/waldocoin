@@ -2,6 +2,8 @@
 import express from "express";
 import { xummClient } from "../../utils/xummClient.js";
 import getWaldoPerXrp from "../../utils/getWaldoPerXrp.js";
+import { redis } from "../../redisClient.js";
+
 import xrpl from "xrpl";
 
 const router = express.Router();
@@ -97,12 +99,104 @@ router.post("/offer", async (req, res) => {
       custom_meta: { identifier: `WALDO_TRADE_${side.toUpperCase()}`, instruction: 'Sign in Xaman and stay in the app' }
     });
 
+    // Store trade intent for later processing on /status
+    try {
+      const key = `trade:offer:${created.uuid}`;
+      await redis.hSet(key, {
+        side,
+        amountXrp: side === 'buy' ? String(Number(amountXrp || 0)) : '',
+        amountWlo: side === 'sell' ? String(Number(amountWlo || 0)) : '',
+        slippageBps: String(bps),
+        mid: String(mid),
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('trade:offer store failed', e?.message || e);
+    }
+
     return res.json({ success: true, uuid: created.uuid, refs: created.refs, next: created.next });
   } catch (err) {
     console.error("❌ Trade offer error:", err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// GET /api/xrpl/trade/status/:uuid
+router.get('/status/:uuid', async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    if (!uuid) return res.status(400).json({ ok: false, error: 'missing uuid' });
+
+    const p = await xummClient.payload.get(uuid).catch(() => null);
+    if (!p) return res.json({ ok: true, found: false });
+
+    const signed = !!p?.meta?.signed;
+    const account = p?.response?.account || null;
+    const txid = p?.response?.txid || null;
+    if (!signed) return res.json({ ok: true, signed: false, account: null });
+
+    const processedKey = `trade:processed:${uuid}`;
+    const processed = await redis.get(processedKey);
+    if (processed) return res.json({ ok: true, signed: true, account, txid, delivered: true });
+
+    const offer = await redis.hGetAll(`trade:offer:${uuid}`);
+    const side = offer?.side;
+
+    // Only auto-deliver on BUY for now
+    if (side !== 'buy') {
+      await redis.set(processedKey, '1', 'EX', 604800); // mark as seen to avoid reprocessing
+      return res.json({ ok: true, signed: true, account, txid, delivered: false });
+    }
+
+    const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+    const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || 'WLO').toUpperCase();
+
+    const amountXrp = Number(offer?.amountXrp || 0);
+    const mid = Number(offer?.mid || 0);
+    const bps = Number(offer?.slippageBps || 0);
+    const slip = Math.max(0, bps) / 10000;
+    const wloOut = (amountXrp > 0 && mid > 0) ? amountXrp / (mid * (1 + slip)) : 0;
+    const value = Math.floor(wloOut * 1e6) / 1e6; // 6dp
+
+    if (!account || !Number.isFinite(value) || value <= 0) {
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'calc_invalid' });
+    }
+
+    const senderSecret = process.env.WALDO_SENDER_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
+    if (!senderSecret) {
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'missing_sender_secret' });
+    }
+
+    // Send WLO to buyer
+    const client = new xrpl.Client('wss://xrplcluster.com');
+    await client.connect();
+    const wallet = xrpl.Wallet.fromSeed(senderSecret);
+    const payment = {
+      TransactionType: 'Payment',
+      Account: wallet.address,
+      Destination: account,
+      Amount: { currency: CURRENCY, issuer: ISSUER, value: value.toFixed(6) }
+    };
+    const prepared = await client.autofill(payment);
+    const signedTx = wallet.sign(prepared);
+    const result = await client.submitAndWait(signedTx.tx_blob);
+    const ok = (result?.result?.meta?.TransactionResult === 'tesSUCCESS') || (result?.engine_result === 'tesSUCCESS');
+    const deliveredHash = result?.result?.hash || result?.tx_json?.hash || null;
+    await client.disconnect();
+
+    if (ok) {
+      await redis.set(processedKey, '1', 'EX', 604800);
+      await redis.hSet(`trade:offer:${uuid}`, { deliveredTx: deliveredHash || '', deliveredAt: new Date().toISOString() });
+      return res.json({ ok: true, signed: true, account, txid, delivered: true, deliveredTx: deliveredHash });
+    } else {
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'send_failed' });
+    }
+  } catch (e) {
+    console.error('trade status error', e);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 
 export default router;
 
