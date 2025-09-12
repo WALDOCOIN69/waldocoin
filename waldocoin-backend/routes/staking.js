@@ -374,34 +374,66 @@ router.get("/info/:wallet", async (req, res) => {
     // Get user's current balance
     const currentBalance = await getWaldoBalance(wallet);
 
-    // Get user's long-term stakes
-    const longTermStakeIds = await redis.sMembers(`user:${wallet}:long_term_stakes`);
+    // Get user's long-term stakes (aggregate across both schemas)
     const longTermStakes = [];
+    const seen = new Set();
 
-    for (const stakeId of longTermStakeIds) {
+    // Schema A: dedicated long-term set
+    const ltSetIds = await redis.sMembers(`user:${wallet}:long_term_stakes`);
+    for (const stakeId of ltSetIds) {
       try {
         const stakeData = await redis.hGetAll(`staking:${stakeId}`);
-        if (stakeData.status === 'active') {
+        if (stakeData && stakeData.status === 'active') {
           const now = new Date();
           const endDate = new Date(stakeData.endDate);
           const timeRemaining = Math.max(0, endDate - now);
           const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
-
           longTermStakes.push({
             stakeId: stakeData.stakeId,
             amount: parseFloat(stakeData.amount),
             duration: parseInt(stakeData.duration),
-            apy: `${stakeData.apy}%`,
+            apy: `${parseFloat(stakeData.apy)}%`,
             startDate: stakeData.startDate,
             endDate: stakeData.endDate,
             expectedReward: parseFloat(stakeData.expectedReward),
-            daysRemaining: daysRemaining,
+            daysRemaining,
             status: stakeData.status,
             type: 'long_term'
           });
+          seen.add(stakeId);
         }
       } catch (error) {
-        console.error(`Error processing long-term stake ${stakeId}:`, error);
+        console.error(`Error processing long-term stake (schema A) ${stakeId}:`, error);
+      }
+    }
+
+    // Schema B: generic staking set used by stats page
+    const genericIds = await redis.sMembers(`staking:user:${wallet}`);
+    for (const stakeId of genericIds) {
+      if (seen.has(stakeId)) continue;
+      try {
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+        if (stakeData && stakeData.status === 'active' && (stakeData.type === 'long_term' || stakeData.type == null)) {
+          const now = new Date();
+          const endDate = new Date(stakeData.endDate);
+          const timeRemaining = Math.max(0, endDate - now);
+          const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+          longTermStakes.push({
+            stakeId: stakeData.stakeId,
+            amount: parseFloat(stakeData.amount),
+            duration: parseInt(stakeData.duration),
+            apy: `${parseFloat(stakeData.apy)}%`,
+            startDate: stakeData.startDate,
+            endDate: stakeData.endDate,
+            expectedReward: parseFloat(stakeData.expectedReward || 0),
+            daysRemaining,
+            status: stakeData.status,
+            type: 'long_term'
+          });
+          seen.add(stakeId);
+        }
+      } catch (error) {
+        console.error(`Error processing long-term stake (schema B) ${stakeId}:`, error);
       }
     }
 
@@ -557,11 +589,14 @@ router.post("/unstake", async (req, res) => {
       claimed: true
     });
 
-    // Remove from active stakes
-    await redis.sRem(`user:${wallet}:stakes`, stakeId);
+    // Remove from active stake sets (support both schemas)
+    await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
+    await redis.sRem(`staking:user:${wallet}`, stakeId);
+    await redis.sRem('staking:active', stakeId);
 
-    // Update totals
+    // Update totals (best-effort across schemas)
     await redis.incrByFloat('staking:total_staked', -parseFloat(stakeData.amount));
+    await redis.incrByFloat('staking:total_long_term_staked', -parseFloat(stakeData.amount));
     await redis.incrByFloat('staking:total_burned', burnFee);
     await redis.incrByFloat('staking:total_treasury', treasuryFee);
 
@@ -1101,30 +1136,57 @@ router.post('/stake', async (req, res) => {
   }
 });
 
-// GET /api/staking/positions/:wallet - Get user's staking positions
+// GET /api/staking/positions/:wallet - Get user's staking positions (aggregate across schemas)
 router.get('/positions/:wallet', async (req, res) => {
   try {
     const { wallet } = req.params;
 
-    // Get user's stake IDs
-    const stakeIds = await redis.sMembers(`staking:user:${wallet}`);
     const positions = [];
+    const seen = new Set();
 
-    for (const stakeId of stakeIds) {
-      const stakeData = await redis.hGetAll(`staking:${stakeId}`);
-      if (stakeData && Object.keys(stakeData).length > 0) {
-        positions.push({
-          stakeId: stakeData.stakeId,
-          amount: parseInt(stakeData.amount),
-          duration: parseInt(stakeData.duration),
-          apy: parseFloat(stakeData.apy),
-          expectedReward: parseInt(stakeData.expectedReward),
-          startDate: stakeData.startDate,
-          endDate: stakeData.endDate,
-          status: stakeData.status,
-          daysRemaining: Math.max(0, Math.ceil((new Date(stakeData.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
-        });
-      }
+    // Schema B (generic): staking:user:{wallet}
+    const genericIds = await redis.sMembers(`staking:user:${wallet}`);
+    for (const stakeId of genericIds) {
+      try {
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+        if (stakeData && Object.keys(stakeData).length > 0) {
+          positions.push({
+            stakeId: stakeData.stakeId,
+            amount: parseInt(stakeData.amount),
+            duration: parseInt(stakeData.duration),
+            apy: parseFloat(stakeData.apy),
+            expectedReward: parseInt(stakeData.expectedReward || 0),
+            startDate: stakeData.startDate,
+            endDate: stakeData.endDate,
+            status: stakeData.status,
+            daysRemaining: Math.max(0, Math.ceil((new Date(stakeData.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
+          });
+          seen.add(stakeId);
+        }
+      } catch (e) { /* ignore individual errors */ }
+    }
+
+    // Schema A (long-term set): user:{wallet}:long_term_stakes
+    const ltIds = await redis.sMembers(`user:${wallet}:long_term_stakes`);
+    for (const stakeId of ltIds) {
+      if (seen.has(stakeId)) continue;
+      try {
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+        if (stakeData && Object.keys(stakeData).length > 0) {
+          positions.push({
+            stakeId: stakeData.stakeId,
+            amount: parseInt(stakeData.amount),
+            duration: parseInt(stakeData.duration),
+            apy: parseFloat(stakeData.apy),
+            expectedReward: parseInt(stakeData.expectedReward || 0),
+            startDate: stakeData.startDate,
+            endDate: stakeData.endDate,
+            status: stakeData.status,
+            daysRemaining: Math.max(0, Math.ceil((new Date(stakeData.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
+          });
+          seen.add(stakeId);
+        }
+      } catch (e) { /* ignore individual errors */ }
     }
 
     return res.json({
