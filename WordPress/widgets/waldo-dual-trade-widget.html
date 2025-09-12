@@ -651,11 +651,11 @@
     }
     async function startStatusPoll(uuid, successMsg, onSuccess) {
       if (!uuid) return;
-      const url = `${API}/api/login/status?uuid=${encodeURIComponent(uuid)}`;
+      const url = `${API}/api/login/status/${encodeURIComponent(uuid)}`;
       let tries = 0; const max = 300; // up to 5 mins
       const id = setInterval(async () => {
         try {
-          const r = await fetch(url + `&_t=${Date.now()}`);
+          const r = await fetch(url + `?_t=${Date.now()}`);
           const s = await r.json();
           if (s?.signed) {
             clearInterval(id);
@@ -766,7 +766,18 @@
       if (account) { const suffix = account.slice(-6); s.textContent = `Connected: …${suffix}`; btn.style.display = 'inline-flex'; }
       else { s.textContent = 'Not connected'; btn.style.display = 'none'; }
     }
-    window.waldoDisconnect = function () { setConnected(null); showToast('Disconnected'); }
+    window.waldoDisconnect = function () {
+      setConnected(null);
+      try {
+        const tls = el('tlStatus'); if (tls) tls.textContent = 'Trustline: —';
+        const fa = el('fromAmount'); if (fa) fa.value = '';
+        const ta = el('toAmount'); if (ta) ta.value = '';
+        const min = el('swapMinOut'); if (min) min.textContent = '—';
+        const imp = el('swapImpact'); if (imp) imp.textContent = '—';
+        const msg = el('tradeMsg'); if (msg) msg.textContent = '';
+      } catch (_) { }
+      showToast('Disconnected');
+    }
     async function checkTrustline(account) {
       try { const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' }); const j = await r.json(); el('tlStatus').textContent = `Trustline: ${j?.trustline ? 'Yes' : 'No'}`; }
       catch (_) { el('tlStatus').textContent = 'Trustline: ?'; }

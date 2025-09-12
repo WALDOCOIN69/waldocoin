@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
+    "start:worker": "node autodistribute.js",
+    "start:all": "node index.js",
     "check:routes": "node checkRoutes.js",
     "validate:api": "node utils/validateRoutes.js",
     "lint": "echo \"(Optional) Add ESLint here later\""
