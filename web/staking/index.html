@@ -461,7 +461,7 @@
         if (qrImg) qrImg.style.display = 'none';
         if (mobileBtn) {
           mobileBtn.onclick = () => {
-            const deepLink = payload?.next?.always || payload?.next?.app || payload?.refs?.qr_uri;
+            const deepLink = payload?.next?.always || payload?.next?.app || payload?.refs?.qr_uri || (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : '');
             if (deepLink) window.location.href = deepLink;
           };
         }

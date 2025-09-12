@@ -310,8 +310,9 @@ router.post("/per-meme", async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    // Store staking record
-    await redis.hSet(`staking:${stakeId}`, stakeData);
+    // Store staking record (stringify values to satisfy Redis types)
+    const stakeDataStr = Object.fromEntries(Object.entries(stakeData).map(([k, v]) => [k, typeof v === 'string' ? v : String(v)]));
+    await redis.hSet(`staking:${stakeId}`, stakeDataStr);
 
     // Add to user's per-meme stakes
     await redis.sAdd(`user:${wallet}:per_meme_stakes`, stakeId);
