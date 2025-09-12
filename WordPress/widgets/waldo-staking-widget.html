@@ -446,11 +446,23 @@
       if (w) { WALLET = w; await stakeLoadInfo(); }
     }
     window.stakeDisconnect = function () {
-      WALLET = ''; document.getElementById('stakeWallet').value = '';
-      document.getElementById('stakeConnStatus').textContent = 'Not connected';
-      document.getElementById('btnStakeDisconnect')?.style.display = 'none';
-
-      document.getElementById('stakeTlStatus').textContent = 'Trustline: —';
+      WALLET = ''; CURRENT_BAL = 0;
+      const w = document.getElementById('stakeWallet'); if (w) w.value = '';
+      const s = document.getElementById('stakeConnStatus'); if (s) s.textContent = 'Not connected';
+      const b = document.getElementById('btnStakeDisconnect'); if (b) b.style.display = 'none';
+      const tl = document.getElementById('stakeTlStatus'); if (tl) tl.textContent = 'Trustline: —';
+      // Clear LT UI
+      const ltBal = document.getElementById('ltBal'); if (ltBal) ltBal.textContent = '—';
+      const ltList = document.getElementById('ltList'); if (ltList) ltList.innerHTML = '<div class="subline">No active long‑term stakes</div>';
+      const ltAmt = document.getElementById('ltAmount'); if (ltAmt) ltAmt.value = '';
+      const ltDur = document.getElementById('ltDuration'); if (ltDur) ltDur.value = '';
+      const ltMsg = document.getElementById('ltMsg'); if (ltMsg) ltMsg.textContent = '';
+      // Clear Per‑Meme UI
+      const pmBal = document.getElementById('pmBal'); if (pmBal) pmBal.textContent = '—';
+      const pmList = document.getElementById('pmList'); if (pmList) pmList.innerHTML = '<div class="subline">No active per‑meme stakes</div>';
+      const pmAmt = document.getElementById('pmAmount'); if (pmAmt) pmAmt.value = '';
+      const pmId = document.getElementById('pmMemeId'); if (pmId) pmId.value = '';
+      const pmMsg = document.getElementById('pmMsg'); if (pmMsg) pmMsg.textContent = '';
     }
 
     // Trustline

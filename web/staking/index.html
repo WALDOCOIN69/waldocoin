@@ -686,6 +686,7 @@
     function stakeDisconnect() {
       console.log('🔌 Disconnect clicked!');
       WALLET = '';
+      CURRENT_BAL = 0;
 
       const walletInput = document.getElementById('stakeWallet');
       const statusEl = document.getElementById('stakeConnStatus');
@@ -696,6 +697,30 @@
       if (statusEl) statusEl.textContent = 'Not connected';
       if (disconnectBtn) disconnectBtn.style.display = 'none';
       if (tlStatusEl) tlStatusEl.textContent = 'Trustline: —';
+
+      // Clear long-term UI
+      const ltBalEl = document.getElementById('ltBal');
+      const ltListEl = document.getElementById('ltList');
+      const ltAmtEl = document.getElementById('ltAmount');
+      const ltDurEl = document.getElementById('ltDuration');
+      const ltMsgEl = document.getElementById('ltMsg');
+      if (ltBalEl) ltBalEl.textContent = '—';
+      if (ltListEl) ltListEl.innerHTML = '<div class="subline">No active long‑term stakes</div>';
+      if (ltAmtEl) ltAmtEl.value = '';
+      if (ltDurEl) ltDurEl.value = '';
+      if (ltMsgEl) ltMsgEl.textContent = '';
+
+      // Clear per-meme (if present in this build)
+      const pmBalEl = document.getElementById('pmBal');
+      const pmListEl = document.getElementById('pmList');
+      const pmAmtEl = document.getElementById('pmAmount');
+      const pmIdEl = document.getElementById('pmMemeId');
+      const pmMsgEl = document.getElementById('pmMsg');
+      if (pmBalEl) pmBalEl.textContent = '—';
+      if (pmListEl) pmListEl.innerHTML = '<div class="subline">No active per‑meme stakes</div>';
+      if (pmAmtEl) pmAmtEl.value = '';
+      if (pmIdEl) pmIdEl.value = '';
+      if (pmMsgEl) pmMsgEl.textContent = '';
     }
     window.stakeDisconnect = stakeDisconnect;
 
