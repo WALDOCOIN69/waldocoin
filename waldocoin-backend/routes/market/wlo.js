@@ -22,8 +22,11 @@ router.get("/", async (_req, res) => {
     // Magnetic-derived rate (cached). Only expose if Magnetic is configured.
     if (process.env.MAGNETIC_PRICE_URL) {
       const waldoPerXrp = await getWaldoPerXrp();
-      result.waldoPerXrp = waldoPerXrp;
-      result.xrpPerWlo = waldoPerXrp > 0 ? 1 / waldoPerXrp : null;
+      // Treat default presale fallback (10000) as "not available" so we can fall back to XRPL mid
+      if (typeof waldoPerXrp === 'number' && isFinite(waldoPerXrp) && waldoPerXrp > 0 && waldoPerXrp !== 10000) {
+        result.waldoPerXrp = waldoPerXrp;
+        result.xrpPerWlo = 1 / waldoPerXrp;
+      }
     }
   } catch (e) {
     // ignore; keep null

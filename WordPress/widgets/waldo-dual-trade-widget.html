@@ -921,7 +921,7 @@
       recomputeSwap();
     }));
     el('fromAmount').addEventListener('input', recomputeSwap);
-    refreshSwapMarket(); setInterval(refreshSwapMarket, 60000);
+    refreshSwapMarket(); setInterval(refreshSwapMarket, 15000);
 
     window.waldoSwap = async function () {
       const amt = parseFloat(el('fromAmount').value);
