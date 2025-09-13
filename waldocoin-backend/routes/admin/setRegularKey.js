@@ -20,7 +20,7 @@ router.post("/", async (req, res) => {
       return res.status(500).json({ success: false, error: "Distributor wallet not configured (WALDO_DISTRIBUTOR_WALLET)" });
     }
 
-    const payload = await xummClient.payload.create({
+    const payload = await xummClient.payload.createAndSubscribe({
       txjson: {
         TransactionType: "SetRegularKey",
         Account: ILL,
@@ -30,6 +30,10 @@ router.post("/", async (req, res) => {
         submit: true,
         expire: 300
       }
+    }, (event) => {
+      if (event?.data?.signed === false) return true; // user rejected
+      if (event?.data?.signed === true) return true;  // user signed
+      return undefined;
     });
 
     return res.json({ success: true, uuid: payload.uuid, next: payload.next, refs: payload.refs });
