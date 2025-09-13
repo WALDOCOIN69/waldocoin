@@ -62,8 +62,6 @@ import adminSendWaldoRoute from "./routes/admin/sendWaldo.js";
 import adminTrustlineRoute from "./routes/admin/trustline.js";
 import adminVolumeBotRoute from "./routes/admin/volumeBot.js";
 
-import adminPriceRoute from "./routes/admin/price.js";
-
 
 
 const startServer = async () => {
@@ -135,6 +133,7 @@ const startServer = async () => {
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
   app.use("/api/xrpl/trade", (await import("./routes/xrpl/trade.js")).default);
   app.use("/api/xrpl/trustline", (await import("./routes/xrpl/trustline.js")).default);
+  app.use("/api/xrpl/balance", (await import("./routes/xrpl/balance.js")).default);
   app.use("/api/debug/autodistribute", (await import("./routes/debug/autodistribute.js")).default);
 
 
@@ -164,8 +163,6 @@ const startServer = async () => {
   app.use("/api/admin/volume-bot", adminVolumeBotRoute);
 
   // Note: User authentication is handled by XUMM login flow in /api/login
-
-  app.use("/api/admin/price", adminPriceRoute);
 
   app.use("/api/presale", presaleRoute);
   app.use('/api/presale', presaleLookup);

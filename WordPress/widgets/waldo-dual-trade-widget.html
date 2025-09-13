@@ -19,6 +19,7 @@
       <div class="row status-row">
         <div id="connStatus" class="conn">Not connected</div>
         <div id="tlStatus" class="conn">Trustline: ?</div>
+        <div id="balRow" class="conn">Balances: XRP <span id="balXrp">—</span> • WLO <span id="balWlo">—</span></div>
       </div>
       <div class="swap-card">
         <div class="swap-row">
@@ -912,7 +913,7 @@
               clearInterval(id);
               if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
               showToast(successMsg || 'Swap completed');
-              try { loadMarket(); refreshSwapMarket(); checkTrustline(s.account); } catch (_) { }
+              try { loadMarket(); refreshSwapMarket(); checkTrustline(s.account); if (s?.account) loadBalances(s.account); } catch (_) { }
               xummClose();
               return;
             }
@@ -1044,13 +1045,30 @@
         s.textContent = `Connected: …${suffix}`;
         btn.style.display = 'inline-flex';
         try { const tls = el('tlStatus'); if (tls) tls.textContent = 'Trustline: Checking…'; checkTrustline(account); } catch (_) { }
+        try { loadBalances(account); } catch (_) { }
       } else {
         s.textContent = 'Not connected';
         btn.style.display = 'none';
         try { const tls = el('tlStatus'); if (tls) tls.textContent = 'Trustline: —'; } catch (_) { }
+        try { el('balXrp').textContent = '—'; el('balWlo').textContent = '—'; } catch (_) { }
       }
       try { updateSwapAvailability(); } catch (_) { }
     }
+    async function loadBalances(account) {
+      try {
+        const r = await fetch(`${API}/api/xrpl/balance?account=${encodeURIComponent(account)}`, { cache: 'no-store' });
+        const j = await r.json();
+        if (j?.success) {
+          if (Number.isFinite(j.xrp)) el('balXrp').textContent = Number(j.xrp).toFixed(6);
+          else el('balXrp').textContent = '—';
+          if (Number.isFinite(j.waldo)) el('balWlo').textContent = Number(j.waldo).toLocaleString(undefined, { maximumFractionDigits: 6 });
+          else el('balWlo').textContent = '—';
+        }
+      } catch (e) {
+        try { el('balXrp').textContent = '—'; el('balWlo').textContent = '—'; } catch (_) { }
+      }
+    }
+
     window.waldoDisconnect = function () {
       setConnected(null);
       trustlineStatus = null;
@@ -1076,6 +1094,7 @@
         el('tlStatus').textContent = 'Trustline: ?';
       }
       try { updateSwapAvailability(); } catch (_) { }
+      try { if (account) loadBalances(account); } catch (_) { }
       return trustlineStatus;
     }
 
