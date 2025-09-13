@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WALDO Staking</title>
+  <title>WALDO Lock & Boost</title>
   <style>
     html,
     body {
@@ -309,8 +309,8 @@
 <body>
   <div class="wrap">
     <div class="top">
-      <div class="brand"><b>WALDO</b> Staking</div>
-      <div class="subtitle">Earn 12%–35% APY • Early unstake penalty 15%</div>
+      <div class="brand"><b>WALDO</b> Lock & Boost</div>
+      <div class="subtitle">Bonus: +12% to +35% • Early unlock reduces WALDO by 15%</div>
     </div>
 
     <script>
@@ -321,8 +321,8 @@
     <!-- WORKING STAKING WIDGET -->
     <div class="waldo-stake collapsed" id="waldoStake">
       <div class="stake-head">
-        <div class="title">🟢 WALDO Staking</div>
-        <div class="sub">Earn 12%–35% APY • Early unstake penalty 15%</div>
+        <div class="title">🟢 WALDO Lock & Boost</div>
+        <div class="sub">Bonus: +12% to +35% • Early unlock reduces WALDO by 15%</div>
         <div class="tabs">
           <button id="stakeToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
           <button class="tab active" data-tab="long">Long-Term</button>
@@ -370,19 +370,19 @@
                 <label>Duration</label>
                 <select id="ltDuration">
                   <option value="">Select duration</option>
-                  <option value="30">30 days — 12% APY</option>
-                  <option value="90">90 days — 18% APY</option>
-                  <option value="180">180 days — 25% APY</option>
-                  <option value="365">365 days — 35% APY</option>
+                  <option value="30">30 days — +12% Bonus</option>
+                  <option value="90">90 days — +18% Bonus</option>
+                  <option value="180">180 days — +25% Bonus</option>
+                  <option value="365">365 days — +35% Bonus</option>
                 </select>
               </div>
             </div>
-            <div class="actions"><button class="btn buy" onclick="createLongTermStake()">Stake</button></div>
+            <div class="actions"><button class="btn buy" onclick="createLongTermStake()">Lock</button></div>
             <div id="ltMsg" class="msg"></div>
           </div>
 
           <div class="list">
-            <h4>Your Active Long-Term Stakes</h4>
+            <h4>Your Active Long-Term Locks</h4>
             <div id="ltList"></div>
           </div>
         </div>
@@ -402,13 +402,13 @@
                 <input id="pmMemeId" type="text" placeholder="tweet123" />
               </div>
             </div>
-            <div class="subline">Per‑Meme: 30 days • 5% staking fee vs 10% instant • +15% bonus</div>
-            <div class="actions"><button class="btn buy" onclick="createPerMemeStake()">Stake Per‑Meme</button></div>
+            <div class="subline">Per‑Meme: 30 days • 5% lock fee vs 10% instant • +15% bonus</div>
+            <div class="actions"><button class="btn buy" onclick="createPerMemeStake()">Lock Per‑Meme</button></div>
             <div id="pmMsg" class="msg"></div>
           </div>
 
           <div class="list">
-            <h4>Your Active Per‑Meme Stakes</h4>
+            <h4>Your Active Per‑Meme Locks</h4>
             <div id="pmList"></div>
           </div>
         </div>
@@ -551,22 +551,22 @@
         root.innerHTML = list.map(s => `
           <div class="stake-item">
             <div>Long‑Term</div>
-            <div class="subline">Amount: ${s.amount} WALDO • Duration: ${s.duration}d • APY: ${s.apy}</div>
-            <div class="subline">Days Remaining: ${s.daysRemaining} • Expected Reward: ${s.expectedReward}</div>
-            <button class="btn mini" onclick="stakeUnstake('${s.stakeId}')">Unstake</button>
+            <div class="subline">Amount: ${s.amount} WALDO • Duration: ${s.duration}d • Bonus: +${s.apy}%</div>
+            <div class="subline">Days Remaining: ${s.daysRemaining} • Estimated WALDO: ${s.expectedReward}</div>
+            <button class="btn mini" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>
           </div>
-        `).join('') || 'No active long‑term stakes';
+        `).join('') || 'No active long‑term locks';
       }
       function renderPerMeme(list) {
         const root = document.getElementById('pmList');
         root.innerHTML = list.map(s => `
           <div class="stake-item">
             <div>Per‑Meme</div>
-            <div class="subline">Meme: ${s.memeId} • Staked: ${s.stakedAmount} • Bonus: ${s.bonusAmount} • Total: ${s.totalReward}</div>
+            <div class="subline">Meme: ${s.memeId} • Locked: ${s.stakedAmount} • Bonus: ${s.bonusAmount} • Total WALDO: ${s.totalReward}</div>
             <div class="subline">Days Remaining: ${s.daysRemaining}</div>
-            <button class="btn mini" onclick="stakeUnstake('${s.stakeId}')">Unstake</button>
+            <button class="btn mini" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>
           </div>
-        `).join('') || 'No active per‑meme stakes';
+        `).join('') || 'No active per‑meme locks';
       }
 
       // Create stakes
@@ -579,8 +579,8 @@
         try {
           const r = await fetch(`${API}/api/staking/long-term`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur }) });
           const j = await r.json();
-          if (!j.success) throw new Error(j.error || 'Stake failed');
-          msg.textContent = `Long-term stake created! Expected reward: ${j.stakeData.expectedReward} WALDO`;
+          if (!j.success) throw new Error(j.error || 'Lock failed');
+          msg.textContent = `Long-term lock created! Estimated WALDO: ${j.stakeData.expectedReward} WALDO`;
           await stakeLoadInfo();
         } catch (e) { msg.textContent = 'Error: ' + e.message; }
       }
@@ -594,15 +594,15 @@
         try {
           const r = await fetch(`${API}/api/staking/per-meme`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, memeId }) });
           const j = await r.json();
-          if (!j.success) throw new Error(j.error || 'Stake failed');
-          msg.textContent = `Per‑meme stake created! Total reward: ${j.stakeData.totalReward} WALDO`;
+          if (!j.success) throw new Error(j.error || 'Lock failed');
+          msg.textContent = `Per‑meme lock created! Total WALDO: ${j.stakeData.totalReward} WALDO`;
           await stakeLoadInfo();
         } catch (e) { msg.textContent = 'Error: ' + e.message; }
       }
 
       // Unstake
       window.stakeUnstake = async function (stakeId) {
-        if (!confirm('Unstake now? Early unstaking incurs a 15% penalty.')) return;
+        if (!confirm('Unlock now? Early unlocking reduces WALDO by 15%.')) return;
         try {
           const r = await fetch(`${API}/api/staking/unstake`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
           const j = await r.json();

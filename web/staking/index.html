@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WALDO Staking</title>
+  <title>WALDO Lock & Boost</title>
   <style>
     html,
     body {
@@ -323,8 +323,8 @@
 <body>
   <div class="wrap">
     <div class="top">
-      <div class="brand"><b>WALDO</b> Staking</div>
-      <div class="subtitle">Earn 12%–35% APY • Early unstake penalty 15%</div>
+      <div class="brand"><b>WALDO</b> Lock & Boost</div>
+      <div class="subtitle">Bonus: +12% to +35% • Early unlock reduces WALDO by 15%</div>
     </div>
 
     <script>
@@ -335,8 +335,8 @@
     <!-- WORKING STAKING WIDGET -->
     <div class="waldo-stake" id="waldoStake">
       <div class="stake-head">
-        <div class="title">🟢 WALDO Staking</div>
-        <div class="sub">Earn 12%–35% APY • Early unstake penalty 15%</div>
+        <div class="title">🟢 WALDO Lock & Boost</div>
+        <div class="sub">Bonus: +12% to +35% • Early unlock reduces WALDO by 15%</div>
         <div class="tabs">
           <button id="stakeToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
           <button class="tab active" data-tab="long">Long-Term</button>
@@ -384,19 +384,19 @@
                 <label>Duration</label>
                 <select id="ltDuration">
                   <option value="">Select duration</option>
-                  <option value="30">30 days — 12% APY</option>
-                  <option value="90">90 days — 18% APY</option>
-                  <option value="180">180 days — 25% APY</option>
-                  <option value="365">365 days — 35% APY</option>
+                  <option value="30">30 days — +12% Bonus</option>
+                  <option value="90">90 days — +18% Bonus</option>
+                  <option value="180">180 days — +25% Bonus</option>
+                  <option value="365">365 days — +35% Bonus</option>
                 </select>
               </div>
             </div>
-            <div class="actions"><button class="btn buy" onclick="createLongTermStake()">Stake</button></div>
+            <div class="actions"><button class="btn buy" onclick="createLongTermStake()">Lock</button></div>
             <div id="ltMsg" class="msg"></div>
           </div>
 
           <div class="list">
-            <h4>Your Active Long-Term Stakes</h4>
+            <h4>Your Active Long-Term Locks</h4>
             <div id="ltList"></div>
           </div>
         </div>
@@ -429,7 +429,7 @@
   </div>
 
   <script>
-    console.log('🚀 WALDO Staking Script Loading...');
+    console.log('🚀 WALDO Lock & Boost Script Loading...');
 
     // Configuration - hardcoded like the working trade widget
     const API = "https://waldocoin-backend-api.onrender.com";
@@ -654,7 +654,7 @@
           const stakes = (stakingResult && stakingResult.longTermStaking && Array.isArray(stakingResult.longTermStaking.activeStakes)) ? stakingResult.longTermStaking.activeStakes : [];
           if (ltListEl) {
             if (!stakes.length) {
-              ltListEl.innerHTML = '<div class="subline">No active long-term stakes yet.</div>';
+              ltListEl.innerHTML = '<div class="subline">No active long-term locks yet.</div>';
             } else {
               ltListEl.innerHTML = stakes.map(s => {
                 const amt = Number(s.amount || 0).toLocaleString();
@@ -705,7 +705,7 @@
       const ltDurEl = document.getElementById('ltDuration');
       const ltMsgEl = document.getElementById('ltMsg');
       if (ltBalEl) ltBalEl.textContent = '—';
-      if (ltListEl) ltListEl.innerHTML = '<div class="subline">No active long‑term stakes</div>';
+      if (ltListEl) ltListEl.innerHTML = '<div class="subline">No active long‑term locks</div>';
       if (ltAmtEl) ltAmtEl.value = '';
       if (ltDurEl) ltDurEl.value = '';
       if (ltMsgEl) ltMsgEl.textContent = '';
@@ -717,7 +717,7 @@
       const pmIdEl = document.getElementById('pmMemeId');
       const pmMsgEl = document.getElementById('pmMsg');
       if (pmBalEl) pmBalEl.textContent = '—';
-      if (pmListEl) pmListEl.innerHTML = '<div class="subline">No active per‑meme stakes</div>';
+      if (pmListEl) pmListEl.innerHTML = '<div class="subline">No active per‑meme locks</div>';
       if (pmAmtEl) pmAmtEl.value = '';
       if (pmIdEl) pmIdEl.value = '';
       if (pmMsgEl) pmMsgEl.textContent = '';
@@ -762,7 +762,7 @@
           return;
         }
 
-        if (msgEl) msgEl.textContent = 'Creating stake...';
+        if (msgEl) msgEl.textContent = 'Creating lock...';
 
         const response = await fetch(`${API}/api/staking/long-term`, {
           method: 'POST',
@@ -773,16 +773,16 @@
         const result = await response.json();
 
         if (result.success) {
-          if (msgEl) msgEl.textContent = `✅ Long-term stake created! Expected reward: ${result.stakeData.expectedReward} WALDO`;
+          if (msgEl) msgEl.textContent = `✅ Long-term lock created! Estimated WALDO: ${result.stakeData.expectedReward} WALDO`;
           // Reload wallet info
           stakeLoadInfo();
         } else {
           const detail = result.details ? ` - ${result.details}` : '';
-          throw new Error((result.error || 'Stake creation failed') + detail);
+          throw new Error((result.error || 'Lock creation failed') + detail);
         }
 
       } catch (error) {
-        console.error('❌ Long-term stake error:', error);
+        console.error('❌ Long-term lock error:', error);
         const msgEl = document.getElementById('ltMsg');
         if (msgEl) msgEl.textContent = 'Error: ' + error.message;
       }
