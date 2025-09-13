@@ -44,15 +44,6 @@ const isNativeXRP = (tx) =>
     console.log(`📡 Listening for XRP sent to: ${distributorWallet}`);
     console.log(`✉️  WALDO sender address: ${senderWalletObj.classicAddress}`);
     try { await redis.set('autodistribute:status', JSON.stringify({ ts: Date.now(), listening: distributorWallet, sender: senderWalletObj.classicAddress })); } catch (_) { }
-    // Heartbeat for health endpoint
-    try {
-      setInterval(async () => {
-        try {
-          await redis.set('autodistribute:status', JSON.stringify({ ts: Date.now(), listening: distributorWallet, sender: senderWalletObj.classicAddress }));
-        } catch (_) { }
-      }, 30000);
-    } catch (_) { }
-
     // Catch-up poller in case subscription misses events (or worker restarts)
     async function processIncomingPayment(tx) {
       try {
@@ -114,17 +105,23 @@ const isNativeXRP = (tx) =>
 
     setInterval(async () => {
       try {
-        // Get latest ledger and last processed marker
-        const info = await client.request({ command: 'ledger_current' });
-        const latest = info.result?.ledger_current_index;
+        // Get validated ledger index and last processed marker
+        const info = await client.request({ command: 'ledger', ledger_index: 'validated' });
+        const latest = Number(info.result?.ledger_index || info.result?.ledger?.ledger_index);
+        if (!Number.isFinite(latest) || latest <= 0) throw new Error('No validated ledger index');
+
         let last = 0;
         try { last = Number(await redis.get('autodistribute:last_ledger')) || 0; } catch (_) { }
-        const minLedger = (last && isFinite(last) && last > 0) ? last : (latest - 2000);
+        let minCandidate = (last && isFinite(last) && last > 0) ? last : (latest - 2000);
+        if (!Number.isFinite(minCandidate)) minCandidate = latest - 2000;
+        const minLedger = Math.max(1, Math.min(latest - 1, Math.floor(minCandidate)));
+        const maxLedger = Math.max(minLedger, latest);
+
         const resp = await client.request({
           command: 'account_tx',
           account: distributorWallet,
           ledger_index_min: minLedger,
-          ledger_index_max: latest,
+          ledger_index_max: maxLedger,
           binary: false,
           limit: 50,
           forward: true
@@ -135,16 +132,24 @@ const isNativeXRP = (tx) =>
           const meta = entry?.meta;
           const validated = entry?.validated !== false;
           if (!validated || !tx || meta?.TransactionResult !== 'tesSUCCESS') continue;
-          if (tx.TransactionType !== 'Payment' || tx.Destination !== distributorWallet || typeof tx.Amount !== 'string') continue;
+          if (tx.TransactionType !== 'Payment' || tx.Destination !== distributorWallet) continue;
           const txHash = tx?.hash || entry?.hash;
           let seen = false;
           try { seen = await redis.sIsMember('autodistribute:processed', txHash); } catch (_) { }
           if (txHash && seen) continue;
-          await processIncomingPayment(tx);
+
+          if (typeof tx.Amount === 'string') {
+            await processIncomingPayment(tx);
+          } else if (isWloIOU(tx)) {
+            await processIncomingWloPayment(tx);
+          }
           try { if (txHash) await redis.sAdd('autodistribute:processed', txHash); } catch (_) { }
           try { if (entry?.ledger_index) await redis.set('autodistribute:last_ledger', String(entry.ledger_index)); } catch (_) { }
         }
       } catch (e) {
+        if (/ledger index malformed/i.test(e?.message || '')) {
+          try { await redis.del('autodistribute:last_ledger'); } catch (_) { }
+        }
         console.warn('⚠️ Poller error:', e.message);
       }
     }, 15000);
@@ -173,6 +178,10 @@ const isNativeXRP = (tx) =>
     client.on("transaction", async (event) => {
       if (!event.validated) { return; }
       const tx = event.transaction;
+      if (isWloIOU(tx)) {
+        await processIncomingWloPayment(tx);
+        return;
+      }
       if (!isNativeXRP(tx)) {
         console.warn("⚠️ Ignored event - not a valid XRP Payment TX");
         return;
