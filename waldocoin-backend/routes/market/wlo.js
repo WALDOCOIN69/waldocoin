@@ -5,12 +5,13 @@ import { redis } from "../../redisClient.js";
 import getWaldoPerXrp from "../../utils/getWaldoPerXrp.js";
 
 const router = express.Router();
+const USE_XRPL_ONLY = String(process.env.PRICE_SOURCE || '').toUpperCase() === 'XRPL_ONLY';
 
 // GET /api/market/wlo - top-of-book + Magnetic-derived rate
 router.get("/", async (_req, res) => {
   const result = {
     success: true,
-    source: { price: "xrpl+magnetic", volume: "redis|unknown", magnetic: Boolean(process.env.MAGNETIC_PRICE_URL) },
+    source: { price: USE_XRPL_ONLY ? 'xrpl' : 'xrpl+magnetic', volume: 'redis|unknown', magnetic: Boolean(process.env.MAGNETIC_PRICE_URL) && !USE_XRPL_ONLY },
     waldoPerXrp: null,
     xrpPerWlo: null,
     best: { bid: null, ask: null, mid: null },
@@ -19,8 +20,8 @@ router.get("/", async (_req, res) => {
   };
 
   try {
-    // Magnetic-derived rate (cached). Only expose if Magnetic is configured.
-    if (process.env.MAGNETIC_PRICE_URL) {
+    // Magnetic-derived rate (cached). Only expose if Magnetic is configured and not explicitly disabled.
+    if (!USE_XRPL_ONLY && process.env.MAGNETIC_PRICE_URL) {
       const waldoPerXrp = await getWaldoPerXrp();
       // Treat default presale fallback (10000) as "not available" so we can fall back to XRPL mid
       if (typeof waldoPerXrp === 'number' && isFinite(waldoPerXrp) && waldoPerXrp > 0 && waldoPerXrp !== 10000) {
