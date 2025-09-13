@@ -47,7 +47,8 @@
         </div>
         <div class="minline">Min receive: <span id="swapMinOut">—</span></div>
         <div class="subline">Price: <span id="swapPrice">—</span> • Impact: <span id="swapImpact">—</span></div>
-        <div class="actions"><button class="btn buy" onclick="waldoSwap()">Swap</button></div>
+        <div class="actions"><button id="btnSwap" class="btn buy" onclick="waldoSwap()" disabled>Connect to
+            swap</button></div>
       </div>
       <div id="tradeMsg" class="msg"></div>
     </div>
@@ -480,6 +481,14 @@
     text-decoration: none
   }
 
+
+  .btn[disabled] {
+    opacity: .55;
+    cursor: not-allowed;
+    filter: grayscale(0.2) brightness(0.92);
+    box-shadow: none !important;
+  }
+
   .btn.buy {
     background: linear-gradient(90deg, var(--mint), #19e39a);
     color: #06110E;
@@ -772,12 +781,28 @@
     };
     window.waldoTradeToggle = function () { collapsed = !collapsed; applyCollapsed(); };
 
+    // Enable/disable Swap based on connection & trustline
+    function updateSwapAvailability() {
+      const b = document.getElementById('btnSwap');
+      if (!b) return;
+      if (!connectedAccount) { b.disabled = true; b.textContent = 'Connect to swap'; return; }
+      if (trustlineStatus === true) { b.disabled = false; b.textContent = 'Swap'; return; }
+      if (trustlineStatus === false) { b.disabled = true; b.textContent = 'Add trustline to swap'; return; }
+      b.disabled = true; b.textContent = 'Checking trustline…';
+    }
+
+
+
     // Connection & trustline state (for automatic flow)
     let connectedAccount = null;
     let trustlineStatus = null; // true/false/unknown
     window._afterConnect = [];
 
     window.waldoTradeIsCollapsed = function () { return root.classList.contains('collapsed'); };
+
+
+    // Initialize swap button availability after state vars exist
+    try { updateSwapAvailability(); } catch (_) { }
 
     // Toast & Status (top-level)
     function showToast(msg) {
@@ -1022,10 +1047,13 @@
       } else {
         s.textContent = 'Not connected';
         btn.style.display = 'none';
+        try { const tls = el('tlStatus'); if (tls) tls.textContent = 'Trustline: —'; } catch (_) { }
       }
+      try { updateSwapAvailability(); } catch (_) { }
     }
     window.waldoDisconnect = function () {
       setConnected(null);
+      trustlineStatus = null;
       try {
         const tls = el('tlStatus'); if (tls) tls.textContent = 'Trustline: —';
         const fa = el('fromAmount'); if (fa) fa.value = '';
@@ -1034,6 +1062,7 @@
         const imp = el('swapImpact'); if (imp) imp.textContent = '—';
         const msg = el('tradeMsg'); if (msg) msg.textContent = '';
       } catch (_) { }
+      try { updateSwapAvailability(); } catch (_) { }
       showToast('Disconnected');
     }
     async function checkTrustline(account) {
@@ -1046,6 +1075,7 @@
         trustlineStatus = null;
         el('tlStatus').textContent = 'Trustline: ?';
       }
+      try { updateSwapAvailability(); } catch (_) { }
       return trustlineStatus;
     }
 
