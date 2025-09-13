@@ -18,7 +18,7 @@
       </div>
       <div class="row status-row">
         <div id="connStatus" class="conn">Not connected</div>
-        <div id="tlStatus" class="conn">Trustline: —</div>
+        <div id="tlStatus" class="conn">Trustline: ?</div>
       </div>
       <div class="swap-card">
         <div class="swap-row">
@@ -841,10 +841,18 @@
       try { waldoConnect(); } catch (_) { }
     };
     window.ensureTrustlineThen = function (cb) {
-      if (trustlineStatus === true) { try { return cb && cb(); } catch (_) { } return; }
-      if (!connectedAccount) return window.ensureConnectedThen(() => window.ensureTrustlineThen(cb));
-      try { waldoTrustline(); } catch (_) { }
-      pollTrustlineUntilTrue(connectedAccount).then(() => { try { cb && cb(); } catch (_) { } });
+      const proceed = () => {
+        if (trustlineStatus === true) { try { return cb && cb(); } catch (_) { } return; }
+        if (trustlineStatus === false) {
+          try { waldoTrustline(); } catch (_) { }
+          return pollTrustlineUntilTrue(connectedAccount).then(() => { try { cb && cb(); } catch (_) { } });
+        }
+        // Unknown status: check first, then recurse
+        try { checkTrustline(connectedAccount).then(() => window.ensureTrustlineThen(cb)).catch(() => window.ensureTrustlineThen(cb)); } catch (_) { window.ensureTrustlineThen(cb); }
+      };
+      if (!connectedAccount) return window.ensureConnectedThen(proceed);
+      try { const tls = el('tlStatus'); if (tls) tls.textContent = 'Trustline: Checking…'; } catch (_) { }
+      proceed();
     };
 
 
@@ -1006,8 +1014,15 @@
     function setConnected(account) {
       connectedAccount = account || null;
       const s = el('connStatus'); const btn = document.getElementById('btnDisconnect');
-      if (account) { const suffix = account.slice(-6); s.textContent = `Connected: …${suffix}`; btn.style.display = 'inline-flex'; }
-      else { s.textContent = 'Not connected'; btn.style.display = 'none'; }
+      if (account) {
+        const suffix = account.slice(-6);
+        s.textContent = `Connected: …${suffix}`;
+        btn.style.display = 'inline-flex';
+        try { const tls = el('tlStatus'); if (tls) tls.textContent = 'Trustline: Checking…'; checkTrustline(account); } catch (_) { }
+      } else {
+        s.textContent = 'Not connected';
+        btn.style.display = 'none';
+      }
     }
     window.waldoDisconnect = function () {
       setConnected(null);

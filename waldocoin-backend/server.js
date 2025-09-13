@@ -61,7 +61,8 @@ import presaleLookup from "./routes/presaleLookup.js";
 import adminSendWaldoRoute from "./routes/admin/sendWaldo.js";
 import adminTrustlineRoute from "./routes/admin/trustline.js";
 import adminVolumeBotRoute from "./routes/admin/volumeBot.js";
-import adminSetRegularKeyRoute from "./routes/admin/setRegularKey.js";
+import adminNewWalletRoute from "./routes/admin/newWallet.js";
+
 
 
 
@@ -161,7 +162,8 @@ const startServer = async () => {
   app.use("/api/admin/send-waldo", adminSendWaldoRoute);
   app.use("/api/admin/trustline", adminTrustlineRoute);
   app.use("/api/admin/volume-bot", adminVolumeBotRoute);
-  app.use("/api/admin/set-regular-key", adminSetRegularKeyRoute);
+  app.use("/api/admin/new-wallet", adminNewWalletRoute);
+
 
   // Note: User authentication is handled by XUMM login flow in /api/login
 
