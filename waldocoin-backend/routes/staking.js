@@ -7,7 +7,8 @@ import xrpl from 'xrpl';
 
 const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || 'WLO').toUpperCase();
-const STAKING_VAULT = process.env.WALDO_STAKING_VAULT || process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || process.env.WALDO_TREASURY_WALLET || process.env.TREASURY_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+// Prefer dedicated staking vault or Treasury; only fall back to distributor if no vault/treasury configured
+const STAKING_VAULT = process.env.WALDO_STAKING_VAULT || process.env.WALDO_TREASURY_WALLET || process.env.TREASURY_WALLET || process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rnWfL48YCknW6PYewFLKfMKUymHCfj3aww';
 
 // ✅ DUAL STAKING SYSTEM CONFIGURATION
 
