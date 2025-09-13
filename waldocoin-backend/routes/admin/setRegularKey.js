@@ -23,7 +23,7 @@ router.post("/", async (req, res) => {
     const payload = await xummClient.payload.createAndSubscribe({
       txjson: {
         TransactionType: "SetRegularKey",
-        Account: ILL,
+        // Account intentionally omitted: Xaman will set it to the wallet you sign with
         RegularKey: regularKeyAddress
       },
       options: {
