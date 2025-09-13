@@ -848,22 +848,34 @@
     };
 
 
-    // Trade-specific status poll: triggers WLO delivery when signed
+    // Trade-specific status poll: waits for WALDO delivery after signature
     async function startTradeStatusPoll(uuid, successMsg, onSuccess) {
       if (!uuid) return;
       const url = `${API}/api/xrpl/trade/status/${encodeURIComponent(uuid)}`;
-      let tries = 0; const max = 300; // up to 5 mins
+      let tries = 0; const max = 360; // up to 6 mins
       const id = setInterval(async () => {
         try {
           const r = await fetch(url + `?_t=${Date.now()}`);
           const s = await r.json();
           if (s?.signed) {
-            clearInterval(id);
-            if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
-            if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
-            showToast(successMsg || 'Success');
-            try { loadMarket(); refreshSwapMarket(); } catch (_) { }
-            xummClose();
+            if (s?.account) { setConnected(s.account); }
+            if (s?.error === 'missing_sender_secret') {
+              clearInterval(id);
+              el('tradeMsg').textContent = 'Signed, but delivery is not configured (admin: set WALDO_SENDER_SECRET or WALDO_DISTRIBUTOR_SECRET)';
+              xummClose();
+              return;
+            }
+            if (s?.delivered) {
+              clearInterval(id);
+              if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
+              showToast(successMsg || 'Swap completed');
+              try { loadMarket(); refreshSwapMarket(); checkTrustline(s.account); } catch (_) { }
+              xummClose();
+              return;
+            }
+            // Signed but not yet delivered: keep polling and show interim status once
+            const msg = el('tradeMsg');
+            if (msg && !msg._waitingShown) { msg.textContent = 'Signed. Delivering WALDO…'; msg._waitingShown = true; }
           }
           if (++tries >= max) clearInterval(id);
         } catch (_) { clearInterval(id); }
