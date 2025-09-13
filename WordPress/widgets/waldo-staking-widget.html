@@ -65,31 +65,7 @@
       </div>
     </div>
 
-    <!-- Per-meme panel -->
-    <div class="panel" id="panelMeme" style="display:none;">
-      <div class="card">
-        <div class="grid">
-          <div class="field">
-            <div class="subline balance-line">Balance: <span id="pmBal">—</span> WLO <button class="btn mini"
-                type="button" onclick="pmSetMax()">Max</button></div>
-            <label>Amount (WALDO)</label>
-            <input id="pmAmount" type="number" min="1" step="1" placeholder="Any amount" />
-          </div>
-          <div class="field">
-            <label>Meme ID</label>
-            <input id="pmMemeId" type="text" placeholder="tweet123" />
-          </div>
-        </div>
-        <div class="subline">Per‑Meme: 30 days • 5% lock fee vs 10% instant • +15% bonus</div>
-        <div class="actions"><button class="btn buy" onclick="createPerMemeStake()">Lock Per‑Meme</button></div>
-        <div id="pmMsg" class="msg"></div>
-      </div>
 
-      <div class="list">
-        <h4>Your Active Per‑Meme Lock & Boost</h4>
-        <div id="pmList"></div>
-      </div>
-    </div>
   </div>
 
   <!-- XUMM Modal (minimal) -->
@@ -461,12 +437,7 @@
       const ltAmt = document.getElementById('ltAmount'); if (ltAmt) ltAmt.value = '';
       const ltDur = document.getElementById('ltDuration'); if (ltDur) ltDur.value = '';
       const ltMsg = document.getElementById('ltMsg'); if (ltMsg) ltMsg.textContent = '';
-      // Clear Per‑Meme UI
-      const pmBal = document.getElementById('pmBal'); if (pmBal) pmBal.textContent = '—';
-      const pmList = document.getElementById('pmList'); if (pmList) pmList.innerHTML = '<div class="subline">No active per‑meme locks</div>';
-      const pmAmt = document.getElementById('pmAmount'); if (pmAmt) pmAmt.value = '';
-      const pmId = document.getElementById('pmMemeId'); if (pmId) pmId.value = '';
-      const pmMsg = document.getElementById('pmMsg'); if (pmMsg) pmMsg.textContent = '';
+
     }
 
     // Trustline
@@ -499,10 +470,10 @@
         CURRENT_BAL = (j.userInfo && typeof j.userInfo.currentBalance === 'number') ? j.userInfo.currentBalance : 0;
         const balStr = Math.floor(CURRENT_BAL).toLocaleString();
         document.getElementById('ltBal')?.textContent = balStr;
-        document.getElementById('pmBal')?.textContent = balStr;
+
         // Render lists
         renderLongTerm(j.longTermStaking.activeStakes || []);
-        renderPerMeme(j.perMemeStaking.activeStakes || []);
+
         document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
       } catch (e) { alert('Load failed: ' + e.message); }
     }
@@ -513,12 +484,7 @@
         document.getElementById('ltAmount').value = v > 0 ? v : 0;
       }
     }
-    window.pmSetMax = function () {
-      if (typeof CURRENT_BAL === 'number') {
-        const v = Math.floor(CURRENT_BAL);
-        document.getElementById('pmAmount').value = v > 0 ? v : 0;
-      }
-    }
+
 
 
     function renderLongTerm(list) {
@@ -534,19 +500,7 @@
         </div>
       `).join('') || '<div class="subline">No active long‑term locks</div>';
     }
-    function renderPerMeme(list) {
-      const root = document.getElementById('pmList');
-      root.innerHTML = list.map(s => `
-        <div class="stake-item">
-          <strong>Per‑Meme Lock</strong><br/>
-          Meme: ${s.memeId} • Locked: ${s.stakedAmount} WALDO • Bonus: ${s.bonusAmount} WALDO • Total WALDO: ${s.totalReward}<br/>
-          Days Remaining: ${s.daysRemaining}
-          <div class="actions">
-            <button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>
-          </div>
-        </div>
-      `).join('') || '<div class="subline">No active per‑meme locks</div>';
-    }
+
 
     // Create stakes
     window.createLongTermStake = async function () {
@@ -565,21 +519,7 @@
       } catch (e) { msg.textContent = 'Error: ' + e.message; }
     }
 
-    window.createPerMemeStake = async function () {
-      const amt = parseFloat(document.getElementById('pmAmount').value || '0');
-      const memeId = document.getElementById('pmMemeId').value.trim();
-      const msg = document.getElementById('pmMsg');
-      if (!WALLET) return msg.textContent = 'Load your wallet info first';
-      if (!amt || !memeId) return msg.textContent = 'Enter amount and meme ID';
-      try {
-        const r = await fetch(`${API}/api/staking/per-meme`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, memeId }) });
-        const j = await r.json();
-        if (!j.success) throw new Error(j.error || 'Lock failed');
-        msg.textContent = `Sign in Xaman to lock ${amt} WALDO for meme ${memeId}...`;
-        xummOpenStake('Per‑Meme Lock', j);
-        if (j.uuid) startStakeStatusPoll(j.uuid, async () => { msg.textContent = 'Per‑meme lock confirmed ✔'; await stakeLoadInfo(); });
-      } catch (e) { msg.textContent = 'Error: ' + e.message; }
-    }
+
 
     // Unstake
     window.stakeUnstake = async function (stakeId) {
