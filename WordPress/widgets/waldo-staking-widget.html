@@ -428,7 +428,11 @@
       M.style.display = 'block';
       if (isMobile()) {
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
-        B.onclick = () => { window.location.href = payload?.next?.always || payload?.next?.app || payload?.refs?.qr; };
+        B.onclick = () => {
+          const deep = payload?.next?.always || payload?.next?.app || payload?.refs?.qr_uri || payload?.refs?.qr;
+          try { window.location.href = deep; } catch (_) { }
+          setTimeout(() => { try { window.open(deep, '_self'); } catch (_) { } }, 200);
+        };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
         QR.src = payload?.refs?.qr || '';
@@ -555,8 +559,9 @@
         const r = await fetch(`${API}/api/staking/long-term`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur }) });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Lock failed');
-        msg.textContent = `Long‑term lock created! Estimated WALDO: ${j.stakeData.expectedReward}`;
-        await stakeLoadInfo();
+        msg.textContent = `Sign in Xaman to lock ${amt} WALDO for ${dur} days...`;
+        xummOpenStake('Long‑term Lock', j);
+        if (j.uuid) startStakeStatusPoll(j.uuid, async () => { msg.textContent = 'Lock confirmed on‑ledger ✔'; await stakeLoadInfo(); });
       } catch (e) { msg.textContent = 'Error: ' + e.message; }
     }
 
@@ -585,6 +590,21 @@
         alert('Unlock complete!');
         await stakeLoadInfo();
       } catch (e) { alert('Unlock error: ' + e.message); }
+    }
+
+    // Poll staking status
+    function startStakeStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/staking/status/${encodeURIComponent(uuid)}`);
+          const j = await s.json();
+          if (j?.signed && j?.activated) { clearInterval(iv); try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (_) { /* ignore */ }
+      }, 2000);
     }
   })();
 </script>
