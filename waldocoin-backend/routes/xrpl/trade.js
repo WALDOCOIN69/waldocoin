@@ -265,6 +265,42 @@ router.get('/status/:uuid', async (req, res) => {
   }
 });
 
+// GET /api/xrpl/trade/worker/status — lightweight visibility into payout worker
+router.get('/worker/status', async (req, res) => {
+  try {
+    let status = null;
+    let events = [];
+    try { status = await redis.get('autodistribute:status'); } catch (_) { }
+    try { events = await redis.lRange('autodistribute:events', 0, 19); } catch (_) { }
+    const parsedStatus = (() => { try { return status ? JSON.parse(status) : null; } catch { return null; } })();
+    const parsedEvents = events.map(e => { try { return JSON.parse(e); } catch { return null; } }).filter(Boolean);
+
+    const distributor = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || null;
+    const issuer = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+    const currency = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || 'WLO').toUpperCase();
+
+    const now = Date.now();
+    const lastTs = parsedStatus?.ts || 0;
+    const aliveMs = now - lastTs;
+    const healthy = Number.isFinite(aliveMs) && aliveMs < 120000; // < 2 minutes since last heartbeat
+
+    return res.json({
+      success: true,
+      healthy,
+      listening: parsedStatus?.listening || distributor,
+      sender: parsedStatus?.sender || null,
+      issuer,
+      currency,
+      recent: parsedEvents,
+      now,
+      lastHeartbeat: lastTs
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+
 
 export default router;
 
