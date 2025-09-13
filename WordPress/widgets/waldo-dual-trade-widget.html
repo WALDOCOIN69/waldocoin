@@ -372,6 +372,43 @@
     border-color: rgba(37, 194, 160, .35)
   }
 
+  /* Enhance tabs visibility */
+  .tabs {
+    gap: 12px;
+    margin-top: 12px
+  }
+
+  .tabs .tab {
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    border: 1px solid #2a2a2a;
+    color: #cffff3;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .35), 0 6px 16px rgba(0, 0, 0, .35);
+  }
+
+  .tabs .tab:hover {
+    filter: brightness(1.08);
+    border-color: rgba(37, 194, 160, .35);
+    box-shadow: 0 0 0 1px rgba(37, 194, 160, .25), 0 8px 18px rgba(37, 194, 160, .15);
+  }
+
+  .tabs .tab:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px
+  }
+
+  .tabs .tab.active {
+    background: linear-gradient(90deg, var(--mint), #19e39a);
+    color: #07120f;
+    border-color: rgba(37, 194, 160, .5);
+    box-shadow: 0 0 0 2px rgba(37, 194, 160, .25) inset, 0 10px 24px rgba(37, 194, 160, .25);
+  }
+
+
+
   .trade-body {
     padding: 12px 16px 16px
   }
