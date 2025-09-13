@@ -406,12 +406,24 @@
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
         B.onclick = () => {
           const deep = payload?.refs?.qr_uri || (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.app || payload?.next?.always || payload?.refs?.qr));
-          try { window.location.href = deep; } catch (_) { }
-          setTimeout(() => { try { window.open(deep, '_self'); } catch (_) { } }, 200);
+          if (deep) {
+            try { window.location.href = deep; } catch (_) { }
+            setTimeout(() => { try { window.open(deep, '_self'); } catch (_) { } }, 200);
+          }
         };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
-        QR.src = payload?.refs?.qr_png || payload?.refs?.qr || '';
+        const qrPng = payload?.refs?.qr_png || payload?.qr_png;
+        const qrImg = qrPng || payload?.refs?.qr || payload?.qr;
+        const deep = payload?.refs?.qr_uri || (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.app || payload?.next?.always || ''));
+        if (qrImg) {
+          QR.src = qrImg;
+        } else if (deep) {
+          // Fallback: generate QR from deep link (no external libs)
+          QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deep)}`;
+        } else {
+          QR.src = '';
+        }
       }
     }
     window.xummCloseStake = () => { document.getElementById('xummModalStake').style.display = 'none'; };
