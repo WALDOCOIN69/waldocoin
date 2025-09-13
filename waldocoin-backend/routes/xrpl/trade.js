@@ -178,7 +178,7 @@ router.get('/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'invalid_sender_secret' });
     }
     // Enforce expected sender address if configured
-    const EXPECTED = process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+    const EXPECTED = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
     if (EXPECTED && wallet.address !== EXPECTED) {
       await client.disconnect();
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'sender_address_mismatch', expected: EXPECTED, senderAddress: wallet.address });
