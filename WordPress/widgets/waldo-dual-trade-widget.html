@@ -865,6 +865,16 @@
               xummClose();
               return;
             }
+            // Admin diagnostics for sender misconfiguration
+            if (s?.error === 'sender_address_mismatch' || s?.error === 'sender_account_not_found') {
+              clearInterval(id);
+              const m = el('tradeMsg');
+              const expected = s?.expected || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+              const used = s?.senderAddress || 'unknown';
+              if (m) m.textContent = `Sender misconfigured. Expected ${expected} but backend used ${used}. Admin: set WALDO_DISTRIBUTOR_SECRET (ILL secret) and WALDO_DISTRIBUTOR_ADDRESS=${expected}.`;
+              xummClose();
+              return;
+            }
             if (s?.delivered) {
               clearInterval(id);
               if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };

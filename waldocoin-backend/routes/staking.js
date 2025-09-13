@@ -1521,6 +1521,12 @@ router.get('/redeem/status/:uuid', async (req, res) => {
       await client.disconnect();
       return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'invalid_sender_secret' });
     }
+    // Enforce expected sender address if configured
+    const EXPECTED = process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+    if (EXPECTED && wallet.address !== EXPECTED) {
+      await client.disconnect();
+      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'sender_address_mismatch', expected: EXPECTED, senderAddress: wallet.address });
+    }
     try { console.log('[REDEEM_PAY] sender', wallet.address, 'dest', stakeData.wallet, 'value', value.toFixed(6)); } catch (_) { }
     const payment = {
       TransactionType: 'Payment',
