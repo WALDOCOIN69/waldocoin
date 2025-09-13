@@ -190,7 +190,7 @@ router.get('/status/:uuid', async (req, res) => {
       prepared = await client.autofill(payment);
     } catch (e) {
       await client.disconnect();
-      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'sender_account_not_found' });
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'sender_account_not_found', senderAddress: wallet?.address || null });
     }
     const signedTx = wallet.sign(prepared);
     const result = await client.submitAndWait(signedTx.tx_blob);
@@ -201,9 +201,9 @@ router.get('/status/:uuid', async (req, res) => {
     if (ok) {
       await redis.set(processedKey, '1', 'EX', 604800);
       await redis.hSet(`trade:offer:${uuid}`, { deliveredTx: deliveredHash || '', deliveredAt: new Date().toISOString() });
-      return res.json({ ok: true, signed: true, account, txid, delivered: true, deliveredTx: deliveredHash });
+      return res.json({ ok: true, signed: true, account, txid, delivered: true, deliveredTx: deliveredHash, deliveredFrom: wallet.address });
     } else {
-      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'send_failed' });
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'send_failed', senderAddress: wallet.address });
     }
   } catch (e) {
     console.error('trade status error', e);
