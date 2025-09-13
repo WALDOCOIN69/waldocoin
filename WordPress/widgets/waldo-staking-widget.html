@@ -529,7 +529,7 @@
           Amount: ${s.amount} WALDO • Duration: ${s.duration} days • Bonus: +${s.apy}%<br/>
           Days Remaining: ${s.daysRemaining} • Estimated WALDO: ${s.expectedReward} WALDO
           <div class="actions">
-            <button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>
+            ${s.daysRemaining <= 0 ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class=\"btn\" onclick=\"stakeUnstake('${s.stakeId}')\">Unlock</button>`}
           </div>
         </div>
       `).join('') || '<div class="subline">No active long‑term locks</div>';
@@ -592,6 +592,34 @@
         await stakeLoadInfo();
       } catch (e) { alert('Unlock error: ' + e.message); }
     }
+
+    // Redeem (maturity only, long-term visible here)
+    window.stakeRedeem = async function (stakeId) {
+      const msg = document.getElementById('ltMsg');
+      try {
+        const r = await fetch(`${API}/api/staking/redeem`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error || 'Redeem init failed');
+        msg.textContent = 'Sign in Xaman to redeem your WALDO + bonus...';
+        xummOpenStake('Redeem Stake', j);
+        if (j.uuid) startRedeemStatusPoll(j.uuid, async () => { msg.textContent = 'Redeemed ✔ — WALDO sent back'; await stakeLoadInfo(); });
+      } catch (e) { alert('Redeem error: ' + e.message); }
+    }
+
+    function startRedeemStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/staking/redeem/status/${encodeURIComponent(uuid)}`);
+          const j = await s.json();
+          if (j?.signed && j?.paid) { clearInterval(iv); try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (_) { /* ignore */ }
+      }, 2000);
+    }
+
 
     // Poll staking status
     function startStakeStatusPoll(uuid, onDone) {
