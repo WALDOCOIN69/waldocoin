@@ -1507,21 +1507,34 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     if (!Number.isFinite(value) || value <= 0) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'payout_invalid' });
 
     // Pay WALDO to the user's wallet
-    const senderSecret = process.env.WALDO_SENDER_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
+    const senderSecret = process.env.WALDO_DISTRIBUTOR_SECRET || process.env.WALDO_SENDER_SECRET;
     if (!senderSecret) {
       return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'missing_sender_secret' });
     }
 
     const client = new xrpl.Client('wss://xrplcluster.com');
     await client.connect();
-    const wallet = xrpl.Wallet.fromSeed(senderSecret);
+    let wallet;
+    try {
+      wallet = xrpl.Wallet.fromSeed(senderSecret);
+    } catch (e) {
+      await client.disconnect();
+      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'invalid_sender_secret' });
+    }
+    try { console.log('[REDEEM_PAY] sender', wallet.address, 'dest', stakeData.wallet, 'value', value.toFixed(6)); } catch (_) { }
     const payment = {
       TransactionType: 'Payment',
       Account: wallet.address,
       Destination: stakeData.wallet,
       Amount: { currency: CURRENCY, issuer: ISSUER, value: value.toFixed(6) }
     };
-    const prepared = await client.autofill(payment);
+    let prepared;
+    try {
+      prepared = await client.autofill(payment);
+    } catch (e) {
+      await client.disconnect();
+      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'sender_account_not_found' });
+    }
     const signedTx = wallet.sign(prepared);
     const result = await client.submitAndWait(signedTx.tx_blob);
     const ok = (result?.result?.meta?.TransactionResult === 'tesSUCCESS') || (result?.engine_result === 'tesSUCCESS');

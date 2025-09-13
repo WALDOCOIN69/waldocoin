@@ -162,7 +162,7 @@ router.get('/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'calc_invalid' });
     }
 
-    const senderSecret = process.env.WALDO_SENDER_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
+    const senderSecret = process.env.WALDO_DISTRIBUTOR_SECRET || process.env.WALDO_SENDER_SECRET;
     if (!senderSecret) {
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'missing_sender_secret' });
     }
@@ -170,14 +170,28 @@ router.get('/status/:uuid', async (req, res) => {
     // Send WLO to buyer
     const client = new xrpl.Client('wss://xrplcluster.com');
     await client.connect();
-    const wallet = xrpl.Wallet.fromSeed(senderSecret);
+    let wallet;
+    try {
+      wallet = xrpl.Wallet.fromSeed(senderSecret);
+    } catch (e) {
+      await client.disconnect();
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'invalid_sender_secret' });
+    }
+    // Log sender address (no secret)
+    try { console.log('[TRADE_DELIVER] sender', wallet.address, 'dest', account, 'value', value.toFixed(6)); } catch (_) { }
     const payment = {
       TransactionType: 'Payment',
       Account: wallet.address,
       Destination: account,
       Amount: { currency: CURRENCY, issuer: ISSUER, value: value.toFixed(6) }
     };
-    const prepared = await client.autofill(payment);
+    let prepared;
+    try {
+      prepared = await client.autofill(payment);
+    } catch (e) {
+      await client.disconnect();
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'sender_account_not_found' });
+    }
     const signedTx = wallet.sign(prepared);
     const result = await client.submitAndWait(signedTx.tx_blob);
     const ok = (result?.result?.meta?.TransactionResult === 'tesSUCCESS') || (result?.engine_result === 'tesSUCCESS');
