@@ -61,7 +61,7 @@ router.post("/offer", async (req, res) => {
 
       // For buy: Create a simple XRP to WLO payment
       // Use the distributor as destination to handle the swap
-      const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET;
+      const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
       txjson = {
         TransactionType: "Payment",
         Destination: distributorWallet,
@@ -79,7 +79,7 @@ router.post("/offer", async (req, res) => {
 
       // For sell: Create a simple WLO to distributor payment
       // The distributor will handle sending XRP back
-      const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET;
+      const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
       txjson = {
         TransactionType: "Payment",
         Destination: distributorWallet,
