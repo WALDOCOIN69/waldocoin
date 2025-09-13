@@ -32,16 +32,88 @@ const isNativeXRP = (tx) =>
   tx.Destination === distributorWallet &&
   typeof tx.Amount === "string";
 
+// Detect WLO IOU Payment to distributor (for SELL → XRP payouts)
 const isWloIOU = (tx) =>
-  tx.TransactionType === "Payment" &&
+  tx.TransactionType === 'Payment' &&
   tx.Destination === distributorWallet &&
-  typeof tx.Amount === "object" &&
-  tx.Amount && tx.Amount.currency === WALDO_CURRENCY &&
-  (tx.Amount.issuer === WALDO_ISSUER || tx.Amount.counterparty === WALDO_ISSUER);
+  typeof tx.Amount === 'object' &&
+  tx.Amount?.currency === WALDO_CURRENCY &&
+  tx.Amount?.issuer === WALDO_ISSUER;
 
-const MIN_RESERVE_XRP = Number(process.env.SELL_MIN_RESERVE_XRP || 15); // keep at least 15 XRP in distributor
+const MIN_RESERVE_XRP = Number(process.env.SELL_MIN_RESERVE_XRP || process.env.MIN_RESERVE_XRP || 15);
 
-// Simple approach: Any XRP payment to distributor wallet gets WALDO back; Any WLO payment gets XRP back
+async function getXrpPerWlo() {
+  try {
+    const r = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
+    const j = await r.json();
+    const x = j?.xrpPerWlo || j?.best?.mid;
+    if (x && isFinite(x) && x > 0) return Number(x);
+  } catch (_) { }
+  return 0.00001; // tiny fallback
+}
+
+async function processIncomingWloPayment(tx) {
+  try {
+    if (!isWloIOU(tx)) return;
+    const sender = tx.Account;
+    const txHash = tx.hash;
+
+    // Idempotency guard
+    try {
+      if (txHash) {
+        const seen = await redis.sIsMember('autodistribute:processed', txHash);
+        if (seen) return;
+      }
+    } catch (_) { }
+
+    const amountWlo = Number(tx.Amount?.value || 0);
+    if (!(amountWlo > 0)) return;
+
+    const price = await getXrpPerWlo();
+    const xrpOut = amountWlo * price; // XRP to send
+
+    // Ensure payout wallet has enough XRP above reserve
+    const payout = xrpl.Wallet.fromSeed(distributorSecret);
+    const info = await client.request({ command: 'account_info', account: payout.classicAddress, ledger_index: 'validated' });
+    const balXrp = Number(xrpl.dropsToXrp(info.result.account_data.Balance));
+    const available = Math.max(0, balXrp - MIN_RESERVE_XRP);
+    const sendXrp = Math.min(xrpOut, available);
+
+    if (!(sendXrp > 0.000001)) {
+      console.warn(`⚠️ Insufficient XRP to pay sell. Balance=${balXrp}, reserve=${MIN_RESERVE_XRP}, desired=${xrpOut}`);
+      try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'sell_insufficient_xrp', sender, txHash, balXrp, reserve: MIN_RESERVE_XRP, desired: xrpOut })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+      return;
+    }
+
+    const drops = xrpl.xrpToDrops(sendXrp.toFixed(6));
+    const payment = {
+      TransactionType: 'Payment',
+      Account: payout.classicAddress,
+      Destination: sender,
+      Amount: drops
+    };
+
+    let prepared, signed, result;
+    try { prepared = await client.autofill(payment); } catch (e) { console.error('autofill failed', e?.message || e); return; }
+    try { signed = payout.sign(prepared); } catch (e) { console.error('sign failed', e?.message || e); return; }
+    try { result = await client.submitAndWait(signed.tx_blob); } catch (e) { console.error('submit failed', e?.message || e); return; }
+
+    const engine = result?.result?.engine_result || result?.result?.meta?.TransactionResult;
+    const hash = result?.result?.tx_json?.hash || result?.result?.hash;
+    if (engine === 'tesSUCCESS') {
+      console.log(`✅ SELL payout: ${sendXrp.toFixed(6)} XRP → ${sender} | src ${payout.classicAddress} | TX ${hash}`);
+      try { if (txHash) await redis.sAdd('autodistribute:processed', txHash); } catch (_) { }
+      try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'sell_paid', sender, xrp: sendXrp, hash })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+    } else {
+      console.error(`❌ SELL payout failed: ${engine} for ${sender}`);
+      try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'sell_failed', sender, code: engine })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+    }
+  } catch (err) {
+    console.error('❌ Error processing WLO inbound sell:', err?.message || err);
+  }
+}
+
+// Simple approach: Any XRP payment to distributor wallet gets WALDO back
 
 (async () => {
   try {
@@ -112,58 +184,6 @@ const MIN_RESERVE_XRP = Number(process.env.SELL_MIN_RESERVE_XRP || 15); // keep 
       }
     }
 
-    // Process WLO -> XRP payout
-    async function processIncomingWloPayment(tx) {
-      try {
-        if (!isWloIOU(tx)) return;
-        if (!distributorSecret) { console.warn('🚫 No distributor secret configured for XRP payouts'); return; }
-        const sender = tx.Account;
-        const txHash = tx.hash;
-        const wloIn = parseFloat(tx.Amount?.value || '0');
-        if (!(wloIn > 0)) return;
-        console.log(`💱 (poll) WLO Payment detected: ${wloIn} ${WALDO_CURRENCY} from ${sender} | TX: ${txHash}`);
-        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'wlo_in_poll', sender, txHash, wloIn })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-
-        // Pricing
-        let xrpPerWlo = null;
-        try {
-          const marketResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
-          const marketData = await marketResponse.json();
-          xrpPerWlo = marketData?.xrpPerWlo || marketData?.best?.mid;
-        } catch (_) { }
-        if (!(xrpPerWlo && isFinite(xrpPerWlo) && xrpPerWlo > 0)) {
-          console.warn('⚠️ (poll) Invalid market rate for SELL; skipping');
-          return;
-        }
-        let dropsOut = Math.max(1, Math.round(wloIn * xrpPerWlo * 1_000_000));
-
-        // Check distributor balance & reserve
-        const info = await client.request({ command: 'account_info', account: distributorWallet });
-        const balanceDrops = Number(info?.result?.account_data?.Balance || '0');
-        const reserveDrops = Math.round(MIN_RESERVE_XRP * 1_000_000);
-        const maxSendDrops = Math.max(0, balanceDrops - reserveDrops - 50);
-        if (dropsOut > maxSendDrops) dropsOut = maxSendDrops;
-        if (dropsOut <= 0) { console.warn('🚫 (poll) Insufficient XRP to payout'); return; }
-
-        const payoutWallet = xrpl.Wallet.fromSeed(distributorSecret);
-        const payment = { TransactionType: 'Payment', Account: payoutWallet.classicAddress, Destination: sender, Amount: String(dropsOut) };
-        const prepared = await client.autofill(payment);
-        const signed = payoutWallet.sign(prepared);
-        const result = await client.submitAndWait(signed.tx_blob);
-        const engine = result?.result?.engine_result || result?.result?.meta?.TransactionResult;
-        const hash = result?.result?.tx_json?.hash || result?.result?.hash;
-        if (engine === 'tesSUCCESS') {
-          console.log(`✅ (poll) XRP payout: ${dropsOut / 1_000_000} XRP → ${sender} | TX: ${hash}`);
-          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'xrp_out_poll', sender, dropsOut, hash })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-        } else {
-          console.error(`❌ (poll) XRP payout failed: ${engine} for ${sender}`);
-          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'xrp_out_fail_poll', sender, dropsOut, code: engine })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-        }
-      } catch (err) {
-        console.error('❌ (poll) Error processing WLO payment:', err.message);
-      }
-    }
-
     setInterval(async () => {
       try {
         // Get latest ledger and last processed marker
@@ -188,16 +208,17 @@ const MIN_RESERVE_XRP = Number(process.env.SELL_MIN_RESERVE_XRP || 15); // keep 
           const validated = entry?.validated !== false;
           if (!validated || !tx || meta?.TransactionResult !== 'tesSUCCESS') continue;
           if (tx.TransactionType !== 'Payment' || tx.Destination !== distributorWallet) continue;
+          const isXrp = typeof tx.Amount === 'string';
+          const isWlo = (typeof tx.Amount === 'object' && tx.Amount?.currency === WALDO_CURRENCY && tx.Amount?.issuer === WALDO_ISSUER);
+          if (!isXrp && !isWlo) continue;
           const txHash = tx?.hash || entry?.hash;
           let seen = false;
           try { seen = await redis.sIsMember('autodistribute:processed', txHash); } catch (_) { }
           if (txHash && seen) continue;
-          if (typeof tx.Amount === 'string') {
-            await processIncomingPayment(tx);
-          } else if (typeof tx.Amount === 'object' && tx.Amount && tx.Amount.currency === WALDO_CURRENCY && (tx.Amount.issuer === WALDO_ISSUER || tx.Amount.counterparty === WALDO_ISSUER)) {
+          if (isWlo) {
             await processIncomingWloPayment(tx);
           } else {
-            continue;
+            await processIncomingPayment(tx);
           }
           try { if (txHash) await redis.sAdd('autodistribute:processed', txHash); } catch (_) { }
           try { if (entry?.ledger_index) await redis.set('autodistribute:last_ledger', String(entry.ledger_index)); } catch (_) { }
@@ -231,20 +252,12 @@ const MIN_RESERVE_XRP = Number(process.env.SELL_MIN_RESERVE_XRP || 15); // keep 
     client.on("transaction", async (event) => {
       if (!event.validated) { return; }
       const tx = event.transaction;
-      if (!(tx && tx.TransactionType === 'Payment' && tx.Destination === distributorWallet)) {
-        return;
-      }
-      // If this is a WLO inbound payment, handle XRP payout and return
       if (isWloIOU(tx)) {
-        const txHash = tx.hash;
-        let seen = false;
-        try { seen = await redis.sIsMember('autodistribute:processed', txHash); } catch (_) { }
-        if (txHash && seen) return;
         await processIncomingWloPayment(tx);
-        try { if (txHash) await redis.sAdd('autodistribute:processed', txHash); } catch (_) { }
         return;
       }
       if (!isNativeXRP(tx)) {
+        console.warn("⚠️ Ignored event - not a valid XRP Payment TX");
         return;
       }
 
