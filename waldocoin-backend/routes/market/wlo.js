@@ -20,8 +20,18 @@ router.get("/", async (_req, res) => {
   };
 
   try {
-    // Magnetic-derived rate (cached). Only expose if Magnetic is configured and not explicitly disabled.
-    if (!USE_XRPL_ONLY && process.env.MAGNETIC_PRICE_URL) {
+    // Admin override via Redis: price:xrp_per_wlo:override
+    try {
+      const ovRaw = await redis.get('price:xrp_per_wlo:override');
+      const ov = Number(ovRaw);
+      if (isFinite(ov) && ov > 0) {
+        result.xrpPerWlo = ov;
+        result.waldoPerXrp = 1 / ov;
+        result.source.used = 'override';
+      }
+    } catch (_) { }
+    // Magnetic-derived rate (cached). Only expose if Magnetic is configured and not explicitly disabled and no override applied.
+    if (!USE_XRPL_ONLY && !result.xrpPerWlo && process.env.MAGNETIC_PRICE_URL) {
       const waldoPerXrp = await getWaldoPerXrp();
       // Treat default presale fallback (10000) as "not available" so we can fall back to XRPL mid
       if (typeof waldoPerXrp === 'number' && isFinite(waldoPerXrp) && waldoPerXrp > 0 && waldoPerXrp !== 10000) {
@@ -96,20 +106,24 @@ router.get("/", async (_req, res) => {
 
   // Apply optional price adjustments controlled by Admin Panel (Redis), with env fallback
   try {
-    const multKey = await redis.get('price:xrp_per_wlo:multiplier');
-    const floorKey = await redis.get('price:xrp_per_wlo:floor');
-    const multRaw = multKey ?? process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
-    const floorRaw = floorKey ?? process.env.PRICE_FLOOR_XRP_PER_WLO;
-    const multiplier = Number(multRaw);
-    const floor = Number(floorRaw);
-    let base = (typeof result.xrpPerWlo === 'number' && isFinite(result.xrpPerWlo)) ? result.xrpPerWlo : ((typeof result.best?.mid === 'number' && isFinite(result.best.mid)) ? result.best.mid : null);
-    if (base && isFinite(base)) {
-      let adj = base;
-      if (isFinite(multiplier) && multiplier > 0) adj = adj * multiplier;
-      if (isFinite(floor) && floor > 0) adj = Math.max(adj, floor);
-      result.xrpPerWlo = adj;
-      result.best.mid = adj;
-      result.waldoPerXrp = 1 / adj;
+    // If override is present, skip adjustments
+    const hasOverride = !!(await redis.get('price:xrp_per_wlo:override'));
+    if (!hasOverride) {
+      const multKey = await redis.get('price:xrp_per_wlo:multiplier');
+      const floorKey = await redis.get('price:xrp_per_wlo:floor');
+      const multRaw = multKey ?? process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
+      const floorRaw = floorKey ?? process.env.PRICE_FLOOR_XRP_PER_WLO;
+      const multiplier = Number(multRaw);
+      const floor = Number(floorRaw);
+      let base = (typeof result.xrpPerWlo === 'number' && isFinite(result.xrpPerWlo)) ? result.xrpPerWlo : ((typeof result.best?.mid === 'number' && isFinite(result.best.mid)) ? result.best.mid : null);
+      if (base && isFinite(base)) {
+        let adj = base;
+        if (isFinite(multiplier) && multiplier > 0) adj = adj * multiplier;
+        if (isFinite(floor) && floor > 0) adj = Math.max(adj, floor);
+        result.xrpPerWlo = adj;
+        result.best.mid = adj;
+        result.waldoPerXrp = 1 / adj;
+      }
     }
   } catch (_) { }
 

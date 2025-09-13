@@ -21,7 +21,15 @@ router.post("/offer", async (req, res) => {
     const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
 
     const waldoPerXrpRaw = await getWaldoPerXrp().catch(() => null);
-    // Prefer XRPL order book mid; if unavailable, fall back to Magnetic (if configured), else tiny default
+
+    // Admin override via Redis: price:xrp_per_wlo:override (if present, use exactly)
+    let overrideMid = null;
+    try {
+      overrideMid = Number(await redis.get('price:xrp_per_wlo:override'));
+      if (!isFinite(overrideMid) || overrideMid <= 0) overrideMid = null;
+    } catch (_) { overrideMid = null; }
+
+    // Prefer override, else XRPL order book mid; if unavailable, fall back to Magnetic (if configured), else tiny default
     async function getXrpPerWloFromBooks() {
       const client = new xrpl.Client("wss://xrplcluster.com");
       await client.connect();
@@ -35,17 +43,19 @@ router.post("/offer", async (req, res) => {
       if (b.result?.offers?.length) { const o = b.result.offers[0]; const px = (Number(o.TakerPays) / 1_000_000) / Number(o.TakerGets.value); if (px > 0 && isFinite(px)) bid = px; }
       return (bid && ask) ? (bid + ask) / 2 : (bid || ask || null);
     }
-    const bookMid = await getXrpPerWloFromBooks().catch(() => null);
+    const bookMid = overrideMid ?? (await getXrpPerWloFromBooks().catch(() => null));
     const baseMid = (bookMid && isFinite(bookMid)) ? bookMid : ((waldoPerXrpRaw && isFinite(waldoPerXrpRaw)) ? (1 / waldoPerXrpRaw) : 0.00001); // XRP per WLO
 
-    // Optional price adjustments (raise price) via env or Redis (handled in bot/market too)
+    // Optional price adjustments (raise price) via env (skip if override specified)
     const multRaw = process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
     const floorRaw = process.env.PRICE_FLOOR_XRP_PER_WLO;
     const multiplier = Number(multRaw);
     const floor = Number(floorRaw);
     let mid = baseMid;
-    if (isFinite(multiplier) && multiplier > 0) mid = mid * multiplier;
-    if (isFinite(floor) && floor > 0) mid = Math.max(mid, floor);
+    if (!overrideMid) {
+      if (isFinite(multiplier) && multiplier > 0) mid = mid * multiplier;
+      if (isFinite(floor) && floor > 0) mid = Math.max(mid, floor);
+    }
 
     const bps = Number.isFinite(Number(slippageBps)) ? Number(slippageBps) : 0;
     const slip = Math.max(0, bps) / 10_000; // 0.01 = 1%
