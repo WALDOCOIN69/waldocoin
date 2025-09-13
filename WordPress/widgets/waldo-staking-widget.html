@@ -405,25 +405,55 @@
       if (isMobile()) {
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
         B.onclick = () => {
-          const deep = payload?.next?.always || payload?.next?.app || payload?.refs?.qr_uri || payload?.refs?.qr;
+          const deep = payload?.refs?.qr_uri || (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.app || payload?.next?.always || payload?.refs?.qr));
           try { window.location.href = deep; } catch (_) { }
           setTimeout(() => { try { window.open(deep, '_self'); } catch (_) { } }, 200);
         };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
-        QR.src = payload?.refs?.qr || '';
+        QR.src = payload?.refs?.qr_png || payload?.refs?.qr || '';
       }
     }
     window.xummCloseStake = () => { document.getElementById('xummModalStake').style.display = 'none'; };
 
     // Connect/Disconnect (display only — wallet still editable)
     window.stakeConnect = async function () {
-      // If you have /api/login, call it here. For now just keep manual wallet input.
-      document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
-      document.getElementById('btnStakeDisconnect')?.style.display = 'inline-block';
+      try {
+        const r = await fetch(`${API}/api/login`);
+        const j = await r.json();
+        xummOpenStake('Connect Xaman', j);
+        startLoginStatusPoll(j.uuid, async (s) => {
+          WALLET = s?.account || WALLET;
+          const status = document.getElementById('stakeConnStatus');
+          if (status) status.textContent = WALLET ? `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}` : 'Connected';
+          const btn = document.getElementById('btnStakeDisconnect'); if (btn) btn.style.display = 'inline-block';
+          try { await stakeLoadInfo(); } catch (_) { }
+        });
+      } catch (e) {
+        // Fallback to manual
+        document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
+        document.getElementById('btnStakeDisconnect')?.style.display = 'inline-block';
+        const w = document.getElementById('stakeWallet').value.trim();
+        if (w) { WALLET = w; await stakeLoadInfo(); }
+      }
+    }
 
-      const w = document.getElementById('stakeWallet').value.trim();
-      if (w) { WALLET = w; await stakeLoadInfo(); }
+    function startLoginStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/login/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
+          const j = await s.json();
+          if (j?.signed) {
+            clearInterval(iv);
+            try { onDone && onDone(j); } catch (_) { }
+            xummCloseStake();
+          }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (_) { clearInterval(iv); }
+      }, 1000);
     }
     window.stakeDisconnect = function () {
       WALLET = ''; CURRENT_BAL = 0;
@@ -453,7 +483,9 @@
     // Load user info + lock durations
     window.stakeLoadInfo = async function () {
       try {
-        const w = document.getElementById('stakeWallet').value.trim();
+        const field = document.getElementById('stakeWallet');
+        const inputVal = (field?.value || '').trim();
+        const w = WALLET || inputVal;
         if (!w || !w.startsWith('r')) return alert('Enter a valid XRPL wallet');
         WALLET = w;
         const r = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);

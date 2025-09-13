@@ -220,128 +220,115 @@
 
   .tabs .tab {
     background: #111;
-
-    .status-row {
-      margin-top: 4px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center
-    }
-
-    .conn {
-      font-size: 12px;
-      color: #9adbcf
-    }
-
     border: 1px solid #1c1c1c;
     color: #bfeee3;
     padding: 8px 12px;
+  }
 
-    /* Swap UI */
-    .swap-card {
-      position: relative;
-      border: 1px solid #202a4e;
-      border-radius: 12px;
-      padding: 12px;
-      background: linear-gradient(180deg, #0a0f26, #0b112d);
-      box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05)
-    }
+  /* Rows under header */
+  .status-row {
+    margin-top: 4px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 
-    .swap-card:before,
-    .swap-card:after {
-      content: "";
-      position: absolute;
-      inset: -1px;
-      border-radius: 12px;
-      pointer-events: none
-    }
+  .conn {
+    font-size: 12px;
+    color: #9adbcf
+  }
 
-    .swap-card:before {
-      background: linear-gradient(90deg, transparent, rgba(0, 247, 255, .25), transparent);
-      filter: blur(8px)
-    }
+  /* Swap UI */
+  .swap-card {
+    position: relative;
+    border: 1px solid #202a4e;
+    border-radius: 12px;
+    padding: 12px;
+    background: linear-gradient(180deg, #0a0f26, #0b112d);
+    box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05);
+  }
 
-    .swap-card:after {
-      background: linear-gradient(90deg, transparent, rgba(255, 61, 247, .2), transparent);
-      opacity: .7;
-      mix-blend-mode: screen
-    }
+  .swap-card:before,
+  .swap-card:after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    pointer-events: none;
+  }
 
-    .swap-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center
-    }
+  .swap-card:before {
+    background: linear-gradient(90deg, transparent, rgba(0, 247, 255, .25), transparent);
+    filter: blur(8px)
+  }
 
-    .token {
-      flex: 1 1 260px
-    }
+  .swap-card:after {
+    background: linear-gradient(90deg, transparent, rgba(255, 61, 247, .2), transparent);
+    opacity: .7;
+    mix-blend-mode: screen
+  }
 
-    .token input {
-      height: 36px
-    }
+  .swap-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
-    .token .sym {
-      min-width: 46px;
-      text-align: center
-    }
+  .token {
+    flex: 1 1 260px
+  }
 
-    .swap-card .token-box {
-      max-width: 240px
-    }
+  .token input {
+    height: 36px;
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #eafff9;
+    font-size: 16px;
+    appearance: textfield;
+  }
 
-    .swap-row {
-      justify-content: center
-    }
+  .token .sym {
+    min-width: 46px;
+    text-align: center;
+    font-weight: 900;
+    color: #a9ffee
+  }
 
-    .token-box {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid #202a4e;
-      border-radius: 12px;
-      padding: 8px 10px;
-      background: linear-gradient(180deg, #0a0f26, #0b112d);
-      box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05), 0 0 14px rgba(0, 247, 255, .06);
-      max-width: 100%;
-    }
+  .swap-card .token-box {
+    max-width: 240px
+  }
 
-    .token .sym {
-      font-weight: 900;
-      color: #a9ffee
-    }
+  .token-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #202a4e;
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, #0a0f26, #0b112d);
+    box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05), 0 0 14px rgba(0, 247, 255, .06);
+    max-width: 100%;
+  }
 
-    .token input {
+  #fromAmount {
+    background: linear-gradient(180deg, rgba(0, 247, 255, .08), rgba(255, 61, 247, .06));
+    border-radius: 8px;
+    padding: 0 8px
+  }
 
-      /* Brighter field for FROM input */
-      #fromAmount {
-        background: linear-gradient(180deg, rgba(0, 247, 255, .08), rgba(255, 61, 247, .06));
-        border-radius: 8px;
-        padding: 0 8px
-      }
+  .token input::-webkit-outer-spin-button,
+  .token input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0
+  }
 
-      flex: 1;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: #eafff9;
-      font-size: 16px;
-      appearance: textfield
-    }
-
-    .token input::-webkit-outer-spin-button,
-    .token input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0
-    }
-
-    .token #toAmount {
-      opacity: .85
-    }
-
+  .token #toAmount {
+    opacity: .85
   }
 
   .flip {
