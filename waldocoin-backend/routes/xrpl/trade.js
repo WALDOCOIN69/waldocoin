@@ -191,16 +191,28 @@ router.get('/status/:uuid', async (req, res) => {
       await client.disconnect();
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'invalid_sender_secret' });
     }
-    // Enforce expected sender address if configured
-    if (EXPECTED && wallet.address !== EXPECTED) {
+    // Validate sender: allow master (EXPECTED) or RegularKey of EXPECTED
+    let allowed = true;
+    if (EXPECTED) {
+      if (wallet.address !== EXPECTED) {
+        allowed = false;
+        try {
+          const info = await client.request({ command: 'account_info', account: EXPECTED, ledger_index: 'current' });
+          const rk = info?.result?.account_data?.RegularKey;
+          if (rk && rk === wallet.address) allowed = true;
+        } catch (_) { }
+      }
+    }
+    if (!allowed) {
       await client.disconnect();
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'sender_address_mismatch', expected: EXPECTED, senderAddress: wallet.address });
     }
+    const sourceAccount = EXPECTED || wallet.address;
     // Log sender address (no secret)
-    try { console.log('[TRADE_DELIVER] sender', wallet.address, 'dest', account, 'value', value.toFixed(6)); } catch (_) { }
+    try { console.log('[TRADE_DELIVER] sender', sourceAccount, 'signedBy', wallet.address, 'dest', account, 'value', value.toFixed(6)); } catch (_) { }
     const payment = {
       TransactionType: 'Payment',
-      Account: wallet.address,
+      Account: sourceAccount,
       Destination: account,
       Amount: { currency: CURRENCY, issuer: ISSUER, value: value.toFixed(6) }
     };
