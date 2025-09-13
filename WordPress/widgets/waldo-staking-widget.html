@@ -581,15 +581,31 @@
     function startRedeemStatusPoll(uuid, onDone) {
       if (!uuid) return;
       let tries = 0;
+      const msg = document.getElementById('ltMsg');
       const iv = setInterval(async () => {
         tries++;
         try {
-          const s = await fetch(`${API}/api/staking/redeem/status/${encodeURIComponent(uuid)}`);
+          const s = await fetch(`${API}/api/staking/redeem/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
           const j = await s.json();
-          if (j?.signed && j?.paid) { clearInterval(iv); try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
+          if (j?.signed) {
+            if (j?.error === 'missing_sender_secret') {
+              clearInterval(iv);
+              if (msg) msg.textContent = 'Signed, but payout is not configured (admin: set WALDO_SENDER_SECRET or WALDO_DISTRIBUTOR_SECRET)';
+              xummCloseStake();
+              return;
+            }
+            if (j?.paid) {
+              clearInterval(iv);
+              try { onDone && onDone(j); } catch (_) { }
+              xummCloseStake();
+              return;
+            }
+            // Signed but not yet paid: show interim status once
+            if (msg && !msg._waitingShown) { msg.textContent = 'Signed. Delivering WALDO…'; msg._waitingShown = true; }
+          }
           if (tries > 180) { clearInterval(iv); }
         } catch (_) { /* ignore */ }
-      }, 2000);
+      }, 1000);
     }
 
 
