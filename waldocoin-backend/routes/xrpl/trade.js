@@ -29,7 +29,7 @@ router.post("/offer", async (req, res) => {
       if (!isFinite(overrideMid) || overrideMid <= 0) overrideMid = null;
     } catch (_) { overrideMid = null; }
 
-    // Prefer override, else XRPL order book mid; if unavailable, fall back to Magnetic (if configured), else tiny default
+    // Prefer Magnetic mid, then XRPL books; override always wins if present
     async function getXrpPerWloFromBooks() {
       const client = new xrpl.Client("wss://xrplcluster.com");
       await client.connect();
@@ -43,8 +43,9 @@ router.post("/offer", async (req, res) => {
       if (b.result?.offers?.length) { const o = b.result.offers[0]; const px = (Number(o.TakerPays) / 1_000_000) / Number(o.TakerGets.value); if (px > 0 && isFinite(px)) bid = px; }
       return (bid && ask) ? (bid + ask) / 2 : (bid || ask || null);
     }
-    const bookMid = overrideMid ?? (await getXrpPerWloFromBooks().catch(() => null));
-    const baseMid = (bookMid && isFinite(bookMid)) ? bookMid : ((waldoPerXrpRaw && isFinite(waldoPerXrpRaw)) ? (1 / waldoPerXrpRaw) : 0.00001); // XRP per WLO
+    const magMid = (waldoPerXrpRaw && isFinite(waldoPerXrpRaw) && waldoPerXrpRaw !== 10000) ? (1 / waldoPerXrpRaw) : null;
+    const bookMid = await getXrpPerWloFromBooks().catch(() => null);
+    const baseMid = overrideMid ?? (magMid ?? bookMid ?? 0.00001); // XRP per WLO
 
     // Optional price adjustments (raise price) via env (skip if override specified)
     const multRaw = process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
