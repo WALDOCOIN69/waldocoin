@@ -1,12 +1,11 @@
 <!-- WALDO Staking Widget (matches trading widget look) -->
 <div class="waldo-stake collapsed" id="waldoStake">
   <div class="stake-head">
-    <div class="title"><span class="accent">🟢</span> WALDO Staking</div>
-    <div class="sub">Earn 12%–35% APY • Early unstake penalty 15%</div>
+    <div class="title"><span class="accent">🟢</span> WALDO Lock & Boost</div>
+    <div class="sub">30-Day Lock + • Bonus: +12% to +35% • Early unlock reduces WALDO by 15%</div>
     <div class="tabs">
       <button id="stakeToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
       <button class="tab active" data-tab="long">Long-Term</button>
-      <button class="tab" data-tab="meme">Per-Meme</button>
     </div>
   </div>
 
@@ -49,19 +48,19 @@
             <label>Duration</label>
             <select id="ltDuration">
               <option value="">Select duration</option>
-              <option value="30">30 days — 12% APY</option>
-              <option value="90">90 days — 18% APY</option>
-              <option value="180">180 days — 25% APY</option>
-              <option value="365">365 days — 35% APY</option>
+              <option value="30">30 days — +12% Bonus</option>
+              <option value="90">90 days — +18% Bonus</option>
+              <option value="180">180 days — +25% Bonus</option>
+              <option value="365">365 days — +35% Bonus</option>
             </select>
           </div>
         </div>
-        <div class="actions"><button class="btn buy" onclick="createLongTermStake()">Stake</button></div>
+        <div class="actions"><button class="btn buy" onclick="createLongTermStake()">Lock</button></div>
         <div id="ltMsg" class="msg"></div>
       </div>
 
       <div class="list">
-        <h4>Your Active Long-Term Stakes</h4>
+        <h4>Your Active Long-Term Locks</h4>
         <div id="ltList"></div>
       </div>
     </div>
@@ -81,13 +80,13 @@
             <input id="pmMemeId" type="text" placeholder="tweet123" />
           </div>
         </div>
-        <div class="subline">Per‑Meme: 30 days • 5% staking fee vs 10% instant • +15% bonus</div>
-        <div class="actions"><button class="btn buy" onclick="createPerMemeStake()">Stake Per‑Meme</button></div>
+        <div class="subline">Per‑Meme: 30 days • 5% lock fee vs 10% instant • +15% bonus</div>
+        <div class="actions"><button class="btn buy" onclick="createPerMemeStake()">Lock Per‑Meme</button></div>
         <div id="pmMsg" class="msg"></div>
       </div>
 
       <div class="list">
-        <h4>Your Active Per‑Meme Stakes</h4>
+        <h4>Your Active Per‑Meme Lock & Boost</h4>
         <div id="pmList"></div>
       </div>
     </div>
@@ -351,40 +350,41 @@
     background: #111;
     border: 1px solid #1c1c1c;
     color: #bfeee3;
+  }
 
-    /* Enhanced prominence for Connect/Trustline buttons */
+  /* Enhanced prominence for Connect/Trustline buttons */
 
-    .btn.cta {
-      background: linear-gradient(90deg, #00f7ff, #ff3df7, #00f7ff);
-      color: #061018;
-      border: 0;
-      padding: 12px 16px;
-      font-weight: 900;
-      box-shadow: 0 0 16px rgba(0, 247, 255, .25), 0 0 22px rgba(255, 61, 247, .16);
-      transition: transform .05s ease, box-shadow .2s ease;
-    }
+  .btn.cta {
+    background: linear-gradient(90deg, #00f7ff, #ff3df7, #00f7ff);
+    color: #061018;
+    border: 0;
+    padding: 12px 16px;
+    font-weight: 900;
+    box-shadow: 0 0 16px rgba(0, 247, 255, .25), 0 0 22px rgba(255, 61, 247, .16);
+    transition: transform .05s ease, box-shadow .2s ease;
+  }
 
-    .btn.cta:hover {
-      transform: translateY(-1px);
-    }
+  .btn.cta:hover {
+    transform: translateY(-1px);
+  }
 
-    .btn.cta.connect {
-      background: linear-gradient(90deg, #00f7ff, #19e3e3);
-    }
+  .btn.cta.connect {
+    background: linear-gradient(90deg, #00f7ff, #19e3e3);
+  }
 
-    .btn.cta.trust {
-      background: linear-gradient(90deg, #ff3df7, #ff7be9);
-    }
+  .btn.cta.trust {
+    background: linear-gradient(90deg, #ff3df7, #ff7be9);
+  }
 
-    .btn.mini {
-      padding: 4px 8px;
-      font-size: 12px;
-      border-radius: 8px;
-    }
+  .btn.mini {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
 
-    .balance-line {
-      opacity: .9;
-    }
+  .balance-line {
+    opacity: .9;
+  }
 </style>
 
 <script>
@@ -453,13 +453,13 @@
       const tl = document.getElementById('stakeTlStatus'); if (tl) tl.textContent = 'Trustline: —';
       // Clear LT UI
       const ltBal = document.getElementById('ltBal'); if (ltBal) ltBal.textContent = '—';
-      const ltList = document.getElementById('ltList'); if (ltList) ltList.innerHTML = '<div class="subline">No active long‑term stakes</div>';
+      const ltList = document.getElementById('ltList'); if (ltList) ltList.innerHTML = '<div class="subline">No active long‑term locks</div>';
       const ltAmt = document.getElementById('ltAmount'); if (ltAmt) ltAmt.value = '';
       const ltDur = document.getElementById('ltDuration'); if (ltDur) ltDur.value = '';
       const ltMsg = document.getElementById('ltMsg'); if (ltMsg) ltMsg.textContent = '';
       // Clear Per‑Meme UI
       const pmBal = document.getElementById('pmBal'); if (pmBal) pmBal.textContent = '—';
-      const pmList = document.getElementById('pmList'); if (pmList) pmList.innerHTML = '<div class="subline">No active per‑meme stakes</div>';
+      const pmList = document.getElementById('pmList'); if (pmList) pmList.innerHTML = '<div class="subline">No active per‑meme locks</div>';
       const pmAmt = document.getElementById('pmAmount'); if (pmAmt) pmAmt.value = '';
       const pmId = document.getElementById('pmMemeId'); if (pmId) pmId.value = '';
       const pmMsg = document.getElementById('pmMsg'); if (pmMsg) pmMsg.textContent = '';
@@ -520,24 +520,28 @@
     function renderLongTerm(list) {
       const root = document.getElementById('ltList');
       root.innerHTML = list.map(s => `
-      <div class="stake-item">
-        <strong>Long‑Term</strong><br/>
-        Amount: ${s.amount} WALDO • Duration: ${s.duration}d • APY: ${s.apy}<br/>
-        Days Remaining: ${s.daysRemaining} • Expected Reward: ${s.expectedReward}
-        <div class="actions"><button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unstake</button></div>
-      </div>
-    `).join('') || '<div class="subline">No active long‑term stakes</div>';
+        <div class="stake-item">
+          <strong>Long‑Term Lock</strong><br/>
+          Amount: ${s.amount} WALDO • Duration: ${s.duration} days • Bonus: +${s.apy}%<br/>
+          Days Remaining: ${s.daysRemaining} • Estimated WALDO: ${s.expectedReward} WALDO
+          <div class="actions">
+            <button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>
+          </div>
+        </div>
+      `).join('') || '<div class="subline">No active long‑term locks</div>';
     }
     function renderPerMeme(list) {
       const root = document.getElementById('pmList');
       root.innerHTML = list.map(s => `
-      <div class="stake-item">
-        <strong>Per‑Meme</strong><br/>
-        Meme: ${s.memeId} • Staked: ${s.stakedAmount} • Bonus: ${s.bonusAmount} • Total: ${s.totalReward}<br/>
-        Days Remaining: ${s.daysRemaining}
-        <div class="actions"><button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unstake</button></div>
-      </div>
-    `).join('') || '<div class="subline">No active per‑meme stakes</div>';
+        <div class="stake-item">
+          <strong>Per‑Meme Lock</strong><br/>
+          Meme: ${s.memeId} • Locked: ${s.stakedAmount} WALDO • Bonus: ${s.bonusAmount} WALDO • Total WALDO: ${s.totalReward}<br/>
+          Days Remaining: ${s.daysRemaining}
+          <div class="actions">
+            <button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>
+          </div>
+        </div>
+      `).join('') || '<div class="subline">No active per‑meme locks</div>';
     }
 
     // Create stakes
@@ -550,8 +554,8 @@
       try {
         const r = await fetch(`${API}/api/staking/long-term`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur }) });
         const j = await r.json();
-        if (!j.success) throw new Error(j.error || 'Stake failed');
-        msg.textContent = `Long-term stake created! Expected reward: ${j.stakeData.expectedReward} WALDO`;
+        if (!j.success) throw new Error(j.error || 'Lock failed');
+        msg.textContent = `Long‑term lock created! Estimated WALDO: ${j.stakeData.expectedReward}`;
         await stakeLoadInfo();
       } catch (e) { msg.textContent = 'Error: ' + e.message; }
     }
@@ -565,22 +569,22 @@
       try {
         const r = await fetch(`${API}/api/staking/per-meme`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, memeId }) });
         const j = await r.json();
-        if (!j.success) throw new Error(j.error || 'Stake failed');
-        msg.textContent = `Per‑meme stake created! Total reward: ${j.stakeData.totalReward} WALDO`;
+        if (!j.success) throw new Error(j.error || 'Lock failed');
+        msg.textContent = `Per‑meme lock created! Total WALDO: ${j.stakeData.totalReward}`;
         await stakeLoadInfo();
       } catch (e) { msg.textContent = 'Error: ' + e.message; }
     }
 
     // Unstake
     window.stakeUnstake = async function (stakeId) {
-      if (!confirm('Unstake now? Early unstaking incurs a 15% penalty.')) return;
+      if (!confirm('Unlock now? Early unlock reduces your WALDO by 15%.')) return;
       try {
         const r = await fetch(`${API}/api/staking/unstake`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
         const j = await r.json();
-        if (!j.success) throw new Error(j.error || 'Unstake failed');
-        alert('Unstake complete!');
+        if (!j.success) throw new Error(j.error || 'Unlock failed');
+        alert('Unlock complete!');
         await stakeLoadInfo();
-      } catch (e) { alert('Unstake error: ' + e.message); }
+      } catch (e) { alert('Unlock error: ' + e.message); }
     }
   })();
 </script>
