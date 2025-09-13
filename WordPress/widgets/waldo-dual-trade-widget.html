@@ -771,6 +771,12 @@
       try { collapsed = false; applyCollapsed(); root.focus(); root.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) { collapsed = false; applyCollapsed(); }
     };
     window.waldoTradeToggle = function () { collapsed = !collapsed; applyCollapsed(); };
+
+    // Connection & trustline state (for automatic flow)
+    let connectedAccount = null;
+    let trustlineStatus = null; // true/false/unknown
+    window._afterConnect = [];
+
     window.waldoTradeIsCollapsed = function () { return root.classList.contains('collapsed'); };
 
     // Toast & Status (top-level)
@@ -791,7 +797,21 @@
             clearInterval(id);
             if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
             if (s?.txid) { window._waldoLastTx = s.txid; }
-            if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
+            if (s?.account) {
+              setConnected(s.account);
+              // Update TL immediately; if missing, kick off auto-add
+              try {
+                await checkTrustline(s.account);
+                if (trustlineStatus === false) {
+                  try { ensureTrustlineThen(() => { }); } catch (_) { }
+                }
+              } catch (_) { }
+            }
+            // Drain queued callbacks waiting for connection
+            if (Array.isArray(window._afterConnect) && window._afterConnect.length) {
+              const cbs = window._afterConnect.slice(); window._afterConnect.length = 0;
+              cbs.forEach(fn => { try { typeof fn === 'function' && fn(); } catch (_) { } });
+            }
             showToast(successMsg || 'Success');
             try { loadMarket(); refreshSwapMarket(); } catch (_) { }
             xummClose();
@@ -799,9 +819,34 @@
           if (++tries >= max) clearInterval(id);
         } catch (_) { clearInterval(id); }
       }, 1000);
-
-
     }
+
+    // Auto flow helpers: ensure connection and trustline before actions
+    function pollTrustlineUntilTrue(account, timeoutMs = 180000, intervalMs = 1500) {
+      return new Promise((resolve) => {
+        const start = Date.now();
+        const iv = setInterval(async () => {
+          try {
+            await checkTrustline(account);
+            if (trustlineStatus === true) { clearInterval(iv); return resolve(true); }
+          } catch (_) { }
+          if (Date.now() - start >= timeoutMs) { clearInterval(iv); return resolve(false); }
+        }, intervalMs);
+      });
+    }
+    window.ensureConnectedThen = function (cb) {
+      if (connectedAccount) { try { return cb && cb(); } catch (_) { } return; }
+      if (!Array.isArray(window._afterConnect)) window._afterConnect = [];
+      window._afterConnect.push(cb);
+      try { waldoConnect(); } catch (_) { }
+    };
+    window.ensureTrustlineThen = function (cb) {
+      if (trustlineStatus === true) { try { return cb && cb(); } catch (_) { } return; }
+      if (!connectedAccount) return window.ensureConnectedThen(() => window.ensureTrustlineThen(cb));
+      try { waldoTrustline(); } catch (_) { }
+      pollTrustlineUntilTrue(connectedAccount).then(() => { try { cb && cb(); } catch (_) { } });
+    };
+
 
     // Trade-specific status poll: triggers WLO delivery when signed
     async function startTradeStatusPoll(uuid, successMsg, onSuccess) {
@@ -937,6 +982,7 @@
 
     // Global connection helpers
     function setConnected(account) {
+      connectedAccount = account || null;
       const s = el('connStatus'); const btn = document.getElementById('btnDisconnect');
       if (account) { const suffix = account.slice(-6); s.textContent = `Connected: …${suffix}`; btn.style.display = 'inline-flex'; }
       else { s.textContent = 'Not connected'; btn.style.display = 'none'; }
@@ -954,8 +1000,16 @@
       showToast('Disconnected');
     }
     async function checkTrustline(account) {
-      try { const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' }); const j = await r.json(); el('tlStatus').textContent = `Trustline: ${j?.trustline ? 'Yes' : 'No'}`; }
-      catch (_) { el('tlStatus').textContent = 'Trustline: ?'; }
+      try {
+        const r = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(account)}`, { cache: 'no-store' });
+        const j = await r.json();
+        trustlineStatus = !!j?.trustline;
+        el('tlStatus').textContent = `Trustline: ${trustlineStatus ? 'Yes' : 'No'}`;
+      } catch (_) {
+        trustlineStatus = null;
+        el('tlStatus').textContent = 'Trustline: ?';
+      }
+      return trustlineStatus;
     }
 
 
@@ -1017,17 +1071,23 @@
     window.waldoSwap = async function () {
       const amt = parseFloat(el('fromAmount').value);
       if (!isFinite(amt) || amt <= 0) return alert('Enter amount');
-      const body = (swapFrom === 'XRP') ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip, destination: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL' } : { side: 'sell', amountWlo: amt, slippageBps: swapSlip, destination: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL' };
-      try {
-        const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const j = await r.json();
-        console.log('📱 Swap API Response:', j);
-        if (!j.success) throw new Error(j.error || 'Trade failed');
-        xummOpen('Swap', j);  // Pass full response, not just refs
-        startTradeStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
-      } catch (e) {
-        el('tradeMsg').textContent = 'Swap failed: ' + e.message;
-      }
+      const doSwap = async () => {
+        const body = (swapFrom === 'XRP')
+          ? { side: 'buy', amountXrp: amt, slippageBps: swapSlip, destination: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL' }
+          : { side: 'sell', amountWlo: amt, slippageBps: swapSlip, destination: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL' };
+        try {
+          const r = await fetch(`${API}/api/xrpl/trade/offer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          const j = await r.json();
+          console.log('📱 Swap API Response:', j);
+          if (!j.success) throw new Error(j.error || 'Trade failed');
+          xummOpen('Swap', j);
+          startTradeStatusPoll(j.uuid, 'Swap placed!', s => appendReceipt('Swap placed!'));
+        } catch (e) {
+          el('tradeMsg').textContent = 'Swap failed: ' + e.message;
+        }
+      };
+      // Ensure connection and trustline automatically, then place the swap
+      ensureConnectedThen(() => ensureTrustlineThen(() => doSwap()));
     }
 
     // Actions
