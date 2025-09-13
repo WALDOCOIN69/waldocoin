@@ -264,64 +264,7 @@ router.post("/long-term", async (req, res) => {
       next: created.next
     });
 
-    // GET /api/staking/status/:uuid — confirm signature & activate stake
-    router.get('/status/:uuid', async (req, res) => {
-      try {
-        const { uuid } = req.params;
-        if (!uuid) return res.status(400).json({ ok: false, error: 'missing uuid' });
 
-        const p = await xummClient.payload.get(uuid).catch(() => null);
-        if (!p) return res.json({ ok: true, found: false });
-
-        const signed = !!p?.meta?.signed;
-        const account = p?.response?.account || null;
-        const txid = p?.response?.txid || null;
-        if (!signed) return res.json({ ok: true, signed: false, account: null });
-
-        const processedKey = `stake:processed:${uuid}`;
-        const processed = await redis.get(processedKey);
-        if (processed) return res.json({ ok: true, signed: true, account, txid, activated: true });
-
-        // Load the stake mapping
-        const offer = await redis.hGetAll(`stake:offer:${uuid}`);
-        const stakeId = offer?.stakeId;
-        if (!stakeId) return res.json({ ok: true, signed: true, account, txid, activated: false, error: 'stake_not_found' });
-
-        const stakeKey = `staking:${stakeId}`;
-        const stakeData = await redis.hGetAll(stakeKey);
-        if (!stakeData) return res.json({ ok: true, signed: true, account, txid, activated: false, error: 'stake_data_missing' });
-
-        const amount = Number(offer?.amount || stakeData?.amount || 0);
-        const duration = parseInt(offer?.duration || stakeData?.duration || '0');
-
-        // Mark active + record signature
-        await redis.hSet(stakeKey, {
-          status: 'active',
-          signedAt: new Date().toISOString(),
-          signer: account || '',
-          fundingTx: txid || ''
-        });
-
-        // Update global totals now that funds are locked on-ledger
-        if (Number.isFinite(amount) && amount > 0) {
-          await redis.incrByFloat('staking:total_long_term_staked', amount);
-          await redis.incr('staking:total_long_term_stakes');
-        }
-
-        // Log activation
-        await redis.lPush('staking_logs', JSON.stringify({
-          action: 'long_term_stake_activated', stakeId, wallet: stakeData.wallet, amount, duration,
-          txid, timestamp: new Date().toISOString()
-        }));
-
-        await redis.set(processedKey, '1', { EX: 604800 });
-
-        return res.json({ ok: true, signed: true, account, txid, activated: true });
-      } catch (e) {
-        console.error('staking status error', e);
-        return res.status(500).json({ ok: false, error: e.message });
-      }
-    });
 
   } catch (error) {
     console.error('❌ Error creating long-term stake:', error?.stack || error);
@@ -392,27 +335,36 @@ router.post("/per-meme", async (req, res) => {
     // Add to user's per-meme stakes
     await redis.sAdd(`user:${wallet}:per_meme_stakes`, stakeId);
 
-    // Update global per-meme staking totals
-    await redis.incrByFloat('staking:total_per_meme_staked', stakedAmount);
-    await redis.incr('staking:total_per_meme_stakes');
+    // Do NOT update global totals yet; wait until user signs & funds via Xaman
 
-    // Log the staking action
-    await redis.lPush('staking_logs', JSON.stringify({
-      action: 'per_meme_stake_created',
-      stakeId,
-      wallet,
-      memeId,
-      originalAmount: stakeAmount,
-      stakedAmount: stakedAmount,
-      bonusAmount: bonusAmount,
-      timestamp: new Date().toISOString()
-    }));
+    // Create XUMM payload so user moves WALDO to staking vault (full original amount)
+    const txjson = {
+      TransactionType: 'Payment',
+      Destination: STAKING_VAULT,
+      Amount: { currency: CURRENCY, issuer: ISSUER, value: String((Math.floor(stakeAmount * 1e6) / 1e6).toFixed(6)) },
+      Memos: [{
+        Memo: {
+          MemoType: Buffer.from('STAKE_MEME').toString('hex').toUpperCase(),
+          MemoData: Buffer.from(`${memeId}:${stakeId}`).toString('hex').toUpperCase()
+        }
+      }]
+    };
 
-    console.log(`🎭 Per-meme stake created: ${wallet} staked ${stakedAmount} WALDO (${stakeAmount} - ${stakingFee} fee) for meme ${memeId}`);
+    const created = await xummClient.payload.create({
+      txjson,
+      options: { submit: true, expire: 900, return_url: { app: 'xumm://xumm.app/done', web: null } },
+      custom_meta: { identifier: `WALDO_STAKE_MEME_${memeId}` }
+    });
+
+    // Mark as pending signature & persist mapping for status processing
+    await redis.hSet(`staking:${stakeId}`, { status: 'pending_signature', xummUuid: created.uuid });
+    await redis.hSet(`stake:offer:${created.uuid}`, { stakeId, wallet, amount: String(stakeAmount), type: 'per_meme', memeId });
+
+    console.log(`🎭 Per-meme stake pending signature: ${stakeId} for ${wallet}, amount ${stakeAmount} WALDO, meme ${memeId}`);
 
     res.json({
       success: true,
-      message: `Successfully created per-meme stake for ${stakedAmount} WALDO!`,
+      message: `Sign in Xaman to lock ${stakedAmount} WALDO (after 5% fee) for meme ${memeId}`,
       stakeData: {
         stakeId,
         memeId,
@@ -424,8 +376,11 @@ router.post("/per-meme", async (req, res) => {
         duration: PER_MEME_CONFIG.duration,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        status: 'active'
-      }
+        status: 'pending_signature'
+      },
+      uuid: created.uuid,
+      refs: created.refs,
+      next: created.next
     });
 
   } catch (error) {
@@ -523,6 +478,8 @@ router.get("/info/:wallet", async (req, res) => {
           const now = new Date();
           const endDate = new Date(stakeData.endDate);
           const timeRemaining = Math.max(0, endDate - now);
+
+
           const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
 
           perMemeStakes.push({
@@ -1438,3 +1395,72 @@ router.get("/admin/overview", async (req, res) => {
 });
 
 export default router;
+
+
+// GET /api/staking/status/:uuid — confirm signature & activate stake (long-term & per-meme)
+router.get('/status/:uuid', async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    if (!uuid) return res.status(400).json({ ok: false, error: 'missing uuid' });
+
+    const p = await xummClient.payload.get(uuid).catch(() => null);
+    if (!p) return res.json({ ok: true, found: false });
+
+    const signed = !!p?.meta?.signed;
+    const account = p?.response?.account || null;
+    const txid = p?.response?.txid || null;
+    if (!signed) return res.json({ ok: true, signed: false, account: null });
+
+    const processedKey = `stake:processed:${uuid}`;
+    const processed = await redis.get(processedKey);
+    if (processed) return res.json({ ok: true, signed: true, account, txid, activated: true });
+
+    // Load the stake mapping
+    const offer = await redis.hGetAll(`stake:offer:${uuid}`);
+    const stakeId = offer?.stakeId;
+    if (!stakeId) return res.json({ ok: true, signed: true, account, txid, activated: false, error: 'stake_not_found' });
+
+    const stakeKey = `staking:${stakeId}`;
+    const stakeData = await redis.hGetAll(stakeKey);
+    if (!stakeData) return res.json({ ok: true, signed: true, account, txid, activated: false, error: 'stake_data_missing' });
+
+    // Mark active + record signature
+    await redis.hSet(stakeKey, {
+      status: 'active',
+      signedAt: new Date().toISOString(),
+      signer: account || '',
+      fundingTx: txid || ''
+    });
+
+    // Update global totals now that funds are locked on-ledger
+    const type = stakeData.type || offer?.type || 'long_term';
+    if (type === 'per_meme') {
+      const stakedAmount = Number(stakeData?.stakedAmount || 0);
+      if (Number.isFinite(stakedAmount) && stakedAmount > 0) {
+        await redis.incrByFloat('staking:total_per_meme_staked', stakedAmount);
+        await redis.incr('staking:total_per_meme_stakes');
+      }
+      await redis.lPush('staking_logs', JSON.stringify({
+        action: 'per_meme_stake_activated', stakeId, wallet: stakeData.wallet, memeId: stakeData.memeId,
+        stakedAmount, txid, timestamp: new Date().toISOString()
+      }));
+    } else {
+      const amount = Number(offer?.amount || stakeData?.amount || 0);
+      if (Number.isFinite(amount) && amount > 0) {
+        await redis.incrByFloat('staking:total_long_term_staked', amount);
+        await redis.incr('staking:total_long_term_stakes');
+      }
+      await redis.lPush('staking_logs', JSON.stringify({
+        action: 'long_term_stake_activated', stakeId, wallet: stakeData.wallet, amount,
+        duration: stakeData.duration, txid, timestamp: new Date().toISOString()
+      }));
+    }
+
+    await redis.set(processedKey, '1', { EX: 604800 });
+
+    return res.json({ ok: true, signed: true, account, txid, activated: true });
+  } catch (e) {
+    console.error('staking status error', e);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});

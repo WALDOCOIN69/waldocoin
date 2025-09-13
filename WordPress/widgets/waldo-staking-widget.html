@@ -575,8 +575,9 @@
         const r = await fetch(`${API}/api/staking/per-meme`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, memeId }) });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Lock failed');
-        msg.textContent = `Per‑meme lock created! Total WALDO: ${j.stakeData.totalReward}`;
-        await stakeLoadInfo();
+        msg.textContent = `Sign in Xaman to lock ${amt} WALDO for meme ${memeId}...`;
+        xummOpenStake('Per‑Meme Lock', j);
+        if (j.uuid) startStakeStatusPoll(j.uuid, async () => { msg.textContent = 'Per‑meme lock confirmed ✔'; await stakeLoadInfo(); });
       } catch (e) { msg.textContent = 'Error: ' + e.message; }
     }
 
