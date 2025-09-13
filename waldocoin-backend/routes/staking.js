@@ -1506,9 +1506,22 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     }
     if (!Number.isFinite(value) || value <= 0) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'payout_invalid' });
 
-    // Pay WALDO to the user's wallet
-    const senderSecret = process.env.WALDO_DISTRIBUTOR_SECRET || process.env.WALDO_SENDER_SECRET;
-    if (!senderSecret) {
+    // Pay WALDO to the user's wallet — choose secret that matches expected distributor wallet
+    const EXPECTED = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+    const distSecret = process.env.WALDO_DISTRIBUTOR_SECRET || null;
+    const altSecret = process.env.WALDO_SENDER_SECRET || null;
+
+    let chosenSecret = distSecret || altSecret;
+    let distAddr = null, altAddr = null;
+    try { if (distSecret) distAddr = xrpl.Wallet.fromSeed(distSecret).address; } catch (_) { }
+    try { if (altSecret) altAddr = xrpl.Wallet.fromSeed(altSecret).address; } catch (_) { }
+
+    if (EXPECTED) {
+      if (distAddr === EXPECTED) chosenSecret = distSecret;
+      else if (altAddr === EXPECTED) chosenSecret = altSecret;
+    }
+
+    if (!chosenSecret) {
       return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'missing_sender_secret' });
     }
 
@@ -1516,13 +1529,12 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     await client.connect();
     let wallet;
     try {
-      wallet = xrpl.Wallet.fromSeed(senderSecret);
+      wallet = xrpl.Wallet.fromSeed(chosenSecret);
     } catch (e) {
       await client.disconnect();
       return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'invalid_sender_secret' });
     }
     // Enforce expected sender address if configured
-    const EXPECTED = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
     if (EXPECTED && wallet.address !== EXPECTED) {
       await client.disconnect();
       return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'sender_address_mismatch', expected: EXPECTED, senderAddress: wallet.address });
