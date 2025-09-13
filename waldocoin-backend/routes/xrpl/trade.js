@@ -155,7 +155,7 @@ router.get('/status/:uuid', async (req, res) => {
 
     // Only auto-deliver on BUY for now
     if (side !== 'buy') {
-      await redis.set(processedKey, '1', 'EX', 604800); // mark as seen to avoid reprocessing
+      await redis.set(processedKey, '1', { EX: 604800 }); // mark as seen to avoid reprocessing
       return res.json({ ok: true, signed: true, account, txid, delivered: false });
     }
 
@@ -171,6 +171,13 @@ router.get('/status/:uuid', async (req, res) => {
 
     if (!account || !Number.isFinite(value) || value <= 0) {
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'calc_invalid' });
+    }
+
+    // Idempotency lock to prevent duplicate deliveries under concurrent polling
+    const lockKey = `trade:processing:${uuid}`;
+    const locked = await redis.set(lockKey, '1', { NX: true, EX: 60 });
+    if (!locked) {
+      return res.json({ ok: true, signed: true, account, txid, delivered: false, processing: true });
     }
 
     // Choose the correct sender secret, preferring the one that matches the expected distributor wallet
@@ -200,6 +207,7 @@ router.get('/status/:uuid', async (req, res) => {
       wallet = xrpl.Wallet.fromSeed(chosenSecret);
     } catch (e) {
       await client.disconnect();
+      await redis.del(lockKey).catch(() => { });
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'invalid_sender_secret' });
     }
     // Validate sender: allow master (EXPECTED) or RegularKey of EXPECTED
@@ -216,6 +224,7 @@ router.get('/status/:uuid', async (req, res) => {
     }
     if (!allowed) {
       await client.disconnect();
+      await redis.del(lockKey).catch(() => { });
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'sender_address_mismatch', expected: EXPECTED, senderAddress: wallet.address });
     }
     const sourceAccount = EXPECTED || wallet.address;
@@ -232,6 +241,7 @@ router.get('/status/:uuid', async (req, res) => {
       prepared = await client.autofill(payment);
     } catch (e) {
       await client.disconnect();
+      await redis.del(lockKey).catch(() => { });
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'sender_account_not_found', senderAddress: wallet?.address || null });
     }
     const signedTx = wallet.sign(prepared);
@@ -241,10 +251,12 @@ router.get('/status/:uuid', async (req, res) => {
     await client.disconnect();
 
     if (ok) {
-      await redis.set(processedKey, '1', 'EX', 604800);
+      await redis.set(processedKey, '1', { EX: 604800 });
+      await redis.del(lockKey).catch(() => { });
       await redis.hSet(`trade:offer:${uuid}`, { deliveredTx: deliveredHash || '', deliveredAt: new Date().toISOString() });
       return res.json({ ok: true, signed: true, account, txid, delivered: true, deliveredTx: deliveredHash, deliveredFrom: wallet.address });
     } else {
+      await redis.del(lockKey).catch(() => { });
       return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'send_failed', senderAddress: wallet.address });
     }
   } catch (e) {
