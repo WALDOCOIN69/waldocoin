@@ -705,6 +705,7 @@
             if (s?.txid) { window._waldoLastTx = s.txid; }
             if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
             showToast(successMsg || 'Success');
+            try { loadMarket(); refreshSwapMarket(); } catch (_) { }
             xummClose();
           }
           if (++tries >= max) clearInterval(id);
@@ -728,6 +729,7 @@
             if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
             if (s?.account) { setConnected(s.account); checkTrustline(s.account); }
             showToast(successMsg || 'Success');
+            try { loadMarket(); refreshSwapMarket(); } catch (_) { }
             xummClose();
           }
           if (++tries >= max) clearInterval(id);
@@ -768,7 +770,9 @@
         const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
       } catch (e) { el('priceXrp').textContent = '—'; el('vol24').textContent = '—'; }
     }
-    loadMarket(); setInterval(loadMarket, 60000);
+    loadMarket(); setInterval(loadMarket, 15000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { loadMarket(); refreshSwapMarket(); } catch (_) { } } });
+    window.addEventListener('focus', () => { try { loadMarket(); refreshSwapMarket(); } catch (_) { } });
 
     // XUMM modal
     function xummOpen(title, data) {
