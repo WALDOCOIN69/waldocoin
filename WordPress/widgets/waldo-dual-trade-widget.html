@@ -893,13 +893,22 @@
           const s = await r.json();
           if (s?.signed) {
             if (s?.account) { setConnected(s.account); }
+            // If this is a SELL (user sent WLO), do not wait for delivered here. The backend listener sends XRP automatically.
+            if (typeof swapFrom !== 'undefined' && swapFrom !== 'XRP') {
+              clearInterval(id);
+              if (typeof onSuccess === 'function') try { onSuccess(s); } catch (_) { };
+              showToast(successMsg || 'Sell placed – XRP will arrive shortly');
+              try { if (s?.account) loadBalances(s.account); } catch (_) { }
+              xummClose();
+              return;
+            }
             if (s?.error === 'missing_sender_secret') {
               clearInterval(id);
               el('tradeMsg').textContent = 'Signed, but delivery is not configured (admin: set WALDO_SENDER_SECRET or WALDO_DISTRIBUTOR_SECRET)';
               xummClose();
               return;
             }
-            // Admin diagnostics for sender misconfiguration
+            // Admin diagnostics for sender misconfiguration (BUY flow only)
             if (s?.error === 'sender_address_mismatch' || s?.error === 'sender_account_not_found') {
               clearInterval(id);
               const m = el('tradeMsg');
@@ -917,7 +926,7 @@
               xummClose();
               return;
             }
-            // Signed but not yet delivered: keep polling and show interim status once
+            // Signed but not yet delivered: keep polling and show interim status once (BUY only)
             const msg = el('tradeMsg');
             if (msg && !msg._waitingShown) { msg.textContent = 'Signed. Delivering WALDO…'; msg._waitingShown = true; }
           }
