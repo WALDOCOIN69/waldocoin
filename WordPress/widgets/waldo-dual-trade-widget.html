@@ -856,13 +856,16 @@
         // Set up mobile button click handler
         const mobileBtn = el('xummMobileBtn');
         if (mobileBtn) {
+          const openDeep = (url) => {
+            try { window.location.href = url; } catch (_) { }
+            setTimeout(() => { try { window.open(url, '_self'); } catch (_) { } }, 200);
+          };
           mobileBtn.onclick = () => {
             console.log('📱 Mobile Xaman button clicked, opening:', deep);
 
             if (deep && deep !== '#' && deep !== '') {
               console.log('🚀 Opening XUMM/Xaman with:', deep);
-              // Simple direct navigation - this should work
-              window.open(deep, '_blank');
+              openDeep(deep);
               showToast('Opening Xaman app...');
             } else {
               console.error('❌ No valid deep link found:', { deep, refs, next, data });
