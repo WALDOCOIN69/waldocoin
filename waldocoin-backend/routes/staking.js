@@ -1016,6 +1016,27 @@ router.get('/stats', async (req, res) => {
     const participationRate = totalUsers > 0 ? ((activeStakers / totalUsers) * 100).toFixed(1) : 0;
     const averageStakePerUser = activeStakers > 0 ? (totalStaked / activeStakers).toFixed(2) : 0;
 
+    // Per-meme redemption summary from logs (public-safe aggregate)
+    let perMemeRedemptions = { count: 0, totalAmount: 0, last10: [] };
+    try {
+      const recentLogs = await redis.lRange('staking_logs', 0, 499); // look at most recent 500 events
+      const parsed = recentLogs.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+      const pm = parsed.filter(ev => ev && ev.action === 'per_meme_stake_redeemed');
+      const count = pm.length;
+      const totalAmount = pm.reduce((s, ev) => s + (Number(ev.amount) || 0), 0);
+      const last10 = pm.slice(0, 10).map(ev => ({
+        stakeId: ev.stakeId,
+        wallet: ev.wallet,
+        amount: Number(ev.amount) || 0,
+        txid: ev.txid || '',
+        timestamp: ev.timestamp || ''
+      }));
+      perMemeRedemptions = { count, totalAmount: Number(totalAmount.toFixed(6)), last10 };
+    } catch (e) {
+      // non-fatal
+      console.warn('per_meme redemptions summary failed:', e?.message || e);
+    }
+
     const stakingStats = {
       overview: {
         totalStaked: parseFloat(totalStaked).toFixed(2),
@@ -1043,7 +1064,8 @@ router.get('/stats', async (req, res) => {
         earlyUnstakePenalty: "15%",
         autoRenewal: "enabled",
         lastUpdated: new Date().toISOString()
-      }
+      },
+      perMemeRedemptions
     };
 
     console.log(`🏦 Staking stats requested: ${totalStaked} WALDO staked by ${activeStakers} users`);

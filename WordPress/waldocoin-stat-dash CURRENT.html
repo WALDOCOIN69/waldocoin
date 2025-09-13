@@ -3428,6 +3428,14 @@
           <button type="button" class="button-style button-secondary" onclick="loadMoreActivity()">Load More</button>
         </div>
       </div>
+      <!-- Per‑Meme Matured Redemptions -->
+      <div class="card" id="perMemeRedemptionsCard">
+        <h2>🎯 Per‑Meme Matured Redemptions</h2>
+        <p><strong>Count:</strong> <span id="pmRedCount">—</span></p>
+        <p><strong>Total Paid:</strong> <span id="pmRedTotal">—</span></p>
+        <div id="pmRedList"></div>
+      </div>
+
 
     </div> <!-- End container -->
 
@@ -4409,6 +4417,43 @@
           if (data && data.image) {
             $("topMemeImage") && ($("topMemeImage").src = data.image);
           }
+          // Load staking stats summary (Per‑Meme redemptions)
+          async function fetchStakingStatsSummary() {
+            try {
+              const res = await fetch(`${baseURL}/api/staking/stats`);
+              const data = await res.json();
+              if (!data || !data.success) return;
+              const s = data.stats && data.stats.perMemeRedemptions;
+              if (!s) return;
+
+              const countEl = document.getElementById('pmRedCount');
+              const totalEl = document.getElementById('pmRedTotal');
+              const listEl = document.getElementById('pmRedList');
+
+              if (countEl) countEl.textContent = (s.count || 0).toLocaleString();
+              if (totalEl) totalEl.textContent = `${Number(s.totalAmount || 0).toFixed(2)} WALDO`;
+
+              if (listEl) {
+                if (!s.last10 || s.last10.length === 0) {
+                  listEl.innerHTML = '<div class="js-no-stakes">No matured per‑meme redemptions yet</div>';
+                } else {
+                  listEl.innerHTML = '<ul style="list-style:none;padding:0;margin:0;"></ul>';
+                  const ul = listEl.querySelector('ul');
+                  s.last10.forEach(ev => {
+                    const short = ev.txid ? `${ev.txid.slice(0, 8)}…${ev.txid.slice(-6)}` : '—';
+                    const when = ev.timestamp ? new Date(ev.timestamp).toLocaleString() : '';
+                    const li = document.createElement('li');
+                    li.style.margin = '6px 0';
+                    li.innerHTML = `+${(Number(ev.amount) || 0).toFixed(2)} WALDO • <a class="xrpl-link-green" href="https://livenet.xrpl.org/transactions/${ev.txid}" target="_blank" rel="noopener">${short}</a> <span style="color:#888;">${when}</span>`;
+                    ul.appendChild(li);
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn('Staking stats summary failed:', e);
+            }
+          }
+
 
           if (data && data.author && data.id) {
             $("topMemeLink") && ($("topMemeLink").href = `https://x.com/${data.author}/status/${data.id}`);
@@ -5464,7 +5509,8 @@
             fetchBattleStatus().catch(e => console.warn('Battle status failed:', e)),
             fetchBattleHistory().catch(e => console.warn('Battle history failed:', e)),
             fetchBattleLeaderboard().catch(e => console.warn('Battle leaderboard failed:', e)),
-            fetchDAOProposals().catch(e => console.warn('DAO proposals failed:', e))
+            fetchDAOProposals().catch(e => console.warn('DAO proposals failed:', e)),
+            fetchStakingStatsSummary().catch(e => console.warn('Staking stats summary failed:', e))
           ];
 
           await Promise.allSettled(loadPromises);
@@ -5507,6 +5553,10 @@
         dashboardIntervals.push(
           setInterval(() => fetchPolicyWorth(wallet).catch(e => console.warn('Periodic worth policy failed:', e)), 2 * 60 * 1000)
         );
+        dashboardIntervals.push(
+          setInterval(() => fetchStakingStatsSummary().catch(e => console.warn('Periodic staking stats summary failed:', e)), 2 * 60 * 1000)
+        );
+
       }
 
       let dashboardStarted = false;
