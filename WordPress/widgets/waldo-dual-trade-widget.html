@@ -81,6 +81,9 @@
         <button id="xummMobileBtn" class="btn" type="button"
           style="background: #25c2a0; color: white; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">📱
           Open Xaman App</button>
+        <a id="xummLink" href="#" target="_blank" rel="noopener"
+          style="display:none; color:#9adbcf; word-break:break-all;">Open in Xaman (link)</a>
+
 
         <small class="hint" style="color:#9adbcf; opacity:.9;">If the app doesn’t open, copy the link and paste into
           Xaman.</small>
@@ -562,8 +565,47 @@
     border: none;
     color: #9adbcf;
     font-size: 18px;
-    cursor: pointer
+    cursor: pointer;
   }
+
+  /* Center the XUMM modal and its QR on all devices */
+  .xumm-modal {
+    padding: 16px;
+  }
+
+  .xumm-modal .backdrop {
+    z-index: 1;
+  }
+
+  .xumm-modal .content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    z-index: 2;
+  }
+
+  #xummDesktop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+  #xummQr {
+    margin: 0 auto;
+  }
+
+  #xummLoad.spin {
+    margin: 0 auto;
+  }
+
+  #xummHint.hint {
+    text-align: center;
+  }
+
 
   .spin {
     border: 4px solid #1c1c1c;
@@ -633,7 +675,7 @@
     const toggle = document.getElementById('widgetToggle');
     let collapsed = true;
     function applyCollapsed() { root.classList.toggle('collapsed', collapsed); }
-    if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
+    if (toggle) toggle.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); if (!collapsed) { try { loadMarket(); refreshSwapMarket(); } catch (_) { } } });
     applyCollapsed();
 
     // Expose programmatic controls for external CTA buttons
@@ -713,22 +755,20 @@
       if (root.classList.contains('collapsed')) { collapsed = false; root.classList.remove('collapsed'); }
       el('panelXrpl').style.display = tab === 'xrpl' ? 'block' : 'none';
       el('panelFl').style.display = tab === 'fl' ? 'block' : 'none';
-
-
-
+      try { loadMarket(); refreshSwapMarket(); } catch (_) { }
     }));
 
     // Market data
     async function loadMarket() {
       try {
-        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
+        const r = await fetch(`${API}/api/market/wlo?_=${Date.now()}`, { cache: 'no-store' });
         const j = await r.json();
         const xrpPerWlo = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
         el('priceXrp').textContent = (xrpPerWlo && isFinite(xrpPerWlo)) ? `${xrpPerWlo.toFixed(8)} XRP` : '—';
         const v = j?.volume24h; el('vol24').textContent = (v == null) ? '—' : (isFinite(v) ? Number(v).toLocaleString() : String(v));
       } catch (e) { el('priceXrp').textContent = '—'; el('vol24').textContent = '—'; }
     }
-    loadMarket(); setInterval(loadMarket, 60_000);
+    loadMarket(); setInterval(loadMarket, 60000);
 
     // XUMM modal
     function xummOpen(title, data) {
@@ -758,6 +798,19 @@
 
         // Store deep link globally for copy functionality
         currentDeepLink = deep;
+        // Show a direct link on mobile as well (in case the button is blocked by in-app browsers)
+        if (link) {
+          if (deep && deep !== '#' && deep !== '') {
+            link.href = deep;
+            link.textContent = 'Open in Xaman (link)';
+            link.style.display = 'block';
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener');
+          } else {
+            link.style.display = 'none';
+          }
+        }
+
 
         // Set up mobile button click handler
         const mobileBtn = el('xummMobileBtn');
@@ -825,7 +878,7 @@
 
     async function refreshSwapMarket() {
       try {
-        const r = await fetch(`${API}/api/market/wlo`, { cache: 'no-store' });
+        const r = await fetch(`${API}/api/market/wlo?_=${Date.now()}`, { cache: 'no-store' });
         const j = await r.json();
         swapMid = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
         updateSwapPrice(); recomputeSwap();
@@ -864,7 +917,7 @@
       recomputeSwap();
     }));
     el('fromAmount').addEventListener('input', recomputeSwap);
-    refreshSwapMarket(); setInterval(refreshSwapMarket, 60_000);
+    refreshSwapMarket(); setInterval(refreshSwapMarket, 60000);
 
     window.waldoSwap = async function () {
       const amt = parseFloat(el('fromAmount').value);

@@ -75,11 +75,17 @@ router.get("/", async (_req, res) => {
 
     const mid = bidPrice && askPrice ? (bidPrice + askPrice) / 2 : (bidPrice || askPrice || null);
     result.best = { bid: bidPrice, ask: askPrice, mid };
-    // Prefer XRPL book mid as displayed price
-    if (mid && isFinite(mid)) {
-      result.xrpPerWlo = mid;
-      if (!result.waldoPerXrp) result.waldoPerXrp = 1 / mid;
+    // Choose display price: prefer Magnetic if available, otherwise XRPL mid
+    let baseXrpPerWlo = null;
+    if (typeof result.waldoPerXrp === 'number' && isFinite(result.waldoPerXrp) && result.waldoPerXrp > 0) {
+      baseXrpPerWlo = 1 / result.waldoPerXrp;
+      result.source.used = 'magnetic';
+    } else if (mid && isFinite(mid)) {
+      baseXrpPerWlo = mid;
+      result.source.used = 'xrpl';
+      result.waldoPerXrp = 1 / mid;
     }
+    result.xrpPerWlo = baseXrpPerWlo;
   } catch (e) {
     // XRPL query failed; keep best.* null
   }
