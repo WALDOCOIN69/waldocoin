@@ -115,22 +115,7 @@ router.post("/long-term", async (req, res) => {
     }
 
     console.log('[LT] Incoming request', { wallet, amount, duration });
-
-    // Enforce minimum WALDO worth: 3 XRP
-    try {
-      const worth = await ensureMinWaldoWorth(wallet, 3);
-      if (!worth.ok) {
-        return res.status(403).json({
-          success: false,
-          error: `Minimum balance required: ${worth.requiredWaldo.toLocaleString()} WALDO (~${worth.minXrp} XRP at ${worth.waldoPerXrp.toLocaleString()} WALDO/XRP). Your balance: ${worth.balance.toLocaleString()} WALDO`,
-          details: worth
-        });
-      }
-    } catch (e) {
-      console.warn('Worth check failed, denying long-term stake:', e.message || e);
-      return res.status(503).json({ success: false, error: 'Temporary wallet worth check failure. Please try again.' });
-    }
-
+    // No global WALDO-worth requirement for long‑term staking; per‑meme staking retains worth checks.
 
     // Validate amount
     const stakeAmount = parseFloat(amount);
