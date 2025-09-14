@@ -246,6 +246,22 @@
     border: 1px solid rgba(0, 247, 255, .25);
   }
 
+
+  .details {
+    display: none;
+    font-size: 12px;
+    color: #9adbcf;
+    padding-top: 6px;
+    margin-top: 6px;
+    border-top: 1px dashed #23345a
+  }
+
+  .btn.link {
+    background: transparent;
+    border-color: #2b395f;
+    color: #9adbcf
+  }
+
   .badge.soon {
     background: linear-gradient(90deg, #2a2a0f, #3b3b12);
     color: #ffef8a;
@@ -600,6 +616,7 @@
         document.getElementById('ltBal')?.textContent = balStr;
 
         // Render lists
+
         const all = j.longTermStaking.activeStakes || [];
         renderLongTerm(all);
         renderReady(all.filter(s => (s.daysRemaining || 0) <= 0));
@@ -617,6 +634,13 @@
 
 
 
+    // Helpers for details & countdown
+    function fmtDate(s) { try { const d = new Date(s); return d.toLocaleDateString(); } catch (_) { return s || '' } }
+    function calcAccrued(amount, apy, startDate, endDate) { const now = Date.now(); const st = +new Date(startDate || 0); const ed = +new Date(endDate || 0); if (!isFinite(st) || !isFinite(ed) || st <= 0 || ed <= 0) return 0; const elapsed = Math.max(0, Math.min(now, ed) - st); return amount * (parseFloat(String(apy).replace('%', '')) / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)); }
+    function ensureCountdownTick() { if (window._stakeCountdownTimer) return; window._stakeCountdownTimer = setInterval(() => { document.querySelectorAll('.waldo-stake .countdown[data-end]').forEach(el => { const end = Number(el.dataset.end || 0); if (!end) return; const diff = Math.max(0, end - Date.now()); if (diff <= 24 * 60 * 60 * 1000) { const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000); el.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; } else { const d = Math.ceil(diff / 86400000); el.textContent = `${d}d`; } }); }, 1000); }
+    function toggleStakeDetails(id) { const el = document.getElementById('det_' + id); if (!el) return; el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+
+
     function renderLongTerm(list) {
       const root = document.getElementById('ltList');
       root.innerHTML = (list || []).map(s => {
@@ -626,6 +650,8 @@
         const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
         const soon = dr > 0 && dr <= 7;
         const mature = dr <= 0;
+        const endMs = +new Date(s.endDate || Date.now());
+        const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
         const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
         return `
         <div class="stake-item">
@@ -633,13 +659,19 @@
             <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
             ${badge}
           </div>
-          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: ${dr}</div>
+          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown" data-end="${endMs}">${dr}d</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
           <div class="actions">
             ${mature ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
+            <button class="btn link" onclick="toggleStakeDetails('${s.stakeId}')">View details</button>
+          </div>
+          <div id="det_${s.stakeId}" class="details">
+            <div>Start: ${fmtDate(s.startDate)} • End: ${fmtDate(s.endDate)} • Progress: ${pct}%</div>
+            <div>Accrued so far: ${accrued.toFixed(2)} WALDO</div>
           </div>
         </div>`
       }).join('') || '<div class="subline">No active long‑term locks</div>';
+      ensureCountdownTick();
     }
 
     function renderReady(list) {
