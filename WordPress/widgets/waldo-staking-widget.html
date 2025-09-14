@@ -495,34 +495,33 @@
       const HT = document.getElementById('xummHintStake');
       const MB = document.getElementById('xummMobileStake');
       const B = document.getElementById('xummMobileBtnStake');
-      document.getElementById('xummTitleStake').textContent = title || 'Xaman';
+      const T = document.getElementById('xummTitleStake');
+      const link = document.getElementById('xummDesktopLinkStake');
+      if (T) T.textContent = title || 'Xaman';
+
+      const deep = payload?.qr_uri || payload?.refs?.qr_uri || payload?.deeplink ||
+        (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.always || payload?.next?.app || payload?.refs?.qr || ''));
+      const qrImg = payload?.refs?.qr_png || payload?.qr_png || payload?.refs?.qr || payload?.qr || '';
+
       M.style.display = 'block';
       if (isMobile()) {
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
         B.onclick = () => {
-          const deep = payload?.refs?.qr_uri || (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.app || payload?.next?.always || payload?.refs?.qr));
           if (deep) {
             try { window.location.href = deep; } catch (_) { }
-            setTimeout(() => { try { window.open(deep, '_self'); } catch (_) { } }, 200);
+            setTimeout(() => { try { window.open(deep, '_self'); } catch (_) { } }, 150);
           }
         };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
-        const qrPng = payload?.refs?.qr_png || payload?.qr_png;
-        const qrImg = qrPng || payload?.refs?.qr || payload?.qr;
-        const deep = payload?.refs?.qr_uri || (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.app || payload?.next?.always || ''));
-        const link = document.getElementById('xummDesktopLinkStake');
+        if (link) { if (deep) { link.href = deep; link.style.display = 'inline-block'; } else { link.style.display = 'none'; } }
         if (qrImg) {
+          QR.onerror = () => { if (deep) QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deep)}`; };
           QR.src = qrImg;
         } else if (deep) {
-          // Fallback: generate QR from deep link (no external libs)
           QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deep)}`;
         } else {
           QR.src = '';
-        }
-        if (link) {
-          if (deep) { link.href = deep; link.style.display = 'inline-block'; }
-          else { link.style.display = 'none'; }
         }
       }
     }
