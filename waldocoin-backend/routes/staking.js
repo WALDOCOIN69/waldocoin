@@ -155,10 +155,21 @@ router.post("/long-term", async (req, res) => {
         error: `Level ${userLevel.level} (${userLevel.title}) does not have access to ${duration}-day staking. Available durations: ${userLevel.availableDurations.join(', ')} days`
       });
     }
-
-    // Check maximum active stakes limit
-    const activeStakes = await redis.sCard(`user:${wallet}:long_term_stakes`);
-    if (activeStakes >= LONG_TERM_CONFIG.maxActiveStakes) {
+    // Check maximum active stakes limit (count only currently 'active' long‑term stakes)
+    let _activeCount = 0;
+    try {
+      const idsA = await redis.sMembers(`user:${wallet}:long_term_stakes`);
+      const idsB = await redis.sMembers(`staking:user:${wallet}`);
+      const ids = Array.from(new Set([...(idsA || []), ...(idsB || [])]));
+      for (const id of ids) {
+        const data = await redis.hGetAll(`staking:${id}`);
+        if (!data || Object.keys(data).length === 0) continue;
+        const status = data.status;
+        const type = data.type || 'long_term';
+        if (status === 'active' && (type === 'long_term' || !type)) _activeCount++;
+      }
+    } catch (_) { /* best-effort */ }
+    if (_activeCount >= LONG_TERM_CONFIG.maxActiveStakes) {
       return res.status(400).json({
         success: false,
         error: `Maximum ${LONG_TERM_CONFIG.maxActiveStakes} active long-term stakes allowed`

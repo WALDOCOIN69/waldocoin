@@ -105,23 +105,20 @@ const isNativeXRP = (tx) =>
 
     setInterval(async () => {
       try {
-        // Get validated ledger index and last processed marker
-        const info = await client.request({ command: 'ledger', ledger_index: 'validated' });
-        const latest = Number(info.result?.ledger_index || info.result?.ledger?.ledger_index);
-        if (!Number.isFinite(latest) || latest <= 0) throw new Error('No validated ledger index');
-
+        // Get latest validated ledger and last processed marker (avoid malformed ranges)
+        const led = await client.request({ command: 'ledger', ledger_index: 'validated' });
+        const latest = Number(led.result?.ledger_index || led.result?.ledger?.ledger_index);
         let last = 0;
         try { last = Number(await redis.get('autodistribute:last_ledger')) || 0; } catch (_) { }
-        let minCandidate = (last && isFinite(last) && last > 0) ? last : (latest - 2000);
-        if (!Number.isFinite(minCandidate)) minCandidate = latest - 2000;
-        const minLedger = Math.max(1, Math.min(latest - 1, Math.floor(minCandidate)));
-        const maxLedger = Math.max(minLedger, latest);
-
+        let minLedger = Math.max(0, latest - 2000);
+        if (last && isFinite(last) && last > 0 && last < latest) {
+          minLedger = last;
+        }
         const resp = await client.request({
           command: 'account_tx',
           account: distributorWallet,
           ledger_index_min: minLedger,
-          ledger_index_max: maxLedger,
+          ledger_index_max: latest,
           binary: false,
           limit: 50,
           forward: true
@@ -132,24 +129,16 @@ const isNativeXRP = (tx) =>
           const meta = entry?.meta;
           const validated = entry?.validated !== false;
           if (!validated || !tx || meta?.TransactionResult !== 'tesSUCCESS') continue;
-          if (tx.TransactionType !== 'Payment' || tx.Destination !== distributorWallet) continue;
+          if (tx.TransactionType !== 'Payment' || tx.Destination !== distributorWallet || typeof tx.Amount !== 'string') continue;
           const txHash = tx?.hash || entry?.hash;
           let seen = false;
           try { seen = await redis.sIsMember('autodistribute:processed', txHash); } catch (_) { }
           if (txHash && seen) continue;
-
-          if (typeof tx.Amount === 'string') {
-            await processIncomingPayment(tx);
-          } else if (isWloIOU(tx)) {
-            await processIncomingWloPayment(tx);
-          }
+          await processIncomingPayment(tx);
           try { if (txHash) await redis.sAdd('autodistribute:processed', txHash); } catch (_) { }
           try { if (entry?.ledger_index) await redis.set('autodistribute:last_ledger', String(entry.ledger_index)); } catch (_) { }
         }
       } catch (e) {
-        if (/ledger index malformed/i.test(e?.message || '')) {
-          try { await redis.del('autodistribute:last_ledger'); } catch (_) { }
-        }
         console.warn('⚠️ Poller error:', e.message);
       }
     }, 15000);
@@ -178,10 +167,6 @@ const isNativeXRP = (tx) =>
     client.on("transaction", async (event) => {
       if (!event.validated) { return; }
       const tx = event.transaction;
-      if (isWloIOU(tx)) {
-        await processIncomingWloPayment(tx);
-        return;
-      }
       if (!isNativeXRP(tx)) {
         console.warn("⚠️ Ignored event - not a valid XRP Payment TX");
         return;
