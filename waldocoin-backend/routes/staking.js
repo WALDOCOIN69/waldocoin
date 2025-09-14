@@ -248,7 +248,11 @@ router.post("/long-term", async (req, res) => {
       },
       uuid: created.uuid,
       refs: created.refs,
-      next: created.next
+      next: created.next,
+      // Convenience fields for simple clients
+      qr_png: created?.refs?.qr_png,
+      qr_uri: created?.refs?.qr_uri || created?.refs?.qr,
+      deeplink: created?.next?.always || created?.next?.app
     });
 
 
@@ -367,7 +371,11 @@ router.post("/per-meme", async (req, res) => {
       },
       uuid: created.uuid,
       refs: created.refs,
-      next: created.next
+      next: created.next,
+      // Convenience fields for simple clients
+      qr_png: created?.refs?.qr_png,
+      qr_uri: created?.refs?.qr_uri || created?.refs?.qr,
+      deeplink: created?.next?.always || created?.next?.app
     });
 
   } catch (error) {
