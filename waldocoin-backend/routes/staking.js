@@ -1085,7 +1085,7 @@ router.post('/stake', async (req, res) => {
 
     // Enforce minimum WALDO worth: 3 XRP
     try {
-      const worth = await ensureMinWaldoWorth(wallet, 3);
+      const worth = await ensureMinWaldoWorth(wallet, 1);
       if (!worth.ok) {
         return res.status(403).json({
           success: false,
