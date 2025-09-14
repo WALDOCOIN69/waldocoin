@@ -65,6 +65,12 @@
       </div>
     </div>
 
+    <div class="list" id="ltReadyBlock" style="display:none">
+      <h4>Ready to Redeem</h4>
+      <div id="ltReadyList"></div>
+    </div>
+
+
 
   </div>
 
@@ -228,6 +234,76 @@
     grid-template-columns: 1fr 1fr;
     gap: 10px
   }
+
+  /* Badges for maturity */
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: .2px;
+    text-transform: uppercase;
+    border: 1px solid rgba(0, 247, 255, .25);
+  }
+
+  .badge.soon {
+    background: linear-gradient(90deg, #2a2a0f, #3b3b12);
+    color: #ffef8a;
+    box-shadow: 0 0 12px rgba(255, 239, 138, .15);
+    border-color: rgba(255, 239, 138, .25)
+  }
+
+  .badge.mature {
+    background: linear-gradient(90deg, #0f2a1a, #134a2d);
+    color: #79ffcf;
+    box-shadow: 0 0 12px rgba(121, 255, 207, .18);
+    border-color: rgba(121, 255, 207, .25)
+  }
+
+  /* Progress bar */
+  .progress {
+    height: 8px;
+    background: #0e0e0e;
+    border: 1px solid #1a1a1a;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 8px 0 6px
+  }
+
+  .progress>span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #00f7ff, #5cffb5);
+    box-shadow: 0 0 10px rgba(0, 247, 255, .35);
+    transition: width .5s ease
+  }
+
+  .stake-item {
+    padding: 10px 12px;
+    border: 1px solid #1c254a;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #0a0f26, #0a1020);
+    margin-bottom: 10px
+  }
+
+  .stake-item .item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px
+  }
+
+  .stake-item .meta {
+    font-size: 12px;
+    color: #9adbcf;
+    margin-top: 4px
+  }
+
+  .stake-item .amt {
+    font-weight: 700
+  }
+
 
   @media (max-width:520px) {
     .waldo-stake {
@@ -524,7 +600,9 @@
         document.getElementById('ltBal')?.textContent = balStr;
 
         // Render lists
-        renderLongTerm(j.longTermStaking.activeStakes || []);
+        const all = j.longTermStaking.activeStakes || [];
+        renderLongTerm(all);
+        renderReady(all.filter(s => (s.daysRemaining || 0) <= 0));
 
         document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
       } catch (e) { alert('Load failed: ' + e.message); }
@@ -541,16 +619,45 @@
 
     function renderLongTerm(list) {
       const root = document.getElementById('ltList');
-      root.innerHTML = list.map(s => `
+      root.innerHTML = (list || []).map(s => {
+        const dr = Math.max(0, parseInt(s.daysRemaining || 0));
+        const total = Math.max(1, parseInt(s.duration || 0));
+        const done = Math.max(0, Math.min(total, total - dr));
+        const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+        const soon = dr > 0 && dr <= 7;
+        const mature = dr <= 0;
+        const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
+        return `
         <div class="stake-item">
-          <strong>Long‑Term Lock</strong><br/>
-          Amount: ${s.amount} WALDO • Duration: ${s.duration} days • Bonus: +${s.apy}%<br/>
-          Days Remaining: ${s.daysRemaining} • Estimated WALDO: ${s.expectedReward} WALDO
-          <div class="actions">
-            ${s.daysRemaining <= 0 ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class=\"btn\" onclick=\"stakeUnstake('${s.stakeId}')\">Unlock</button>`}
+          <div class="item-head">
+            <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
+            ${badge}
           </div>
+          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: ${dr}</div>
+          <div class="progress"><span style="width:${pct}%"></span></div>
+          <div class="actions">
+            ${mature ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
+          </div>
+        </div>`
+      }).join('') || '<div class="subline">No active long‑term locks</div>';
+    }
+
+    function renderReady(list) {
+      const block = document.getElementById('ltReadyBlock');
+      const root = document.getElementById('ltReadyList');
+      const ready = (list || []).filter(s => (s.daysRemaining || 0) <= 0);
+      if (!ready.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
+      if (block) block.style.display = 'block';
+      if (root) root.innerHTML = ready.map(s => `
+        <div class="stake-item">
+          <div class="item-head">
+            <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
+            <span class="badge mature">Matured</span>
+          </div>
+          <div class="meta">Locked ${s.duration}d • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO</div>
+          <div class="actions"><button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button></div>
         </div>
-      `).join('') || '<div class="subline">No active long‑term locks</div>';
+      `).join('');
     }
 
 
