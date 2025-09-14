@@ -198,7 +198,7 @@ router.post("/long-term", async (req, res) => {
       expectedReward: expectedReward,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      status: 'active',
+      status: 'pending_signature',
       type: 'long_term',
       earlyUnstakePenalty: LONG_TERM_CONFIG.earlyUnstakePenalty,
       claimed: false,
@@ -1618,6 +1618,57 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 });
 
 
+
+// Admin: clear fake/failed long-term stakes for a wallet
+router.post('/admin/clear-fake', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+    const { wallet, max = 50 } = req.body || {};
+    if (!wallet || typeof wallet !== 'string' || !wallet.startsWith('r')) {
+      return res.status(400).json({ success: false, error: 'Invalid wallet' });
+    }
+
+    const idsA = await redis.sMembers(`user:${wallet}:long_term_stakes`);
+    const idsB = await redis.sMembers(`staking:user:${wallet}`);
+    const ids = Array.from(new Set([...(idsA || []), ...(idsB || [])]));
+
+    const cleared = [];
+    for (const id of ids) {
+      const key = `staking:${id}`;
+      const data = await redis.hGetAll(key);
+      if (!data || Object.keys(data).length === 0) {
+        await redis.sRem(`user:${wallet}:long_term_stakes`, id);
+        await redis.sRem(`staking:user:${wallet}`, id);
+        await redis.sRem('staking:active', id);
+        continue;
+      }
+      const type = data.type || 'long_term';
+      const status = data.status;
+      if (type !== 'long_term') continue;
+      if (status === 'active' || status === 'pending_signature') {
+        const amt = Number(data.amount || 0);
+        if (status === 'active' && Number.isFinite(amt) && amt > 0) {
+          try { await redis.incrByFloat('staking:total_staked', -amt); } catch (_) { }
+          try { await redis.incrByFloat('staking:total_long_term_staked', -amt); } catch (_) { }
+        }
+        await redis.hSet(key, { status: 'cancelled', cancelledAt: new Date().toISOString(), cancelledBy: 'admin' });
+        await redis.sRem(`user:${wallet}:long_term_stakes`, id);
+        await redis.sRem(`staking:user:${wallet}`, id);
+        await redis.sRem('staking:active', id);
+        cleared.push(id);
+      }
+    }
+
+    return res.json({ success: true, wallet, clearedCount: cleared.length, cleared });
+  } catch (e) {
+    console.error('clear-fake error', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 export default router;
 
 
@@ -1667,6 +1718,8 @@ router.get('/status/:uuid', async (req, res) => {
       await redis.lPush('staking_logs', JSON.stringify({
         action: 'per_meme_stake_activated', stakeId, wallet: stakeData.wallet, memeId: stakeData.memeId,
         stakedAmount, txid, timestamp: new Date().toISOString()
+
+
       }));
     } else {
       const amount = Number(offer?.amount || stakeData?.amount || 0);
