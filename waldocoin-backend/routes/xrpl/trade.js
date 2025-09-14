@@ -153,10 +153,67 @@ router.get('/status/:uuid', async (req, res) => {
     const offer = await redis.hGetAll(`trade:offer:${uuid}`);
     const side = offer?.side;
 
-    // Only auto-deliver on BUY for now
-    if (side !== 'buy') {
-      await redis.set(processedKey, '1', { EX: 604800 }); // mark as seen to avoid reprocessing
-      return res.json({ ok: true, signed: true, account, txid, delivered: false });
+    // Auto-deliver on SELL (send XRP back)
+    if (side === 'sell') {
+      const amountWlo = Number(offer?.amountWlo || 0);
+      const midSell = Number(offer?.mid || 0);
+      const bpsSell = Number(offer?.slippageBps || 0);
+      const slipSell = Math.max(0, bpsSell) / 10000;
+      const xrpOutRaw = (amountWlo > 0 && midSell > 0) ? amountWlo * (midSell * (1 - slipSell)) : 0;
+      const xrpOut = Math.max(0, Math.floor(xrpOutRaw * 1e6) / 1e6);
+      if (!account || !(xrpOut > 0)) {
+        return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'calc_invalid' });
+      }
+      const lockKeySell = `trade:processing:${uuid}`;
+      const lockedSell = await redis.set(lockKeySell, '1', { NX: true, EX: 60 });
+      if (!lockedSell) {
+        return res.json({ ok: true, signed: true, account, txid, delivered: false, processing: true });
+      }
+      const EXPECTED = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+      const distSecret = process.env.WALDO_DISTRIBUTOR_SECRET || null;
+      const altSecret = process.env.WALDO_SENDER_SECRET || null;
+      let chosenSecret = distSecret || altSecret;
+      let distAddr = null, altAddr = null;
+      try { if (distSecret) distAddr = xrpl.Wallet.fromSeed(distSecret).address; } catch (_) { }
+      try { if (altSecret) altAddr = xrpl.Wallet.fromSeed(altSecret).address; } catch (_) { }
+      if (EXPECTED) {
+        if (distAddr === EXPECTED) chosenSecret = distSecret; else if (altAddr === EXPECTED) chosenSecret = altSecret;
+      }
+      if (!chosenSecret) {
+        await redis.del(lockKeySell).catch(() => { });
+        return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'missing_sender_secret' });
+      }
+      const reserve = Number(process.env.SELL_MIN_RESERVE_XRP || process.env.MIN_RESERVE_XRP || 2);
+      const clientSell = new xrpl.Client('wss://xrplcluster.com');
+      await clientSell.connect();
+      let walletSell;
+      try { walletSell = xrpl.Wallet.fromSeed(chosenSecret); } catch (e) {
+        await clientSell.disconnect(); await redis.del(lockKeySell).catch(() => { });
+        return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'invalid_sender_secret' });
+      }
+      try {
+        const info = await clientSell.request({ command: 'account_info', account: walletSell.address, ledger_index: 'validated' });
+        const balXrp = Number(xrpl.dropsToXrp(info.result.account_data.Balance));
+        const available = Math.max(0, balXrp - reserve);
+        const payXrp = Math.min(xrpOut, available);
+        if (!(payXrp > 0)) {
+          await clientSell.disconnect(); await redis.del(lockKeySell).catch(() => { });
+          return res.json({ ok: true, signed: true, account, txid, delivered: false, error: 'insufficient_xrp', balance: balXrp, reserve, desired: xrpOut });
+        }
+        const payment = { TransactionType: 'Payment', Account: walletSell.address, Destination: account, Amount: xrpl.xrpToDrops(payXrp.toFixed(6)) };
+        const prepared = await clientSell.autofill(payment);
+        const signedTx = walletSell.sign(prepared);
+        const submit = await clientSell.submitAndWait(signedTx.tx_blob);
+        const engine = submit?.result?.engine_result || submit?.result?.meta?.TransactionResult;
+        const hash = submit?.result?.tx_json?.hash || submit?.result?.hash;
+        await clientSell.disconnect();
+        if (engine !== 'tesSUCCESS') { await redis.del(lockKeySell).catch(() => { }); return res.json({ ok: true, signed: true, account, txid, delivered: false, error: engine || 'unknown_error' }); }
+        await redis.set(processedKey, '1', { EX: 604800 }).catch(() => { }); await redis.del(lockKeySell).catch(() => { });
+        return res.json({ ok: true, signed: true, account, txid, delivered: true, paidXrp: payXrp, hash });
+      } catch (e) {
+        await clientSell.disconnect().catch(() => { }); await redis.del(lockKeySell).catch(() => { });
+        return res.json({ ok: true, signed: true, account, txid, delivered: false, error: e?.message || 'payout_failed' });
+      }
     }
 
     const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
