@@ -105,15 +105,23 @@ const isNativeXRP = (tx) =>
 
     setInterval(async () => {
       try {
+        // Ensure connected before requesting
+        if (!client.isConnected()) {
+          try { await client.connect(); } catch (re) { console.warn('⚠️ Poller reconnect failed:', re.message); return; }
+        }
         // Get latest validated ledger and last processed marker (avoid malformed ranges)
         const led = await client.request({ command: 'ledger', ledger_index: 'validated' });
-        const latest = Number(led.result?.ledger_index || led.result?.ledger?.ledger_index);
+        const latest = Math.floor(Number(led.result?.ledger_index || led.result?.ledger?.ledger_index));
+        if (!Number.isFinite(latest) || latest <= 0) return;
         let last = 0;
-        try { last = Number(await redis.get('autodistribute:last_ledger')) || 0; } catch (_) { }
-        let minLedger = Math.max(0, latest - 2000);
-        if (last && isFinite(last) && last > 0 && last < latest) {
-          minLedger = last;
+        try { last = Math.floor(Number(await redis.get('autodistribute:last_ledger')) || 0); } catch (_) { }
+        let minLedger;
+        if (last && Number.isFinite(last) && last > 0 && last < latest) {
+          minLedger = last + 1;
+        } else {
+          minLedger = Math.max(1, latest - 200);
         }
+        if (minLedger >= latest) minLedger = Math.max(1, latest - 1);
         const resp = await client.request({
           command: 'account_tx',
           account: distributorWallet,
@@ -140,6 +148,9 @@ const isNativeXRP = (tx) =>
         }
       } catch (e) {
         console.warn('⚠️ Poller error:', e.message);
+        if (/ledger index malformed/i.test(e.message) || /lgrIdxMalformed/i.test(String(e?.data?.error))) {
+          try { await redis.del('autodistribute:last_ledger'); } catch (_) { }
+        }
       }
     }, 15000);
 
@@ -162,6 +173,14 @@ const isNativeXRP = (tx) =>
     await client.request({
       command: "subscribe",
       accounts: [distributorWallet],
+    });
+
+    // Handle disconnects gracefully
+    client.on('disconnected', (code) => {
+      console.warn('⚠️ XRPL disconnected:', code);
+    });
+    client.on('error', (e) => {
+      console.warn('⚠️ XRPL client error:', e?.message || e);
     });
 
     client.on("transaction", async (event) => {
