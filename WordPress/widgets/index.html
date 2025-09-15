@@ -61,23 +61,26 @@
   <script>
     (function () {
       const target = document.getElementById('mount');
-      // Cache buster to avoid stale copies
       const ver = (window.WALDO_WIDGET_VERSION || Date.now());
-      const src = 'waldo-staking-widget.html?v=' + encodeURIComponent(ver);
-      fetch(src, { cache: 'no-store' }).then(async (r) => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const html = await r.text();
+      const localSrc = 'waldo-staking-widget.html?v=' + encodeURIComponent(ver);
+      const rawSrc = 'https://raw.githubusercontent.com/WALDOCOIN69/waldocoin/main/WordPress/widgets/waldo-staking-widget.html?v=' + encodeURIComponent(ver);
+
+      async function inject(html) {
         target.innerHTML = html;
-        // Ensure scripts in the injected HTML execute
         const scripts = target.querySelectorAll('script');
+        let injectedOk = true;
         for (const old of scripts) {
-          const s = document.createElement('script');
-          s.defer = false; s.async = false;
-          if (old.src) { s.src = old.src; } else { s.textContent = old.textContent; }
-          // Copy attributes
-          for (const a of old.attributes) s.setAttribute(a.name, a.value);
-          document.body.appendChild(s);
-          old.remove();
+          try {
+            const s = document.createElement('script');
+            s.defer = false; s.async = false;
+            if (old.src) { s.src = old.src; } else { s.textContent = old.textContent; }
+            for (const a of old.attributes) s.setAttribute(a.name, a.value);
+            document.body.appendChild(s);
+            old.remove();
+          } catch (err) {
+            injectedOk = false;
+            console.warn('Script inject error:', err?.message || err);
+          }
         }
         // Fallback: ensure widget opens and toggle works even if inner script didn't bind
         try {
@@ -91,10 +94,32 @@
             }, { passive: true });
           }
         } catch (_) { }
-      }).catch((e) => {
-        target.innerHTML = '<p class="hint">Failed to load widget (' + e.message + ').</p>' +
-          '<p class="hint">Open the raw widget file: <a href="https://raw.githubusercontent.com/WALDOCOIN69/waldocoin/main/WordPress/widgets/waldo-staking-widget.html" target="_blank" rel="noopener">waldo-staking-widget.html</a></p>';
-      });
+        return injectedOk;
+      }
+
+      async function loadAndInject(urlPrimary, urlFallback) {
+        try {
+          const r = await fetch(urlPrimary, { cache: 'no-store' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const html = await r.text();
+          const ok = await inject(html);
+          // If any inline script fails to eval, fallback to raw GitHub copy
+          if (!ok) throw new Error('Inline script eval failed');
+        } catch (e) {
+          console.warn('Primary widget failed, trying fallback:', e.message);
+          try {
+            const r2 = await fetch(urlFallback, { cache: 'no-store' });
+            if (!r2.ok) throw new Error('HTTP ' + r2.status);
+            const html2 = await r2.text();
+            await inject(html2);
+          } catch (e2) {
+            target.innerHTML = '<p class="hint">Failed to load widget (' + e2.message + ').</p>' +
+              '<p class="hint">Open the raw widget file: <a href="https://raw.githubusercontent.com/WALDOCOIN69/waldocoin/main/WordPress/widgets/waldo-staking-widget.html" target="_blank" rel="noopener">waldo-staking-widget.html</a></p>';
+          }
+        }
+      }
+
+      loadAndInject(localSrc, rawSrc);
     })();
   </script>
 </body>
