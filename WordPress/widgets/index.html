@@ -72,10 +72,12 @@
         const scripts = target.querySelectorAll('script');
         for (const old of scripts) {
           const s = document.createElement('script');
+          s.defer = false; s.async = false;
           if (old.src) { s.src = old.src; } else { s.textContent = old.textContent; }
           // Copy attributes
           for (const a of old.attributes) s.setAttribute(a.name, a.value);
-          old.replaceWith(s);
+          document.body.appendChild(s);
+          old.remove();
         }
         // Fallback: ensure widget opens and toggle works even if inner script didn't bind
         try {
