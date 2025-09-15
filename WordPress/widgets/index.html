@@ -119,6 +119,22 @@
         }
       }
 
+      // Define safe placeholders so clicks before scripts load won't error
+      (function () {
+        const names = ['stakeConnect', 'stakeTrustline', 'stakeDisconnect', 'stakeLoadInfo', 'ltSetMax', 'createLongTermStake', 'redeemStake'];
+        const mk = (name) => function () {
+          const args = arguments;
+          const tryCall = () => {
+            const f = window[name];
+            if (typeof f === 'function' && f !== mk) return f.apply(window, args);
+            setTimeout(tryCall, 300);
+          };
+          tryCall();
+        };
+        for (const n of names) { if (typeof window[n] !== 'function') window[n] = mk(n); }
+      })();
+
+
       loadAndInject(localSrc, rawSrc);
     })();
   </script>
