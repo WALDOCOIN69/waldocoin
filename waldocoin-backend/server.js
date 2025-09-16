@@ -172,7 +172,7 @@ const startServer = async () => {
     res.json({
       status: "OK",
       timestamp: new Date().toISOString(),
-      version: "2025-09-16-cors-fix",
+      version: "2025-09-16-auto-unstake",
       endpoints: {
         airdrop: "/api/airdrop",
         trustlineCount: "/api/airdrop/trustline-count",
