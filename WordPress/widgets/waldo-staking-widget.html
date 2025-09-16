@@ -871,16 +871,7 @@
           alert('QR modal function not available');
         }
         if (j.uuid) {
-          // Add manual completion button as backup
-          msg.innerHTML = 'Sign in Xaman to unlock your WALDO... <button onclick="forceCompleteUnstake(\'' + stakeId + '\')" style="margin-left:10px;padding:2px 8px;font-size:11px;background:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">Complete Manually</button>';
-
-          // Also add a 5-second auto-complete as backup
-          setTimeout(() => {
-            console.log('[UNSTAKE] 5-second backup timeout - auto-completing');
-            if (document.getElementById('xummModalStake').style.display !== 'none') {
-              forceCompleteUnstake(stakeId);
-            }
-          }, 5000);
+          msg.textContent = 'Sign in Xaman to unlock your WALDO...';
 
           startUnstakeStatusPoll(j.uuid, async () => {
             msg.textContent = 'Unlocked ✔ — WALDO sent back';
@@ -929,11 +920,9 @@
         } catch (e) {
           console.error('[UNSTAKE-POLL] Fetch error:', e);
           corsFailures++;
-          console.log(`[UNSTAKE-POLL] CORS failure count: ${corsFailures}/15`);
-
-          // If CORS error persists for 10 seconds, assume transaction completed
-          if (e.message.includes('Failed to fetch') && corsFailures >= 10) {
-            console.log('[UNSTAKE-POLL] CORS failures for 10+ seconds - assuming transaction completed');
+          // Only assume completion after many failures AND sufficient time (2+ minutes)
+          if (e.message.includes('Failed to fetch') && corsFailures >= 60 && tries >= 120) {
+            console.log('[UNSTAKE-POLL] Extended CORS failures after 2+ minutes - assuming transaction completed');
             clearInterval(iv);
             xummCloseStake();
             if (onDone) onDone();
@@ -952,27 +941,7 @@
       }, 1000);
     }
 
-    // Manual unstake completion (backup for CORS issues)
-    window.forceCompleteUnstake = async function (stakeId) {
-      if (!confirm('Force complete unstake? Only use this if you signed the transaction in Xaman.')) return;
 
-      console.log('[FORCE-UNSTAKE] Manually completing unstake for:', stakeId);
-      const msg = document.getElementById('ltMsg');
-
-      try {
-        // Close QR modal
-        xummCloseStake();
-
-        // Update message and refresh list
-        msg.textContent = 'Unlocked ✔ — WALDO sent back (manual completion)';
-        await stakeLoadInfo();
-
-        console.log('[FORCE-UNSTAKE] Manual completion successful');
-      } catch (e) {
-        console.error('[FORCE-UNSTAKE] Error:', e);
-        msg.textContent = 'Manual completion error: ' + e.message;
-      }
-    }
 
     // Redeem (maturity only, long-term visible here)
     window.stakeRedeem = async function (stakeId) {
