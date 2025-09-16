@@ -703,6 +703,22 @@ router.post("/unstake", async (req, res) => {
     const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 
+    // Check distributor wallet balance before creating transaction
+    try {
+      const distributorBalance = await getWaldoBalance(DISTRIBUTOR_WALLET);
+      console.log(`[UNSTAKE] Distributor balance: ${distributorBalance} WALDO, need: ${userReceives} WALDO`);
+
+      if (distributorBalance < userReceives) {
+        return res.status(500).json({
+          success: false,
+          error: `Insufficient distributor balance. Need ${userReceives.toFixed(2)} WALDO but only have ${distributorBalance.toFixed(2)} WALDO. Please contact admin.`
+        });
+      }
+    } catch (e) {
+      console.warn('[UNSTAKE] Could not check distributor balance:', e.message);
+      // Continue anyway - let XUMM handle the error
+    }
+
     // Create XUMM Payment transaction (user signs to receive their WALDO back)
     const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
     const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
@@ -1535,6 +1551,22 @@ router.post('/redeem', async (req, res) => {
     const DISTRIBUTOR_WALLET = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
     const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
+
+    // Check distributor wallet balance before creating transaction
+    try {
+      const distributorBalance = await getWaldoBalance(DISTRIBUTOR_WALLET);
+      console.log(`[REDEEM] Distributor balance: ${distributorBalance} WALDO, need: ${totalAmount} WALDO`);
+
+      if (distributorBalance < totalAmount) {
+        return res.status(500).json({
+          success: false,
+          error: `Insufficient distributor balance. Need ${totalAmount.toFixed(2)} WALDO but only have ${distributorBalance.toFixed(2)} WALDO. Please contact admin.`
+        });
+      }
+    } catch (e) {
+      console.warn('[REDEEM] Could not check distributor balance:', e.message);
+      // Continue anyway - let XUMM handle the error
+    }
 
     // Create XUMM Payment transaction (user signs to receive their WALDO)
     const memoType = Buffer.from(type === 'per_meme' ? 'REDEEM_MEME' : 'REDEEM_LONG').toString('hex').toUpperCase();
