@@ -476,7 +476,15 @@
   window.WALDO_API = window.WALDO_API || (window.parent && window.parent.WALDO_API) || 'https://waldocoin-backend-api.onrender.com';
 
   (function () {
-    const API = window.WALDO_API;
+    // Normalize API so code can safely call `${API}/api/...`
+    const API = (function () {
+      try {
+        const raw = (window.WALDO_API || '').trim();
+        if (!raw) return '';
+        // Remove trailing slash and a single '/api' suffix if present
+        return raw.replace(/\/+$/, '').replace(/\/api$/, '');
+      } catch (_) { return ''; }
+    })();
     const ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = 'WLO';
     let WALLET = '';
