@@ -288,7 +288,7 @@ const startServer = async () => {
 
   const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => {
-    console.log(`🧩 WALDO backend running on http://localhost:${PORT} - UPDATED`);
+    console.log(`🧩 WALDO backend running on http://localhost:${PORT} - UPDATED ${new Date().toISOString()}`);
   });
 };
 
