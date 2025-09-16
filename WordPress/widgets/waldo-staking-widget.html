@@ -271,6 +271,45 @@
     border-color: rgba(121, 255, 207, .25)
   }
 
+  /* Color-coded countdown based on time remaining */
+  .countdown {
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+
+  .countdown.danger {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+  }
+
+  .countdown.warning {
+    color: #ffd93d;
+    background: rgba(255, 217, 61, 0.1);
+    border: 1px solid rgba(255, 217, 61, 0.2);
+  }
+
+  .countdown.ready {
+    color: #6bcf7f;
+    background: rgba(107, 207, 127, 0.1);
+    border: 1px solid rgba(107, 207, 127, 0.2);
+    animation: pulse-ready 2s infinite;
+  }
+
+  @keyframes pulse-ready {
+
+    0%,
+    100% {
+      box-shadow: 0 0 5px rgba(107, 207, 127, 0.3);
+    }
+
+    50% {
+      box-shadow: 0 0 15px rgba(107, 207, 127, 0.6);
+    }
+  }
+
   /* Progress bar */
   .progress {
     height: 8px;
@@ -654,7 +693,44 @@
     // Helpers for details & countdown
     function fmtDate(s) { try { const d = new Date(s); return d.toLocaleDateString(); } catch (_) { return s || '' } }
     function calcAccrued(amount, apy, startDate, endDate) { const now = Date.now(); const st = +new Date(startDate || 0); const ed = +new Date(endDate || 0); if (!isFinite(st) || !isFinite(ed) || st <= 0 || ed <= 0) return 0; const elapsed = Math.max(0, Math.min(now, ed) - st); return amount * (parseFloat(String(apy).replace('%', '')) / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)); }
-    function ensureCountdownTick() { if (window._stakeCountdownTimer) return; window._stakeCountdownTimer = setInterval(() => { document.querySelectorAll('.waldo-stake .countdown[data-end]').forEach(el => { const end = Number(el.dataset.end || 0); if (!end) return; const diff = Math.max(0, end - Date.now()); if (diff <= 24 * 60 * 60 * 1000) { const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000); el.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; } else { const d = Math.ceil(diff / 86400000); el.textContent = `${d}d`; } }); }, 1000); }
+    function ensureCountdownTick() {
+      if (window._stakeCountdownTimer) return;
+      window._stakeCountdownTimer = setInterval(() => {
+        document.querySelectorAll('.waldo-stake .countdown[data-end]').forEach(el => {
+          const end = Number(el.dataset.end || 0);
+          const totalDuration = Number(el.dataset.duration || 30); // Default 30 days
+          if (!end) return;
+          const diff = Math.max(0, end - Date.now());
+          const daysLeft = Math.ceil(diff / (24 * 60 * 60 * 1000));
+
+          // Remove existing color classes
+          el.classList.remove('danger', 'warning', 'ready');
+
+          // Color coding based on percentage of time remaining
+          const percentRemaining = (daysLeft / totalDuration) * 100;
+          if (daysLeft <= 0) {
+            el.classList.add('ready');
+            el.textContent = 'READY!';
+          } else if (percentRemaining <= 25) { // Last 25% = red
+            el.classList.add('danger');
+          } else if (percentRemaining <= 50) { // 25-50% = yellow
+            el.classList.add('warning');
+          }
+          // Above 50% = default color (no class)
+
+          if (daysLeft > 0) {
+            if (diff <= 24 * 60 * 60 * 1000) {
+              const h = Math.floor(diff / 3600000);
+              const m = Math.floor((diff % 3600000) / 60000);
+              const s = Math.floor((diff % 60000) / 1000);
+              el.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            } else {
+              el.textContent = `${daysLeft}d`;
+            }
+          }
+        });
+      }, 1000);
+    }
     function toggleStakeDetails(id) { const el = document.getElementById('det_' + id); if (!el) return; el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
 
 
@@ -670,13 +746,25 @@
         const endMs = +new Date(s.endDate || Date.now());
         const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
         const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
+
+        // Determine initial countdown color class
+        const percentRemaining = (dr / total) * 100;
+        let countdownClass = '';
+        if (mature) {
+          countdownClass = 'ready';
+        } else if (percentRemaining <= 25) {
+          countdownClass = 'danger';
+        } else if (percentRemaining <= 50) {
+          countdownClass = 'warning';
+        }
+
         return `
         <div class="stake-item">
           <div class="item-head">
             <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
             ${badge}
           </div>
-          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown" data-end="${endMs}">${dr}d</span></div>
+          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${mature ? 'READY!' : dr + 'd'}</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
           <div class="actions">
             ${mature ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
