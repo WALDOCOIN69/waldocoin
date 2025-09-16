@@ -1,10 +1,9 @@
 <!-- WALDO Staking Widget (matches trading widget look) -->
-<div class="waldo-stake collapsed" id="waldoStake">
+<div class="waldo-stake" id="waldoStake">
   <div class="stake-head">
     <div class="title"><span class="accent">🟢</span> WALDO Lock & Boost</div>
     <div class="sub">30-Day Lock + • Bonus: +12% to +35% • Early unlock reduces WALDO by 15%</div>
     <div class="tabs">
-      <button id="stakeToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
       <button class="tab active" data-tab="long">Long-Term</button>
     </div>
   </div>
@@ -184,11 +183,7 @@
     cursor: pointer
   }
 
-  .collapsed .panel,
-  .collapsed .status-row,
-  .collapsed .wallet-row {
-    display: none
-  }
+
 
   .trade-body,
   .stake-body {
@@ -496,10 +491,7 @@
     let DURATIONS = [30];
     let CURRENT_BAL = 0;
 
-    // Collapse/expand
-    document.getElementById('stakeToggle')?.addEventListener('click', () => {
-      document.getElementById('waldoStake').classList.toggle('collapsed');
-    });
+
 
     // Tabs
     document.querySelectorAll('.waldo-stake .tab').forEach(btn => {
