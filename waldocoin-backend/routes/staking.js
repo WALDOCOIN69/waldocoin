@@ -1489,60 +1489,6 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     return res.json({ ok: true, signed: false, error: e.message });
   }
 });
-    };
-let prepared;
-try {
-  prepared = await client.autofill(payment);
-} catch (e) {
-  await client.disconnect();
-  return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'sender_account_not_found' });
-}
-const signedTx = wallet.sign(prepared);
-const result = await client.submitAndWait(signedTx.tx_blob);
-const ok = (result?.result?.meta?.TransactionResult === 'tesSUCCESS') || (result?.engine_result === 'tesSUCCESS');
-const deliveredHash = result?.result?.hash || result?.tx_json?.hash || null;
-await client.disconnect();
-
-if (!ok) {
-  return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'send_failed' });
-}
-
-// Finalize stake state
-await redis.hSet(stakeKey, {
-  status: 'completed',
-  redeemedAt: new Date().toISOString(),
-  redeemTx: deliveredHash || '',
-  claimed: true,
-  userReceives: value.toFixed(6)
-});
-
-// Remove from active sets
-if (type === 'per_meme') {
-  await redis.sRem(`user:${stakeData.wallet}:per_meme_stakes`, stakeId);
-} else {
-  await redis.sRem(`user:${stakeData.wallet}:long_term_stakes`, stakeId);
-  await redis.sRem(`staking:user:${stakeData.wallet}`, stakeId);
-  await redis.sRem('staking:active', stakeId);
-}
-
-// Log redemption
-await redis.lPush('staking_logs', JSON.stringify({
-  action: type === 'per_meme' ? 'per_meme_stake_redeemed' : 'long_term_stake_redeemed',
-  stakeId,
-  wallet: stakeData.wallet,
-  amount: value,
-  txid: deliveredHash,
-  timestamp: new Date().toISOString()
-}));
-
-await redis.set(processedKey, '1', { EX: 604800 });
-
-return res.json({ ok: true, signed: true, account, txid, paid: true, deliveredTx: deliveredHash });
-  } catch (e) {
-  console.error('redeem status error', e);
-  return res.status(500).json({ ok: false, error: e.message });
-}
-});
 
 
 
