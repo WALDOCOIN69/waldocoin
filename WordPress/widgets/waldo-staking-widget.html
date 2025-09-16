@@ -844,16 +844,39 @@
 
 
 
-    // Unstake
+    // Unstake (with QR code)
     window.stakeUnstake = async function (stakeId) {
       if (!confirm('Unlock now? Early unlock reduces your WALDO by 15%.')) return;
+      const msg = document.getElementById('ltMsg');
       try {
         const r = await fetch(`${API}/api/staking/unstake`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Unlock failed');
-        alert('Unlock complete!');
-        await stakeLoadInfo();
-      } catch (e) { alert('Unlock error: ' + e.message); }
+        msg.textContent = 'Sign in Xaman to unlock your WALDO...';
+        xummOpenStake('Early Unlock', j);
+        if (j.uuid) startUnstakeStatusPoll(j.uuid, async () => { msg.textContent = 'Unlocked ✔ — WALDO sent back'; await stakeLoadInfo(); });
+      } catch (e) {
+        msg.textContent = 'Unlock error: ' + e.message;
+      }
+    }
+
+    // Status polling for unstake
+    function startUnstakeStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const r = await fetch(`${API}/api/staking/unstake/status/${uuid}?account=${WALLET}&txid=pending`);
+          const j = await r.json();
+          if (j.ok && j.signed && j.paid) {
+            clearInterval(iv);
+            xummCloseStake();
+            if (onDone) onDone();
+          }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (_) { clearInterval(iv); }
+      }, 1000);
     }
 
     // Redeem (maturity only, long-term visible here)

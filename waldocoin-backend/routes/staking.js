@@ -560,14 +560,12 @@ router.get("/info/:wallet", async (req, res) => {
   }
 });
 
-// ✅ POST /api/staking/unstake - Unstake with penalty if early
+// ✅ POST /api/staking/unstake - Create XUMM Payment for early unstaking
 router.post("/unstake", async (req, res) => {
   try {
-    console.log('[UNSTAKE] Request received:', req.body);
     const { wallet, stakeId } = req.body;
 
     if (!wallet || !stakeId) {
-      console.log('[UNSTAKE] Missing required fields');
       return res.status(400).json({
         success: false,
         error: "Missing wallet or stakeId"
@@ -575,12 +573,9 @@ router.post("/unstake", async (req, res) => {
     }
 
     // Get staking record
-    console.log(`[UNSTAKE] Getting stake data for: ${stakeId}`);
     const stakeData = await redis.hGetAll(`staking:${stakeId}`);
-    console.log(`[UNSTAKE] Stake data for ${stakeId}:`, stakeData);
 
     if (!stakeData || Object.keys(stakeData).length === 0) {
-      console.log('[UNSTAKE] Stake not found');
       return res.status(404).json({
         success: false,
         error: "Staking position not found"
@@ -588,7 +583,6 @@ router.post("/unstake", async (req, res) => {
     }
 
     if (!stakeData.wallet || stakeData.wallet !== wallet) {
-      console.log('[UNSTAKE] Wallet mismatch:', { expected: stakeData.wallet, provided: wallet });
       return res.status(404).json({
         success: false,
         error: "Staking position not found or not owned by wallet"
@@ -596,112 +590,139 @@ router.post("/unstake", async (req, res) => {
     }
 
     if (stakeData.status !== 'active') {
-      console.log('[UNSTAKE] Status not active:', stakeData.status);
       return res.status(400).json({
         success: false,
         error: `Staking position is not active (status: ${stakeData.status})`
       });
     }
 
-    console.log('[UNSTAKE] Starting calculations...');
-    const now = new Date();
-    const endDate = new Date(stakeData.endDate);
-    const isEarly = now < endDate;
-    console.log('[UNSTAKE] Timing:', { now: now.toISOString(), endDate: endDate.toISOString(), isEarly });
+    // Calculate early unstaking amount (with 15% penalty)
+    const originalAmount = parseFloat(stakeData.amount || 0);
+    const penalty = originalAmount * 0.15;
+    const userReceives = originalAmount - penalty;
 
-    let finalAmount = parseFloat(stakeData.amount || 0);
-    let penalty = 0;
-    let bonusReward = 0;
-    console.log('[UNSTAKE] Initial amount:', finalAmount);
+    // Get distributor wallet address
+    const DISTRIBUTOR_WALLET = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+    const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+    const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 
-    if (isEarly) {
-      // Early unstaking - apply 15% penalty
-      penalty = finalAmount * 0.15;
-      finalAmount = finalAmount - penalty;
-      console.log('[UNSTAKE] Early unstaking - penalty applied:', { penalty, finalAmount });
-    } else {
-      // Completed staking - add level-based bonus
-      bonusReward = parseFloat(stakeData.bonusReward || stakeData.expectedReward || 0);
-      finalAmount = parseFloat(stakeData.totalReward || stakeData.amount || 0) + bonusReward;
-      console.log('[UNSTAKE] Completed staking - bonus added:', { bonusReward, finalAmount });
+    // Create XUMM Payment transaction (user signs to receive their WALDO back)
+    const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
+    const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
+
+    const txjson = {
+      TransactionType: 'Payment',
+      Account: DISTRIBUTOR_WALLET,
+      Destination: wallet,
+      Amount: {
+        currency: CURRENCY,
+        issuer: ISSUER,
+        value: userReceives.toString()
+      },
+      Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
+    };
+
+    const created = await xummClient.payload.create({
+      txjson,
+      options: { submit: true, expire: 900, return_url: { app: 'xumm://xumm.app/done', web: null } },
+      custom_meta: {
+        identifier: `WALDO_STAKE_UNSTAKE`,
+        instruction: `Early unlock ${userReceives.toFixed(2)} WALDO (${originalAmount} - ${penalty.toFixed(2)} penalty)`
+      }
+    });
+
+    // Map for status processing
+    await redis.hSet(`stake:unstake_offer:${created.uuid}`, { stakeId, wallet, originalAmount: originalAmount.toString(), penalty: penalty.toString(), userReceives: userReceives.toString() });
+
+    return res.json({ success: true, uuid: created.uuid, refs: created.refs, next: created.next });
+  } catch (e) {
+    console.error('unstake init error', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ✅ GET /api/staking/unstake/status/:uuid - Check unstake transaction status
+router.get('/unstake/status/:uuid', async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { account, txid } = req.query;
+
+    if (!uuid) {
+      return res.json({ ok: false, error: 'Missing UUID' });
     }
 
-    // Calculate fees (2% burn, 3% treasury)
-    const burnFee = finalAmount * 0.02;
-    const treasuryFee = finalAmount * 0.03;
-    const totalFees = burnFee + treasuryFee;
-    const userReceives = finalAmount - totalFees;
-    console.log('[UNSTAKE] Fees calculated:', { burnFee, treasuryFee, totalFees, userReceives });
+    // Get offer data
+    const offerData = await redis.hGetAll(`stake:unstake_offer:${uuid}`);
+    if (!offerData.stakeId) {
+      return res.json({ ok: false, error: 'Offer not found' });
+    }
 
-    // Update staking record (convert all values to strings for Redis)
+    const processedKey = `stake:unstake_processed:${uuid}`;
+    const alreadyProcessed = await redis.get(processedKey);
+    if (alreadyProcessed) {
+      return res.json({ ok: true, signed: true, account, txid, paid: true });
+    }
+
+    // Check XUMM status
+    const payload = await xummClient.payload.get(uuid);
+    if (!payload.response.signed) {
+      return res.json({ ok: true, signed: false });
+    }
+
+    // Process the unstaking
+    const { stakeId, wallet, originalAmount, penalty, userReceives } = offerData;
+    const now = new Date();
+
+    // Update staking record
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
       unstakedAt: now.toISOString(),
-      isEarlyUnstake: isEarly.toString(),
-      penalty: penalty.toString(),
-      bonusReceived: bonusReward.toString(),
-      finalAmount: finalAmount.toString(),
-      burnFee: burnFee.toString(),
-      treasuryFee: treasuryFee.toString(),
-      userReceives: userReceives.toString(),
-      claimed: 'true'
+      isEarlyUnstake: 'true',
+      penalty: penalty,
+      userReceives: userReceives,
+      claimed: 'true',
+      unstakeTx: txid || ''
     });
 
-    // Remove from active stake sets (support both schemas)
+    // Remove from active stake sets
     await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
     await redis.sRem(`staking:user:${wallet}`, stakeId);
     await redis.sRem('staking:active', stakeId);
 
-    // Update totals (best-effort across schemas)
+    // Update stats
     try {
-      const amount = parseFloat(stakeData.amount || 0);
+      const amount = parseFloat(originalAmount || 0);
+      const penaltyAmount = parseFloat(penalty || 0);
       if (amount > 0) {
         await redis.incrByFloat('staking:total_staked', -amount);
         await redis.incrByFloat('staking:total_long_term_staked', -amount);
       }
-      if (burnFee > 0) await redis.incrByFloat('staking:total_burned', burnFee);
-      if (treasuryFee > 0) await redis.incrByFloat('staking:total_treasury', treasuryFee);
-      if (penalty > 0) await redis.incrByFloat('staking:total_penalties', penalty);
+      if (penaltyAmount > 0) {
+        await redis.incrByFloat('staking:total_penalties', penaltyAmount);
+      }
     } catch (statsError) {
-      console.error('❌ Error updating stats:', statsError);
-      // Continue - don't fail the unstake for stats errors
+      console.error('❌ Error updating unstake stats:', statsError);
     }
 
-    // Log the unstaking action
+    // Log the action
     await redis.lPush('staking_logs', JSON.stringify({
       action: 'unstake_completed',
       stakeId,
       wallet,
-      originalAmount: parseFloat(stakeData.amount),
-      isEarly,
-      penalty,
-      bonusReward,
-      userReceives,
+      originalAmount: parseFloat(originalAmount || 0),
+      penalty: parseFloat(penalty || 0),
+      userReceives: parseFloat(userReceives || 0),
+      txid,
       timestamp: now.toISOString()
     }));
 
-    res.json({
-      success: true,
-      message: isEarly ? "Early unstaking completed with penalty" : "Staking completed successfully",
-      unstakeData: {
-        stakeId,
-        originalAmount: parseFloat(stakeData.amount),
-        isEarlyUnstake: isEarly,
-        penalty: penalty,
-        bonusReceived: bonusReward,
-        burnFee: burnFee,
-        treasuryFee: treasuryFee,
-        userReceives: userReceives,
-        completedAt: now.toISOString()
-      }
-    });
+    // Mark as processed
+    await redis.set(processedKey, '1', { EX: 604800 });
 
-  } catch (error) {
-    console.error('❌ Error unstaking:', error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to unstake"
-    });
+    return res.json({ ok: true, signed: true, account, txid, paid: true });
+  } catch (e) {
+    console.error('unstake status error', e);
+    return res.json({ ok: true, signed: false, error: e.message });
   }
 });
 
