@@ -797,12 +797,20 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: false });
     }
 
+    // Validate that the signer matches the original stake wallet
+    const signerAccount = payload.response.account;
+    const { stakeId, wallet, originalAmount, penalty, userReceives } = offerData;
+
+    if (signerAccount !== wallet) {
+      console.log(`[UNSTAKE-STATUS] Account mismatch: signer=${signerAccount}, stake_owner=${wallet}`);
+      return res.json({ ok: true, signed: false, error: 'Transaction must be signed by the stake owner' });
+    }
+
     // Get transaction ID from XUMM response
     const actualTxid = payload.response.txid || txid || '';
-    console.log(`[UNSTAKE-STATUS] Transaction signed! TXID: ${actualTxid}`);
+    console.log(`[UNSTAKE-STATUS] Transaction signed by correct account! TXID: ${actualTxid}`);
 
     // Process the unstaking
-    const { stakeId, wallet, originalAmount, penalty, userReceives } = offerData;
     const now = new Date();
 
     console.log(`[UNSTAKE-STATUS] Processing unstake for stake: ${stakeId}, wallet: ${wallet}`);
