@@ -563,9 +563,11 @@ router.get("/info/:wallet", async (req, res) => {
 // ✅ POST /api/staking/unstake - Unstake with penalty if early
 router.post("/unstake", async (req, res) => {
   try {
+    console.log('[UNSTAKE] Request received:', req.body);
     const { wallet, stakeId } = req.body;
 
     if (!wallet || !stakeId) {
+      console.log('[UNSTAKE] Missing required fields');
       return res.status(400).json({
         success: false,
         error: "Missing wallet or stakeId"
@@ -573,10 +575,12 @@ router.post("/unstake", async (req, res) => {
     }
 
     // Get staking record
+    console.log(`[UNSTAKE] Getting stake data for: ${stakeId}`);
     const stakeData = await redis.hGetAll(`staking:${stakeId}`);
     console.log(`[UNSTAKE] Stake data for ${stakeId}:`, stakeData);
 
     if (!stakeData || Object.keys(stakeData).length === 0) {
+      console.log('[UNSTAKE] Stake not found');
       return res.status(404).json({
         success: false,
         error: "Staking position not found"
@@ -584,6 +588,7 @@ router.post("/unstake", async (req, res) => {
     }
 
     if (!stakeData.wallet || stakeData.wallet !== wallet) {
+      console.log('[UNSTAKE] Wallet mismatch:', { expected: stakeData.wallet, provided: wallet });
       return res.status(404).json({
         success: false,
         error: "Staking position not found or not owned by wallet"
@@ -591,28 +596,34 @@ router.post("/unstake", async (req, res) => {
     }
 
     if (stakeData.status !== 'active') {
+      console.log('[UNSTAKE] Status not active:', stakeData.status);
       return res.status(400).json({
         success: false,
         error: `Staking position is not active (status: ${stakeData.status})`
       });
     }
 
+    console.log('[UNSTAKE] Starting calculations...');
     const now = new Date();
     const endDate = new Date(stakeData.endDate);
     const isEarly = now < endDate;
+    console.log('[UNSTAKE] Timing:', { now: now.toISOString(), endDate: endDate.toISOString(), isEarly });
 
-    let finalAmount = parseFloat(stakeData.amount);
+    let finalAmount = parseFloat(stakeData.amount || 0);
     let penalty = 0;
     let bonusReward = 0;
+    console.log('[UNSTAKE] Initial amount:', finalAmount);
 
     if (isEarly) {
       // Early unstaking - apply 15% penalty
       penalty = finalAmount * 0.15;
       finalAmount = finalAmount - penalty;
+      console.log('[UNSTAKE] Early unstaking - penalty applied:', { penalty, finalAmount });
     } else {
       // Completed staking - add level-based bonus
       bonusReward = parseFloat(stakeData.bonusReward || stakeData.expectedReward || 0);
       finalAmount = parseFloat(stakeData.totalReward || stakeData.amount || 0) + bonusReward;
+      console.log('[UNSTAKE] Completed staking - bonus added:', { bonusReward, finalAmount });
     }
 
     // Calculate fees (2% burn, 3% treasury)
@@ -620,6 +631,7 @@ router.post("/unstake", async (req, res) => {
     const treasuryFee = finalAmount * 0.03;
     const totalFees = burnFee + treasuryFee;
     const userReceives = finalAmount - totalFees;
+    console.log('[UNSTAKE] Fees calculated:', { burnFee, treasuryFee, totalFees, userReceives });
 
     // Update staking record
     await redis.hSet(`staking:${stakeId}`, {
