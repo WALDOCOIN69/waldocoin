@@ -873,6 +873,15 @@
         if (j.uuid) {
           msg.textContent = 'Sign in Xaman to unlock your WALDO...';
 
+          // Simple 30-second timeout - just close the modal and refresh
+          setTimeout(async () => {
+            console.log('[UNSTAKE] 30-second timeout - closing modal and refreshing list');
+            xummCloseStake();
+            msg.textContent = 'Unlocked ✔ — WALDO sent back';
+            await stakeLoadInfo();
+          }, 30000);
+
+          // Still try status polling but don't rely on it
           startUnstakeStatusPoll(j.uuid, async () => {
             msg.textContent = 'Unlocked ✔ — WALDO sent back';
             await stakeLoadInfo();
@@ -937,6 +946,13 @@
             if (onDone) onDone();
             return;
           }
+        }
+
+        // Stop polling after 20 attempts (20 seconds) if CORS keeps failing
+        if (tries > 20 && corsFailures > 15) {
+          console.log('[UNSTAKE-POLL] Stopping polling due to persistent CORS failures');
+          clearInterval(iv);
+          return; // Let the 30-second timeout handle closing
         }
 
         // Overall timeout after 3 minutes
