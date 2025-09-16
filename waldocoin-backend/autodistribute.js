@@ -109,27 +109,13 @@ const isNativeXRP = (tx) =>
         if (!client.isConnected()) {
           try { await client.connect(); } catch (re) { console.warn('⚠️ Poller reconnect failed:', re.message); return; }
         }
-        // Get latest validated ledger and last processed marker (avoid malformed ranges)
-        const led = await client.request({ command: 'ledger', ledger_index: 'validated' });
-        const latest = Math.floor(Number(led.result?.ledger_index || led.result?.ledger?.ledger_index));
-        if (!Number.isFinite(latest) || latest <= 0) return;
-        let last = 0;
-        try { last = Math.floor(Number(await redis.get('autodistribute:last_ledger')) || 0); } catch (_) { }
-        let minLedger;
-        if (last && Number.isFinite(last) && last > 0 && last < latest) {
-          minLedger = last + 1;
-        } else {
-          minLedger = Math.max(1, latest - 200);
-        }
-        if (minLedger >= latest) minLedger = Math.max(1, latest - 1);
+        // Fetch recent transactions without explicit ledger bounds (avoid lgrIdxMalformed)
         const resp = await client.request({
           command: 'account_tx',
           account: distributorWallet,
-          ledger_index_min: minLedger,
-          ledger_index_max: latest,
           binary: false,
           limit: 50,
-          forward: true
+          forward: false
         });
         const txs = resp?.result?.transactions || [];
         for (const entry of txs) {
@@ -144,7 +130,7 @@ const isNativeXRP = (tx) =>
           if (txHash && seen) continue;
           await processIncomingPayment(tx);
           try { if (txHash) await redis.sAdd('autodistribute:processed', txHash); } catch (_) { }
-          try { if (entry?.ledger_index) await redis.set('autodistribute:last_ledger', String(entry.ledger_index)); } catch (_) { }
+          // No last_ledger persistence; rely on tx hash dedupe to avoid repeats
         }
       } catch (e) {
         console.warn('⚠️ Poller error:', e.message);
