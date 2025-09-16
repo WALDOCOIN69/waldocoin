@@ -773,9 +773,16 @@
         const result = await response.json();
 
         if (result.success) {
-          if (msgEl) msgEl.textContent = `✅ Long-term lock created! Estimated WALDO: ${result.stakeData.expectedReward} WALDO`;
-          // Reload wallet info
-          stakeLoadInfo();
+          // Show QR/deeplink to sign in Xaman and poll status
+          showXummModal('Lock WALDO', result);
+          if (result.uuid) {
+            if (msgEl) msgEl.textContent = 'Awaiting signature in Xaman...';
+            pollStakeStatus(result.uuid, null, () => {
+              if (msgEl) msgEl.textContent = `✅ Lock created! Estimated WALDO: ${result.stakeData.expectedReward} WALDO`;
+              xummCloseStake();
+              stakeLoadInfo();
+            });
+          }
         } else {
           const detail = result.details ? ` - ${result.details}` : '';
           throw new Error((result.error || 'Lock creation failed') + detail);

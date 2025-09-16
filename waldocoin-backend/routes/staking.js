@@ -97,19 +97,20 @@ async function refreshLongTermConfig() {
 refreshLongTermConfig().catch(() => { });
 
 
-// Calculate user's XP level
+// Calculate user's XP level (durations are NOT gated; everyone gets all configured durations)
 function getUserLevel(xp) {
+  const allDurations = Object.keys(LONG_TERM_APY_RATES).map(d => parseInt(d));
   for (const [level, data] of Object.entries(XP_LEVELS)) {
     if (xp >= data.min && xp <= data.max) {
       return {
         level: parseInt(level),
         title: data.title,
         xp: xp,
-        availableDurations: LEVEL_DURATION_ACCESS[parseInt(level)]
+        availableDurations: allDurations
       };
     }
   }
-  return { level: 1, title: "Waldo Watcher", xp: 0, availableDurations: LEVEL_DURATION_ACCESS[1] };
+  return { level: 1, title: "Waldo Watcher", xp: 0, availableDurations: allDurations };
 }
 
 // Calculate APY with Level 5 bonus
@@ -245,13 +246,7 @@ router.post("/long-term", async (req, res) => {
     const userXP = await redis.get(`user:${wallet}:xp`) || 0;
     const userLevel = getUserLevel(parseInt(userXP));
 
-    // Check if user has access to this duration
-    if (!userLevel.availableDurations.includes(parseInt(duration))) {
-      return res.status(403).json({
-        success: false,
-        error: `Level ${userLevel.level} (${userLevel.title}) does not have access to ${duration}-day staking. Available durations: ${userLevel.availableDurations.join(', ')} days`
-      });
-    }
+    // Duration access is not gated by level anymore; allow all configured durations
     // Check maximum active stakes limit (count only currently 'active' long‑term stakes)
     let _activeCount = 0;
     try {
