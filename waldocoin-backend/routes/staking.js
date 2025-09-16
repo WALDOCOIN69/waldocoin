@@ -125,6 +125,20 @@ function calculateAPY(duration, userLevel) {
 
 const router = express.Router();
 
+// ✅ GET /api/staking/cors-test - Test CORS configuration
+router.get("/cors-test", async (req, res) => {
+  try {
+    return res.json({
+      success: true,
+      message: 'CORS test successful',
+      origin: req.headers.origin,
+      timestamp: new Date().toISOString()
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // ✅ GET /api/staking/test-unstake - Test unstake QR generation
 router.get("/test-unstake", async (req, res) => {
   try {
@@ -182,21 +196,25 @@ router.get("/test-unstake", async (req, res) => {
 // ✅ POST /api/staking/long-term - Create long-term staking position
 router.post("/long-term", async (req, res) => {
   try {
+    console.log('[LT] Raw request body:', req.body);
     const { wallet, amount, duration } = req.body;
 
     if (!wallet || amount == null || duration == null) {
+      console.log('[LT] Missing fields:', { wallet: !!wallet, amount: amount, duration: duration });
       return res.status(400).json({
         success: false,
         error: "Missing required fields: wallet, amount, duration"
       });
     }
 
-    console.log('[LT] Incoming request', { wallet, amount, duration });
+    console.log('[LT] Incoming request', { wallet, amount, duration, type: typeof amount, type2: typeof duration });
     // No global WALDO-worth requirement for long‑term staking; per‑meme staking retains worth checks.
 
     // Validate amount
     const stakeAmount = parseFloat(amount);
+    console.log('[LT] Amount validation:', { amount, stakeAmount, isFinite: Number.isFinite(stakeAmount), minimum: LONG_TERM_CONFIG.minimumAmount });
     if (!Number.isFinite(stakeAmount) || stakeAmount < LONG_TERM_CONFIG.minimumAmount) {
+      console.log('[LT] Amount validation failed');
       return res.status(400).json({
         success: false,
         error: `Minimum stake amount is ${LONG_TERM_CONFIG.minimumAmount} WALDO`
@@ -204,7 +222,10 @@ router.post("/long-term", async (req, res) => {
     }
 
     // Validate duration
-    if (!Object.keys(LONG_TERM_APY_RATES).includes(duration.toString())) {
+    const validDurations = Object.keys(LONG_TERM_APY_RATES);
+    console.log('[LT] Duration validation:', { duration, durationStr: duration.toString(), validDurations });
+    if (!validDurations.includes(duration.toString())) {
+      console.log('[LT] Duration validation failed');
       return res.status(400).json({
         success: false,
         error: "Invalid duration. Must be 30, 90, 180, or 365 days"
@@ -1651,9 +1672,6 @@ router.post('/admin/clear-fake', async (req, res) => {
     return res.status(500).json({ success: false, error: e.message });
   }
 });
-
-export default router;
-
 
 // GET /api/staking/status/:uuid — confirm signature & activate stake (long-term & per-meme)
 router.get('/status/:uuid', async (req, res) => {
