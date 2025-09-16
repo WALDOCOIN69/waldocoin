@@ -460,6 +460,18 @@
 
 <script>
   // Set API endpoint for WordPress widget
+  // Map to parent fallbacks when embedded via iframe and local handlers are missing
+  try {
+    const p = window.parent;
+    const names = ['stakeConnect', 'stakeTrustline', 'createLongTermStake', 'stakeDisconnect', 'stakeLoadInfo', 'ltSetMax', 'stakeRedeem', 'xummOpenStake', 'xummCloseStake'];
+    for (const n of names) {
+      if (typeof window[n] !== 'function' && p && typeof p[n] === 'function') {
+        window[n] = p[n].bind(p);
+      }
+    }
+  } catch (_) { }
+
+
   window.WALDO_API = window.WALDO_API || 'https://waldocoin-backend-api.onrender.com';
 
   (function () {
