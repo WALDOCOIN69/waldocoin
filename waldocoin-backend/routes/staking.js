@@ -5,6 +5,29 @@ import ensureMinWaldoWorth from '../utils/waldoWorth.js';
 import { xummClient } from '../utils/xummClient.js';
 import xrpl from 'xrpl';
 
+// XRPL connection with fallback nodes for better reliability
+const XRPL_NODES = [
+  'wss://xrplcluster.com',
+  'wss://s1.ripple.com',
+  'wss://s2.ripple.com',
+  'wss://xrpl.ws'
+];
+
+async function getReliableXrplClient() {
+  for (const node of XRPL_NODES) {
+    try {
+      const client = new xrpl.Client(node);
+      await client.connect();
+      console.log(`✅ Connected to XRPL node: ${node}`);
+      return client;
+    } catch (error) {
+      console.warn(`❌ Failed to connect to ${node}:`, error.message);
+      continue;
+    }
+  }
+  throw new Error('All XRPL nodes failed to connect');
+}
+
 const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || 'WLO').toUpperCase();
 // Prefer dedicated staking vault or Treasury; only fall back to distributor if no vault/treasury configured
@@ -101,6 +124,60 @@ function calculateAPY(duration, userLevel) {
 }
 
 const router = express.Router();
+
+// ✅ GET /api/staking/test-unstake - Test unstake QR generation
+router.get("/test-unstake", async (req, res) => {
+  try {
+    const testWallet = 'rTestWalletAddress123456789';
+    const testAmount = 1000;
+    const penalty = testAmount * 0.15;
+    const userReceives = testAmount - penalty;
+
+    const DISTRIBUTOR_WALLET = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+    const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+    const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
+
+    const memoType = Buffer.from('UNSTAKE_TEST').toString('hex').toUpperCase();
+    const memoData = Buffer.from('test123').toString('hex').toUpperCase();
+
+    const txjson = {
+      TransactionType: 'Payment',
+      Account: DISTRIBUTOR_WALLET,
+      Destination: testWallet,
+      Amount: {
+        currency: CURRENCY,
+        issuer: ISSUER,
+        value: userReceives.toString()
+      },
+      Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
+    };
+
+    console.log('[TEST-UNSTAKE] Creating XUMM payload with:', txjson);
+
+    const created = await xummClient.payload.create({
+      txjson,
+      options: { submit: false, expire: 300 },
+      custom_meta: {
+        identifier: `WALDO_STAKE_UNSTAKE_TEST`,
+        instruction: `TEST: Early unlock ${userReceives.toFixed(2)} WALDO (${testAmount} - ${penalty.toFixed(2)} penalty)`
+      }
+    });
+
+    console.log('[TEST-UNSTAKE] XUMM response:', created);
+
+    return res.json({
+      success: true,
+      message: 'Test unstake QR generated successfully',
+      uuid: created.uuid,
+      refs: created.refs,
+      next: created.next,
+      txjson
+    });
+  } catch (e) {
+    console.error('[TEST-UNSTAKE] Error:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 // ✅ POST /api/staking/long-term - Create long-term staking position
 router.post("/long-term", async (req, res) => {
