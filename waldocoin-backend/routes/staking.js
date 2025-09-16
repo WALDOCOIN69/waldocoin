@@ -633,18 +633,18 @@ router.post("/unstake", async (req, res) => {
     const userReceives = finalAmount - totalFees;
     console.log('[UNSTAKE] Fees calculated:', { burnFee, treasuryFee, totalFees, userReceives });
 
-    // Update staking record
+    // Update staking record (convert all values to strings for Redis)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
       unstakedAt: now.toISOString(),
-      isEarlyUnstake: isEarly,
-      penalty: penalty,
-      bonusReceived: bonusReward,
-      finalAmount: finalAmount,
-      burnFee: burnFee,
-      treasuryFee: treasuryFee,
-      userReceives: userReceives,
-      claimed: true
+      isEarlyUnstake: isEarly.toString(),
+      penalty: penalty.toString(),
+      bonusReceived: bonusReward.toString(),
+      finalAmount: finalAmount.toString(),
+      burnFee: burnFee.toString(),
+      treasuryFee: treasuryFee.toString(),
+      userReceives: userReceives.toString(),
+      claimed: 'true'
     });
 
     // Remove from active stake sets (support both schemas)
