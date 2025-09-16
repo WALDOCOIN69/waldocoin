@@ -1476,10 +1476,6 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     return res.json({ ok: true, signed: false, error: e.message });
   }
 });
-TransactionType: 'Payment',
-  Account: sourceAccount,
-    Destination: stakeData.wallet,
-      Amount: { currency: CURRENCY, issuer: ISSUER, value: value.toFixed(6) }
     };
 let prepared;
 try {
