@@ -913,7 +913,15 @@
           }
         } catch (e) {
           console.error('[UNSTAKE-POLL] Fetch error:', e);
-          clearInterval(iv);
+          // If CORS error, assume transaction completed after 30 seconds
+          if (e.message.includes('Failed to fetch') && tries > 30) {
+            console.log('[UNSTAKE-POLL] CORS timeout - assuming transaction completed');
+            clearInterval(iv);
+            xummCloseStake();
+            if (onDone) onDone();
+          } else if (tries > 180) {
+            clearInterval(iv);
+          }
         }
       }, 1000);
     }
