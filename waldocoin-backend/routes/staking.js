@@ -744,6 +744,7 @@ router.get('/unstake/status/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
     const { account, txid } = req.query;
+    console.log(`[UNSTAKE-STATUS] Checking status for UUID: ${uuid}`);
 
     if (!uuid) {
       return res.json({ ok: false, error: 'Missing UUID' });
@@ -751,6 +752,7 @@ router.get('/unstake/status/:uuid', async (req, res) => {
 
     // Get offer data
     const offerData = await redis.hGetAll(`stake:unstake_offer:${uuid}`);
+    console.log(`[UNSTAKE-STATUS] Offer data:`, offerData);
     if (!offerData.stakeId) {
       return res.json({ ok: false, error: 'Offer not found' });
     }
@@ -758,11 +760,19 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     const processedKey = `stake:unstake_processed:${uuid}`;
     const alreadyProcessed = await redis.get(processedKey);
     if (alreadyProcessed) {
+      console.log(`[UNSTAKE-STATUS] Already processed`);
       return res.json({ ok: true, signed: true, account, txid, paid: true });
     }
 
-    // Check XUMM status
-    const payload = await xummClient.payload.get(uuid);
+    // Check XUMM status with timeout
+    console.log(`[UNSTAKE-STATUS] Checking XUMM payload...`);
+    const payload = await Promise.race([
+      xummClient.payload.get(uuid),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('XUMM timeout')), 5000))
+    ]);
+
+    console.log(`[UNSTAKE-STATUS] XUMM payload response:`, { signed: payload?.response?.signed, account: payload?.response?.account });
+
     if (!payload.response.signed) {
       return res.json({ ok: true, signed: false });
     }
@@ -819,8 +829,9 @@ router.get('/unstake/status/:uuid', async (req, res) => {
 
     return res.json({ ok: true, signed: true, account, txid, paid: true });
   } catch (e) {
-    console.error('unstake status error', e);
-    return res.json({ ok: true, signed: false, error: e.message });
+    console.error('[UNSTAKE-STATUS] Error:', e.message || e);
+    // Return a proper response even on error to prevent 502
+    return res.json({ ok: true, signed: false, error: e.message || 'Status check failed' });
   }
 });
 
