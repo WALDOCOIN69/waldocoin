@@ -80,7 +80,7 @@
     <div class="content">
       <button class="close" onclick="xummCloseStake()">✕</button>
       <h4 id="xummTitleStake">Xaman</h4>
-      <div id="xummDesktopStake">
+      <div id="xummDesktopStake" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
         <img id="xummQrStake" alt="Scan with Xaman"
           style="display:none; max-width:280px; border-radius:10px; box-shadow: 0 0 18px #25c2a055;" />
         <div id="xummLoadStake" class="spin" style="display:none;"></div>
@@ -389,7 +389,10 @@
 
   .xumm-modal {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -411,7 +414,9 @@
     padding: 16px;
     width: 92%;
     max-width: 360px;
-    box-shadow: 0 0 22px rgba(0, 247, 255, .12)
+    box-shadow: 0 0 22px rgba(0, 247, 255, .12);
+    margin: auto;
+    text-align: center
   }
 
   .xumm-modal .close {
