@@ -731,7 +731,7 @@
         });
       }, 1000);
     }
-    function toggleStakeDetails(id) { const el = document.getElementById('det_' + id); if (!el) return; el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+
 
 
     function renderLongTerm(list) {
@@ -766,13 +766,12 @@
           </div>
           <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${mature ? 'READY!' : dr + 'd'}</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
-          <div class="actions">
-            ${mature ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
-            <button class="btn link" onclick="toggleStakeDetails('${s.stakeId}')">View details</button>
-          </div>
-          <div id="det_${s.stakeId}" class="details">
+          <div class="details">
             <div>Start: ${fmtDate(s.startDate)} • End: ${fmtDate(s.endDate)} • Progress: ${pct}%</div>
             <div>Accrued so far: ${accrued.toFixed(2)} WALDO</div>
+          </div>
+          <div class="actions">
+            ${mature ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
           </div>
         </div>`
       }).join('') || '<div class="subline">No active long‑term locks</div>';
