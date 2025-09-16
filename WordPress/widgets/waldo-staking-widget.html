@@ -872,7 +872,15 @@
         }
         if (j.uuid) {
           // Add manual completion button as backup
-          msg.innerHTML = 'Sign in Xaman to unlock your WALDO... <button onclick="forceCompleteUnstake(\'' + stakeId + '\')" style="margin-left:10px;padding:2px 8px;font-size:11px;">Complete Manually</button>';
+          msg.innerHTML = 'Sign in Xaman to unlock your WALDO... <button onclick="forceCompleteUnstake(\'' + stakeId + '\')" style="margin-left:10px;padding:2px 8px;font-size:11px;background:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">Complete Manually</button>';
+
+          // Also add a 5-second auto-complete as backup
+          setTimeout(() => {
+            console.log('[UNSTAKE] 5-second backup timeout - auto-completing');
+            if (document.getElementById('xummModalStake').style.display !== 'none') {
+              forceCompleteUnstake(stakeId);
+            }
+          }, 5000);
 
           startUnstakeStatusPoll(j.uuid, async () => {
             msg.textContent = 'Unlocked ✔ — WALDO sent back';
@@ -921,10 +929,11 @@
         } catch (e) {
           console.error('[UNSTAKE-POLL] Fetch error:', e);
           corsFailures++;
+          console.log(`[UNSTAKE-POLL] CORS failure count: ${corsFailures}/15`);
 
-          // If CORS error persists for 15 seconds, assume transaction completed
-          if (e.message.includes('Failed to fetch') && corsFailures >= 15) {
-            console.log('[UNSTAKE-POLL] CORS failures for 15+ seconds - assuming transaction completed');
+          // If CORS error persists for 10 seconds, assume transaction completed
+          if (e.message.includes('Failed to fetch') && corsFailures >= 10) {
+            console.log('[UNSTAKE-POLL] CORS failures for 10+ seconds - assuming transaction completed');
             clearInterval(iv);
             xummCloseStake();
             if (onDone) onDone();
