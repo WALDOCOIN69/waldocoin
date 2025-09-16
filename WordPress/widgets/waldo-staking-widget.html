@@ -871,7 +871,11 @@
           alert('QR modal function not available');
         }
         if (j.uuid) {
-          msg.innerHTML = 'Sign in Xaman to unlock your WALDO... <button onclick="completeUnstake(\'' + stakeId + '\')" style="background:#28a745;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;margin-left:10px;">Done</button>';
+          msg.textContent = 'Sign in Xaman to unlock your WALDO...';
+          startUnstakeStatusPoll(j.uuid, async () => {
+            msg.textContent = 'Unlocked ✔ — WALDO sent back';
+            await stakeLoadInfo();
+          });
         }
       } catch (e) {
         console.error('[UNSTAKE] Error:', e);
@@ -884,24 +888,54 @@
       }
     }
 
-    // Simple completion function
-    window.completeUnstake = async function (stakeId) {
-      console.log('[UNSTAKE] Completing unstake for:', stakeId);
-      const msg = document.getElementById('ltMsg');
+    // Status polling for unstake (like exchange widget)
+    function startUnstakeStatusPoll(uuid, onSuccess) {
+      if (!uuid) return;
+      console.log('[UNSTAKE-POLL] Starting status polling for UUID:', uuid);
 
-      try {
-        // Close QR modal
-        xummCloseStake();
+      let tries = 0;
+      const maxTries = 180; // 3 minutes
 
-        // Update message and refresh list
-        msg.textContent = 'Unlocked ✔ — WALDO sent back';
-        await stakeLoadInfo();
+      const pollInterval = setInterval(async () => {
+        tries++;
+        console.log(`[UNSTAKE-POLL] Attempt ${tries}/${maxTries} for UUID: ${uuid}`);
 
-        console.log('[UNSTAKE] Completion successful');
-      } catch (e) {
-        console.error('[UNSTAKE] Error:', e);
-        msg.textContent = 'Error completing unstake: ' + e.message;
-      }
+        try {
+          const response = await fetch(`${API}/api/staking/unstake/status/${uuid}?account=${WALLET}&txid=pending&_t=${Date.now()}`);
+          const status = await response.json();
+          console.log(`[UNSTAKE-POLL] Status response:`, status);
+
+          if (status?.signed && status?.paid) {
+            // Transaction completed successfully
+            console.log('[UNSTAKE-POLL] Unstake completed successfully!');
+            clearInterval(pollInterval);
+            xummCloseStake();
+            if (onSuccess) onSuccess(status);
+            return;
+          }
+
+          if (status?.signed && !status?.paid) {
+            // Signed but payment not yet processed
+            const msg = document.getElementById('ltMsg');
+            if (msg && !msg._processingShown) {
+              msg.textContent = 'Signed. Processing unstake...';
+              msg._processingShown = true;
+            }
+          }
+
+        } catch (error) {
+          console.error('[UNSTAKE-POLL] Polling error:', error);
+          // Continue polling despite errors - backend might be temporarily unavailable
+        }
+
+        // Stop polling after max attempts
+        if (tries >= maxTries) {
+          console.log('[UNSTAKE-POLL] Max attempts reached, stopping poll');
+          clearInterval(pollInterval);
+          // Don't auto-close on timeout - user might still be signing
+        }
+
+      }, 1000); // Poll every second like exchange widget
     }
 
 
