@@ -66,35 +66,35 @@
       const rawSrc = 'https://raw.githubusercontent.com/WALDOCOIN69/waldocoin/main/WordPress/widgets/waldo-staking-widget.html?v=' + encodeURIComponent(ver);
 
       async function inject(html) {
-        target.innerHTML = html;
-        const scripts = target.querySelectorAll('script');
-        let injectedOk = true;
-        for (const old of scripts) {
-          try {
-            const s = document.createElement('script');
-            s.defer = false; s.async = false;
-            if (old.src) { s.src = old.src; } else { s.textContent = old.textContent; }
-            for (const a of old.attributes) s.setAttribute(a.name, a.value);
-            document.body.appendChild(s);
-            old.remove();
-          } catch (err) {
-            injectedOk = false;
-            console.warn('Script inject error:', err?.message || err);
-          }
-        }
-        // Fallback: ensure widget opens and toggle works even if inner script didn't bind
+        // Render the widget HTML inside an iframe to avoid host parsing issues
+        target.innerHTML = '';
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('title', 'WALDO Staking');
+        iframe.style.width = '100%';
+        iframe.style.border = '0';
+        iframe.style.minHeight = '900px';
+        iframe.loading = 'eager';
+        iframe.srcdoc = html;
+        target.appendChild(iframe);
+        // Auto-resize to fit content
         try {
-          const stake = document.getElementById('waldoStake');
-          if (stake) stake.classList.remove('collapsed');
-          const toggle = document.getElementById('stakeToggle');
-          if (toggle) {
-            toggle.addEventListener('click', () => {
-              const root = document.getElementById('waldoStake');
-              if (root) root.classList.toggle('collapsed');
-            }, { passive: true });
-          }
+          const resize = () => {
+            const d = iframe.contentDocument || iframe.contentWindow?.document;
+            if (!d) return;
+            const h = Math.max(d.body?.scrollHeight || 0, d.documentElement?.scrollHeight || 0);
+            if (h) iframe.style.height = (h + 40) + 'px';
+          };
+          iframe.addEventListener('load', () => {
+            resize();
+            setTimeout(resize, 250);
+            setTimeout(resize, 1000);
+          });
+          const iv = setInterval(() => {
+            if (!document.body.contains(iframe)) { clearInterval(iv); return; }
+            resize();
+          }, 1000);
         } catch (_) { }
-        return injectedOk;
+        return true;
       }
 
       async function loadAndInject(urlPrimary, urlFallback) {
