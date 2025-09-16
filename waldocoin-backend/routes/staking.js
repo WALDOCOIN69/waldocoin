@@ -1364,15 +1364,40 @@ router.post('/redeem', async (req, res) => {
     }
 
     const type = stakeData.type || 'long_term';
-    // Create XUMM SignIn payload
+
+    // Calculate total amount to receive (stake + rewards)
+    const originalAmount = parseFloat(stakeData.amount || 0);
+    const expectedReward = parseFloat(stakeData.expectedReward || 0);
+    const totalAmount = originalAmount + expectedReward;
+
+    // Get distributor wallet address
+    const DISTRIBUTOR_WALLET = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+    const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+    const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
+
+    // Create XUMM Payment transaction (user signs to receive their WALDO)
     const memoType = Buffer.from(type === 'per_meme' ? 'REDEEM_MEME' : 'REDEEM_LONG').toString('hex').toUpperCase();
     const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
-    const txjson = { TransactionType: 'SignIn', Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }] };
+
+    const txjson = {
+      TransactionType: 'Payment',
+      Account: DISTRIBUTOR_WALLET,
+      Destination: wallet,
+      Amount: {
+        currency: CURRENCY,
+        issuer: ISSUER,
+        value: totalAmount.toString()
+      },
+      Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
+    };
 
     const created = await xummClient.payload.create({
       txjson,
-      options: { submit: false, expire: 900, return_url: { app: 'xumm://xumm.app/done', web: null } },
-      custom_meta: { identifier: `WALDO_STAKE_REDEEM_${type.toUpperCase()}` }
+      options: { submit: true, expire: 900, return_url: { app: 'xumm://xumm.app/done', web: null } },
+      custom_meta: {
+        identifier: `WALDO_STAKE_REDEEM_${type.toUpperCase()}`,
+        instruction: `Redeem ${totalAmount.toFixed(2)} WALDO (${originalAmount} stake + ${expectedReward.toFixed(2)} rewards)`
+      }
     });
 
     // Map for status processing
@@ -1385,7 +1410,7 @@ router.post('/redeem', async (req, res) => {
   }
 });
 
-// ✅ GET /api/staking/redeem/status/:uuid — on signature, pay WALDO back to user and finalize
+// ✅ GET /api/staking/redeem/status/:uuid — check if Payment transaction was successful
 router.get('/redeem/status/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
@@ -1399,139 +1424,115 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     const txid = p?.response?.txid || null;
     if (!signed) return res.json({ ok: true, signed: false, account: null });
 
-    const processedKey = `stake:redeem_processed:${uuid}`;
-    const processed = await redis.get(processedKey);
-    if (processed) return res.json({ ok: true, signed: true, account, txid, paid: true });
+    // Check if Payment transaction was successful
+    const paymentSuccessful = p?.response?.dispatched_result === 'tesSUCCESS';
+    if (!paymentSuccessful) {
+      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'payment_failed' });
+    }
 
+    // Get stake info and mark as completed
     const offer = await redis.hGetAll(`stake:redeem_offer:${uuid}`);
     const stakeId = offer?.stakeId;
+    const wallet = offer?.wallet;
     const type = offer?.type || 'long_term';
-    if (!stakeId) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'stake_not_found' });
+    if (!stakeId || !wallet) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'stake_not_found' });
 
     const stakeKey = `staking:${stakeId}`;
     const stakeData = await redis.hGetAll(stakeKey);
     if (!stakeData) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'stake_data_missing' });
-    if (stakeData.status !== 'active') return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'stake_not_active' });
 
-    const now = Date.now();
-    const end = new Date(stakeData.endDate).getTime();
-    if (now < end) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'not_matured' });
-
-    // Calculate payout
-    let value = 0;
-    if (type === 'per_meme') {
-      value = Number(stakeData.totalReward || 0);
-    } else {
-      const base = Number(stakeData.amount || 0);
-      const reward = Number(stakeData.expectedReward || 0);
-      value = base + reward;
-    }
-    if (!Number.isFinite(value) || value <= 0) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'payout_invalid' });
-
-    // Pay WALDO to the user's wallet — choose secret that matches expected distributor wallet
-    const EXPECTED = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
-    const distSecret = process.env.WALDO_DISTRIBUTOR_SECRET || null;
-    const altSecret = process.env.WALDO_SENDER_SECRET || null;
-
-    let chosenSecret = distSecret || altSecret;
-    let distAddr = null, altAddr = null;
-    try { if (distSecret) distAddr = xrpl.Wallet.fromSeed(distSecret).address; } catch (_) { }
-    try { if (altSecret) altAddr = xrpl.Wallet.fromSeed(altSecret).address; } catch (_) { }
-
-    if (EXPECTED) {
-      if (distAddr === EXPECTED) chosenSecret = distSecret;
-      else if (altAddr === EXPECTED) chosenSecret = altSecret;
-    }
-
-    if (!chosenSecret) {
-      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'missing_sender_secret' });
-    }
-
-    const client = new xrpl.Client('wss://xrplcluster.com');
-    await client.connect();
-    let wallet;
-    try {
-      wallet = xrpl.Wallet.fromSeed(chosenSecret);
-    } catch (e) {
-      await client.disconnect();
-      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'invalid_sender_secret' });
-    }
-    // Validate sender: allow master (EXPECTED) or RegularKey of EXPECTED
-    let allowed = true;
-    if (EXPECTED) {
-      if (wallet.address !== EXPECTED) {
-        allowed = false;
-        try {
-          const info = await client.request({ command: 'account_info', account: EXPECTED, ledger_index: 'current' });
-          const rk = info?.result?.account_data?.RegularKey;
-          if (rk && rk === wallet.address) allowed = true;
-        } catch (_) { }
-      }
-    }
-    if (!allowed) {
-      await client.disconnect();
-      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'sender_address_mismatch', expected: EXPECTED, senderAddress: wallet.address });
-    }
-    const sourceAccount = EXPECTED || wallet.address;
-    try { console.log('[REDEEM_PAY] sender', sourceAccount, 'signedBy', wallet.address, 'dest', stakeData.wallet, 'value', value.toFixed(6)); } catch (_) { }
-    const payment = {
-      TransactionType: 'Payment',
-      Account: sourceAccount,
-      Destination: stakeData.wallet,
-      Amount: { currency: CURRENCY, issuer: ISSUER, value: value.toFixed(6) }
-    };
-    let prepared;
-    try {
-      prepared = await client.autofill(payment);
-    } catch (e) {
-      await client.disconnect();
-      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'sender_account_not_found' });
-    }
-    const signedTx = wallet.sign(prepared);
-    const result = await client.submitAndWait(signedTx.tx_blob);
-    const ok = (result?.result?.meta?.TransactionResult === 'tesSUCCESS') || (result?.engine_result === 'tesSUCCESS');
-    const deliveredHash = result?.result?.hash || result?.tx_json?.hash || null;
-    await client.disconnect();
-
-    if (!ok) {
-      return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'send_failed' });
-    }
-
-    // Finalize stake state
+    // Mark stake as completed since Payment was successful
     await redis.hSet(stakeKey, {
       status: 'completed',
       redeemedAt: new Date().toISOString(),
-      redeemTx: deliveredHash || '',
-      claimed: true,
-      userReceives: value.toFixed(6)
+      redeemTx: txid || '',
+      claimed: true
     });
 
     // Remove from active sets
-    if (type === 'per_meme') {
-      await redis.sRem(`user:${stakeData.wallet}:per_meme_stakes`, stakeId);
-    } else {
-      await redis.sRem(`user:${stakeData.wallet}:long_term_stakes`, stakeId);
-      await redis.sRem(`staking:user:${stakeData.wallet}`, stakeId);
-      await redis.sRem('staking:active', stakeId);
+    await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
+    await redis.sRem(`staking:user:${wallet}`, stakeId);
+    await redis.sRem('staking:active', stakeId);
+
+    // Update stats
+    const amt = Number(stakeData.amount || 0);
+    if (Number.isFinite(amt) && amt > 0) {
+      try { await redis.incrByFloat('staking:total_staked', -amt); } catch (_) { }
+      try { await redis.incrByFloat('staking:total_long_term_staked', -amt); } catch (_) { }
     }
 
-    // Log redemption
-    await redis.lPush('staking_logs', JSON.stringify({
-      action: type === 'per_meme' ? 'per_meme_stake_redeemed' : 'long_term_stake_redeemed',
-      stakeId,
-      wallet: stakeData.wallet,
-      amount: value,
-      txid: deliveredHash,
-      timestamp: new Date().toISOString()
-    }));
+    // Clean up offer
+    await redis.del(`stake:redeem_offer:${uuid}`);
 
-    await redis.set(processedKey, '1', { EX: 604800 });
+    const originalAmount = parseFloat(stakeData.amount || 0);
+    const expectedReward = parseFloat(stakeData.expectedReward || 0);
+    const totalAmount = originalAmount + expectedReward;
 
-    return res.json({ ok: true, signed: true, account, txid, paid: true, deliveredTx: deliveredHash });
+    console.log(`✅ Stake redeemed: ${wallet} received ${totalAmount.toFixed(2)} WALDO (${stakeId})`);
+    return res.json({ ok: true, signed: true, account, txid, paid: true, amount: totalAmount.toFixed(2) });
+
   } catch (e) {
     console.error('redeem status error', e);
-    return res.status(500).json({ ok: false, error: e.message });
+    return res.json({ ok: true, signed: false, error: e.message });
   }
+});
+TransactionType: 'Payment',
+  Account: sourceAccount,
+    Destination: stakeData.wallet,
+      Amount: { currency: CURRENCY, issuer: ISSUER, value: value.toFixed(6) }
+    };
+let prepared;
+try {
+  prepared = await client.autofill(payment);
+} catch (e) {
+  await client.disconnect();
+  return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'sender_account_not_found' });
+}
+const signedTx = wallet.sign(prepared);
+const result = await client.submitAndWait(signedTx.tx_blob);
+const ok = (result?.result?.meta?.TransactionResult === 'tesSUCCESS') || (result?.engine_result === 'tesSUCCESS');
+const deliveredHash = result?.result?.hash || result?.tx_json?.hash || null;
+await client.disconnect();
+
+if (!ok) {
+  return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'send_failed' });
+}
+
+// Finalize stake state
+await redis.hSet(stakeKey, {
+  status: 'completed',
+  redeemedAt: new Date().toISOString(),
+  redeemTx: deliveredHash || '',
+  claimed: true,
+  userReceives: value.toFixed(6)
+});
+
+// Remove from active sets
+if (type === 'per_meme') {
+  await redis.sRem(`user:${stakeData.wallet}:per_meme_stakes`, stakeId);
+} else {
+  await redis.sRem(`user:${stakeData.wallet}:long_term_stakes`, stakeId);
+  await redis.sRem(`staking:user:${stakeData.wallet}`, stakeId);
+  await redis.sRem('staking:active', stakeId);
+}
+
+// Log redemption
+await redis.lPush('staking_logs', JSON.stringify({
+  action: type === 'per_meme' ? 'per_meme_stake_redeemed' : 'long_term_stake_redeemed',
+  stakeId,
+  wallet: stakeData.wallet,
+  amount: value,
+  txid: deliveredHash,
+  timestamp: new Date().toISOString()
+}));
+
+await redis.set(processedKey, '1', { EX: 604800 });
+
+return res.json({ ok: true, signed: true, account, txid, paid: true, deliveredTx: deliveredHash });
+  } catch (e) {
+  console.error('redeem status error', e);
+  return res.status(500).json({ ok: false, error: e.message });
+}
 });
 
 
