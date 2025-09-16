@@ -574,18 +574,26 @@ router.post("/unstake", async (req, res) => {
 
     // Get staking record
     const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+    console.log(`[UNSTAKE] Stake data for ${stakeId}:`, stakeData);
 
-    if (!stakeData.wallet || stakeData.wallet !== wallet) {
+    if (!stakeData || Object.keys(stakeData).length === 0) {
       return res.status(404).json({
         success: false,
         error: "Staking position not found"
       });
     }
 
+    if (!stakeData.wallet || stakeData.wallet !== wallet) {
+      return res.status(404).json({
+        success: false,
+        error: "Staking position not found or not owned by wallet"
+      });
+    }
+
     if (stakeData.status !== 'active') {
       return res.status(400).json({
         success: false,
-        error: "Staking position is not active"
+        error: `Staking position is not active (status: ${stakeData.status})`
       });
     }
 
@@ -603,8 +611,8 @@ router.post("/unstake", async (req, res) => {
       finalAmount = finalAmount - penalty;
     } else {
       // Completed staking - add level-based bonus
-      bonusReward = parseFloat(stakeData.bonusReward);
-      finalAmount = parseFloat(stakeData.totalReward);
+      bonusReward = parseFloat(stakeData.bonusReward || stakeData.expectedReward || 0);
+      finalAmount = parseFloat(stakeData.totalReward || stakeData.amount || 0) + bonusReward;
     }
 
     // Calculate fees (2% burn, 3% treasury)
@@ -633,13 +641,18 @@ router.post("/unstake", async (req, res) => {
     await redis.sRem('staking:active', stakeId);
 
     // Update totals (best-effort across schemas)
-    await redis.incrByFloat('staking:total_staked', -parseFloat(stakeData.amount));
-    await redis.incrByFloat('staking:total_long_term_staked', -parseFloat(stakeData.amount));
-    await redis.incrByFloat('staking:total_burned', burnFee);
-    await redis.incrByFloat('staking:total_treasury', treasuryFee);
-
-    if (penalty > 0) {
-      await redis.incrByFloat('staking:total_penalties', penalty);
+    try {
+      const amount = parseFloat(stakeData.amount || 0);
+      if (amount > 0) {
+        await redis.incrByFloat('staking:total_staked', -amount);
+        await redis.incrByFloat('staking:total_long_term_staked', -amount);
+      }
+      if (burnFee > 0) await redis.incrByFloat('staking:total_burned', burnFee);
+      if (treasuryFee > 0) await redis.incrByFloat('staking:total_treasury', treasuryFee);
+      if (penalty > 0) await redis.incrByFloat('staking:total_penalties', penalty);
+    } catch (statsError) {
+      console.error('❌ Error updating stats:', statsError);
+      // Continue - don't fail the unstake for stats errors
     }
 
     // Log the unstaking action
