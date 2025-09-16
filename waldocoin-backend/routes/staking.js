@@ -785,7 +785,11 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       payload: !!payload,
       response: !!payload?.response,
       signed: payload?.response?.signed,
-      account: payload?.response?.account
+      account: payload?.response?.account,
+      dispatched_result: payload?.response?.dispatched_result,
+      dispatched_to: payload?.response?.dispatched_to,
+      multisign_account: payload?.response?.multisign_account,
+      txid: payload?.response?.txid
     });
 
     if (!payload || !payload.response) {
@@ -793,24 +797,22 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: false, error: 'Invalid payload response' });
     }
 
-    if (!payload.response.signed) {
+    // Check if transaction was signed (could be true or dispatched_result)
+    const isSigned = payload.response.signed === true ||
+                     payload.response.dispatched_result === 'tesSUCCESS' ||
+                     (payload.response.txid && payload.response.txid !== '');
+
+    if (!isSigned) {
+      console.log(`[UNSTAKE-STATUS] Transaction not signed yet. signed=${payload.response.signed}, dispatched_result=${payload.response.dispatched_result}, txid=${payload.response.txid}`);
       return res.json({ ok: true, signed: false });
-    }
-
-    // Validate that the signer matches the original stake wallet
-    const signerAccount = payload.response.account;
-    const { stakeId, wallet, originalAmount, penalty, userReceives } = offerData;
-
-    if (signerAccount !== wallet) {
-      console.log(`[UNSTAKE-STATUS] Account mismatch: signer=${signerAccount}, stake_owner=${wallet}`);
-      return res.json({ ok: true, signed: false, error: 'Transaction must be signed by the stake owner' });
     }
 
     // Get transaction ID from XUMM response
     const actualTxid = payload.response.txid || txid || '';
-    console.log(`[UNSTAKE-STATUS] Transaction signed by correct account! TXID: ${actualTxid}`);
+    console.log(`[UNSTAKE-STATUS] Transaction signed! TXID: ${actualTxid}`);
 
     // Process the unstaking
+    const { stakeId, wallet, originalAmount, penalty, userReceives } = offerData;
     const now = new Date();
 
     console.log(`[UNSTAKE-STATUS] Processing unstake for stake: ${stakeId}, wallet: ${wallet}`);
