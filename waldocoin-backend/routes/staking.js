@@ -29,12 +29,12 @@ const LONG_TERM_APY_RATES = {
   365: 35   // 35% APY for 365 days
 };
 
-// Level-based duration access for long-term staking
+// Level-based duration access for long-term staking - ALL LEVELS HAVE ACCESS TO ALL DURATIONS
 const LEVEL_DURATION_ACCESS = {
-  1: [30],                    // Level 1: 30-day only
-  2: [30, 90],               // Level 2: 30, 90-day
-  3: [30, 90, 180],          // Level 3: 30, 90, 180-day
-  4: [30, 90, 180, 365],     // Level 4: All durations
+  1: [30, 90, 180, 365],     // Level 1: All durations available
+  2: [30, 90, 180, 365],     // Level 2: All durations available
+  3: [30, 90, 180, 365],     // Level 3: All durations available
+  4: [30, 90, 180, 365],     // Level 4: All durations available
   5: [30, 90, 180, 365]      // Level 5: All durations + bonus
 };
 
