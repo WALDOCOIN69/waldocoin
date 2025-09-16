@@ -122,18 +122,99 @@
       // Define safe placeholders so clicks before scripts load won't error
       (function () {
         const names = ['stakeConnect', 'stakeTrustline', 'stakeDisconnect', 'stakeLoadInfo', 'ltSetMax', 'createLongTermStake', 'redeemStake'];
-        const mk = (name) => function () {
-          const args = arguments;
-          const tryCall = () => {
-            const f = window[name];
-            if (typeof f === 'function' && f !== mk) return f.apply(window, args);
-            setTimeout(tryCall, 300);
-          };
-          tryCall();
-        };
-        for (const n of names) { if (typeof window[n] !== 'function') window[n] = mk(n); }
+        function makeStub(name) {
+          function stub() {
+            const args = arguments;
+            const tryCall = () => {
+              const f = window[name];
+              if (typeof f === 'function' && f !== stub && !f._waldoStub) {
+                return f.apply(window, args);
+              }
+              setTimeout(tryCall, 300);
+            };
+            tryCall();
+          }
+          stub._waldoStub = true;
+          return stub;
+        }
+        for (const n of names) { if (typeof window[n] !== 'function') window[n] = makeStub(n); }
       })();
 
+
+
+      // Final safety: if widget script failed to define handlers, provide minimal fallbacks
+      (function () {
+        const API = window.WALDO_API || 'https://waldocoin-backend-api.onrender.com';
+        function isMobile() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+        function defineIfMissing(name, fn) { if (typeof window[name] !== 'function') window[name] = fn; }
+        defineIfMissing('xummOpenStake', function (title, payload) {
+          const M = document.getElementById('xummModalStake'); if (!M) return;
+          const QR = document.getElementById('xummQrStake');
+          const LD = document.getElementById('xummLoadStake');
+          const HT = document.getElementById('xummHintStake');
+          const MB = document.getElementById('xummMobileStake');
+          const B = document.getElementById('xummMobileBtnStake');
+          const T = document.getElementById('xummTitleStake'); if (T) T.textContent = title || 'Xaman';
+          const deep = (payload && (payload.qr_uri || payload.deeplink || (payload.uuid ? ('https://xumm.app/sign/' + payload.uuid) : (payload.next && (payload.next.always || payload.next.app))))) || '';
+          const png = (payload && ((payload.refs && (payload.refs.qr_png || payload.refs.qr)) || payload.qr_png || payload.qr)) || '';
+          M.style.display = 'block';
+          if (isMobile()) {
+            MB.style.display = 'flex'; if (QR) QR.style.display = 'none'; if (LD) LD.style.display = 'none'; if (HT) HT.style.display = 'none';
+            if (B) B.onclick = function () { if (deep) { try { window.location.href = deep; } catch (_) { } setTimeout(function () { try { window.open(deep, '_self'); } catch (_) { } }, 150); } };
+          } else {
+            MB.style.display = 'none'; if (QR) QR.style.display = 'block'; if (LD) LD.style.display = 'none'; if (HT) HT.style.display = 'block';
+            const link = document.getElementById('xummDesktopLinkStake'); if (link) { if (deep) { link.href = deep; link.style.display = 'inline-block'; } else { link.style.display = 'none'; } }
+            if (QR) {
+              if (png) { QR.onerror = function () { if (deep) QR.src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(deep); }; QR.src = png; }
+              else if (deep) { QR.src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(deep); }
+              else { QR.src = ''; }
+            }
+          }
+        });
+        defineIfMissing('xummCloseStake', function () { const m = document.getElementById('xummModalStake'); if (m) m.style.display = 'none'; });
+        defineIfMissing('stakeConnect', async function () {
+          try {
+            const r = await fetch(API + '/api/login'); const j = await r.json();
+            window.xummOpenStake('Connect Xaman', j);
+            let tries = 0; const iv = setInterval(async function () {
+              tries++;
+              try {
+                const s = await fetch(API + '/api/login/status/' + encodeURIComponent(j.uuid) + '?_t=' + Date.now());
+                const st = await s.json();
+                if (st && st.signed) {
+                  clearInterval(iv);
+                  window.__WALDO_WALLET = st.account || window.__WALDO_WALLET || '';
+                  const status = document.getElementById('stakeConnStatus'); if (status) status.textContent = window.__WALDO_WALLET ? ('Wallet: ' + window.__WALDO_WALLET.slice(0, 6) + '…' + window.__WALDO_WALLET.slice(-4)) : 'Connected';
+                  const btn = document.getElementById('btnStakeDisconnect'); if (btn) btn.style.display = 'inline-block';
+                  window.xummCloseStake();
+                }
+                if (tries > 180) clearInterval(iv);
+              } catch (_) { clearInterval(iv); }
+            }, 1000);
+          } catch (e) { alert('Connect error: ' + e.message); }
+        });
+        defineIfMissing('stakeTrustline', async function () {
+          try {
+            const r = await fetch(API + '/api/xrpl/trustline/create', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const j = await r.json(); if (!j.success) throw new Error(j.error || 'Trustline failed');
+            window.xummOpenStake('Add WALDO Trustline', j);
+          } catch (e) { alert('Trustline error: ' + e.message); }
+        });
+        defineIfMissing('createLongTermStake', async function () {
+          const amt = parseFloat((document.getElementById('ltAmount') || {}).value || '0');
+          const dur = parseInt((document.getElementById('ltDuration') || {}).value || '0');
+          const msg = document.getElementById('ltMsg');
+          const W = window.__WALDO_WALLET || (document.getElementById('stakeWallet') || {}).value || '';
+          if (!W || !W.startsWith('r')) { if (msg) msg.textContent = 'Load your wallet info first'; return; }
+          if (!amt || !dur) { if (msg) msg.textContent = 'Enter amount and select duration'; return; }
+          try {
+            const r = await fetch(API + '/api/staking/long-term', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: W, amount: amt, duration: dur }) });
+            const j = await r.json(); if (!j.success) throw new Error(j.error || 'Lock failed');
+            if (msg) msg.textContent = 'Sign in Xaman to lock ' + amt + ' WALDO for ' + dur + ' days...';
+            window.xummOpenStake('Long-term Lock', j);
+          } catch (e) { if (msg) msg.textContent = 'Error: ' + e.message; }
+        });
+      })();
 
       loadAndInject(localSrc, rawSrc);
     })();
