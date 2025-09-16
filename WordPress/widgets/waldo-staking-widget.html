@@ -871,21 +871,7 @@
           alert('QR modal function not available');
         }
         if (j.uuid) {
-          msg.textContent = 'Sign in Xaman to unlock your WALDO...';
-
-          // Simple 30-second timeout - just close the modal and refresh
-          setTimeout(async () => {
-            console.log('[UNSTAKE] 30-second timeout - closing modal and refreshing list');
-            xummCloseStake();
-            msg.textContent = 'Unlocked ✔ — WALDO sent back';
-            await stakeLoadInfo();
-          }, 30000);
-
-          // Still try status polling but don't rely on it
-          startUnstakeStatusPoll(j.uuid, async () => {
-            msg.textContent = 'Unlocked ✔ — WALDO sent back';
-            await stakeLoadInfo();
-          });
+          msg.innerHTML = 'Sign in Xaman to unlock your WALDO... <button onclick="completeUnstake(\'' + stakeId + '\')" style="background:#28a745;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;margin-left:10px;">Done</button>';
         }
       } catch (e) {
         console.error('[UNSTAKE] Error:', e);
@@ -898,72 +884,24 @@
       }
     }
 
-    // Status polling for unstake
-    function startUnstakeStatusPoll(uuid, onDone) {
-      if (!uuid) return;
-      console.log('[UNSTAKE-POLL] Starting status polling for UUID:', uuid);
-      let tries = 0;
-      let corsFailures = 0;
+    // Simple completion function
+    window.completeUnstake = async function (stakeId) {
+      console.log('[UNSTAKE] Completing unstake for:', stakeId);
+      const msg = document.getElementById('ltMsg');
 
-      const iv = setInterval(async () => {
-        tries++;
-        try {
-          console.log(`[UNSTAKE-POLL] Attempt ${tries}/180 for UUID: ${uuid}`);
-          const r = await fetch(`${API}/api/staking/unstake/status/${uuid}?account=${WALLET}&txid=pending`);
-          const j = await r.json();
-          console.log(`[UNSTAKE-POLL] Response:`, j);
+      try {
+        // Close QR modal
+        xummCloseStake();
 
-          if (j.ok && j.signed && j.paid) {
-            console.log('[UNSTAKE-POLL] Unstake completed! Closing modal and refreshing list.');
-            clearInterval(iv);
-            xummCloseStake();
-            if (onDone) onDone();
-            return;
-          } else if (j.error) {
-            console.log('[UNSTAKE-POLL] Error in response:', j.error);
-          }
+        // Update message and refresh list
+        msg.textContent = 'Unlocked ✔ — WALDO sent back';
+        await stakeLoadInfo();
 
-          // Reset CORS failure counter on successful fetch
-          corsFailures = 0;
-
-        } catch (e) {
-          console.error('[UNSTAKE-POLL] Fetch error:', e);
-          corsFailures++;
-
-          // After 10 CORS failures, show close button
-          if (e.message.includes('Failed to fetch') && corsFailures >= 10) {
-            const msg = document.getElementById('ltMsg');
-            if (msg && !msg.innerHTML.includes('Close Modal')) {
-              msg.innerHTML = 'CORS errors detected. If you received your WALDO, <button onclick="xummCloseStake(); stakeLoadInfo();" style="background:#28a745;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;margin-left:5px;">Close Modal</button>';
-            }
-          }
-
-          // Only assume completion after many failures AND sufficient time (2+ minutes)
-          if (e.message.includes('Failed to fetch') && corsFailures >= 60 && tries >= 120) {
-            console.log('[UNSTAKE-POLL] Extended CORS failures after 2+ minutes - assuming transaction completed');
-            clearInterval(iv);
-            xummCloseStake();
-            if (onDone) onDone();
-            return;
-          }
-        }
-
-        // Stop polling after 20 attempts (20 seconds) if CORS keeps failing
-        if (tries > 20 && corsFailures > 15) {
-          console.log('[UNSTAKE-POLL] Stopping polling due to persistent CORS failures');
-          clearInterval(iv);
-          return; // Let the 30-second timeout handle closing
-        }
-
-        // Overall timeout after 3 minutes
-        if (tries > 180) {
-          console.log('[UNSTAKE-POLL] Overall timeout after 180 attempts');
-          clearInterval(iv);
-          // Force close and refresh even on timeout
-          xummCloseStake();
-          if (onDone) onDone();
-        }
-      }, 1000);
+        console.log('[UNSTAKE] Completion successful');
+      } catch (e) {
+        console.error('[UNSTAKE] Error:', e);
+        msg.textContent = 'Error completing unstake: ' + e.message;
+      }
     }
 
 
