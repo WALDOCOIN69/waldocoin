@@ -652,7 +652,7 @@ router.get("/info/:wallet", async (req, res) => {
   }
 });
 
-// ✅ POST /api/staking/unstake - Create XUMM Payment for early unstaking
+// ✅ POST /api/staking/unstake - Automatic unstaking with direct transaction
 router.post("/unstake", async (req, res) => {
   try {
     const { wallet, stakeId } = req.body;
@@ -693,12 +693,20 @@ router.post("/unstake", async (req, res) => {
     const penalty = originalAmount * 0.15;
     const userReceives = originalAmount - penalty;
 
-    // Get distributor wallet address
+    // Get distributor wallet credentials
     const DISTRIBUTOR_WALLET = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+    const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET || process.env.WALDO_DISTRIBUTOR_SEED;
     const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 
-    // Check distributor wallet balance before creating transaction
+    if (!DISTRIBUTOR_SECRET) {
+      return res.status(500).json({
+        success: false,
+        error: "Distributor wallet secret not configured. Please contact admin."
+      });
+    }
+
+    // Check distributor wallet balance
     try {
       const distributorBalance = await getWaldoBalance(DISTRIBUTOR_WALLET);
       console.log(`[UNSTAKE] Distributor balance: ${distributorBalance} WALDO, need: ${userReceives} WALDO`);
@@ -711,40 +719,94 @@ router.post("/unstake", async (req, res) => {
       }
     } catch (e) {
       console.warn('[UNSTAKE] Could not check distributor balance:', e.message);
-      // Continue anyway - let XUMM handle the error
+      // Continue anyway - let XRPL handle the error
     }
 
-    // Create XUMM Payment transaction (user signs to receive their WALDO back)
-    const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
-    const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
+    // Submit transaction directly to XRPL
+    console.log(`[UNSTAKE] Submitting automatic transaction for ${userReceives} WALDO to ${wallet}`);
 
-    const txjson = {
-      TransactionType: 'Payment',
-      Account: DISTRIBUTOR_WALLET,
-      Destination: wallet,
-      Amount: {
-        currency: CURRENCY,
-        issuer: ISSUER,
-        value: userReceives.toString()
-      },
-      Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
-    };
+    // Import XRPL library for direct transaction submission
+    const xrpl = await import('xrpl');
 
-    const created = await xummClient.payload.create({
-      txjson,
-      options: { submit: true, expire: 900, return_url: { app: 'xumm://xumm.app/done', web: null } },
-      custom_meta: {
-        identifier: `WALDO_STAKE_UNSTAKE`,
-        instruction: `Early unlock ${userReceives.toFixed(2)} WALDO (${originalAmount} - ${penalty.toFixed(2)} penalty)`
+    // Create wallet from distributor secret
+    const distributorWallet = xrpl.Wallet.fromSeed(DISTRIBUTOR_SECRET);
+
+    // Connect to XRPL
+    const client = new xrpl.Client("wss://xrplcluster.com");
+    await client.connect();
+
+    try {
+      const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
+      const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
+
+      const payment = {
+        TransactionType: 'Payment',
+        Account: distributorWallet.classicAddress,
+        Destination: wallet,
+        Amount: {
+          currency: CURRENCY,
+          issuer: ISSUER,
+          value: userReceives.toString()
+        },
+        Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
+      };
+
+      const prepared = await client.autofill(payment);
+      const signed = distributorWallet.sign(prepared);
+      const result = await client.submitAndWait(signed.tx_blob);
+
+      if (result.result.meta.TransactionResult !== 'tesSUCCESS') {
+        throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
       }
+
+      const txid = result.result.hash;
+      console.log(`[UNSTAKE] Transaction submitted successfully: ${txid}`);
+    } finally {
+      await client.disconnect();
+    }
+
+    // Update staking record immediately
+    const now = new Date();
+    await redis.hSet(`staking:${stakeId}`, {
+      status: 'completed',
+      unstakedAt: now.toISOString(),
+      isEarlyUnstake: 'true',
+      penalty: penalty.toString(),
+      userReceives: userReceives.toString(),
+      claimed: 'true',
+      unstakeTx: txid
     });
 
-    // Map for status processing
-    await redis.hSet(`stake:unstake_offer:${created.uuid}`, { stakeId, wallet, originalAmount: originalAmount.toString(), penalty: penalty.toString(), userReceives: userReceives.toString() });
+    // Remove from active stake sets
+    await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
+    await redis.sRem(`staking:user:${wallet}`, stakeId);
+    await redis.sRem('staking:active', stakeId);
 
-    return res.json({ success: true, uuid: created.uuid, refs: created.refs, next: created.next });
+    // Update stats
+    try {
+      if (originalAmount > 0) {
+        await redis.incrByFloat('staking:total_staked', -originalAmount);
+        await redis.incrByFloat('staking:total_long_term_staked', -originalAmount);
+      }
+      if (penalty > 0) {
+        await redis.incrByFloat('staking:total_penalties', penalty);
+      }
+    } catch (e) {
+      console.warn('[UNSTAKE] Stats update failed:', e.message);
+    }
+
+    console.log(`[UNSTAKE] Completed unstaking for ${stakeId}: ${userReceives} WALDO sent to ${wallet}`);
+
+    return res.json({
+      success: true,
+      txid: txid,
+      amount: userReceives,
+      penalty: penalty,
+      message: `Successfully unstaked ${userReceives.toFixed(2)} WALDO (${penalty.toFixed(2)} WALDO penalty applied)`
+    });
+
   } catch (e) {
-    console.error('unstake init error', e);
+    console.error('[UNSTAKE] Auto-unstake error:', e);
     return res.status(500).json({ success: false, error: e.message });
   }
 });
