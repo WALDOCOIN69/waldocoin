@@ -847,6 +847,14 @@
     // Unstake (with QR code)
     window.stakeUnstake = async function (stakeId) {
       if (!confirm('Unlock now? Early unlock reduces your WALDO by 15%.')) return;
+
+      // Immediately disable the unstake button to prevent double-clicking
+      const unstakeBtn = document.querySelector(`button[onclick="stakeUnstake('${stakeId}')"]`);
+      if (unstakeBtn) {
+        unstakeBtn.disabled = true;
+        unstakeBtn.textContent = 'Processing...';
+      }
+
       const msg = document.getElementById('ltMsg');
       try {
         console.log('[UNSTAKE] Starting unstake for:', stakeId);
@@ -862,29 +870,51 @@
           console.error('[UNSTAKE] xummOpenStake function not found');
           alert('QR modal function not available');
         }
-        if (j.uuid) startUnstakeStatusPoll(j.uuid, async () => { msg.textContent = 'Unlocked ✔ — WALDO sent back'; await stakeLoadInfo(); });
+        if (j.uuid) startUnstakeStatusPoll(j.uuid, async () => {
+          msg.textContent = 'Unlocked ✔ — WALDO sent back';
+          await stakeLoadInfo();
+        });
       } catch (e) {
         console.error('[UNSTAKE] Error:', e);
         msg.textContent = 'Unlock error: ' + e.message;
+        // Re-enable button on error
+        if (unstakeBtn) {
+          unstakeBtn.disabled = false;
+          unstakeBtn.textContent = 'Unlock Early';
+        }
       }
     }
 
     // Status polling for unstake
     function startUnstakeStatusPoll(uuid, onDone) {
       if (!uuid) return;
+      console.log('[UNSTAKE-POLL] Starting status polling for UUID:', uuid);
       let tries = 0;
       const iv = setInterval(async () => {
         tries++;
         try {
+          console.log(`[UNSTAKE-POLL] Attempt ${tries}/180 for UUID: ${uuid}`);
           const r = await fetch(`${API}/api/staking/unstake/status/${uuid}?account=${WALLET}&txid=pending`);
           const j = await r.json();
+          console.log(`[UNSTAKE-POLL] Response:`, j);
+
           if (j.ok && j.signed && j.paid) {
+            console.log('[UNSTAKE-POLL] Unstake completed! Closing modal and refreshing list.');
             clearInterval(iv);
             xummCloseStake();
             if (onDone) onDone();
+          } else if (j.error) {
+            console.log('[UNSTAKE-POLL] Error in response:', j.error);
           }
-          if (tries > 180) { clearInterval(iv); }
-        } catch (_) { clearInterval(iv); }
+
+          if (tries > 180) {
+            console.log('[UNSTAKE-POLL] Timeout after 180 attempts');
+            clearInterval(iv);
+          }
+        } catch (e) {
+          console.error('[UNSTAKE-POLL] Fetch error:', e);
+          clearInterval(iv);
+        }
       }, 1000);
     }
 

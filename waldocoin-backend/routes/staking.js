@@ -787,9 +787,15 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: false });
     }
 
+    // Get transaction ID from XUMM response
+    const actualTxid = payload.response.txid || txid || '';
+    console.log(`[UNSTAKE-STATUS] Transaction signed! TXID: ${actualTxid}`);
+
     // Process the unstaking
     const { stakeId, wallet, originalAmount, penalty, userReceives } = offerData;
     const now = new Date();
+
+    console.log(`[UNSTAKE-STATUS] Processing unstake for stake: ${stakeId}, wallet: ${wallet}`);
 
     // Update staking record
     await redis.hSet(`staking:${stakeId}`, {
@@ -799,8 +805,10 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       penalty: penalty,
       userReceives: userReceives,
       claimed: 'true',
-      unstakeTx: txid || ''
+      unstakeTx: actualTxid
     });
+
+    console.log(`[UNSTAKE-STATUS] Updated stake record: ${stakeId} -> completed`);
 
     // Remove from active stake sets
     await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
@@ -836,8 +844,9 @@ router.get('/unstake/status/:uuid', async (req, res) => {
 
     // Mark as processed
     await redis.set(processedKey, '1', { EX: 604800 });
+    console.log(`[UNSTAKE-STATUS] Marked as processed: ${processedKey}`);
 
-    return res.json({ ok: true, signed: true, account, txid, paid: true });
+    return res.json({ ok: true, signed: true, account, txid: actualTxid, paid: true });
   } catch (e) {
     console.error('[UNSTAKE-STATUS] Error:', e.message || e);
     // Return a proper response even on error to prevent 502
