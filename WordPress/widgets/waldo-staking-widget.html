@@ -543,7 +543,7 @@
       } catch (e) {
         // Fallback to manual
         document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
-        document.getElementById('btnStakeDisconnect')?.style.display = 'inline-block';
+        (function () { const el = document.getElementById('btnStakeDisconnect'); if (el) el.style.display = 'inline-block'; })();
         const w = document.getElementById('stakeWallet').value.trim();
         if (w) { WALLET = w; await stakeLoadInfo(); }
       }
@@ -612,7 +612,7 @@
         // Update WALDO balance and show in UI
         CURRENT_BAL = (j.userInfo && typeof j.userInfo.currentBalance === 'number') ? j.userInfo.currentBalance : 0;
         const balStr = Math.floor(CURRENT_BAL).toLocaleString();
-        document.getElementById('ltBal')?.textContent = balStr;
+        (function () { const el = document.getElementById('ltBal'); if (el) el.textContent = balStr; })();
 
         // Render lists
 
