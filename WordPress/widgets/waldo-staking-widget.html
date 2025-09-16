@@ -920,6 +920,15 @@
         } catch (e) {
           console.error('[UNSTAKE-POLL] Fetch error:', e);
           corsFailures++;
+
+          // After 10 CORS failures, show close button
+          if (e.message.includes('Failed to fetch') && corsFailures >= 10) {
+            const msg = document.getElementById('ltMsg');
+            if (msg && !msg.innerHTML.includes('Close Modal')) {
+              msg.innerHTML = 'CORS errors detected. If you received your WALDO, <button onclick="xummCloseStake(); stakeLoadInfo();" style="background:#28a745;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;margin-left:5px;">Close Modal</button>';
+            }
+          }
+
           // Only assume completion after many failures AND sufficient time (2+ minutes)
           if (e.message.includes('Failed to fetch') && corsFailures >= 60 && tries >= 120) {
             console.log('[UNSTAKE-POLL] Extended CORS failures after 2+ minutes - assuming transaction completed');
