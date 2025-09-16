@@ -472,7 +472,8 @@
   } catch (_) { }
 
 
-  window.WALDO_API = window.WALDO_API || 'https://waldocoin-backend-api.onrender.com';
+  // Prefer parent-provided API base (e.g., '/api') when embedded via iframe; fallback to hosted backend
+  window.WALDO_API = window.WALDO_API || (window.parent && window.parent.WALDO_API) || 'https://waldocoin-backend-api.onrender.com';
 
   (function () {
     const API = window.WALDO_API;

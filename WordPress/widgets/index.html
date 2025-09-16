@@ -65,6 +65,10 @@
       const localSrc = 'waldo-staking-widget.html?v=' + encodeURIComponent(ver);
       const rawSrc = 'https://raw.githubusercontent.com/WALDOCOIN69/waldocoin/main/WordPress/widgets/waldo-staking-widget.html?v=' + encodeURIComponent(ver);
 
+      // Use Hostinger reverse-proxied backend by default
+      window.WALDO_API = window.WALDO_API || '/api';
+
+
       async function inject(html) {
         // Render the widget HTML inside an iframe to avoid host parsing issues
         target.innerHTML = '';
