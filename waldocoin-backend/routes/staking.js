@@ -1,7 +1,6 @@
 import express from 'express';
 import { redis } from '../redisClient.js';
 import getWaldoBalance from '../utils/getWaldoBalance.js';
-import ensureMinWaldoWorth from '../utils/waldoWorth.js';
 import { xummClient } from '../utils/xummClient.js';
 import xrpl from 'xrpl';
 
@@ -1276,20 +1275,8 @@ router.post('/stake', async (req, res) => {
       });
     }
 
-    // Enforce minimum WALDO worth: 3 XRP
-    try {
-      const worth = await ensureMinWaldoWorth(wallet, 1);
-      if (!worth.ok) {
-        return res.status(403).json({
-          success: false,
-          error: `Minimum balance required: ${worth.requiredWaldo.toLocaleString()} WALDO (~${worth.minXrp} XRP at ${worth.waldoPerXrp.toLocaleString()} WALDO/XRP). Your balance: ${worth.balance.toLocaleString()} WALDO`,
-          details: worth
-        });
-      }
-    } catch (e) {
-      console.warn('Worth check failed, denying stake:', e.message || e);
-      return res.status(503).json({ success: false, error: 'Temporary wallet worth check failure. Please try again.' });
-    }
+    // No minimum WALDO balance requirement for staking operations
+    // Minimum balance checks are only enforced for meme payout claims
 
 
     // Validate amount and duration
