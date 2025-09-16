@@ -1742,3 +1742,5 @@ router.get('/status/:uuid', async (req, res) => {
     return res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+export default router;
