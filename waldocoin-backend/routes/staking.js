@@ -771,7 +771,17 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       new Promise((_, reject) => setTimeout(() => reject(new Error('XUMM timeout')), 5000))
     ]);
 
-    console.log(`[UNSTAKE-STATUS] XUMM payload response:`, { signed: payload?.response?.signed, account: payload?.response?.account });
+    console.log(`[UNSTAKE-STATUS] XUMM payload response:`, {
+      payload: !!payload,
+      response: !!payload?.response,
+      signed: payload?.response?.signed,
+      account: payload?.response?.account
+    });
+
+    if (!payload || !payload.response) {
+      console.log(`[UNSTAKE-STATUS] Invalid payload structure`);
+      return res.json({ ok: true, signed: false, error: 'Invalid payload response' });
+    }
 
     if (!payload.response.signed) {
       return res.json({ ok: true, signed: false });
