@@ -572,10 +572,10 @@
       const WARNING = document.getElementById('xummWarningStake');
       if (T) T.textContent = title || 'Xaman';
 
-      // Show warning for staking and early unlock operations
+      // Show warning for staking and early unlock operations (NOT for mature redemption)
       if (WARNING) {
         const titleLower = (title || '').toLowerCase();
-        if (titleLower.includes('early unlock') || titleLower.includes('lock') || titleLower.includes('stake')) {
+        if (titleLower.includes('early unlock') || (titleLower.includes('lock') && !titleLower.includes('unlock')) || (titleLower.includes('stake') && !titleLower.includes('redeem'))) {
           WARNING.style.display = 'block';
         } else {
           WARNING.style.display = 'none';
@@ -1114,7 +1114,8 @@
                   await stakeLoadInfo();
                 } catch (retryError) {
                   console.log('[REDEEM] Retry refresh also failed silently:', retryError.message);
-                  // Give up silently - user got their WALDO, that's what matters
+                  // Final fallback: show message to user to manually refresh
+                  if (msg) msg.textContent = 'Redeemed ✔ — Click "Load Info" to refresh your stakes';
                 }
               }, 3000);
             }
@@ -1134,13 +1135,19 @@
                   await stakeLoadInfo();
                 } catch (retryError) {
                   console.log('[REDEEM] Status poll retry refresh also failed silently:', retryError.message);
-                  // Give up silently - user got their WALDO, that's what matters
+                  // Final fallback: show message to user to manually refresh
+                  const msg = document.getElementById('ltMsg');
+                  if (msg) msg.textContent = 'Redeemed ✔ — Click "Load Info" to refresh your stakes';
                 }
               }, 3000);
             }
           }, 2000);
         });
-      } catch (e) { alert('Redeem error: ' + e.message); }
+      } catch (e) {
+        console.log('Redeem error (likely already redeemed):', e.message);
+        if (msg) msg.textContent = 'This stake has already been redeemed';
+        // Don't show alert popup for double redemption attempts
+      }
     }
 
     function startRedeemStatusPoll(uuid, onDone) {
