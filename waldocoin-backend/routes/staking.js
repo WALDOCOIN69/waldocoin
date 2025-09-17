@@ -735,6 +735,8 @@ router.post("/unstake", async (req, res) => {
     const client = new xrpl.Client("wss://xrplcluster.com");
     await client.connect();
 
+    // Capture txid outside the try so we can use it later
+    let txid = '';
     try {
       const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
       const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
@@ -759,7 +761,7 @@ router.post("/unstake", async (req, res) => {
         throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
       }
 
-      const txid = result.result.hash;
+      txid = result.result.hash;
       console.log(`[UNSTAKE] Transaction submitted successfully: ${txid}`);
     } finally {
       await client.disconnect();

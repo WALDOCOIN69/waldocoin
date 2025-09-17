@@ -862,18 +862,26 @@
         const j = await r.json();
         console.log('[UNSTAKE] Response:', j);
         if (!j.success) throw new Error(j.error || 'Unlock failed');
+
+        // Two backend modes:
+        // 1) Automatic payout (no XUMM) -> { success:true, txid }
+        // 2) XUMM sign flow -> { success:true, uuid, refs/next }
+        if (j.txid && !j.uuid) {
+          msg.textContent = 'Unlocked ✔ — WALDO sent back';
+          try { xummCloseStake && xummCloseStake(); } catch (_) { }
+          await stakeLoadInfo();
+          return;
+        }
+
+        // Otherwise proceed with XUMM QR flow
         msg.textContent = 'Sign in Xaman to unlock your WALDO...';
-        console.log('[UNSTAKE] Opening QR modal...');
         if (typeof xummOpenStake === 'function') {
           xummOpenStake('Early Unlock', j);
-        } else {
-          console.error('[UNSTAKE] xummOpenStake function not found');
-          alert('QR modal function not available');
         }
         if (j.uuid) {
-          msg.textContent = 'Sign in Xaman to unlock your WALDO...';
           startUnstakeStatusPoll(j.uuid, async () => {
             msg.textContent = 'Unlocked ✔ — WALDO sent back';
+            try { xummCloseStake && xummCloseStake(); } catch (_) { }
             await stakeLoadInfo();
           });
         }
