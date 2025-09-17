@@ -848,20 +848,20 @@
     window.stakeUnstake = async function (stakeId) {
       if (!confirm('Unlock now? Early unlock reduces your WALDO by 15%.')) return;
 
-      // OPTIMISTIC UPDATE: Find and hide the stake row immediately
+      // OPTIMISTIC UPDATE: Find and hide the stake item immediately
       const unstakeBtn = document.querySelector(`button[onclick="stakeUnstake('${stakeId}')"]`);
-      const stakeRow = unstakeBtn ? unstakeBtn.closest('tr') : null;
+      const stakeItem = unstakeBtn ? unstakeBtn.closest('.stake-item') : null;
 
       if (unstakeBtn) {
         unstakeBtn.disabled = true;
         unstakeBtn.textContent = 'Processing...';
       }
 
-      // Hide the row immediately (optimistic update)
-      if (stakeRow) {
-        stakeRow.style.opacity = '0.5';
-        stakeRow.style.pointerEvents = 'none';
-        stakeRow.setAttribute('data-unstaking', 'true');
+      // Hide the stake item immediately (optimistic update)
+      if (stakeItem) {
+        stakeItem.style.opacity = '0.5';
+        stakeItem.style.pointerEvents = 'none';
+        stakeItem.setAttribute('data-unstaking', 'true');
       }
 
       const msg = document.getElementById('ltMsg');
@@ -879,9 +879,9 @@
                            'Unlocked ✔ — WALDO sent back';
           msg.textContent = successMsg;
 
-          // Completely remove the row after short delay
+          // Completely remove the stake item after short delay
           setTimeout(() => {
-            if (stakeRow) stakeRow.remove();
+            if (stakeItem) stakeItem.remove();
           }, 2000);
 
           // Background refresh to sync with server
@@ -907,11 +907,11 @@
         console.error('[UNSTAKE] Error:', e);
         msg.textContent = 'Unlock error: ' + e.message;
 
-        // RESTORE ROW on error (rollback optimistic update)
-        if (stakeRow) {
-          stakeRow.style.opacity = '1';
-          stakeRow.style.pointerEvents = 'auto';
-          stakeRow.removeAttribute('data-unstaking');
+        // RESTORE STAKE ITEM on error (rollback optimistic update)
+        if (stakeItem) {
+          stakeItem.style.opacity = '1';
+          stakeItem.style.pointerEvents = 'auto';
+          stakeItem.removeAttribute('data-unstaking');
         }
 
         // Re-enable button on error
