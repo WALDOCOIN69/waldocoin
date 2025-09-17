@@ -897,7 +897,9 @@
         if (!j.success) throw new Error(j.error || 'Unlock failed');
 
         // SUCCESS CASES: Keep row hidden and complete removal
+        console.log('[UNSTAKE] Checking success cases - already:', !!j.already, 'inProgress:', !!j.inProgress, 'txid:', !!j.txid);
         if (j.already || j.inProgress || j.txid) {
+          console.log('[UNSTAKE] SUCCESS CASE MATCHED - returning early');
           const successMsg = j.already ? 'Already unlocked ✔' :
                            j.inProgress ? 'Unlock in progress...' :
                            'Unlocked ✔ — WALDO sent back';
@@ -912,8 +914,11 @@
           setTimeout(() => stakeLoadInfo(), 3000);
 
           try { xummCloseStake && xummCloseStake(); } catch (_) {}
+          console.log('[UNSTAKE] Early return completed');
           return;
         }
+
+        console.log('[UNSTAKE] No success case matched - proceeding to QR flow');
 
         // Otherwise proceed with XUMM QR flow
         msg.textContent = 'Sign in Xaman to unlock your WALDO...';
