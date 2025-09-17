@@ -45,10 +45,10 @@ const XP_LEVELS = {
 
 // Long-term staking APY rates by duration (encourage immediate staking with good 30-day rate)
 const LONG_TERM_APY_RATES = {
-  30: 10,   // 10% APY for 30 days (attractive rate to get people staking now)
+  30: 12,   // 12% APY for 30 days (attractive rate to get people staking now)
   90: 18,   // 18% APY for 90 days
-  180: 30,  // 30% APY for 180 days
-  365: 50   // 50% APY for 365 days (massive reward for long-term commitment)
+  180: 25,  // 25% APY for 180 days
+  365: 35   // 35% APY for 365 days (massive reward for long-term commitment)
 };
 
 // Level-based duration access for long-term staking
@@ -348,8 +348,9 @@ router.post("/long-term", async (req, res) => {
     // Calculate APY with Level 5 bonus
     const apy = calculateAPY(parseInt(duration), userLevel.level);
 
-    // Calculate expected rewards
-    const expectedReward = Math.floor((stakeAmount * apy / 100) * (duration / 365));
+    // Calculate expected rewards (round to 2 decimal places, then floor for whole WALDO)
+    const rewardCalculation = (stakeAmount * apy / 100) * (duration / 365);
+    const expectedReward = Math.floor(rewardCalculation * 100) / 100; // Round to 2 decimals, then floor
 
     // Create staking record
     const stakeId = `longterm_${wallet}_${Date.now()}`;
