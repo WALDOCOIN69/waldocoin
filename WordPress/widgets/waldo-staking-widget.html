@@ -725,7 +725,10 @@
         renderRedeemed(redeemedStakes);
 
         document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
-      } catch (e) { alert('Load failed: ' + e.message); }
+      } catch (e) {
+        console.log('Load info failed silently (likely CORS issue):', e.message);
+        // Don't show alert to user - they can manually refresh if needed
+      }
     }
     // Quick actions
     window.ltSetMax = function () {
@@ -1090,8 +1093,15 @@
             try {
               await stakeLoadInfo();
             } catch (error) {
-              console.log('[REDEEM] Refresh failed, trying again in 3 seconds:', error);
-              setTimeout(() => stakeLoadInfo(), 3000);
+              console.log('[REDEEM] Refresh failed silently (CORS issue), trying again in 3 seconds:', error.message);
+              setTimeout(async () => {
+                try {
+                  await stakeLoadInfo();
+                } catch (retryError) {
+                  console.log('[REDEEM] Retry refresh also failed silently:', retryError.message);
+                  // Give up silently - user got their WALDO, that's what matters
+                }
+              }, 3000);
             }
           }, 2000);
         }, 15000);
@@ -1103,8 +1113,15 @@
             try {
               await stakeLoadInfo();
             } catch (error) {
-              console.log('[REDEEM] Status poll refresh failed:', error);
-              setTimeout(() => stakeLoadInfo(), 3000);
+              console.log('[REDEEM] Status poll refresh failed silently (CORS issue):', error.message);
+              setTimeout(async () => {
+                try {
+                  await stakeLoadInfo();
+                } catch (retryError) {
+                  console.log('[REDEEM] Status poll retry refresh also failed silently:', retryError.message);
+                  // Give up silently - user got their WALDO, that's what matters
+                }
+              }, 3000);
             }
           }, 2000);
         });
