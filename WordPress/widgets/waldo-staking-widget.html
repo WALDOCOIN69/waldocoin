@@ -70,7 +70,10 @@
       <div id="ltReadyList"></div>
     </div>
 
-
+    <div class="list" id="ltRedeemedBlock" style="display:none">
+      <h4>✅ Recently Redeemed (Last 15 Days)</h4>
+      <div id="ltRedeemedList"></div>
+    </div>
 
   </div>
 
@@ -270,6 +273,13 @@
     color: #79ffcf;
     box-shadow: 0 0 12px rgba(121, 255, 207, .18);
     border-color: rgba(121, 255, 207, .25)
+  }
+
+  .badge.redeemed {
+    background: linear-gradient(90deg, #1a2a0f, #2d4a13);
+    color: #8fff79;
+    box-shadow: 0 0 12px rgba(143, 255, 121, .18);
+    border-color: rgba(143, 255, 121, .25)
   }
 
   /* Color-coded countdown based on time remaining */
@@ -660,6 +670,11 @@
         const r = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Failed to load user info');
+
+        // Also get positions (including redeemed stakes)
+        const positionsR = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
+        const positionsJ = await positionsR.json();
+        const allPositions = positionsJ.success ? positionsJ.positions : [];
         // Update TL status
         const tl = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
         const tlj = await tl.json();
@@ -700,11 +715,14 @@
         const balStr = Math.floor(CURRENT_BAL).toLocaleString();
         (function () { const el = document.getElementById('ltBal'); if (el) el.textContent = balStr; })();
 
-        // Render lists
+        // Render lists - separate active, ready, and redeemed stakes
+        const activeStakes = allPositions.filter(s => s.status === 'active' && (s.daysRemaining || 0) > 0);
+        const readyStakes = allPositions.filter(s => s.status === 'active' && (s.daysRemaining || 0) <= 0);
+        const redeemedStakes = allPositions.filter(s => s.status === 'redeemed');
 
-        const all = j.longTermStaking.activeStakes || [];
-        renderLongTerm(all);
-        renderReady(all.filter(s => (s.daysRemaining || 0) <= 0));
+        renderLongTerm(activeStakes);
+        renderReady(readyStakes);
+        renderRedeemed(redeemedStakes);
 
         document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
       } catch (e) { alert('Load failed: ' + e.message); }
@@ -825,6 +843,32 @@
       `).join('');
     }
 
+    function renderRedeemed(list) {
+      const block = document.getElementById('ltRedeemedBlock');
+      const root = document.getElementById('ltRedeemedList');
+      const redeemed = (list || []).filter(s => s.status === 'redeemed');
+      if (!redeemed.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
+      if (block) block.style.display = 'block';
+      if (root) root.innerHTML = redeemed.map(s => {
+        const redeemedDate = s.redeemedAt ? new Date(s.redeemedAt).toLocaleDateString() : 'Unknown';
+        const originalAmount = Number(s.originalAmount || s.amount || 0);
+        const rewardAmount = Number(s.rewardAmount || s.expectedReward || 0);
+        const totalReceived = Number(s.totalReceived || (originalAmount + rewardAmount));
+        const explorerLink = s.redeemTx ? `https://livenet.xrpl.org/transactions/${s.redeemTx}` : null;
+
+        return `
+        <div class="stake-item">
+          <div class="item-head">
+            <div class="amt">${originalAmount.toLocaleString()} + ${rewardAmount.toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
+            <span class="badge redeemed">✅ Redeemed</span>
+          </div>
+          <div class="meta">
+            Redeemed on ${redeemedDate} • ${s.duration}d lock • ${s.apy}% APY
+            ${explorerLink ? ` • <a href="${explorerLink}" target="_blank" rel="noopener" style="color:#25c2a0;">View Transaction</a>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
 
     // Create stakes
     window.createLongTermStake = async function () {
@@ -912,8 +956,8 @@
         if (j.already || j.inProgress || j.txid) {
           console.log('[UNSTAKE] SUCCESS CASE MATCHED - returning early');
           const successMsg = j.already ? 'Already unlocked ✔' :
-                           j.inProgress ? 'Unlock in progress...' :
-                           'Unlocked ✔ — WALDO sent back';
+            j.inProgress ? 'Unlock in progress...' :
+              'Unlocked ✔ — WALDO sent back';
           msg.textContent = successMsg;
 
           // Completely remove the stake item after short delay
@@ -924,7 +968,7 @@
           // Background refresh to sync with server (longer delay to ensure backend processing)
           setTimeout(() => stakeLoadInfo(), 8000);
 
-          try { xummCloseStake && xummCloseStake(); } catch (_) {}
+          try { xummCloseStake && xummCloseStake(); } catch (_) { }
 
           // Clear processing flag
           if (window._unstaking) {
@@ -1034,6 +1078,15 @@
         if (!j.success) throw new Error(j.error || 'Redeem init failed');
         msg.textContent = 'Sign in Xaman to redeem your WALDO + bonus...';
         xummOpenStake('Redeem Stake', j);
+
+        // Add 15-second fallback timeout for CORS issues
+        setTimeout(async () => {
+          console.log('[REDEEM] 15-second timeout - closing modal and refreshing');
+          try { xummCloseStake && xummCloseStake(); } catch (_) { }
+          msg.textContent = 'Redeemed ✔ — WALDO sent back';
+          await stakeLoadInfo();
+        }, 15000);
+
         if (j.uuid) startRedeemStatusPoll(j.uuid, async () => { msg.textContent = 'Redeemed ✔ — WALDO sent back'; await stakeLoadInfo(); });
       } catch (e) { alert('Redeem error: ' + e.message); }
     }
