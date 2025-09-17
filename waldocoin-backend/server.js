@@ -236,7 +236,8 @@ const startServer = async () => {
       }
       res.json({ success: true, count: out.length, routes: out });
     } catch (e) {
-      res.status(500).json({ success: false, error: e.message });
+      // Be robust in production: never 500 here; return a safe payload
+      res.json({ success: false, error: 'route_enumeration_unavailable', detail: e?.message || String(e) });
     }
   });
 
