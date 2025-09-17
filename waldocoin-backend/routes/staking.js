@@ -1709,6 +1709,15 @@ router.post('/redeem', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
     if (stakeData.status !== 'active') {
+      // If stake is already completed but still in active sets, clean up the sets
+      if (stakeData.status === 'completed' || stakeData.status === 'redeemed') {
+        console.log(`[REDEEM] Cleaning up sets for already processed stake: ${stakeId}`);
+        await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
+        await redis.sRem(`staking:user:${wallet}`, stakeId);
+        await redis.sRem('staking:active', stakeId);
+        await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
+      }
+
       if (stakeData.status === 'redeemed') {
         return res.status(400).json({ success: false, error: 'Stake already redeemed' });
       } else if (stakeData.status === 'completed') {
@@ -1898,6 +1907,57 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 });
 
 
+
+// Admin: Clean up inconsistent stake sets
+router.post('/admin/cleanup-sets', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { wallet } = req.body;
+    console.log(`[ADMIN] Cleaning up stake sets for wallet: ${wallet || 'ALL'}`);
+
+    let cleaned = 0;
+    let wallets = [];
+
+    if (wallet) {
+      wallets = [wallet];
+    } else {
+      // Get all wallets with stakes
+      const allStakeKeys = await redis.keys('staking:user:*');
+      wallets = allStakeKeys.map(key => key.replace('staking:user:', ''));
+    }
+
+    for (const w of wallets) {
+      const activeIds = await redis.sMembers(`staking:user:${w}`);
+
+      for (const stakeId of activeIds) {
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+
+        if (stakeData.status === 'completed' || stakeData.status === 'redeemed') {
+          console.log(`[ADMIN] Moving completed stake ${stakeId} from active to redeemed`);
+          await redis.sRem(`user:${w}:long_term_stakes`, stakeId);
+          await redis.sRem(`staking:user:${w}`, stakeId);
+          await redis.sRem('staking:active', stakeId);
+          await redis.sAdd(`staking:user:${w}:redeemed`, stakeId);
+          cleaned++;
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Cleaned up ${cleaned} inconsistent stakes`,
+      cleaned
+    });
+
+  } catch (error) {
+    console.error('[ADMIN] Cleanup error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Admin: Force process pending redemptions
 router.post('/admin/process-redemptions', async (req, res) => {

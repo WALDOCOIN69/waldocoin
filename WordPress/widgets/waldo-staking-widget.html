@@ -31,6 +31,7 @@
       <div class="col small">
         <label>&nbsp;</label>
         <button class="btn" onclick="stakeLoadInfo()">Load Info</button>
+        <button class="btn" onclick="cleanupSets()" style="background:#28a745;">Cleanup</button>
       </div>
     </div>
 
@@ -1179,6 +1180,33 @@
         console.log('Redeem error (likely already redeemed):', e.message);
         if (msg) msg.textContent = 'This stake has already been redeemed';
         // Don't show alert popup for double redemption attempts
+      }
+    }
+
+    // Cleanup inconsistent stake sets (admin function)
+    window.cleanupSets = async function () {
+      try {
+        const wallet = WALLET || document.getElementById('stakeWallet').value.trim();
+        if (!wallet) return alert('Connect wallet first');
+
+        const response = await fetch(`${API}/api/staking/admin/cleanup-sets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': prompt('Enter admin key:') || ''
+          },
+          body: JSON.stringify({ wallet })
+        });
+
+        const result = await response.json();
+        console.log('Cleanup result:', result);
+        alert(`Cleaned up: ${result.cleaned || 0} stakes`);
+
+        // Refresh after cleanup
+        await stakeLoadInfo();
+      } catch (error) {
+        console.error('Cleanup error:', error);
+        alert('Cleanup failed: ' + error.message);
       }
     }
 
