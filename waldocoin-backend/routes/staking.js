@@ -155,6 +155,12 @@ async function processRedemptionIfComplete(uuid) {
     const stakeData = await redis.hGetAll(stakeKey);
     if (!stakeData) return false;
 
+    // Check if already processed
+    if (stakeData.status === 'redeemed' && stakeData.redeemedAt) {
+      console.log(`[REDEEM-FALLBACK] Stake already redeemed, skipping update`);
+      return true;
+    }
+
     // Mark stake as completed
     const redeemedAt = new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
@@ -928,7 +934,16 @@ router.get('/unstake/status/:uuid', async (req, res) => {
 
     console.log(`[UNSTAKE-STATUS] Processing unstake for stake: ${stakeId}, wallet: ${wallet}`);
 
-    // Update staking record
+    // Check if already processed by looking at stake status
+    const currentStakeData = await redis.hGetAll(`staking:${stakeId}`);
+    if (currentStakeData.status === 'completed' && currentStakeData.unstakedAt) {
+      console.log(`[UNSTAKE-STATUS] Stake already completed, skipping update`);
+      // Mark as processed and return success
+      await redis.set(processedKey, '1', { EX: 604800 });
+      return res.json({ ok: true, signed: true, account, txid: actualTxid, paid: true });
+    }
+
+    // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
       unstakedAt: now.toISOString(),
@@ -1810,6 +1825,12 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     const stakeKey = `staking:${stakeId}`;
     const stakeData = await redis.hGetAll(stakeKey);
     if (!stakeData) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'stake_data_missing' });
+
+    // Check if already processed by looking at stake status
+    if (stakeData.status === 'redeemed' && stakeData.redeemedAt) {
+      console.log(`[REDEEM-STATUS] Stake already redeemed, skipping update`);
+      return res.json({ ok: true, signed: true, account, txid, paid: true });
+    }
 
     // Mark stake as completed since Payment was successful
     const redeemedAt = new Date().toISOString();
