@@ -1471,11 +1471,39 @@ router.get('/positions/:wallet', async (req, res) => {
       } catch (e) { /* ignore individual errors */ }
     }
 
+    // Schema C (redeemed stakes): staking:user:{wallet}:redeemed
+    const redeemedIds = await redis.sMembers(`staking:user:${wallet}:redeemed`);
+    for (const stakeId of redeemedIds) {
+      if (seen.has(stakeId)) continue;
+      try {
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+        if (stakeData && Object.keys(stakeData).length > 0) {
+          positions.push({
+            stakeId: stakeData.stakeId,
+            amount: parseInt(stakeData.amount),
+            duration: parseInt(stakeData.duration),
+            apy: parseFloat(stakeData.apy),
+            expectedReward: parseInt(stakeData.expectedReward || 0),
+            startDate: stakeData.startDate,
+            endDate: stakeData.endDate,
+            status: stakeData.status,
+            redeemedAt: stakeData.redeemedAt,
+            redeemTx: stakeData.redeemTx,
+            totalReceived: parseFloat(stakeData.totalReceived || 0),
+            originalAmount: parseFloat(stakeData.originalAmount || stakeData.amount || 0),
+            rewardAmount: parseFloat(stakeData.rewardAmount || stakeData.expectedReward || 0),
+            daysRemaining: 0 // Already redeemed
+          });
+          seen.add(stakeId);
+        }
+      } catch (e) { /* ignore individual errors */ }
+    }
+
     return res.json({
       success: true,
       positions,
       totalPositions: positions.length,
-      totalStaked: positions.reduce((sum, pos) => sum + pos.amount, 0)
+      totalStaked: positions.reduce((sum, pos) => sum + (pos.status === 'redeemed' ? 0 : pos.amount), 0)
     });
 
   } catch (error) {
@@ -1680,17 +1708,29 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     if (!stakeData) return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'stake_data_missing' });
 
     // Mark stake as completed since Payment was successful
+    const redeemedAt = new Date().toISOString();
+    const originalAmount = parseFloat(stakeData.amount || 0);
+    const expectedReward = parseFloat(stakeData.expectedReward || 0);
+    const totalAmount = originalAmount + expectedReward;
+
     await redis.hSet(stakeKey, {
-      status: 'completed',
-      redeemedAt: new Date().toISOString(),
+      status: 'redeemed',
+      redeemedAt: redeemedAt,
       redeemTx: txid || '',
-      claimed: true
+      claimed: true,
+      totalReceived: totalAmount.toString(),
+      originalAmount: originalAmount.toString(),
+      rewardAmount: expectedReward.toString()
     });
 
     // Remove from active sets
     await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
     await redis.sRem(`staking:user:${wallet}`, stakeId);
     await redis.sRem('staking:active', stakeId);
+
+    // Add to redeemed set with 15-day expiry
+    await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
+    await redis.expire(`staking:user:${wallet}:redeemed`, 15 * 24 * 60 * 60); // 15 days
 
     // Update stats
     const amt = Number(stakeData.amount || 0);
@@ -1702,12 +1742,18 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     // Clean up offer
     await redis.del(`stake:redeem_offer:${uuid}`);
 
-    const originalAmount = parseFloat(stakeData.amount || 0);
-    const expectedReward = parseFloat(stakeData.expectedReward || 0);
-    const totalAmount = originalAmount + expectedReward;
-
     console.log(`✅ Stake redeemed: ${wallet} received ${totalAmount.toFixed(2)} WALDO (${stakeId})`);
-    return res.json({ ok: true, signed: true, account, txid, paid: true, amount: totalAmount.toFixed(2) });
+    return res.json({
+      ok: true,
+      signed: true,
+      account,
+      txid,
+      paid: true,
+      amount: totalAmount.toFixed(2),
+      originalAmount: originalAmount.toFixed(2),
+      rewardAmount: expectedReward.toFixed(2),
+      redeemedAt: redeemedAt
+    });
 
   } catch (e) {
     console.error('redeem status error', e);
