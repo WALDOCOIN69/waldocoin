@@ -738,15 +738,31 @@ router.post("/unstake", async (req, res) => {
     // Submit transaction directly to XRPL
     console.log(`[UNSTAKE] Submitting automatic transaction for ${userReceives} WALDO to ${wallet}`);
 
-    // Create wallet from distributor secret
-    const distributorWallet = xrpl.Wallet.fromSeed(DISTRIBUTOR_SECRET);
+    let client;
+    let distributorWallet;
 
-    // Connect to XRPL with reliable connection
-    const client = await getReliableXrplClient();
+    try {
+      // Create wallet from distributor secret
+      console.log('[UNSTAKE] Creating distributor wallet...');
+      distributorWallet = xrpl.Wallet.fromSeed(DISTRIBUTOR_SECRET);
+      console.log(`[UNSTAKE] Distributor wallet created: ${distributorWallet.classicAddress}`);
+
+      // Connect to XRPL with reliable connection
+      console.log('[UNSTAKE] Connecting to XRPL...');
+      client = await getReliableXrplClient();
+      console.log('[UNSTAKE] Connected to XRPL successfully');
+    } catch (error) {
+      console.error('[UNSTAKE] Failed to setup XRPL connection:', error);
+      return res.status(500).json({
+        success: false,
+        error: `Failed to connect to XRPL: ${error.message}`
+      });
+    }
 
     // Capture txid outside the try so we can use it later
     let txid = '';
     try {
+      console.log('[UNSTAKE] Creating transaction...');
       const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
       const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
 
@@ -762,8 +778,13 @@ router.post("/unstake", async (req, res) => {
         Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
       };
 
+      console.log('[UNSTAKE] Preparing transaction...');
       const prepared = await client.autofill(payment);
+
+      console.log('[UNSTAKE] Signing transaction...');
       const signed = distributorWallet.sign(prepared);
+
+      console.log('[UNSTAKE] Submitting transaction...');
       const result = await client.submitAndWait(signed.tx_blob);
 
       if (result.result.meta.TransactionResult !== 'tesSUCCESS') {
@@ -772,8 +793,27 @@ router.post("/unstake", async (req, res) => {
 
       txid = result.result.hash;
       console.log(`[UNSTAKE] Transaction submitted successfully: ${txid}`);
-    } finally {
-      await client.disconnect();
+
+    } catch (transactionError) {
+      console.error('[UNSTAKE] Transaction error:', transactionError);
+      // Clean up client connection
+      try {
+        if (client) await client.disconnect();
+      } catch (e) {
+        console.warn('[UNSTAKE] Client disconnect error:', e.message);
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: `Transaction failed: ${transactionError.message}`
+      });
+    }
+
+    // Clean up client connection
+    try {
+      if (client) await client.disconnect();
+    } catch (e) {
+      console.warn('[UNSTAKE] Client disconnect error:', e.message);
     }
 
     // Update staking record immediately
