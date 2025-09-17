@@ -43,12 +43,12 @@ const XP_LEVELS = {
   5: { min: 15000, max: Infinity, title: "Waldo Legend" }
 };
 
-// Long-term staking APY rates by duration (encourage immediate staking with good 30-day rate)
+// Long-term staking bonus rates by duration (encourage immediate staking with good 30-day rate)
 const LONG_TERM_APY_RATES = {
-  30: 12,   // 12% APY for 30 days (attractive rate to get people staking now)
-  90: 18,   // 18% APY for 90 days
-  180: 25,  // 25% APY for 180 days
-  365: 35   // 35% APY for 365 days (massive reward for long-term commitment)
+  30: 12,   // 12% bonus for 30 days (attractive rate to get people staking now)
+  90: 18,   // 18% bonus for 90 days
+  180: 25,  // 25% bonus for 180 days
+  365: 45   // 45% bonus for 365 days (massive reward for long-term commitment)
 };
 
 // Level-based duration access for long-term staking
