@@ -1869,6 +1869,56 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
 
 
+// Admin: Force process pending redemptions
+router.post('/admin/process-redemptions', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { wallet } = req.body;
+    console.log(`[ADMIN] Force processing redemptions for wallet: ${wallet || 'ALL'}`);
+
+    // Get all redemption offers
+    const offerKeys = await redis.keys('stake:redeem_offer:*');
+    const processed = [];
+    const failed = [];
+
+    for (const offerKey of offerKeys) {
+      try {
+        const uuid = offerKey.replace('stake:redeem_offer:', '');
+        const offer = await redis.hGetAll(offerKey);
+
+        // Skip if wallet filter specified and doesn't match
+        if (wallet && offer.wallet !== wallet) continue;
+
+        console.log(`[ADMIN] Processing redemption: ${uuid} for wallet: ${offer.wallet}`);
+        const result = await processRedemptionIfComplete(uuid);
+
+        if (result) {
+          processed.push({ uuid, wallet: offer.wallet, stakeId: offer.stakeId });
+        } else {
+          failed.push({ uuid, wallet: offer.wallet, stakeId: offer.stakeId, reason: 'Not complete or already processed' });
+        }
+      } catch (error) {
+        failed.push({ uuid: offerKey, error: error.message });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Processed ${processed.length} redemptions, ${failed.length} failed`,
+      processed,
+      failed
+    });
+
+  } catch (error) {
+    console.error('[ADMIN] Process redemptions error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Admin: clear fake/failed long-term stakes for a wallet
 router.post('/admin/clear-fake', async (req, res) => {
   try {
