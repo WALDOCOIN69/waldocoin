@@ -33,6 +33,7 @@
         <button class="btn" onclick="stakeLoadInfo()">Load Info</button>
         <button class="btn" onclick="cleanupSets()" style="background:#28a745;">Cleanup</button>
         <button class="btn" onclick="createTestStake()" style="background:#ff6b35;">Test 2min</button>
+        <button class="btn" onclick="forceRefresh()" style="background:#6c757d;">Force Refresh</button>
       </div>
     </div>
 
@@ -1251,6 +1252,28 @@
       } catch (error) {
         console.error('Test stake error:', error);
         alert('Test stake failed: ' + error.message);
+      }
+    }
+
+    // Force refresh all stake data (debugging function)
+    window.forceRefresh = async function () {
+      try {
+        const wallet = WALLET || document.getElementById('stakeWallet').value.trim();
+        if (!wallet) return alert('Connect wallet first');
+
+        console.log('[FORCE-REFRESH] Starting comprehensive refresh...');
+
+        // Clear any cached data
+        window._stakeData = null;
+
+        // Force reload all stake information
+        await stakeLoadInfo();
+
+        console.log('[FORCE-REFRESH] Refresh completed');
+        alert('Force refresh completed - check console for details');
+      } catch (error) {
+        console.error('Force refresh error:', error);
+        alert('Force refresh failed: ' + error.message);
       }
     }
 

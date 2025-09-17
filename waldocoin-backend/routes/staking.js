@@ -1880,6 +1880,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
     // Add to redeemed set (simple approach - no expiry for now)
     await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
+    console.log(`[REDEEM-STATUS] Added stake ${stakeId} to redeemed set for wallet ${wallet}`);
 
     // Update stats
     const amt = Number(stakeData.amount || 0);
