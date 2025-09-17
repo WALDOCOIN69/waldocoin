@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Test Mature Stake</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #0a0a0a; color: #eee; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { background: #25c2a0; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #1ea085; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+        .success { background: #1a4a3a; border: 1px solid #25c2a0; }
+        .error { background: #4a1a1a; border: 1px solid #c22525; }
+        input { padding: 8px; margin: 5px; border: 1px solid #333; background: #222; color: #eee; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Create Test Mature Stake</h1>
+        <p>This will create a test mature stake that's ready for redemption testing.</p>
+        
+        <div>
+            <label>Your Wallet Address:</label><br>
+            <input type="text" id="wallet" value="rhyJwH5bs6ZLqovjcTz4eUSUVJJ9DsWzHW" style="width: 400px;">
+        </div>
+        
+        <div>
+            <label>Admin Key:</label><br>
+            <input type="password" id="adminKey" placeholder="Enter admin key" style="width: 400px;">
+        </div>
+        
+        <br>
+        <button onclick="createTestStake()">Create Test Mature Stake</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function createTestStake() {
+            const wallet = document.getElementById('wallet').value;
+            const adminKey = document.getElementById('adminKey').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!wallet || !adminKey) {
+                resultDiv.innerHTML = '<div class="result error">Please enter both wallet address and admin key</div>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<div class="result">Creating test mature stake...</div>';
+                
+                const response = await fetch('https://waldocoin-backend-api.onrender.com/api/staking/create-test-mature', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Key': adminKey
+                    },
+                    body: JSON.stringify({ wallet })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <h3>✅ Test Mature Stake Created!</h3>
+                            <p><strong>Stake ID:</strong> ${data.testStake.stakeId}</p>
+                            <p><strong>Amount:</strong> ${data.testStake.amount} WALDO</p>
+                            <p><strong>Expected Reward:</strong> ${data.testStake.expectedReward} WALDO</p>
+                            <p><strong>Total Redemption:</strong> ${data.testStake.totalRedemption} WALDO</p>
+                            <p><strong>Days Overdue:</strong> ${data.testStake.daysOverdue} days</p>
+                            <p><strong>Status:</strong> Ready for redemption testing!</p>
+                            <br>
+                            <p>🎯 <strong>Next Steps:</strong></p>
+                            <ol>
+                                <li>Go to <a href="https://staking.waldocoin.live" target="_blank">staking.waldocoin.live</a></li>
+                                <li>Connect your wallet</li>
+                                <li>Look for the mature stake with a green "Redeem" button</li>
+                                <li>Test the redemption flow!</li>
+                            </ol>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Error: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
