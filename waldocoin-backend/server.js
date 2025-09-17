@@ -77,60 +77,35 @@ const startServer = async () => {
     windowMs: 60 * 1000,
     max: 100,
   });
-  // Restrict CORS to trusted origins only (allow root + subdomains of waldo/waldocoin)
-  const allowedOriginsRaw = (process.env.CORS_ALLOWED_ORIGINS || "https://waldocoin.live,https://waldo.live,https://admin-vip-only-page.waldocoin.live,https://staking.waldocoin.live,https://waldocoin.onrender.com").split(",").map(s => s.trim());
-  const allowedHosts = ["waldo.live", "waldocoin.live", "admin-vip-only-page.waldocoin.live", "staking.waldocoin.live", "waldocoin.onrender.com"]; // base hosts
+  // CORS: Allow waldocoin.live and waldo.live domains and subdomains
+  const allowedDomains = ["waldocoin.live", "waldo.live", "waldocoin.onrender.com"];
+  const corsOriginCheck = (origin) => {
+    if (!origin) return true; // allow curl/local
+    try {
+      const url = new URL(origin);
+      return allowedDomains.some(domain =>
+        url.hostname === domain || url.hostname.endsWith('.' + domain)
+      );
+    } catch (e) {
+      return false;
+    }
+  };
   app.use(cors({
     origin: (origin, cb) => {
-      console.log(`🔍 CORS check: origin="${origin}"`);
-      if (!origin) return cb(null, true); // allow curl/local
-
-      // TEMPORARY: Allow all waldocoin.live and waldo.live subdomains
-      if (origin && (origin.includes('waldocoin.live') || origin.includes('waldo.live'))) {
-        console.log(`🔍 CORS TEMP ALLOW: ${origin}`);
-        return cb(null, true);
-      }
-
-      try {
-        const u = new URL(origin);
-        const hostOk = allowedHosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
-        const originOk = allowedOriginsRaw.includes(origin);
-        const allowed = hostOk || originOk;
-        console.log(`🔍 CORS result: hostname="${u.hostname}", hostOk=${hostOk}, originOk=${originOk}, allowed=${allowed}`);
-        return cb(null, allowed);
-      } catch (e) {
-        console.log(`🔍 CORS error: ${e.message}`);
-        return cb(null, false);
-      }
+      const allowed = corsOriginCheck(origin);
+      console.log(`🔍 CORS: origin="${origin}" → ${allowed ? 'ALLOWED' : 'DENIED'}`);
+      cb(null, allowed);
     },
     credentials: false,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key']
   }));
   // Ensure preflight (OPTIONS) also returns proper CORS headers for cross-site POSTs
-  // Express 5 + path-to-regexp v6 doesn't accept '*' here; use a regex to match all paths
   app.options(/.*/, cors({
     origin: (origin, cb) => {
-      console.log(`🔍 OPTIONS CORS check: origin="${origin}"`);
-      if (!origin) return cb(null, true);
-
-      // TEMPORARY: Allow all waldocoin.live and waldo.live subdomains
-      if (origin && (origin.includes('waldocoin.live') || origin.includes('waldo.live'))) {
-        console.log(`🔍 OPTIONS CORS TEMP ALLOW: ${origin}`);
-        return cb(null, true);
-      }
-
-      try {
-        const u = new URL(origin);
-        const hostOk = allowedHosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
-        const originOk = allowedOriginsRaw.includes(origin);
-        const allowed = hostOk || originOk;
-        console.log(`🔍 OPTIONS CORS result: hostname="${u.hostname}", hostOk=${hostOk}, originOk=${originOk}, allowed=${allowed}`);
-        return cb(null, allowed);
-      } catch (e) {
-        console.log(`🔍 OPTIONS CORS error: ${e.message}`);
-        return cb(null, false);
-      }
+      const allowed = corsOriginCheck(origin);
+      console.log(`🔍 OPTIONS CORS: origin="${origin}" → ${allowed ? 'ALLOWED' : 'DENIED'}`);
+      cb(null, allowed);
     },
     credentials: false,
     methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
