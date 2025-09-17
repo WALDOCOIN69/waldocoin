@@ -870,6 +870,9 @@
         const r = await fetch(`${API}/api/staking/unstake`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
         const j = await r.json();
         console.log('[UNSTAKE] Response:', j);
+        console.log('[UNSTAKE] Response keys:', Object.keys(j));
+        console.log('[UNSTAKE] Has txid?', !!j.txid, 'txid value:', j.txid);
+        console.log('[UNSTAKE] Has uuid?', !!j.uuid, 'uuid value:', j.uuid);
         if (!j.success) throw new Error(j.error || 'Unlock failed');
 
         // SUCCESS CASES: Keep row hidden and complete removal
