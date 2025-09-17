@@ -1837,4 +1837,81 @@ router.get('/status/:uuid', async (req, res) => {
   }
 });
 
+// 🧪 POST /api/staking/create-test-mature - Create test mature stake for testing (admin only)
+router.post('/create-test-mature', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    const { wallet } = req.body;
+
+    if (!wallet) {
+      return res.status(400).json({
+        success: false,
+        error: "Wallet address required"
+      });
+    }
+
+    // Create test mature stake
+    const stakeId = `longterm_${wallet}_${Date.now()}_TEST_MATURE`;
+    const amount = 1000;
+    const duration = 30;
+    const apy = 12;
+    const expectedReward = Math.floor((amount * apy / 100) * (duration / 365)); // ~98 WALDO
+
+    // Set dates so stake is already mature
+    const startDate = new Date(Date.now() - (35 * 24 * 60 * 60 * 1000)); // 35 days ago
+    const endDate = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000));   // 5 days ago (mature!)
+
+    const stakeData = {
+      stakeId,
+      wallet,
+      amount: amount.toString(),
+      duration: duration.toString(),
+      tier: '1',
+      apy: apy.toString(),
+      expectedReward: expectedReward.toString(),
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      status: 'active',
+      type: 'long_term',
+      createdAt: startDate.toISOString(),
+      isTestData: 'true'
+    };
+
+    // Store staking position
+    await redis.hSet(`staking:${stakeId}`, stakeData);
+    await redis.sAdd(`staking:user:${wallet}`, stakeId);
+    await redis.sAdd('staking:active', stakeId);
+
+    console.log(`🧪 Test mature stake created: ${stakeId} for ${wallet}`);
+
+    return res.json({
+      success: true,
+      message: `Test mature stake created successfully!`,
+      testStake: {
+        stakeId,
+        amount,
+        duration,
+        apy,
+        expectedReward,
+        totalRedemption: amount + expectedReward,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        daysOverdue: Math.floor((Date.now() - endDate.getTime()) / (24 * 60 * 60 * 1000))
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating test mature stake:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to create test mature stake"
+    });
+  }
+});
+
 export default router;
