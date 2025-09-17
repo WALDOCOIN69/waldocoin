@@ -348,8 +348,8 @@ router.post("/long-term", async (req, res) => {
     // Calculate APY with Level 5 bonus
     const apy = calculateAPY(parseInt(duration), userLevel.level);
 
-    // Calculate expected rewards (round to 2 decimal places, then floor for whole WALDO)
-    const rewardCalculation = (stakeAmount * apy / 100) * (duration / 365);
+    // Calculate expected rewards as flat bonus (not annualized APY)
+    const rewardCalculation = stakeAmount * (apy / 100); // Simple percentage bonus
     const expectedReward = Math.floor(rewardCalculation * 100) / 100; // Round to 2 decimals, then floor
 
     // Create staking record
@@ -1049,10 +1049,10 @@ router.get('/positions', async (req, res) => {
           const elapsed = now - startTime;
           const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
 
-          // Calculate current rewards
+          // Calculate current rewards as flat bonus (not annualized)
           const baseAmount = parseFloat(positionData.amount) || 0;
           const apy = parseFloat(positionData.apy) || 0;
-          const currentRewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
+          const currentRewards = baseAmount * (apy / 100); // Simple percentage bonus
 
           const position = {
             id: positionId,
@@ -1150,10 +1150,10 @@ router.get('/user/:wallet', async (req, res) => {
         const elapsed = now - startTime;
         const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
 
-        // Calculate rewards
+        // Calculate rewards as flat bonus (not annualized)
         const baseAmount = parseFloat(positionData.amount) || 0;
         const apy = parseFloat(positionData.apy) || 0;
-        const currentRewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
+        const currentRewards = baseAmount * (apy / 100); // Simple percentage bonus
 
         positions.push({
           id: positionId,
@@ -1258,11 +1258,9 @@ router.post('/manual-unstake', async (req, res) => {
       finalAmount = baseAmount - penalty;
     }
 
-    // Calculate rewards
-    const startTime = new Date(positionData.startTime);
-    const elapsed = now - startTime;
+    // Calculate rewards as flat bonus (not annualized)
     const apy = parseFloat(positionData.apy) || 0;
-    const rewards = (baseAmount * (apy / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)));
+    const rewards = baseAmount * (apy / 100); // Simple percentage bonus
 
     // Update position status
     await redis.hSet(positionKey, {
