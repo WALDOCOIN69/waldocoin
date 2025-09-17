@@ -593,7 +593,7 @@ router.get("/info/:wallet", async (req, res) => {
           const now = new Date();
           const endDate = new Date(stakeData.endDate);
           const timeRemaining = Math.max(0, endDate - now);
-          const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+          const daysRemaining = timeRemaining <= 0 ? 0 : Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
           longTermStakes.push({
             stakeId: stakeData.stakeId,
             amount: parseFloat(stakeData.amount),
@@ -623,7 +623,7 @@ router.get("/info/:wallet", async (req, res) => {
           const now = new Date();
           const endDate = new Date(stakeData.endDate);
           const timeRemaining = Math.max(0, endDate - now);
-          const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+          const daysRemaining = timeRemaining <= 0 ? 0 : Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
           longTermStakes.push({
             stakeId: stakeData.stakeId,
             amount: parseFloat(stakeData.amount),
@@ -656,7 +656,7 @@ router.get("/info/:wallet", async (req, res) => {
           const timeRemaining = Math.max(0, endDate - now);
 
 
-          const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+          const daysRemaining = timeRemaining <= 0 ? 0 : Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
 
           perMemeStakes.push({
             stakeId: stakeData.stakeId,
@@ -1170,7 +1170,7 @@ router.get('/user/:wallet', async (req, res) => {
           totalValue: (baseAmount + currentRewards).toFixed(2),
           canUnstake: positionData.status === 'active' && timeRemaining <= 0,
           earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%',
-          daysRemaining: Math.ceil(timeRemaining / (24 * 60 * 60 * 1000))
+          daysRemaining: timeRemaining <= 0 ? 0 : Math.ceil(timeRemaining / (24 * 60 * 60 * 1000))
         });
       }
     }
@@ -1539,7 +1539,10 @@ router.get('/positions/:wallet', async (req, res) => {
             startDate: stakeData.startDate,
             endDate: stakeData.endDate,
             status: stakeData.status,
-            daysRemaining: Math.max(0, Math.ceil((new Date(stakeData.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
+            daysRemaining: (() => {
+              const timeLeft = new Date(stakeData.endDate) - new Date();
+              return timeLeft <= 0 ? 0 : Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+            })()
           });
           seen.add(stakeId);
         }
@@ -1562,7 +1565,10 @@ router.get('/positions/:wallet', async (req, res) => {
             startDate: stakeData.startDate,
             endDate: stakeData.endDate,
             status: stakeData.status,
-            daysRemaining: Math.max(0, Math.ceil((new Date(stakeData.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
+            daysRemaining: (() => {
+              const timeLeft = new Date(stakeData.endDate) - new Date();
+              return timeLeft <= 0 ? 0 : Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+            })()
           });
           seen.add(stakeId);
         }
