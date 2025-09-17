@@ -202,13 +202,42 @@ const startServer = async () => {
   });
 
   app.get("/api/routes", (_, res) => {
-    res.json(app._router.stack
-      .filter(r => r.route && r.route.path)
-      .map(r => ({
-        method: Object.keys(r.route.methods)[0].toUpperCase(),
-        path: r.route.path
-      }))
-    );
+    try {
+      const normalizePath = (p, layer) => {
+        if (typeof p === 'string') return p;
+        if (Array.isArray(p)) return p.join('|');
+        // Best-effort derive mount path from layer regexp
+        if (layer && layer.regexp) {
+          if (layer.regexp.fast_slash) return '/';
+          const src = layer.regexp.toString();
+          return src;
+        }
+        return '';
+      };
+
+      const out = [];
+      const stack = (app._router && app._router.stack) || [];
+      for (const layer of stack) {
+        try {
+          if (layer && layer.route) {
+            const methods = Object.keys(layer.route.methods || {}).map(m => m.toUpperCase());
+            out.push({ methods, path: normalizePath(layer.route.path, layer) });
+          } else if (layer && layer.name === 'router' && layer.handle && layer.handle.stack) {
+            const mount = normalizePath(layer.path || layer.regexp, layer);
+            for (const s of layer.handle.stack) {
+              if (s && s.route) {
+                const methods = Object.keys(s.route.methods || {}).map(m => m.toUpperCase());
+                const sub = normalizePath(s.route.path, s);
+                out.push({ methods, path: `${mount}${sub}` });
+              }
+            }
+          }
+        } catch (_) { /* skip malformed layer */ }
+      }
+      res.json({ success: true, count: out.length, routes: out });
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message });
+    }
   });
 
   app.get("/api/debug/refund", async (_, res) => {
