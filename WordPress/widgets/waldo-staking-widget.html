@@ -31,7 +31,6 @@
       <div class="col small">
         <label>&nbsp;</label>
         <button class="btn" onclick="stakeLoadInfo()">Load Info</button>
-        <button class="btn" onclick="forceProcessRedemptions()" style="background:#ff6b35;">Force Process</button>
       </div>
     </div>
 
@@ -670,6 +669,14 @@
       const ltDur = document.getElementById('ltDuration'); if (ltDur) ltDur.value = '';
       const ltMsg = document.getElementById('ltMsg'); if (ltMsg) ltMsg.textContent = '';
 
+      // Clear Ready to Redeem section
+      const ltReadyBlock = document.getElementById('ltReadyBlock'); if (ltReadyBlock) ltReadyBlock.style.display = 'none';
+      const ltReadyList = document.getElementById('ltReadyList'); if (ltReadyList) ltReadyList.innerHTML = '';
+
+      // Clear Recently Redeemed section
+      const ltRedeemedBlock = document.getElementById('ltRedeemedBlock'); if (ltRedeemedBlock) ltRedeemedBlock.style.display = 'none';
+      const ltRedeemedList = document.getElementById('ltRedeemedList'); if (ltRedeemedList) ltRedeemedList.innerHTML = '';
+
     }
 
     // Trustline
@@ -1175,32 +1182,7 @@
       }
     }
 
-    // Force process redemptions (admin function)
-    window.forceProcessRedemptions = async function () {
-      try {
-        const wallet = WALLET || document.getElementById('stakeWallet').value.trim();
-        if (!wallet) return alert('Connect wallet first');
 
-        const response = await fetch(`${API}/api/staking/admin/process-redemptions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Key': prompt('Enter admin key:') || ''
-          },
-          body: JSON.stringify({ wallet })
-        });
-
-        const result = await response.json();
-        console.log('Force process result:', result);
-        alert(`Processed: ${result.processed?.length || 0}, Failed: ${result.failed?.length || 0}`);
-
-        // Refresh after processing
-        await stakeLoadInfo();
-      } catch (error) {
-        console.error('Force process error:', error);
-        alert('Force process failed: ' + error.message);
-      }
-    }
 
     function startRedeemStatusPoll(uuid, onDone) {
       if (!uuid) return;
