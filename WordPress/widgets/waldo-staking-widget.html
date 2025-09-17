@@ -1084,10 +1084,30 @@
           console.log('[REDEEM] 15-second timeout - closing modal and refreshing');
           try { xummCloseStake && xummCloseStake(); } catch (_) { }
           msg.textContent = 'Redeemed ✔ — WALDO sent back';
-          await stakeLoadInfo();
+
+          // Force refresh with delay to ensure backend processing is complete
+          setTimeout(async () => {
+            try {
+              await stakeLoadInfo();
+            } catch (error) {
+              console.log('[REDEEM] Refresh failed, trying again in 3 seconds:', error);
+              setTimeout(() => stakeLoadInfo(), 3000);
+            }
+          }, 2000);
         }, 15000);
 
-        if (j.uuid) startRedeemStatusPoll(j.uuid, async () => { msg.textContent = 'Redeemed ✔ — WALDO sent back'; await stakeLoadInfo(); });
+        if (j.uuid) startRedeemStatusPoll(j.uuid, async () => {
+          msg.textContent = 'Redeemed ✔ — WALDO sent back';
+          // Delay refresh to ensure backend processing is complete
+          setTimeout(async () => {
+            try {
+              await stakeLoadInfo();
+            } catch (error) {
+              console.log('[REDEEM] Status poll refresh failed:', error);
+              setTimeout(() => stakeLoadInfo(), 3000);
+            }
+          }, 2000);
+        });
       } catch (e) { alert('Redeem error: ' + e.message); }
     }
 
