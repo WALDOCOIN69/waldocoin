@@ -286,6 +286,13 @@
     border-color: rgba(143, 255, 121, .25)
   }
 
+  .badge.warning {
+    background: linear-gradient(90deg, #2a1a0f, #4a2d13);
+    color: #ffb879;
+    box-shadow: 0 0 12px rgba(255, 184, 121, .18);
+    border-color: rgba(255, 184, 121, .25)
+  }
+
   /* Color-coded countdown based on time remaining */
   .countdown {
     font-weight: bold;
@@ -733,7 +740,7 @@
         // Render lists - separate active, ready, and redeemed stakes
         const activeStakes = allPositions.filter(s => s.status === 'active' && (s.daysRemaining || 0) > 0);
         const readyStakes = allPositions.filter(s => s.status === 'active' && (s.daysRemaining || 0) <= 0);
-        const redeemedStakes = allPositions.filter(s => s.status === 'redeemed');
+        const redeemedStakes = allPositions.filter(s => s.status === 'redeemed' || s.status === 'completed');
 
         renderLongTerm(activeStakes);
         renderReady(readyStakes);
@@ -757,6 +764,7 @@
 
     // Helpers for details & countdown
     function fmtDate(s) { try { const d = new Date(s); return d.toLocaleDateString(); } catch (_) { return s || '' } }
+    function fmtTime(s) { try { const d = new Date(s); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch (_) { return '' } }
     function calcAccrued(amount, apy, startDate, endDate) { const now = Date.now(); const st = +new Date(startDate || 0); const ed = +new Date(endDate || 0); if (!isFinite(st) || !isFinite(ed) || st <= 0 || ed <= 0) return 0; const elapsed = Math.max(0, Math.min(now, ed) - st); return amount * (parseFloat(String(apy).replace('%', '')) / 100) * (elapsed / (365 * 24 * 60 * 60 * 1000)); }
     function ensureCountdownTick() {
       if (window._stakeCountdownTimer) return;
@@ -832,7 +840,7 @@
           <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${mature ? 'READY!' : dr + 'd'}</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
           <div class="details">
-            <div>Start: ${fmtDate(s.startDate)} • End: ${fmtDate(s.endDate)} • Progress: ${pct}%</div>
+            <div>Start: ${fmtDate(s.startDate)} ${fmtTime(s.startDate)} • End: ${fmtDate(s.endDate)} ${fmtTime(s.endDate)} • Progress: ${pct}%</div>
             <div>Accrued so far: ${accrued.toFixed(2)} WALDO</div>
           </div>
           <div class="actions">
@@ -856,6 +864,7 @@
             <span class="badge mature">Matured</span>
           </div>
           <div class="meta">Locked ${s.duration}d • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO</div>
+          <div class="meta">Started: ${fmtDate(s.startDate)} ${fmtTime(s.startDate)} • Matured: ${fmtDate(s.endDate)} ${fmtTime(s.endDate)}</div>
           <div class="actions"><button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button></div>
         </div>
       `).join('');
@@ -864,25 +873,47 @@
     function renderRedeemed(list) {
       const block = document.getElementById('ltRedeemedBlock');
       const root = document.getElementById('ltRedeemedList');
-      const redeemed = (list || []).filter(s => s.status === 'redeemed');
+      const redeemed = (list || []).filter(s => s.status === 'redeemed' || s.status === 'completed');
       if (!redeemed.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
       if (block) block.style.display = 'block';
       if (root) root.innerHTML = redeemed.map(s => {
-        const redeemedDate = s.redeemedAt ? new Date(s.redeemedAt).toLocaleDateString() : 'Unknown';
+        // Handle both redemption and unstaking dates/amounts
+        const isEarlyUnlock = s.status === 'completed';
+        const completionDate = s.redeemedAt || s.unstakedAt;
+        const dateTime = completionDate ? new Date(completionDate) : null;
+        const dateStr = dateTime ? dateTime.toLocaleDateString() : 'Unknown';
+        const timeStr = dateTime ? dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
         const originalAmount = Number(s.originalAmount || s.amount || 0);
-        const rewardAmount = Number(s.rewardAmount || s.expectedReward || 0);
-        const totalReceived = Number(s.totalReceived || (originalAmount + rewardAmount));
-        const explorerLink = s.redeemTx ? `https://livenet.xrpl.org/transactions/${s.redeemTx}` : null;
+        let rewardAmount, totalReceived, actionText, badgeText;
+
+        if (isEarlyUnlock) {
+          // Early unlock - show penalty
+          const penalty = Number(s.penalty || 0);
+          totalReceived = Number(s.userReceives || s.finalAmount || (originalAmount - penalty));
+          actionText = `Early unlock on ${dateStr} at ${timeStr}`;
+          badgeText = '⚠️ Early Unlock';
+          rewardAmount = -penalty; // Show as negative
+        } else {
+          // Mature redemption - show rewards
+          rewardAmount = Number(s.rewardAmount || s.expectedReward || 0);
+          totalReceived = Number(s.totalReceived || (originalAmount + rewardAmount));
+          actionText = `Redeemed on ${dateStr} at ${timeStr}`;
+          badgeText = '✅ Redeemed';
+        }
+
+        const explorerLink = s.redeemTx || s.unstakeTx;
+        const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
 
         return `
         <div class="stake-item">
           <div class="item-head">
-            <div class="amt">${originalAmount.toLocaleString()} + ${rewardAmount.toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
-            <span class="badge redeemed">✅ Redeemed</span>
+            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : ''} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
+            <span class="badge ${isEarlyUnlock ? 'warning' : 'redeemed'}">${badgeText}</span>
           </div>
           <div class="meta">
-            Redeemed on ${redeemedDate} • ${s.duration}d lock • ${s.apy}% APY
-            ${explorerLink ? ` • <a href="${explorerLink}" target="_blank" rel="noopener" style="color:#25c2a0;">View Transaction</a>` : ''}
+            ${actionText} • ${s.duration}d lock • ${s.apy}% APY
+            ${txLink ? ` • <a href="${txLink}" target="_blank" rel="noopener" style="color:#25c2a0;">View Transaction</a>` : ''}
           </div>
         </div>`;
       }).join('');

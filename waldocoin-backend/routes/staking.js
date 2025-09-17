@@ -875,6 +875,9 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     await redis.sRem(`staking:user:${wallet}`, stakeId);
     await redis.sRem('staking:active', stakeId);
 
+    // Add to redeemed set (for "Recently Redeemed" section)
+    await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
+
     // Update stats
     try {
       const amount = parseFloat(originalAmount || 0);
