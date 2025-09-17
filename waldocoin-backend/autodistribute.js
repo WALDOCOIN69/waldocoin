@@ -161,105 +161,138 @@ const isNativeXRP = (tx) =>
       accounts: [distributorWallet],
     });
 
-    // Handle disconnects gracefully
-    client.on('disconnected', (code) => {
+    // Handle disconnects gracefully with auto-reconnect
+    client.on('disconnected', async (code) => {
       console.warn('⚠️ XRPL disconnected:', code);
+      console.log('🔄 Attempting to reconnect...');
+      try {
+        await client.connect();
+        console.log('✅ XRPL reconnected successfully');
+        // Re-subscribe after reconnection
+        await client.request({
+          command: "subscribe",
+          accounts: [distributorWallet],
+        });
+        console.log('✅ Re-subscribed to account events');
+      } catch (reconnectError) {
+        console.error('❌ Reconnection failed:', reconnectError.message);
+        // Retry after 30 seconds
+        setTimeout(async () => {
+          try {
+            await client.connect();
+            await client.request({
+              command: "subscribe",
+              accounts: [distributorWallet],
+            });
+            console.log('✅ Delayed reconnection successful');
+          } catch (e) {
+            console.error('❌ Delayed reconnection failed:', e.message);
+          }
+        }, 30000);
+      }
     });
+
     client.on('error', (e) => {
       console.warn('⚠️ XRPL client error:', e?.message || e);
+      // Don't crash on connection errors, let the disconnect handler deal with it
     });
 
     client.on("transaction", async (event) => {
-      if (!event.validated) { return; }
-      const tx = event.transaction;
-      if (!isNativeXRP(tx)) {
-        console.warn("⚠️ Ignored event - not a valid XRP Payment TX");
-        return;
-      }
-
-      const sender = tx.Account;
-      const txHash = tx.hash;
-      const xrpAmount = parseFloat(xrpl.dropsToXrp(tx.Amount));
-
-      console.log(`💰 XRP Payment received: ${xrpAmount} XRP from ${sender} | TX: ${txHash}`);
-      try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'xrp_in', sender, txHash, xrpAmount })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-
-      // Get current market rate from same endpoint as trading widget
-      let waldoAmount;
       try {
-        const marketResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
-        const marketData = await marketResponse.json();
-        const xrpPerWlo = marketData?.xrpPerWlo || marketData?.best?.mid;
-
-        if (xrpPerWlo && isFinite(xrpPerWlo) && xrpPerWlo > 0) {
-          // Same calculation as trading widget: waldoAmount = xrpAmount / xrpPerWlo
-          waldoAmount = Math.floor(xrpAmount / xrpPerWlo);
-          console.log(`🎯 Market rate: ${xrpPerWlo} XRP/WLO → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
-          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'calc', sender, txHash, xrpAmount, xrpPerWlo, waldoAmount })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-        } else {
-          throw new Error('Invalid market rate');
+        if (!event.validated) { return; }
+        const tx = event.transaction;
+        if (!isNativeXRP(tx)) {
+          console.warn("⚠️ Ignored event - not a valid XRP Payment TX");
+          return;
         }
-      } catch (error) {
-        console.warn(`⚠️ Market rate fetch failed, using fallback: ${error.message}`);
-        // Fallback rate: 10,000 WALDO per XRP (same as presale)
-        waldoAmount = Math.floor(xrpAmount * 10000);
-        console.log(`🎯 Fallback rate: 10,000 WALDO/XRP → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
-      }
 
-      // Check for WALDO trustline
-      const trustlines = await client.request({
-        command: "account_lines",
-        account: sender,
-      });
+        const sender = tx.Account;
+        const txHash = tx.hash;
+        const xrpAmount = parseFloat(xrpl.dropsToXrp(tx.Amount));
 
-      const trustsWaldo = trustlines.result.lines.some(
-        (line) => line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
-      );
+        console.log(`💰 XRP Payment received: ${xrpAmount} XRP from ${sender} | TX: ${txHash}`);
+        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'xrp_in', sender, txHash, xrpAmount })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
 
-      if (!trustsWaldo) {
-        console.warn(`🚫 No WALDO trustline for ${sender} (currency: ${WALDO_CURRENCY}, issuer: ${WALDO_ISSUER})`);
-        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'no_trustline', sender })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-        return;
-      }
+        // Get current market rate from same endpoint as trading widget
+        let waldoAmount;
+        try {
+          const marketResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo');
+          const marketData = await marketResponse.json();
+          const xrpPerWlo = marketData?.xrpPerWlo || marketData?.best?.mid;
 
-      console.log(`✅ WALDO trustline confirmed for ${sender}`);
-      try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'trustline_ok', sender })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-
-      try {
-        // Send WALDO using configured sender (issuer/treasury/distributor)
-        const senderWalletObj = xrpl.Wallet.fromSeed(senderSecret);
-
-        const payment = {
-          TransactionType: "Payment",
-          Account: senderWalletObj.classicAddress,
-          Destination: sender,
-          Amount: {
-            currency: WALDO_CURRENCY,
-            issuer: WALDO_ISSUER,
-            value: waldoAmount.toString(),
-          },
-        };
-
-        console.log(`🚀 Sending ${waldoAmount} WALDO to ${sender}...`);
-
-        const prepared = await client.autofill(payment);
-        const signed = senderWalletObj.sign(prepared);
-        const result = await client.submitAndWait(signed.tx_blob);
-
-        const engine = result?.result?.engine_result || result?.result?.meta?.TransactionResult;
-        const hash = result?.result?.tx_json?.hash || result?.result?.hash;
-        if (engine === "tesSUCCESS") {
-          console.log(`✅ WALDO distribution completed: ${waldoAmount} WALDO sent to ${sender} | TX: ${hash}`);
-          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_ok', sender, waldoAmount, hash })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
-        } else {
-          const code = engine || result?.result?.meta?.TransactionResult || 'UNKNOWN';
-          const details = result?.result;
-          console.error(`❌ WALDO distribution failed: ${code} for ${sender}`);
-          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_fail', sender, waldoAmount, code, details })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+          if (xrpPerWlo && isFinite(xrpPerWlo) && xrpPerWlo > 0) {
+            // Same calculation as trading widget: waldoAmount = xrpAmount / xrpPerWlo
+            waldoAmount = Math.floor(xrpAmount / xrpPerWlo);
+            console.log(`🎯 Market rate: ${xrpPerWlo} XRP/WLO → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
+            try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'calc', sender, txHash, xrpAmount, xrpPerWlo, waldoAmount })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+          } else {
+            throw new Error('Invalid market rate');
+          }
+        } catch (error) {
+          console.warn(`⚠️ Market rate fetch failed, using fallback: ${error.message}`);
+          // Fallback rate: 10,000 WALDO per XRP (same as presale)
+          waldoAmount = Math.floor(xrpAmount * 10000);
+          console.log(`🎯 Fallback rate: 10,000 WALDO/XRP → ${waldoAmount} WALDO for ${xrpAmount} XRP`);
         }
-      } catch (distributionError) {
-        console.error(`❌ Error during WALDO distribution to ${sender}:`, distributionError.message);
-        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'error', sender, err: distributionError.message })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+
+        // Check for WALDO trustline
+        const trustlines = await client.request({
+          command: "account_lines",
+          account: sender,
+        });
+
+        const trustsWaldo = trustlines.result.lines.some(
+          (line) => line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
+        );
+
+        if (!trustsWaldo) {
+          console.warn(`🚫 No WALDO trustline for ${sender} (currency: ${WALDO_CURRENCY}, issuer: ${WALDO_ISSUER})`);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'no_trustline', sender })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+          return;
+        }
+
+        console.log(`✅ WALDO trustline confirmed for ${sender}`);
+        try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'trustline_ok', sender })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+
+        try {
+          // Send WALDO using configured sender (issuer/treasury/distributor)
+          const senderWalletObj = xrpl.Wallet.fromSeed(senderSecret);
+
+          const payment = {
+            TransactionType: "Payment",
+            Account: senderWalletObj.classicAddress,
+            Destination: sender,
+            Amount: {
+              currency: WALDO_CURRENCY,
+              issuer: WALDO_ISSUER,
+              value: waldoAmount.toString(),
+            },
+          };
+
+          console.log(`🚀 Sending ${waldoAmount} WALDO to ${sender}...`);
+
+          const prepared = await client.autofill(payment);
+          const signed = senderWalletObj.sign(prepared);
+          const result = await client.submitAndWait(signed.tx_blob);
+
+          const engine = result?.result?.engine_result || result?.result?.meta?.TransactionResult;
+          const hash = result?.result?.tx_json?.hash || result?.result?.hash;
+          if (engine === "tesSUCCESS") {
+            console.log(`✅ WALDO distribution completed: ${waldoAmount} WALDO sent to ${sender} | TX: ${hash}`);
+            try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_ok', sender, waldoAmount, hash })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+          } else {
+            const code = engine || result?.result?.meta?.TransactionResult || 'UNKNOWN';
+            const details = result?.result;
+            console.error(`❌ WALDO distribution failed: ${code} for ${sender}`);
+            try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'send_fail', sender, waldoAmount, code, details })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+          }
+        } catch (distributionError) {
+          console.error(`❌ Error during WALDO distribution to ${sender}:`, distributionError.message);
+          try { await redis.lPush('autodistribute:events', JSON.stringify({ ts: Date.now(), type: 'error', sender, err: distributionError.message })); await redis.lTrim('autodistribute:events', 0, 49); } catch (_) { }
+        }
+      } catch (transactionError) {
+        console.error('❌ Error in transaction handler:', transactionError.message);
+        // Don't crash the entire process on transaction handler errors
       }
     });
   } catch (err) {
