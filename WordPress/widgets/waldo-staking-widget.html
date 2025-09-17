@@ -848,11 +848,20 @@
     window.stakeUnstake = async function (stakeId) {
       if (!confirm('Unlock now? Early unlock reduces your WALDO by 15%.')) return;
 
-      // Immediately disable the unstake button to prevent double-clicking
+      // OPTIMISTIC UPDATE: Find and hide the stake row immediately
       const unstakeBtn = document.querySelector(`button[onclick="stakeUnstake('${stakeId}')"]`);
+      const stakeRow = unstakeBtn ? unstakeBtn.closest('tr') : null;
+
       if (unstakeBtn) {
         unstakeBtn.disabled = true;
         unstakeBtn.textContent = 'Processing...';
+      }
+
+      // Hide the row immediately (optimistic update)
+      if (stakeRow) {
+        stakeRow.style.opacity = '0.5';
+        stakeRow.style.pointerEvents = 'none';
+        stakeRow.setAttribute('data-unstaking', 'true');
       }
 
       const msg = document.getElementById('ltMsg');
@@ -863,28 +872,22 @@
         console.log('[UNSTAKE] Response:', j);
         if (!j.success) throw new Error(j.error || 'Unlock failed');
 
-        // Idempotent outcomes from backend
-        if (j.already) {
-          msg.textContent = 'Already unlocked ✔ — refreshing...';
-          try { xummCloseStake && xummCloseStake(); } catch (_) {}
-          await stakeLoadInfo();
-          if (unstakeBtn) { unstakeBtn.disabled = true; unstakeBtn.textContent = 'Unlocked'; }
-          return;
-        }
-        if (j.inProgress) {
-          msg.textContent = 'Unlock in progress… please wait';
-          try { for (let i = 0; i < 3; i++) { await new Promise(r => setTimeout(r, 1500)); await stakeLoadInfo(); } } catch (_) {}
-          if (unstakeBtn) { unstakeBtn.disabled = true; unstakeBtn.textContent = 'Unlocking…'; }
-          return;
-        }
+        // SUCCESS CASES: Keep row hidden and complete removal
+        if (j.already || j.inProgress || j.txid) {
+          const successMsg = j.already ? 'Already unlocked ✔' :
+                           j.inProgress ? 'Unlock in progress...' :
+                           'Unlocked ✔ — WALDO sent back';
+          msg.textContent = successMsg;
 
-        // Two backend modes:
-        // 1) Automatic payout (no XUMM) -> { success:true, txid }
-        // 2) XUMM sign flow -> { success:true, uuid, refs/next }
-        if (j.txid && !j.uuid) {
-          msg.textContent = 'Unlocked ✔ — WALDO sent back';
-          try { xummCloseStake && xummCloseStake(); } catch (_) { }
-          await stakeLoadInfo();
+          // Completely remove the row after short delay
+          setTimeout(() => {
+            if (stakeRow) stakeRow.remove();
+          }, 2000);
+
+          // Background refresh to sync with server
+          setTimeout(() => stakeLoadInfo(), 3000);
+
+          try { xummCloseStake && xummCloseStake(); } catch (_) {}
           return;
         }
 
@@ -903,6 +906,14 @@
       } catch (e) {
         console.error('[UNSTAKE] Error:', e);
         msg.textContent = 'Unlock error: ' + e.message;
+
+        // RESTORE ROW on error (rollback optimistic update)
+        if (stakeRow) {
+          stakeRow.style.opacity = '1';
+          stakeRow.style.pointerEvents = 'auto';
+          stakeRow.removeAttribute('data-unstaking');
+        }
+
         // Re-enable button on error
         if (unstakeBtn) {
           unstakeBtn.disabled = false;
