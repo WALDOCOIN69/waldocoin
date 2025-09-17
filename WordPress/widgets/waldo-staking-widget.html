@@ -1122,27 +1122,8 @@
           }, 2000);
         }, 15000);
 
-        if (j.uuid) startRedeemStatusPoll(j.uuid, async () => {
-          msg.textContent = 'Redeemed ✔ — WALDO sent back';
-          // Delay refresh to ensure backend processing is complete
-          setTimeout(async () => {
-            try {
-              await stakeLoadInfo();
-            } catch (error) {
-              console.log('[REDEEM] Status poll refresh failed silently (CORS issue):', error.message);
-              setTimeout(async () => {
-                try {
-                  await stakeLoadInfo();
-                } catch (retryError) {
-                  console.log('[REDEEM] Status poll retry refresh also failed silently:', retryError.message);
-                  // Final fallback: show message to user to manually refresh
-                  const msg = document.getElementById('ltMsg');
-                  if (msg) msg.textContent = 'Redeemed ✔ — Click "Load Info" to refresh your stakes';
-                }
-              }, 3000);
-            }
-          }, 2000);
-        });
+        // Skip status polling for redemption - rely on 15-second timeout to avoid CORS spam
+        console.log('[REDEEM] Skipping status polling - using 15-second timeout instead to avoid CORS errors');
       } catch (e) {
         console.log('Redeem error (likely already redeemed):', e.message);
         if (msg) msg.textContent = 'This stake has already been redeemed';
