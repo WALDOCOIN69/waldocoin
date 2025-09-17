@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Unstake Test</title>
+</head>
+<body>
+    <h1>Direct Unstake Test</h1>
+    <p>Wallet: <input type="text" id="wallet" placeholder="rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH" style="width:300px"></p>
+    <p>Stake ID: <input type="text" id="stakeId" placeholder="longterm_..." style="width:300px"></p>
+    <button onclick="testUnstake()">Test Unstake</button>
+    <div id="result" style="margin-top:20px; padding:10px; border:1px solid #ccc;"></div>
+
+    <script>
+    async function testUnstake() {
+        const wallet = document.getElementById('wallet').value.trim();
+        const stakeId = document.getElementById('stakeId').value.trim();
+        const result = document.getElementById('result');
+        
+        if (!wallet || !stakeId) {
+            result.innerHTML = '<span style="color:red">Please enter wallet and stake ID</span>';
+            return;
+        }
+        
+        result.innerHTML = 'Testing unstake...';
+        
+        try {
+            console.log('Testing unstake API...');
+            const response = await fetch('https://waldocoin-backend-api.onrender.com/api/staking/unstake', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ wallet, stakeId })
+            });
+            
+            const data = await response.json();
+            console.log('Response:', data);
+            
+            result.innerHTML = `
+                <h3>Response (${response.status}):</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            
+            if (data.success) {
+                result.style.backgroundColor = '#d4edda';
+                result.style.color = '#155724';
+            } else {
+                result.style.backgroundColor = '#f8d7da';
+                result.style.color = '#721c24';
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            result.innerHTML = `<span style="color:red">Error: ${error.message}</span>`;
+            result.style.backgroundColor = '#f8d7da';
+        }
+    }
+    </script>
+</body>
+</html>
