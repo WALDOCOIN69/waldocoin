@@ -1168,108 +1168,107 @@
 
         // Skip status polling for redemption - rely on 15-second timeout to avoid CORS spam
         console.log('[REDEEM] Skipping status polling - using 15-second timeout instead to avoid CORS errors');
+      } catch (e) {
+        console.log('Redeem error (likely already redeemed):', e.message);
+        if (msg) msg.textContent = 'This stake has already been redeemed';
+        // Don't show alert popup for double redemption attempts
       }
-
-      // Force process redemptions (admin function)
-      window.forceProcessRedemptions = async function () {
-        try {
-          const wallet = WALLET || document.getElementById('stakeWallet').value.trim();
-          if (!wallet) return alert('Connect wallet first');
-
-          const response = await fetch(`${API}/api/staking/admin/process-redemptions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Admin-Key': prompt('Enter admin key:') || ''
-            },
-            body: JSON.stringify({ wallet })
-          });
-
-          const result = await response.json();
-          console.log('Force process result:', result);
-          alert(`Processed: ${result.processed?.length || 0}, Failed: ${result.failed?.length || 0}`);
-
-          // Refresh after processing
-          await stakeLoadInfo();
-        } catch (error) {
-          console.error('Force process error:', error);
-          alert('Force process failed: ' + error.message);
-        }
-      }
-    } catch (e) {
-      console.log('Redeem error (likely already redeemed):', e.message);
-      if (msg) msg.textContent = 'This stake has already been redeemed';
-      // Don't show alert popup for double redemption attempts
     }
-  }
+
+    // Force process redemptions (admin function)
+    window.forceProcessRedemptions = async function () {
+      try {
+        const wallet = WALLET || document.getElementById('stakeWallet').value.trim();
+        if (!wallet) return alert('Connect wallet first');
+
+        const response = await fetch(`${API}/api/staking/admin/process-redemptions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': prompt('Enter admin key:') || ''
+          },
+          body: JSON.stringify({ wallet })
+        });
+
+        const result = await response.json();
+        console.log('Force process result:', result);
+        alert(`Processed: ${result.processed?.length || 0}, Failed: ${result.failed?.length || 0}`);
+
+        // Refresh after processing
+        await stakeLoadInfo();
+      } catch (error) {
+        console.error('Force process error:', error);
+        alert('Force process failed: ' + error.message);
+      }
+    }
 
     function startRedeemStatusPoll(uuid, onDone) {
-    if (!uuid) return;
-    let tries = 0;
-    let corsErrorCount = 0;
-    const msg = document.getElementById('ltMsg');
-    const iv = setInterval(async () => {
-      tries++;
-      try {
-        const s = await fetch(`${API}/api/staking/redeem/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
+      if (!uuid) return;
+      let tries = 0;
+      let corsErrorCount = 0;
+      const msg = document.getElementById('ltMsg');
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/staking/redeem/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
 
-        // Reset CORS error count on successful request
-        corsErrorCount = 0;
+          // Reset CORS error count on successful request
+          corsErrorCount = 0;
 
-        const j = await s.json();
-        if (j?.signed) {
-          if (j?.error === 'missing_sender_secret') {
-            clearInterval(iv);
-            if (msg) msg.textContent = 'Signed, but payout is not configured (admin: set WALDO_SENDER_SECRET or WALDO_DISTRIBUTOR_SECRET)';
-            xummCloseStake();
-            return;
+          const j = await s.json();
+          if (j?.signed) {
+            if (j?.error === 'missing_sender_secret') {
+              clearInterval(iv);
+              if (msg) msg.textContent = 'Signed, but payout is not configured (admin: set WALDO_SENDER_SECRET or WALDO_DISTRIBUTOR_SECRET)';
+              xummCloseStake();
+              return;
+            }
+            if (j?.paid) {
+              clearInterval(iv);
+              try { onDone && onDone(j); } catch (_) { }
+              xummCloseStake();
+              return;
+            }
+            // Signed but not yet paid: show interim status once
+            if (msg && !msg._waitingShown) { msg.textContent = 'Signed. Delivering WALDO…'; msg._waitingShown = true; }
           }
-          if (j?.paid) {
-            clearInterval(iv);
-            try { onDone && onDone(j); } catch (_) { }
-            xummCloseStake();
-            return;
+          if (tries > 180) { clearInterval(iv); }
+        } catch (error) {
+          // Count CORS errors but don't show them to user
+          if (error.message && error.message.includes('CORS')) {
+            corsErrorCount++;
+            console.log(`[REDEEM-POLL] CORS error ${corsErrorCount}/5 - continuing silently`);
+
+            // If too many CORS errors, stop polling and rely on timeout
+            if (corsErrorCount >= 5) {
+              console.log('[REDEEM-POLL] Too many CORS errors, stopping poll - timeout will handle completion');
+              clearInterval(iv);
+              return;
+            }
+          } else {
+            console.log('[REDEEM-POLL] Network error:', error.message);
           }
-          // Signed but not yet paid: show interim status once
-          if (msg && !msg._waitingShown) { msg.textContent = 'Signed. Delivering WALDO…'; msg._waitingShown = true; }
+
+          // Stop after max tries
+          if (tries > 180) { clearInterval(iv); }
         }
-        if (tries > 180) { clearInterval(iv); }
-      } catch (error) {
-        // Count CORS errors but don't show them to user
-        if (error.message && error.message.includes('CORS')) {
-          corsErrorCount++;
-          console.log(`[REDEEM-POLL] CORS error ${corsErrorCount}/5 - continuing silently`);
-
-          // If too many CORS errors, stop polling and rely on timeout
-          if (corsErrorCount >= 5) {
-            console.log('[REDEEM-POLL] Too many CORS errors, stopping poll - timeout will handle completion');
-            clearInterval(iv);
-            return;
-          }
-        } else {
-          console.log('[REDEEM-POLL] Network error:', error.message);
-        }
-
-        // Stop after max tries
-        if (tries > 180) { clearInterval(iv); }
-      }
-    }, 1000);
-  }
+      }, 1000);
+    }
 
 
-  // Poll staking status
-  function startStakeStatusPoll(uuid, onDone) {
-    if (!uuid) return;
-    let tries = 0;
-    const iv = setInterval(async () => {
-      tries++;
-      try {
-        const s = await fetch(`${API}/api/staking/status/${encodeURIComponent(uuid)}`);
-        const j = await s.json();
-        if (j?.signed && j?.activated) { clearInterval(iv); try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
-        if (tries > 180) { clearInterval(iv); }
-      } catch (_) { /* ignore */ }
-    }, 2000);
-  }
-  }) ();
+    // Poll staking status
+    function startStakeStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/staking/status/${encodeURIComponent(uuid)}`);
+          const j = await s.json();
+          if (j?.signed && j?.activated) { clearInterval(iv); try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (_) { /* ignore */ }
+      }, 2000);
+    }
+  })();
 </script>
