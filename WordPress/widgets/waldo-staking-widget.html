@@ -863,6 +863,21 @@
         console.log('[UNSTAKE] Response:', j);
         if (!j.success) throw new Error(j.error || 'Unlock failed');
 
+        // Idempotent outcomes from backend
+        if (j.already) {
+          msg.textContent = 'Already unlocked ✔ — refreshing...';
+          try { xummCloseStake && xummCloseStake(); } catch (_) {}
+          await stakeLoadInfo();
+          if (unstakeBtn) { unstakeBtn.disabled = true; unstakeBtn.textContent = 'Unlocked'; }
+          return;
+        }
+        if (j.inProgress) {
+          msg.textContent = 'Unlock in progress… please wait';
+          try { for (let i = 0; i < 3; i++) { await new Promise(r => setTimeout(r, 1500)); await stakeLoadInfo(); } } catch (_) {}
+          if (unstakeBtn) { unstakeBtn.disabled = true; unstakeBtn.textContent = 'Unlocking…'; }
+          return;
+        }
+
         // Two backend modes:
         // 1) Automatic payout (no XUMM) -> { success:true, txid }
         // 2) XUMM sign flow -> { success:true, uuid, refs/next }

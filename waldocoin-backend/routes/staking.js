@@ -682,10 +682,21 @@ router.post("/unstake", async (req, res) => {
     }
 
     if (stakeData.status !== 'active') {
-      return res.status(400).json({
-        success: false,
-        error: `Staking position is not active (status: ${stakeData.status})`
+      // Idempotent behavior: if already processed, return success with details
+      return res.json({
+        success: true,
+        already: true,
+        status: stakeData.status,
+        txid: stakeData.unstakeTx || null,
+        message: 'Stake already processed'
       });
+    }
+
+    // Idempotency lock to prevent duplicate payouts from double-clicks
+    const lockKey = `stake:unstake:lock:${stakeId}`;
+    const locked = await redis.set(lockKey, '1', { NX: true, EX: 120 });
+    if (!locked) {
+      return res.json({ success: true, inProgress: true, message: 'Unstake already in progress' });
     }
 
     // Calculate early unstaking amount (with 15% penalty)
