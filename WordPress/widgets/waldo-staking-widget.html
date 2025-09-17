@@ -88,6 +88,10 @@
           style="display:none; max-width:280px; border-radius:10px; box-shadow: 0 0 18px #25c2a055;" />
         <div id="xummLoadStake" class="spin" style="display:none;"></div>
         <p id="xummHintStake" class="hint" style="display:none;">Scan the QR with your Xaman app</p>
+        <div id="xummWarningStake" class="warning"
+          style="display:none; margin-top:15px; padding:10px; background:rgba(255,0,0,0.1); border:1px solid #ff4444; border-radius:8px; color:#ff6666; font-size:14px; font-weight:bold; text-align:center;">
+          ⚠️ A 15% PENALTY APPLIES FOR EARLY UNLOCK
+        </div>
         <a id="xummDesktopLinkStake" href="#"
           style="display:none; margin-top:10px; color:#9adbcf; text-decoration:underline;" rel="noopener"
           target="_blank">Open in Xaman (link)</a>
@@ -565,7 +569,17 @@
       const B = document.getElementById('xummMobileBtnStake');
       const T = document.getElementById('xummTitleStake');
       const link = document.getElementById('xummDesktopLinkStake');
+      const WARNING = document.getElementById('xummWarningStake');
       if (T) T.textContent = title || 'Xaman';
+
+      // Show warning only for early unlock operations
+      if (WARNING) {
+        if (title && title.toLowerCase().includes('early unlock')) {
+          WARNING.style.display = 'block';
+        } else {
+          WARNING.style.display = 'none';
+        }
+      }
 
       const deep = payload?.qr_uri || payload?.refs?.qr_uri || payload?.deeplink ||
         (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.always || payload?.next?.app || payload?.refs?.qr || ''));
