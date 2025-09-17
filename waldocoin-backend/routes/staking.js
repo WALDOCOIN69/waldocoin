@@ -1472,31 +1472,37 @@ router.get('/positions/:wallet', async (req, res) => {
     }
 
     // Schema C (redeemed stakes): staking:user:{wallet}:redeemed
-    const redeemedIds = await redis.sMembers(`staking:user:${wallet}:redeemed`);
-    for (const stakeId of redeemedIds) {
-      if (seen.has(stakeId)) continue;
-      try {
-        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
-        if (stakeData && Object.keys(stakeData).length > 0) {
-          positions.push({
-            stakeId: stakeData.stakeId,
-            amount: parseInt(stakeData.amount),
-            duration: parseInt(stakeData.duration),
-            apy: parseFloat(stakeData.apy),
-            expectedReward: parseInt(stakeData.expectedReward || 0),
-            startDate: stakeData.startDate,
-            endDate: stakeData.endDate,
-            status: stakeData.status,
-            redeemedAt: stakeData.redeemedAt,
-            redeemTx: stakeData.redeemTx,
-            totalReceived: parseFloat(stakeData.totalReceived || 0),
-            originalAmount: parseFloat(stakeData.originalAmount || stakeData.amount || 0),
-            rewardAmount: parseFloat(stakeData.rewardAmount || stakeData.expectedReward || 0),
-            daysRemaining: 0 // Already redeemed
-          });
-          seen.add(stakeId);
+    try {
+      const redeemedIds = await redis.sMembers(`staking:user:${wallet}:redeemed`);
+      for (const stakeId of redeemedIds) {
+        if (seen.has(stakeId)) continue;
+        try {
+          const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+          if (stakeData && Object.keys(stakeData).length > 0) {
+            positions.push({
+              stakeId: stakeData.stakeId || stakeId,
+              amount: parseInt(stakeData.amount || 0),
+              duration: parseInt(stakeData.duration || 30),
+              apy: parseFloat(stakeData.apy || 12),
+              expectedReward: parseInt(stakeData.expectedReward || 0),
+              startDate: stakeData.startDate || new Date().toISOString(),
+              endDate: stakeData.endDate || new Date().toISOString(),
+              status: stakeData.status || 'redeemed',
+              redeemedAt: stakeData.redeemedAt || new Date().toISOString(),
+              redeemTx: stakeData.redeemTx || '',
+              totalReceived: parseFloat(stakeData.totalReceived || stakeData.amount || 0),
+              originalAmount: parseFloat(stakeData.originalAmount || stakeData.amount || 0),
+              rewardAmount: parseFloat(stakeData.rewardAmount || stakeData.expectedReward || 0),
+              daysRemaining: 0 // Already redeemed
+            });
+            seen.add(stakeId);
+          }
+        } catch (e) {
+          console.log(`Warning: Failed to load redeemed stake ${stakeId}:`, e.message);
         }
-      } catch (e) { /* ignore individual errors */ }
+      }
+    } catch (e) {
+      console.log('Warning: Failed to load redeemed stakes:', e.message);
     }
 
     return res.json({
@@ -1728,9 +1734,8 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     await redis.sRem(`staking:user:${wallet}`, stakeId);
     await redis.sRem('staking:active', stakeId);
 
-    // Add to redeemed set with 15-day expiry
+    // Add to redeemed set (simple approach - no expiry for now)
     await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
-    await redis.expire(`staking:user:${wallet}:redeemed`, 15 * 24 * 60 * 60); // 15 days
 
     // Update stats
     const amt = Number(stakeData.amount || 0);
