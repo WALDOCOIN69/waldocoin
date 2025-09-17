@@ -82,36 +82,45 @@ const startServer = async () => {
   const allowedHosts = ["waldo.live", "waldocoin.live", "admin-vip-only-page.waldocoin.live", "staking.waldocoin.live", "waldocoin.onrender.com"]; // base hosts
   app.use(cors({
     origin: (origin, cb) => {
+      console.log(`🔍 CORS check: origin="${origin}"`);
       if (!origin) return cb(null, true); // allow curl/local
       try {
         const u = new URL(origin);
         const hostOk = allowedHosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
-        // Also allow exact origins provided via env var
         const originOk = allowedOriginsRaw.includes(origin);
-        return cb(null, hostOk || originOk);
+        const allowed = hostOk || originOk;
+        console.log(`🔍 CORS result: hostname="${u.hostname}", hostOk=${hostOk}, originOk=${originOk}, allowed=${allowed}`);
+        return cb(null, allowed);
       } catch (e) {
+        console.log(`🔍 CORS error: ${e.message}`);
         return cb(null, false);
       }
     },
-    credentials: false
+    credentials: false,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key']
   }));
   // Ensure preflight (OPTIONS) also returns proper CORS headers for cross-site POSTs
   // Express 5 + path-to-regexp v6 doesn't accept '*' here; use a regex to match all paths
   app.options(/.*/, cors({
     origin: (origin, cb) => {
+      console.log(`🔍 OPTIONS CORS check: origin="${origin}"`);
       if (!origin) return cb(null, true);
       try {
         const u = new URL(origin);
         const hostOk = allowedHosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
         const originOk = allowedOriginsRaw.includes(origin);
-        return cb(null, hostOk || originOk);
+        const allowed = hostOk || originOk;
+        console.log(`🔍 OPTIONS CORS result: hostname="${u.hostname}", hostOk=${hostOk}, originOk=${originOk}, allowed=${allowed}`);
+        return cb(null, allowed);
       } catch (e) {
+        console.log(`🔍 OPTIONS CORS error: ${e.message}`);
         return cb(null, false);
       }
     },
     credentials: false,
     methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization','X-Requested-With']
+    allowedHeaders: ['Content-Type','Authorization','X-Requested-With','X-Admin-Key']
   }));
 
 
