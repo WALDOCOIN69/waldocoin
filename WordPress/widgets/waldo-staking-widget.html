@@ -32,6 +32,7 @@
         <label>&nbsp;</label>
         <button class="btn" onclick="stakeLoadInfo()">Load Info</button>
         <button class="btn" onclick="cleanupSets()" style="background:#28a745;">Cleanup</button>
+        <button class="btn" onclick="createTestStake()" style="background:#ff6b35;">Test 2min</button>
       </div>
     </div>
 
@@ -1215,6 +1216,41 @@
       } catch (error) {
         console.error('Cleanup error:', error);
         alert('Cleanup failed: ' + error.message);
+      }
+    }
+
+    // Create test stake that matures in 2 minutes (admin function)
+    window.createTestStake = async function () {
+      try {
+        const wallet = WALLET || document.getElementById('stakeWallet').value.trim();
+        if (!wallet) return alert('Connect wallet first');
+
+        const response = await fetch(`${API}/api/staking/admin/create-test-stake`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': prompt('Enter admin key:') || ''
+          },
+          body: JSON.stringify({
+            wallet,
+            amount: 1000,
+            minutesToMaturity: 2
+          })
+        });
+
+        const result = await response.json();
+        console.log('Test stake result:', result);
+
+        if (result.success) {
+          alert(`Test stake created! 1000 WALDO, matures in 2 minutes.\nStake ID: ${result.stakeId}`);
+          // Refresh to show the new stake
+          await stakeLoadInfo();
+        } else {
+          alert('Test stake failed: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Test stake error:', error);
+        alert('Test stake failed: ' + error.message);
       }
     }
 

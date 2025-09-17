@@ -956,7 +956,8 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: now.toISOString(),
+      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
+      processedAt: now.toISOString(), // Time when transferred over to claimed section
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
@@ -1857,7 +1858,8 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
     await redis.hSet(stakeKey, {
       status: 'redeemed',
-      redeemedAt: redeemedAt,
+      redeemedAt: redeemedAt, // Time when moved to "Recently Redeemed"
+      processedAt: redeemedAt, // Time when transferred over to claimed section
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),
@@ -1906,6 +1908,61 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 });
 
 
+
+// Admin: Create test stake that matures in X minutes
+router.post('/admin/create-test-stake', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { wallet, amount = 1000, minutesToMaturity = 2 } = req.body;
+    if (!wallet) {
+      return res.status(400).json({ success: false, error: 'Wallet required' });
+    }
+
+    console.log(`[ADMIN] Creating test stake: ${amount} WALDO, matures in ${minutesToMaturity} minutes`);
+
+    const stakeId = `test_${wallet}_${Date.now()}`;
+    const startDate = new Date();
+    const endDate = new Date(Date.now() + (minutesToMaturity * 60 * 1000)); // X minutes from now
+    const apy = 12; // 12% bonus
+    const expectedReward = Math.floor((amount * apy / 100) * 100) / 100;
+
+    // Create test staking record
+    await redis.hSet(`staking:${stakeId}`, {
+      stakeId,
+      wallet,
+      amount: amount.toString(),
+      apy: apy.toString(),
+      duration: '30', // Show as 30-day stake
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      expectedReward: expectedReward.toString(),
+      status: 'active',
+      type: 'long_term',
+      claimed: 'false',
+      createdAt: startDate.toISOString()
+    });
+
+    // Add to active sets
+    await redis.sAdd(`staking:user:${wallet}`, stakeId);
+    await redis.sAdd('staking:active', stakeId);
+
+    return res.json({
+      success: true,
+      message: `Test stake created: ${amount} WALDO, matures in ${minutesToMaturity} minutes`,
+      stakeId,
+      maturesAt: endDate.toISOString(),
+      expectedReward
+    });
+
+  } catch (error) {
+    console.error('[ADMIN] Test stake creation error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Admin: Clean up inconsistent stake sets
 router.post('/admin/cleanup-sets', async (req, res) => {
