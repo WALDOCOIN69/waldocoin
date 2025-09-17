@@ -761,6 +761,15 @@ router.post("/unstake", async (req, res) => {
     }
 
     if (stakeData.status !== 'active') {
+      // If stake is already completed but still in active sets, clean up the sets
+      if (stakeData.status === 'completed' || stakeData.status === 'redeemed') {
+        console.log(`[UNSTAKE] Cleaning up sets for already processed stake: ${stakeId}`);
+        await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
+        await redis.sRem(`staking:user:${wallet}`, stakeId);
+        await redis.sRem('staking:active', stakeId);
+        await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
+      }
+
       // Idempotent behavior: if already processed, return success with details
       return res.json({
         success: true,
