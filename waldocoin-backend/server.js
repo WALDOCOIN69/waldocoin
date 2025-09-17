@@ -84,6 +84,13 @@ const startServer = async () => {
     origin: (origin, cb) => {
       console.log(`🔍 CORS check: origin="${origin}"`);
       if (!origin) return cb(null, true); // allow curl/local
+
+      // TEMPORARY: Allow all waldocoin.live and waldo.live subdomains
+      if (origin && (origin.includes('waldocoin.live') || origin.includes('waldo.live'))) {
+        console.log(`🔍 CORS TEMP ALLOW: ${origin}`);
+        return cb(null, true);
+      }
+
       try {
         const u = new URL(origin);
         const hostOk = allowedHosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
@@ -106,6 +113,13 @@ const startServer = async () => {
     origin: (origin, cb) => {
       console.log(`🔍 OPTIONS CORS check: origin="${origin}"`);
       if (!origin) return cb(null, true);
+
+      // TEMPORARY: Allow all waldocoin.live and waldo.live subdomains
+      if (origin && (origin.includes('waldocoin.live') || origin.includes('waldo.live'))) {
+        console.log(`🔍 OPTIONS CORS TEMP ALLOW: ${origin}`);
+        return cb(null, true);
+      }
+
       try {
         const u = new URL(origin);
         const hostOk = allowedHosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
