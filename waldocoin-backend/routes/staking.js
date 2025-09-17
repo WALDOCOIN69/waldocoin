@@ -654,6 +654,8 @@ router.get("/info/:wallet", async (req, res) => {
 
 // ✅ POST /api/staking/unstake - Automatic unstaking with direct transaction
 router.post("/unstake", async (req, res) => {
+  console.log('[UNSTAKE] Request received:', { wallet: req.body.wallet, stakeId: req.body.stakeId });
+
   try {
     const { wallet, stakeId } = req.body;
 
@@ -736,15 +738,11 @@ router.post("/unstake", async (req, res) => {
     // Submit transaction directly to XRPL
     console.log(`[UNSTAKE] Submitting automatic transaction for ${userReceives} WALDO to ${wallet}`);
 
-    // Import XRPL library for direct transaction submission
-    const xrpl = await import('xrpl');
-
     // Create wallet from distributor secret
     const distributorWallet = xrpl.Wallet.fromSeed(DISTRIBUTOR_SECRET);
 
-    // Connect to XRPL
-    const client = new xrpl.Client("wss://xrplcluster.com");
-    await client.connect();
+    // Connect to XRPL with reliable connection
+    const client = await getReliableXrplClient();
 
     // Capture txid outside the try so we can use it later
     let txid = '';
@@ -874,8 +872,8 @@ router.get('/unstake/status/:uuid', async (req, res) => {
 
     // Check if transaction was signed (could be true or dispatched_result)
     const isSigned = payload.response.signed === true ||
-                     payload.response.dispatched_result === 'tesSUCCESS' ||
-                     (payload.response.txid && payload.response.txid !== '');
+      payload.response.dispatched_result === 'tesSUCCESS' ||
+      (payload.response.txid && payload.response.txid !== '');
 
     if (!isSigned) {
       console.log(`[UNSTAKE-STATUS] Transaction not signed yet. signed=${payload.response.signed}, dispatched_result=${payload.response.dispatched_result}, txid=${payload.response.txid}`);
