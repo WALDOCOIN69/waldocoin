@@ -846,7 +846,17 @@
 
     // Unstake (with QR code)
     window.stakeUnstake = async function (stakeId) {
+      // Prevent double-clicking
+      if (window._unstaking && window._unstaking[stakeId]) {
+        console.log('[UNSTAKE] Already processing', stakeId);
+        return;
+      }
+
       if (!confirm('Unlock now? Early unlock reduces your WALDO by 15%.')) return;
+
+      // Mark as processing
+      window._unstaking = window._unstaking || {};
+      window._unstaking[stakeId] = true;
 
       // OPTIMISTIC UPDATE: Find and hide the stake item immediately
       const unstakeBtn = document.querySelector(`button[onclick="stakeUnstake('${stakeId}')"]`);
@@ -910,10 +920,16 @@
             if (stakeItem) stakeItem.remove();
           }, 2000);
 
-          // Background refresh to sync with server
-          setTimeout(() => stakeLoadInfo(), 3000);
+          // Background refresh to sync with server (longer delay to ensure backend processing)
+          setTimeout(() => stakeLoadInfo(), 8000);
 
           try { xummCloseStake && xummCloseStake(); } catch (_) {}
+
+          // Clear processing flag
+          if (window._unstaking) {
+            delete window._unstaking[stakeId];
+          }
+
           console.log('[UNSTAKE] Early return completed');
           return;
         }
@@ -947,6 +963,11 @@
         if (unstakeBtn) {
           unstakeBtn.disabled = false;
           unstakeBtn.textContent = 'Unlock Early';
+        }
+
+        // Clear processing flag
+        if (window._unstaking) {
+          delete window._unstaking[stakeId];
         }
       }
     }
