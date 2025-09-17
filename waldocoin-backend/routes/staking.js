@@ -1723,7 +1723,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
       status: 'redeemed',
       redeemedAt: redeemedAt,
       redeemTx: txid || '',
-      claimed: true,
+      claimed: 'true',
       totalReceived: totalAmount.toString(),
       originalAmount: originalAmount.toString(),
       rewardAmount: expectedReward.toString()
