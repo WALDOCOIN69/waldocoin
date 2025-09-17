@@ -652,7 +652,7 @@ router.get("/info/:wallet", async (req, res) => {
   }
 });
 
-// ✅ POST /api/staking/unstake - Automatic unstaking with direct transaction
+// ✅ POST /api/staking/unstake - Create XUMM payload for unstaking
 router.post("/unstake", async (req, res) => {
   console.log('[UNSTAKE] Request received:', { wallet: req.body.wallet, stakeId: req.body.stakeId });
 
@@ -712,148 +712,75 @@ router.post("/unstake", async (req, res) => {
     const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 
+    console.log('[UNSTAKE] Environment check:', {
+      hasDistributorWallet: !!DISTRIBUTOR_WALLET,
+      hasDistributorSecret: !!DISTRIBUTOR_SECRET,
+      distributorWallet: DISTRIBUTOR_WALLET,
+      issuer: ISSUER,
+      currency: CURRENCY
+    });
+
     if (!DISTRIBUTOR_SECRET) {
+      console.error('[UNSTAKE] Missing distributor secret');
       return res.status(500).json({
         success: false,
         error: "Distributor wallet secret not configured. Please contact admin."
       });
     }
 
-    // Check distributor wallet balance
-    try {
-      const distributorBalance = await getWaldoBalance(DISTRIBUTOR_WALLET);
-      console.log(`[UNSTAKE] Distributor balance: ${distributorBalance} WALDO, need: ${userReceives} WALDO`);
+    // Create XUMM payload for unstaking
+    console.log(`[UNSTAKE] Creating XUMM payload for ${userReceives} WALDO to ${wallet}`);
 
-      if (distributorBalance < userReceives) {
-        return res.status(500).json({
-          success: false,
-          error: `Insufficient distributor balance. Need ${userReceives.toFixed(2)} WALDO but only have ${distributorBalance.toFixed(2)} WALDO. Please contact admin.`
-        });
-      }
-    } catch (e) {
-      console.warn('[UNSTAKE] Could not check distributor balance:', e.message);
-      // Continue anyway - let XRPL handle the error
-    }
+    const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
+    const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
 
-    // Submit transaction directly to XRPL
-    console.log(`[UNSTAKE] Submitting automatic transaction for ${userReceives} WALDO to ${wallet}`);
+    const txjson = {
+      TransactionType: 'Payment',
+      Account: DISTRIBUTOR_WALLET,
+      Destination: wallet,
+      Amount: {
+        currency: CURRENCY,
+        issuer: ISSUER,
+        value: userReceives.toString()
+      },
+      Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
+    };
 
-    let client;
-    let distributorWallet;
+    console.log('[UNSTAKE] Creating XUMM payload...');
+    const payload = await xummClient.payload.create(txjson);
 
-    try {
-      // Create wallet from distributor secret
-      console.log('[UNSTAKE] Creating distributor wallet...');
-      distributorWallet = xrpl.Wallet.fromSeed(DISTRIBUTOR_SECRET);
-      console.log(`[UNSTAKE] Distributor wallet created: ${distributorWallet.classicAddress}`);
-
-      // Connect to XRPL with reliable connection
-      console.log('[UNSTAKE] Connecting to XRPL...');
-      client = await getReliableXrplClient();
-      console.log('[UNSTAKE] Connected to XRPL successfully');
-    } catch (error) {
-      console.error('[UNSTAKE] Failed to setup XRPL connection:', error);
+    if (!payload || !payload.uuid) {
+      console.error('[UNSTAKE] Failed to create XUMM payload');
       return res.status(500).json({
         success: false,
-        error: `Failed to connect to XRPL: ${error.message}`
+        error: 'Failed to create payment request'
       });
     }
 
-    // Capture txid outside the try so we can use it later
-    let txid = '';
-    try {
-      console.log('[UNSTAKE] Creating transaction...');
-      const memoType = Buffer.from('UNSTAKE_EARLY').toString('hex').toUpperCase();
-      const memoData = Buffer.from(stakeId).toString('hex').toUpperCase();
+    console.log(`[UNSTAKE] XUMM payload created: ${payload.uuid}`);
 
-      const payment = {
-        TransactionType: 'Payment',
-        Account: distributorWallet.classicAddress,
-        Destination: wallet,
-        Amount: {
-          currency: CURRENCY,
-          issuer: ISSUER,
-          value: userReceives.toString()
-        },
-        Memos: [{ Memo: { MemoType: memoType, MemoData: memoData } }]
-      };
-
-      console.log('[UNSTAKE] Preparing transaction...');
-      const prepared = await client.autofill(payment);
-
-      console.log('[UNSTAKE] Signing transaction...');
-      const signed = distributorWallet.sign(prepared);
-
-      console.log('[UNSTAKE] Submitting transaction...');
-      const result = await client.submitAndWait(signed.tx_blob);
-
-      if (result.result.meta.TransactionResult !== 'tesSUCCESS') {
-        throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
-      }
-
-      txid = result.result.hash;
-      console.log(`[UNSTAKE] Transaction submitted successfully: ${txid}`);
-
-    } catch (transactionError) {
-      console.error('[UNSTAKE] Transaction error:', transactionError);
-      // Clean up client connection
-      try {
-        if (client) await client.disconnect();
-      } catch (e) {
-        console.warn('[UNSTAKE] Client disconnect error:', e.message);
-      }
-
-      return res.status(500).json({
-        success: false,
-        error: `Transaction failed: ${transactionError.message}`
-      });
-    }
-
-    // Clean up client connection
-    try {
-      if (client) await client.disconnect();
-    } catch (e) {
-      console.warn('[UNSTAKE] Client disconnect error:', e.message);
-    }
-
-    // Update staking record immediately
-    const now = new Date();
-    await redis.hSet(`staking:${stakeId}`, {
-      status: 'completed',
-      unstakedAt: now.toISOString(),
-      isEarlyUnstake: 'true',
+    // Store unstake offer data for status checking
+    const offerData = {
+      wallet,
+      stakeId,
+      originalAmount: originalAmount.toString(),
       penalty: penalty.toString(),
       userReceives: userReceives.toString(),
-      claimed: 'true',
-      unstakeTx: txid
-    });
+      createdAt: new Date().toISOString()
+    };
 
-    // Remove from active stake sets
-    await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
-    await redis.sRem(`staking:user:${wallet}`, stakeId);
-    await redis.sRem('staking:active', stakeId);
+    await redis.hSet(`stake:unstake_offer:${payload.uuid}`, offerData);
+    await redis.expire(`stake:unstake_offer:${payload.uuid}`, 300); // 5 minutes
 
-    // Update stats
-    try {
-      if (originalAmount > 0) {
-        await redis.incrByFloat('staking:total_staked', -originalAmount);
-        await redis.incrByFloat('staking:total_long_term_staked', -originalAmount);
-      }
-      if (penalty > 0) {
-        await redis.incrByFloat('staking:total_penalties', penalty);
-      }
-    } catch (e) {
-      console.warn('[UNSTAKE] Stats update failed:', e.message);
-    }
-
-    console.log(`[UNSTAKE] Completed unstaking for ${stakeId}: ${userReceives} WALDO sent to ${wallet}`);
+    console.log(`[UNSTAKE] XUMM payload created for ${stakeId}: ${userReceives} WALDO to ${wallet}`);
 
     return res.json({
       success: true,
-      txid: txid,
+      uuid: payload.uuid,
+      refs: payload.refs,
       amount: userReceives,
       penalty: penalty,
-      message: `Successfully unstaked ${userReceives.toFixed(2)} WALDO (${penalty.toFixed(2)} WALDO penalty applied)`
+      message: `Scan QR to unlock ${userReceives.toFixed(2)} WALDO (${penalty.toFixed(2)} WALDO penalty applied)`
     });
 
   } catch (e) {
