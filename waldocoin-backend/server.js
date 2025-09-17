@@ -95,6 +95,24 @@ const startServer = async () => {
     },
     credentials: false
   }));
+  // Ensure preflight (OPTIONS) also returns proper CORS headers for cross-site POSTs
+  app.options('*', cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      try {
+        const u = new URL(origin);
+        const hostOk = allowedHosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
+        const originOk = allowedOriginsRaw.includes(origin);
+        return cb(null, hostOk || originOk);
+      } catch (e) {
+        return cb(null, false);
+      }
+    },
+    credentials: false,
+    methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
+    allowedHeaders: ['Content-Type','Authorization','X-Requested-With']
+  }));
+
 
   app.use(helmet({
     contentSecurityPolicy: false // CSP typically handled at CDN/WordPress level
