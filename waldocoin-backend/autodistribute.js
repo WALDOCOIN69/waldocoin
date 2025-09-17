@@ -28,6 +28,7 @@ if (!senderSecret) {
 }
 
 const isNativeXRP = (tx) =>
+  tx &&
   tx.TransactionType === "Payment" &&
   tx.Destination === distributorWallet &&
   typeof tx.Amount === "string";
@@ -199,8 +200,12 @@ const isNativeXRP = (tx) =>
 
     client.on("transaction", async (event) => {
       try {
-        if (!event.validated) { return; }
+        if (!event || !event.validated) { return; }
         const tx = event.transaction;
+        if (!tx) {
+          console.warn("⚠️ Ignored event - no transaction data");
+          return;
+        }
         if (!isNativeXRP(tx)) {
           console.warn("⚠️ Ignored event - not a valid XRP Payment TX");
           return;
@@ -208,6 +213,12 @@ const isNativeXRP = (tx) =>
 
         const sender = tx.Account;
         const txHash = tx.hash;
+
+        if (!sender || !txHash || !tx.Amount) {
+          console.warn("⚠️ Ignored event - missing required transaction fields");
+          return;
+        }
+
         const xrpAmount = parseFloat(xrpl.dropsToXrp(tx.Amount));
 
         console.log(`💰 XRP Payment received: ${xrpAmount} XRP from ${sender} | TX: ${txHash}`);
