@@ -96,7 +96,8 @@ const startServer = async () => {
     credentials: false
   }));
   // Ensure preflight (OPTIONS) also returns proper CORS headers for cross-site POSTs
-  app.options('*', cors({
+  // Express 5 + path-to-regexp v6 doesn't accept '*' here; use a regex to match all paths
+  app.options(/.*/, cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
       try {
