@@ -125,6 +125,77 @@ function calculateAPY(duration, userLevel) {
 
 const router = express.Router();
 
+// Helper function to process redemption if transaction is complete
+async function processRedemptionIfComplete(uuid) {
+  try {
+    const p = await xummClient.payload.get(uuid).catch(() => null);
+    if (!p) return false;
+
+    const signed = !!p?.meta?.signed;
+    const account = p?.response?.account || null;
+    const txid = p?.response?.txid || null;
+    if (!signed) return false;
+
+    // Check if Payment transaction was successful
+    const paymentSuccessful = p?.response?.dispatched_result === 'tesSUCCESS';
+    if (!paymentSuccessful) return false;
+
+    // Check if already processed
+    const processedKey = `stake:redeem_processed:${uuid}`;
+    const alreadyProcessed = await redis.get(processedKey);
+    if (alreadyProcessed) return true;
+
+    // Get stake info and mark as completed
+    const offer = await redis.hGetAll(`stake:redeem_offer:${uuid}`);
+    const stakeId = offer?.stakeId;
+    const wallet = offer?.wallet;
+    if (!stakeId || !wallet) return false;
+
+    const stakeKey = `staking:${stakeId}`;
+    const stakeData = await redis.hGetAll(stakeKey);
+    if (!stakeData) return false;
+
+    // Mark stake as completed
+    const redeemedAt = new Date().toISOString();
+    const originalAmount = parseFloat(stakeData.amount || 0);
+    const expectedReward = parseFloat(stakeData.expectedReward || 0);
+    const totalAmount = originalAmount + expectedReward;
+
+    await redis.hSet(stakeKey, {
+      status: 'redeemed',
+      redeemedAt: redeemedAt,
+      redeemTx: txid || '',
+      claimed: 'true',
+      totalReceived: totalAmount.toString(),
+      originalAmount: originalAmount.toString(),
+      rewardAmount: expectedReward.toString()
+    });
+
+    // Remove from active sets and add to redeemed set
+    await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
+    await redis.sRem(`staking:user:${wallet}`, stakeId);
+    await redis.sRem('staking:active', stakeId);
+    await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
+
+    // Update stats
+    const amt = Number(stakeData.amount || 0);
+    if (Number.isFinite(amt) && amt > 0) {
+      try { await redis.incrByFloat('staking:total_staked', -amt); } catch (_) { }
+      try { await redis.incrByFloat('staking:total_long_term_staked', -amt); } catch (_) { }
+    }
+
+    // Mark as processed and clean up
+    await redis.set(processedKey, '1', { EX: 604800 });
+    await redis.del(`stake:redeem_offer:${uuid}`);
+
+    console.log(`✅ [FALLBACK] Stake redeemed: ${wallet} received ${totalAmount.toFixed(2)} WALDO (${stakeId})`);
+    return true;
+  } catch (e) {
+    console.error('[REDEEM-FALLBACK] Processing error:', e);
+    return false;
+  }
+}
+
 // ✅ GET /api/staking/cors-test - Test CORS configuration
 router.get("/cors-test", async (req, res) => {
   try {
@@ -1614,7 +1685,13 @@ router.post('/redeem', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
     if (stakeData.status !== 'active') {
-      return res.status(400).json({ success: false, error: 'Stake not active' });
+      if (stakeData.status === 'redeemed') {
+        return res.status(400).json({ success: false, error: 'Stake already redeemed' });
+      } else if (stakeData.status === 'completed') {
+        return res.status(400).json({ success: false, error: 'Stake already unlocked early' });
+      } else {
+        return res.status(400).json({ success: false, error: 'Stake not active' });
+      }
     }
     const now = Date.now();
     const end = new Date(stakeData.endDate).getTime();
@@ -1678,6 +1755,16 @@ router.post('/redeem', async (req, res) => {
     // Map for status processing
     await redis.hSet(`stake:redeem_offer:${created.uuid}`, { stakeId, wallet, type });
 
+    // Schedule automatic processing after 20 seconds (fallback for when status polling is disabled)
+    setTimeout(async () => {
+      try {
+        console.log(`[REDEEM-FALLBACK] Checking redemption status for ${created.uuid} after 20 seconds...`);
+        await processRedemptionIfComplete(created.uuid);
+      } catch (error) {
+        console.log(`[REDEEM-FALLBACK] Auto-check failed:`, error.message);
+      }
+    }, 20000);
+
     return res.json({ success: true, uuid: created.uuid, refs: created.refs, next: created.next });
   } catch (e) {
     console.error('redeem init error', e);
@@ -1703,6 +1790,14 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     const paymentSuccessful = p?.response?.dispatched_result === 'tesSUCCESS';
     if (!paymentSuccessful) {
       return res.json({ ok: true, signed: true, account, txid, paid: false, error: 'payment_failed' });
+    }
+
+    // Check if already processed to prevent duplicate redemptions
+    const processedKey = `stake:redeem_processed:${uuid}`;
+    const alreadyProcessed = await redis.get(processedKey);
+    if (alreadyProcessed) {
+      console.log(`[REDEEM-STATUS] Already processed redemption: ${uuid}`);
+      return res.json({ ok: true, signed: true, account, txid, paid: true });
     }
 
     // Get stake info and mark as completed
@@ -1746,6 +1841,9 @@ router.get('/redeem/status/:uuid', async (req, res) => {
       try { await redis.incrByFloat('staking:total_staked', -amt); } catch (_) { }
       try { await redis.incrByFloat('staking:total_long_term_staked', -amt); } catch (_) { }
     }
+
+    // Mark as processed to prevent duplicate redemptions
+    await redis.set(processedKey, '1', { EX: 604800 }); // 7 days expiry
 
     // Clean up offer
     await redis.del(`stake:redeem_offer:${uuid}`);
