@@ -1114,11 +1114,16 @@
     function startRedeemStatusPoll(uuid, onDone) {
       if (!uuid) return;
       let tries = 0;
+      let corsErrorCount = 0;
       const msg = document.getElementById('ltMsg');
       const iv = setInterval(async () => {
         tries++;
         try {
           const s = await fetch(`${API}/api/staking/redeem/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
+
+          // Reset CORS error count on successful request
+          corsErrorCount = 0;
+
           const j = await s.json();
           if (j?.signed) {
             if (j?.error === 'missing_sender_secret') {
@@ -1137,7 +1142,25 @@
             if (msg && !msg._waitingShown) { msg.textContent = 'Signed. Delivering WALDO…'; msg._waitingShown = true; }
           }
           if (tries > 180) { clearInterval(iv); }
-        } catch (_) { /* ignore */ }
+        } catch (error) {
+          // Count CORS errors but don't show them to user
+          if (error.message && error.message.includes('CORS')) {
+            corsErrorCount++;
+            console.log(`[REDEEM-POLL] CORS error ${corsErrorCount}/5 - continuing silently`);
+
+            // If too many CORS errors, stop polling and rely on timeout
+            if (corsErrorCount >= 5) {
+              console.log('[REDEEM-POLL] Too many CORS errors, stopping poll - timeout will handle completion');
+              clearInterval(iv);
+              return;
+            }
+          } else {
+            console.log('[REDEEM-POLL] Network error:', error.message);
+          }
+
+          // Stop after max tries
+          if (tries > 180) { clearInterval(iv); }
+        }
       }, 1000);
     }
 
