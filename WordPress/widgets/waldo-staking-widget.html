@@ -90,7 +90,7 @@
         <p id="xummHintStake" class="hint" style="display:none;">Scan the QR with your Xaman app</p>
         <div id="xummWarningStake" class="warning"
           style="display:none; margin-top:15px; padding:10px; background:rgba(255,0,0,0.1); border:1px solid #ff4444; border-radius:8px; color:#ff6666; font-size:14px; font-weight:bold; text-align:center;">
-          ⚠️ A 15% PENALTY APPLIES FOR EARLY UNLOCK
+          ⚠️ 15% PENALTY APPLIES FOR EARLY UNLOCK
         </div>
         <a id="xummDesktopLinkStake" href="#"
           style="display:none; margin-top:10px; color:#9adbcf; text-decoration:underline;" rel="noopener"
@@ -572,9 +572,10 @@
       const WARNING = document.getElementById('xummWarningStake');
       if (T) T.textContent = title || 'Xaman';
 
-      // Show warning only for early unlock operations
+      // Show warning for staking and early unlock operations
       if (WARNING) {
-        if (title && title.toLowerCase().includes('early unlock')) {
+        const titleLower = (title || '').toLowerCase();
+        if (titleLower.includes('early unlock') || titleLower.includes('lock') || titleLower.includes('stake')) {
           WARNING.style.display = 'block';
         } else {
           WARNING.style.display = 'none';
