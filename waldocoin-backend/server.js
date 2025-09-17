@@ -203,37 +203,55 @@ const startServer = async () => {
 
   app.get("/api/routes", (_, res) => {
     try {
+      const knownRoutes = [
+        '/api/health', '/api/login', '/api/claim', '/api/mint', '/api/mint/confirm',
+        '/api/login/status', '/api/login/trustline-check', '/api/tweets', '/api/userstats',
+        '/api/userMemes', '/api/policy', '/api/config', '/api/userLevel', '/api/tokenomics',
+        '/api/security', '/api/staking', '/api/marketplace', '/api/burn', '/api/battle',
+        '/api/dao', '/api/users', '/api/rewards', '/api/proposals', '/api/conversion',
+        '/api/topMeme', '/api/linkTwitter', '/api/activity', '/api/system', '/api/market/wlo',
+        '/api/xrpl/trade', '/api/xrpl/trustline', '/api/xrpl/balance', '/api/debug/autodistribute',
+        '/api/airdrop', '/api/admin/send-waldo', '/api/admin/trustline', '/api/admin/volume-bot',
+        '/api/presale'
+      ];
+
       const normalizePath = (p, layer) => {
         if (typeof p === 'string') return p;
         if (Array.isArray(p)) return p.join('|');
-        // Best-effort derive mount path from layer regexp
-        if (layer && layer.regexp) {
-          if (layer.regexp.fast_slash) return '/';
-          const src = layer.regexp.toString();
-          return src;
+        if (layer && layer.regexp && (layer.regexp.fast_slash || typeof layer.regexp === 'object')) {
+          return layer.regexp.fast_slash ? '/' : String(layer.regexp);
         }
         return '';
       };
 
-      const out = [];
-      const stack = (app._router && app._router.stack) || [];
-      for (const layer of stack) {
-        try {
-          if (layer && layer.route) {
-            const methods = Object.keys(layer.route.methods || {}).map(m => m.toUpperCase());
-            out.push({ methods, path: normalizePath(layer.route.path, layer) });
-          } else if (layer && layer.name === 'router' && layer.handle && layer.handle.stack) {
-            const mount = normalizePath(layer.path || layer.regexp, layer);
-            for (const s of layer.handle.stack) {
-              if (s && s.route) {
-                const methods = Object.keys(s.route.methods || {}).map(m => m.toUpperCase());
-                const sub = normalizePath(s.route.path, s);
-                out.push({ methods, path: `${mount}${sub}` });
+      let out = [];
+      const baseRouter = app && app._router;
+      if (baseRouter && Array.isArray(baseRouter.stack)) {
+        for (const layer of baseRouter.stack) {
+          try {
+            if (layer && layer.route) {
+              const methods = Object.keys(layer.route.methods || {}).map(m => m.toUpperCase());
+              out.push({ methods, path: normalizePath(layer.route.path, layer) });
+            } else if (layer && layer.name === 'router') {
+              const h = layer.handle;
+              const subStack = h && Array.isArray(h.stack) ? h.stack : [];
+              const mount = normalizePath(layer.path || layer.regexp, layer);
+              for (const s of subStack) {
+                if (s && s.route) {
+                  const methods = Object.keys(s.route.methods || {}).map(m => m.toUpperCase());
+                  const sub = normalizePath(s.route.path, s);
+                  out.push({ methods, path: `${mount}${sub}` });
+                }
               }
             }
-          }
-        } catch (_) { /* skip malformed layer */ }
+          } catch (_) { /* skip malformed layer */ }
+        }
       }
+
+      if (!out.length) {
+        out = knownRoutes.map(p => ({ methods: ['GET','POST','OPTIONS','PUT','DELETE','PATCH'], path: p }));
+      }
+
       res.json({ success: true, count: out.length, routes: out });
     } catch (e) {
       // Be robust in production: never 500 here; return a safe payload
