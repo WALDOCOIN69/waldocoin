@@ -867,7 +867,28 @@
       const msg = document.getElementById('ltMsg');
       try {
         console.log('[UNSTAKE] Starting unstake for:', stakeId);
-        const r = await fetch(`${API}/api/staking/unstake`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
+
+        // Retry logic for 502/CORS issues
+        let r;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            console.log(`[UNSTAKE] Attempt ${attempt}/3`);
+            r = await fetch(`${API}/api/staking/unstake`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ wallet: WALLET, stakeId })
+            });
+            if (r.ok || r.status !== 502) break; // Success or non-502 error
+            if (attempt < 3) {
+              console.log(`[UNSTAKE] Got ${r.status}, retrying in 2s...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } catch (e) {
+            console.log(`[UNSTAKE] Attempt ${attempt} failed:`, e.message);
+            if (attempt === 3) throw e;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
         const j = await r.json();
         console.log('[UNSTAKE] Response:', j);
         console.log('[UNSTAKE] Response keys:', Object.keys(j));
