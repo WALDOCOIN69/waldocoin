@@ -1152,6 +1152,22 @@
         msg.textContent = 'Sign in Xaman to redeem your WALDO + bonus...';
         xummOpenStake('Redeem Stake', j);
 
+        // Start status polling for redemption completion
+        startRedeemStatusPoll(j.uuid, async (result) => {
+          console.log('[REDEEM] Redemption completed:', result);
+          msg.textContent = 'Redeemed ✔ — WALDO sent back';
+
+          // Force refresh UI to show stake in "Recently Redeemed"
+          setTimeout(async () => {
+            try {
+              await stakeLoadInfo();
+              console.log('[REDEEM] UI refreshed after redemption completion');
+            } catch (error) {
+              console.log('[REDEEM] UI refresh failed:', error.message);
+            }
+          }, 1000);
+        });
+
         // Add 15-second fallback timeout for CORS issues
         setTimeout(async () => {
           console.log('[REDEEM] 15-second timeout - closing modal and refreshing');
@@ -1271,8 +1287,19 @@
         // Clear any cached data
         window._stakeData = null;
 
+        // Add cache-busting parameter to force fresh data
+        const originalLoadInfo = window.stakeLoadInfo;
+        window.stakeLoadInfo = async function () {
+          const url = `${API_BASE}/staking/info/${wallet}?t=${Date.now()}`;
+          console.log('[FORCE-REFRESH] Loading with cache-buster:', url);
+          return originalLoadInfo.call(this);
+        };
+
         // Force reload all stake information
         await stakeLoadInfo();
+
+        // Restore original function
+        window.stakeLoadInfo = originalLoadInfo;
 
         console.log('[FORCE-REFRESH] Refresh completed');
         alert('Force refresh completed - check console for details');

@@ -1882,6 +1882,10 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     await redis.sAdd(`staking:user:${wallet}:redeemed`, stakeId);
     console.log(`[REDEEM-STATUS] Added stake ${stakeId} to redeemed set for wallet ${wallet}`);
 
+    // Verify it was added
+    const redeemedCount = await redis.sCard(`staking:user:${wallet}:redeemed`);
+    console.log(`[REDEEM-STATUS] Wallet ${wallet} now has ${redeemedCount} redeemed stakes`);
+
     // Update stats
     const amt = Number(stakeData.amount || 0);
     if (Number.isFinite(amt) && amt > 0) {
