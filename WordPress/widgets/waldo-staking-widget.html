@@ -753,6 +753,11 @@
         const readyStakes = allPositions.filter(s => s.status === 'active' && (s.daysRemaining || 0) <= 0);
         const redeemedStakes = allPositions.filter(s => s.status === 'redeemed' || s.status === 'completed');
 
+        // Debug logging for badge switching
+        console.log('[BADGE-DEBUG] Active stakes:', activeStakes.length, activeStakes.map(s => ({ id: s.stakeId, days: s.daysRemaining })));
+        console.log('[BADGE-DEBUG] Ready stakes:', readyStakes.length, readyStakes.map(s => ({ id: s.stakeId, days: s.daysRemaining })));
+        console.log('[BADGE-DEBUG] Redeemed stakes:', redeemedStakes.length);
+
         renderLongTerm(activeStakes);
         renderReady(readyStakes);
         renderRedeemed(redeemedStakes);
@@ -837,7 +842,7 @@
         const mature = dr <= 0;
         const endMs = +new Date(s.endDate || Date.now());
         const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
-        const badge = mature ? '<span class="badge mature">Ready</span>' : (soon ? '<span class="badge soon">Ready Soon</span>' : '');
+        const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
 
         // Determine initial countdown color class
         const percentRemaining = (dr / total) * 100;
