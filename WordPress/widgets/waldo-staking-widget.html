@@ -785,14 +785,33 @@
         const balStr = Math.floor(CURRENT_BAL).toLocaleString();
         (function () { const el = document.getElementById('ltBal'); if (el) el.textContent = balStr; })();
 
-        // Render lists - separate active, ready, and redeemed stakes
-        const activeStakes = allPositions.filter(s => s.status === 'active' && (s.daysRemaining || 0) > 0);
-        const readyStakes = allPositions.filter(s => s.status === 'active' && (s.daysRemaining || 0) <= 0);
+        // Render lists - separate active, ready, and redeemed stakes using real-time calculation
+        const now = Date.now();
+        const activeStakes = allPositions.filter(s => {
+          if (s.status !== 'active') return false;
+          const endMs = +new Date(s.endDate || Date.now());
+          const timeRemaining = Math.max(0, endMs - now);
+          return timeRemaining > 0; // Use real-time check, not backend daysRemaining
+        });
+        const readyStakes = allPositions.filter(s => {
+          if (s.status !== 'active') return false;
+          const endMs = +new Date(s.endDate || Date.now());
+          const timeRemaining = Math.max(0, endMs - now);
+          return timeRemaining <= 0; // Use real-time check, not backend daysRemaining
+        });
         const redeemedStakes = allPositions.filter(s => s.status === 'redeemed' || s.status === 'completed');
 
-        // Debug logging for badge switching
-        console.log('[BADGE-DEBUG] Active stakes:', activeStakes.length, activeStakes.map(s => ({ id: s.stakeId, days: s.daysRemaining })));
-        console.log('[BADGE-DEBUG] Ready stakes:', readyStakes.length, readyStakes.map(s => ({ id: s.stakeId, days: s.daysRemaining })));
+        // Debug logging for badge switching with real-time calculations
+        console.log('[BADGE-DEBUG] Active stakes:', activeStakes.length, activeStakes.map(s => {
+          const endMs = +new Date(s.endDate || Date.now());
+          const timeRemaining = Math.max(0, endMs - now);
+          return { id: s.stakeId, backendDays: s.daysRemaining, realTimeMs: timeRemaining };
+        }));
+        console.log('[BADGE-DEBUG] Ready stakes:', readyStakes.length, readyStakes.map(s => {
+          const endMs = +new Date(s.endDate || Date.now());
+          const timeRemaining = Math.max(0, endMs - now);
+          return { id: s.stakeId, backendDays: s.daysRemaining, realTimeMs: timeRemaining };
+        }));
         console.log('[BADGE-DEBUG] Redeemed stakes:', redeemedStakes.length);
 
         renderLongTerm(activeStakes);
