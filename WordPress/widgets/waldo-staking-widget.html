@@ -789,20 +789,35 @@
         const balStr = Math.floor(CURRENT_BAL).toLocaleString();
         (function () { const el = document.getElementById('ltBal'); if (el) el.textContent = balStr; })();
 
-        // Render lists - separate active, ready, and redeemed stakes using real-time calculation
+        // SIMPLE APPROACH: Check if any countdown shows READY to determine section
         const now = Date.now();
         const bufferMs = 60 * 1000; // 60-second buffer to match backend
-        const activeStakes = allPositions.filter(s => {
-          if (s.status !== 'active') return false;
+
+        const activeStakes = [];
+        const readyStakes = [];
+
+        allPositions.forEach(s => {
+          if (s.status !== 'active') return;
+
           const endMs = +new Date(s.endDate || Date.now());
           const timeRemaining = Math.max(0, endMs - now);
-          return timeRemaining > bufferMs; // Account for backend buffer
-        });
-        const readyStakes = allPositions.filter(s => {
-          if (s.status !== 'active') return false;
-          const endMs = +new Date(s.endDate || Date.now());
-          const timeRemaining = Math.max(0, endMs - now);
-          return timeRemaining <= bufferMs; // Account for backend buffer
+          const isTimeReady = timeRemaining <= bufferMs;
+
+          // Check if this stake's countdown would show READY
+          const wouldShowReady = timeRemaining <= bufferMs;
+
+          console.log(`[SECTION-FILTER] Stake ${s.stakeId}:`, {
+            endDate: s.endDate,
+            timeRemaining: timeRemaining,
+            wouldShowReady: wouldShowReady,
+            section: wouldShowReady ? 'READY' : 'ACTIVE'
+          });
+
+          if (wouldShowReady) {
+            readyStakes.push(s);
+          } else {
+            activeStakes.push(s);
+          }
         });
         const redeemedStakes = allPositions.filter(s => s.status === 'redeemed' || s.status === 'completed');
 
@@ -1839,7 +1854,27 @@
       });
     };
 
+    // Add function to manually move ready stakes to correct section
+    window.fixStakeSections = function() {
+      console.log('[FIX-SECTIONS] Manually checking and moving stakes to correct sections...');
+
+      // Force a complete refresh of stake data and sections
+      if (typeof stakeLoadInfo === 'function') {
+        stakeLoadInfo().then(() => {
+          console.log('[FIX-SECTIONS] ✅ Stake sections refreshed');
+
+          // Also force button updates after refresh
+          setTimeout(() => {
+            forceUpdateButtons();
+          }, 1000);
+        }).catch(e => {
+          console.warn('[FIX-SECTIONS] Refresh failed:', e);
+        });
+      }
+    };
+
     console.log('[STAKING-WIDGET] ✅ Real-time maturity checking enabled');
-    console.log('[STAKING-WIDGET] 💡 Run forceUpdateButtons() in console to manually update buttons');
+    console.log('[STAKING-WIDGET] 💡 Run forceUpdateButtons() to update buttons');
+    console.log('[STAKING-WIDGET] 💡 Run fixStakeSections() to move stakes to correct sections');
   })();
 </script>
