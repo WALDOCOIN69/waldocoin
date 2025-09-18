@@ -855,9 +855,17 @@
       const st = +new Date(startDate || 0);
       const ed = +new Date(endDate || 0);
       if (!isFinite(st) || !isFinite(ed) || st <= 0 || ed <= 0) return 0;
-      // Calculate as flat bonus percentage (not annualized APY)
-      const rewardCalculation = amount * (parseFloat(String(apy).replace('%', '')) / 100);
-      return Math.floor(rewardCalculation * 100) / 100; // Match backend rounding
+
+      // Calculate progress-based accrual of the flat bonus
+      const totalDuration = ed - st;
+      const elapsed = Math.min(now - st, totalDuration);
+      const progress = totalDuration > 0 ? Math.max(0, Math.min(1, elapsed / totalDuration)) : 0;
+
+      // Full reward is flat bonus percentage
+      const fullReward = amount * (parseFloat(String(apy).replace('%', '')) / 100);
+      const accruedReward = fullReward * progress;
+
+      return Math.floor(accruedReward * 100) / 100; // Match backend rounding
     };
     function ensureCountdownTick() {
       // Use shared utility if available, otherwise use local implementation
@@ -1099,7 +1107,7 @@
         const originalAmount = Number(s.originalAmount || s.amount || 0);
 
         // Mature redemption - show full rewards
-        const rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * 0.12)); // Default 12% bonus
+        const rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * (parseFloat(s.apy || 12) / 100))); // Use actual APY
         const totalReceived = originalAmount + rewardAmount; // Original + rewards
         const actionText = `Redeemed on ${dateStr} at ${timeStr}`;
         const badgeText = '✅ Redeemed';

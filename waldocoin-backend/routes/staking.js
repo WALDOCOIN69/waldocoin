@@ -799,7 +799,13 @@ router.post("/unstake", async (req, res) => {
     const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 
-
+    console.log('[UNSTAKE] Environment check:', {
+      hasDistributorWallet: !!DISTRIBUTOR_WALLET,
+      hasDistributorSecret: !!DISTRIBUTOR_SECRET,
+      distributorWallet: DISTRIBUTOR_WALLET,
+      issuer: ISSUER,
+      currency: CURRENCY
+    });
 
     if (!DISTRIBUTOR_SECRET) {
       console.error('[UNSTAKE] Missing distributor secret');
@@ -1461,7 +1467,7 @@ router.post('/stake', async (req, res) => {
     };
 
     const apy = apyRates[duration];
-    const expectedReward = Math.floor((amount * apy / 100) * (duration / 365));
+    const expectedReward = Math.floor((amount * apy / 100) * 100) / 100; // Flat bonus, not annualized
 
     const stakeData = {
       stakeId,
@@ -2236,7 +2242,7 @@ router.post('/create-test-mature', async (req, res) => {
     const amount = 1000;
     const duration = 30;
     const apy = 12;
-    const expectedReward = Math.floor((amount * apy / 100) * (duration / 365)); // ~98 WALDO
+    const expectedReward = Math.floor((amount * apy / 100) * 100) / 100; // Flat 12% bonus = 120 WALDO
 
     // Set dates so stake is already mature
     const startDate = new Date(Date.now() - (35 * 24 * 60 * 60 * 1000)); // 35 days ago
