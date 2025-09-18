@@ -1571,41 +1571,7 @@
       }, 2000);
     }
 
-    // Debug function to check stake maturity (can be called from console)
-    window.debugStakeMaturity = async function (stakeId) {
-      try {
-        const r = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
-        const j = await r.json();
-        if (j.success) {
-          const stake = j.positions.find(p => p.stakeId === stakeId);
-          if (stake) {
-            const now = Date.now();
-            const endMs = +new Date(stake.endDate || Date.now());
-            const timeRemaining = Math.max(0, endMs - now);
-            const bufferMs = 60 * 1000;
-            const mature = timeRemaining <= bufferMs;
 
-            console.log('=== STAKE MATURITY DEBUG ===');
-            console.log('Stake ID:', stakeId);
-            console.log('End Date:', stake.endDate);
-            console.log('Current Time:', new Date(now).toISOString());
-            console.log('End Time:', new Date(endMs).toISOString());
-            console.log('Time Remaining (ms):', timeRemaining);
-            console.log('Time Remaining (minutes):', Math.ceil(timeRemaining / (60 * 1000)));
-            console.log('Buffer (ms):', bufferMs);
-            console.log('Is Mature:', mature);
-            console.log('Should use Redeem:', mature);
-            console.log('Should use Unstake:', !mature);
-
-            return { stake, mature, timeRemaining, bufferMs };
-          } else {
-            console.log('Stake not found:', stakeId);
-          }
-        }
-      } catch (e) {
-        console.error('Debug failed:', e);
-      }
-    };
 
     // Force refresh function (can be called from console)
     window.refreshStakes = function () {
