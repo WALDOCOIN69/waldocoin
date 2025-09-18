@@ -815,11 +815,41 @@
           amount: s.amount
         })));
 
-        const matureRedemptions = redeemedStakes.filter(s => s.status === 'redeemed' || (s.status === 'completed' && !s.isEarlyUnstake && !s.penalty));
-        const earlyClaims = redeemedStakes.filter(s => s.status === 'completed' && (s.isEarlyUnstake === 'true' || s.isEarlyUnstake === true || s.penalty > 0));
+        // Fix filtering: Check for early unlock indicators regardless of status
+        const earlyClaims = redeemedStakes.filter(s =>
+          s.isEarlyUnstake === 'true' ||
+          s.isEarlyUnstake === true ||
+          (s.penalty && parseFloat(s.penalty) > 0) ||
+          s.unstakeTx // Has unstake transaction (early unlock)
+        );
+
+        // Mature redemptions are everything else
+        const matureRedemptions = redeemedStakes.filter(s => !earlyClaims.includes(s));
 
         console.log('[DEBUG] Mature redemptions:', matureRedemptions.length);
         console.log('[DEBUG] Early claims:', earlyClaims.length);
+
+        // Debug the problematic stake
+        const problematicStake = redeemedStakes.find(s =>
+          s.amount && parseFloat(s.amount) > 90000 && parseFloat(s.amount) < 95000
+        );
+        if (problematicStake) {
+          console.log('[DEBUG] Found problematic stake:', {
+            stakeId: problematicStake.stakeId,
+            amount: problematicStake.amount,
+            status: problematicStake.status,
+            isEarlyUnstake: problematicStake.isEarlyUnstake,
+            penalty: problematicStake.penalty,
+            unstakeTx: problematicStake.unstakeTx,
+            redeemTx: problematicStake.redeemTx,
+            unstakedAt: problematicStake.unstakedAt,
+            redeemedAt: problematicStake.redeemedAt,
+            rewardAmount: problematicStake.rewardAmount,
+            totalReceived: problematicStake.totalReceived
+          });
+          console.log('[DEBUG] Is in early claims?', earlyClaims.includes(problematicStake));
+          console.log('[DEBUG] Is in mature redemptions?', matureRedemptions.includes(problematicStake));
+        }
 
 
 
