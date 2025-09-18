@@ -1749,10 +1749,11 @@ router.post('/redeem', async (req, res) => {
     console.log(`[REDEEM] End time: ${new Date(end).toISOString()}`);
     console.log(`[REDEEM] Time remaining: ${timeRemaining}ms (${Math.ceil(timeRemaining / (1000 * 60 * 60 * 24))} days)`);
 
-    // Add 30-second buffer to account for timing differences between frontend countdown and backend check
-    const bufferMs = 30 * 1000; // 30 seconds
+    // Add 60-second buffer to account for timing differences between frontend countdown and backend check
+    const bufferMs = 60 * 1000; // 60 seconds (increased from 30s)
     if (now < (end - bufferMs)) {
       console.log(`[REDEEM] Stake not yet matured - ${timeRemaining}ms remaining (with ${bufferMs}ms buffer)`);
+      console.log(`[REDEEM] Frontend might show READY but backend needs ${Math.ceil((end - bufferMs - now) / 1000)}s more`);
       return res.status(400).json({ success: false, error: 'Stake not yet matured' });
     }
 

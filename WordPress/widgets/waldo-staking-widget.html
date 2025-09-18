@@ -802,17 +802,30 @@
         const redeemedStakes = allPositions.filter(s => s.status === 'redeemed' || s.status === 'completed');
 
         // Debug logging for badge switching with real-time calculations
-        console.log('[BADGE-DEBUG] Active stakes:', activeStakes.length, activeStakes.map(s => {
+        console.log('[FILTERING-DEBUG] All positions:', allPositions.length);
+        console.log('[FILTERING-DEBUG] Active stakes:', activeStakes.length, activeStakes.map(s => {
           const endMs = +new Date(s.endDate || Date.now());
           const timeRemaining = Math.max(0, endMs - now);
-          return { id: s.stakeId, backendDays: s.daysRemaining, realTimeMs: timeRemaining };
+          const shouldBeReady = timeRemaining <= 0;
+          return {
+            id: s.stakeId,
+            backendDays: s.daysRemaining,
+            realTimeMs: timeRemaining,
+            shouldBeReady: shouldBeReady,
+            endDate: s.endDate
+          };
         }));
-        console.log('[BADGE-DEBUG] Ready stakes:', readyStakes.length, readyStakes.map(s => {
+        console.log('[FILTERING-DEBUG] Ready stakes:', readyStakes.length, readyStakes.map(s => {
           const endMs = +new Date(s.endDate || Date.now());
           const timeRemaining = Math.max(0, endMs - now);
-          return { id: s.stakeId, backendDays: s.daysRemaining, realTimeMs: timeRemaining };
+          return {
+            id: s.stakeId,
+            backendDays: s.daysRemaining,
+            realTimeMs: timeRemaining,
+            endDate: s.endDate
+          };
         }));
-        console.log('[BADGE-DEBUG] Redeemed stakes:', redeemedStakes.length);
+        console.log('[FILTERING-DEBUG] Redeemed stakes:', redeemedStakes.length);
 
         renderLongTerm(activeStakes);
         renderReady(readyStakes);
@@ -900,6 +913,20 @@
         const now = Date.now();
         const timeRemaining = Math.max(0, endMs - now);
         const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+
+        // Debug logging for maturity calculation
+        if (s.stakeId) {
+          console.log(`[MATURITY-DEBUG] Stake ${s.stakeId}:`, {
+            endDate: s.endDate,
+            endMs: endMs,
+            now: now,
+            timeRemaining: timeRemaining,
+            realTimeDaysRemaining: realTimeDaysRemaining,
+            backendDaysRemaining: s.daysRemaining,
+            mature: timeRemaining <= 0,
+            soon: realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7
+          });
+        }
 
         const soon = realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
         const mature = timeRemaining <= 0; // Use real-time check, not backend daysRemaining
