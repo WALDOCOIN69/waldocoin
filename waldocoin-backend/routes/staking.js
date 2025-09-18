@@ -161,18 +161,15 @@ async function processRedemptionIfComplete(uuid) {
       return true;
     }
 
-    // Mark stake as completed - PRESERVE ORIGINAL TIMESTAMP if it exists
-    const existingRedeemedAt = stakeData.redeemedAt;
-    const redeemedAt = existingRedeemedAt || new Date().toISOString();
+    // Mark stake as completed
+    const redeemedAt = new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
-    console.log(`[REDEEM-FALLBACK] ${existingRedeemedAt ? 'Preserving' : 'Setting'} redeemedAt: ${redeemedAt}`);
-
     await redis.hSet(stakeKey, {
       status: 'redeemed',
-      redeemedAt: redeemedAt, // Preserve original timestamp
+      redeemedAt: redeemedAt,
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),
@@ -802,13 +799,7 @@ router.post("/unstake", async (req, res) => {
     const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
     const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 
-    console.log('[UNSTAKE] Environment check:', {
-      hasDistributorWallet: !!DISTRIBUTOR_WALLET,
-      hasDistributorSecret: !!DISTRIBUTOR_SECRET,
-      distributorWallet: DISTRIBUTOR_WALLET,
-      issuer: ISSUER,
-      currency: CURRENCY
-    });
+
 
     if (!DISTRIBUTOR_SECRET) {
       console.error('[UNSTAKE] Missing distributor secret');
@@ -956,20 +947,11 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: true, account, txid: actualTxid, paid: true });
     }
 
-    // Update staking record (only if not already completed) - PRESERVE ORIGINAL TIMESTAMPS
-    const existingStakeData = await redis.hGetAll(`staking:${stakeId}`);
-    const existingUnstakedAt = existingStakeData.unstakedAt;
-    const existingProcessedAt = existingStakeData.processedAt;
-
-    const unstakedAt = existingUnstakedAt || now.toISOString();
-    const processedAt = existingProcessedAt || now.toISOString();
-
-    console.log(`[UNSTAKE-STATUS] ${existingUnstakedAt ? 'Preserving' : 'Setting'} unstakedAt: ${unstakedAt}`);
-
+    // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: unstakedAt, // Preserve original timestamp
-      processedAt: processedAt, // Preserve original timestamp
+      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
+      processedAt: now.toISOString(), // Time when transferred over to claimed section
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
@@ -1889,19 +1871,16 @@ router.get('/redeem/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: true, account, txid, paid: true });
     }
 
-    // Mark stake as completed since Payment was successful - PRESERVE ORIGINAL TIMESTAMP
-    const existingRedeemedAt = stakeData.redeemedAt;
-    const redeemedAt = existingRedeemedAt || new Date().toISOString();
+    // Mark stake as completed since Payment was successful
+    const redeemedAt = new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
-    console.log(`[REDEEM-STATUS] ${existingRedeemedAt ? 'Preserving' : 'Setting'} redeemedAt: ${redeemedAt}`);
-
     await redis.hSet(stakeKey, {
       status: 'redeemed',
-      redeemedAt: redeemedAt, // Preserve original timestamp
-      processedAt: existingRedeemedAt ? stakeData.processedAt || redeemedAt : redeemedAt,
+      redeemedAt: redeemedAt, // Time when moved to "Recently Redeemed"
+      processedAt: redeemedAt, // Time when transferred over to claimed section
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),

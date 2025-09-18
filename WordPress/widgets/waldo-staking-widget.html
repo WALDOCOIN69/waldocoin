@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<!-- WALDO Staking Widget (matches trading widget look) -->
-<!-- 🔧 DEBUG VERSION: 2024-12-25-MATURE-BUTTON-FIX -->
+<!-- WALDO Staking Widget -->
 <div class="waldo-stake" id="waldoStake">
   <div class="stake-head">
     <div class="title"><span class="accent">🟢</span> WALDO Lock & Boost</div>
@@ -105,7 +104,7 @@
           style="display:none; margin-top:10px; color:#9adbcf; text-decoration:underline;" rel="noopener"
           target="_blank">Open in Xaman (link)</a>
       </div>
-      <div id="xummMobileStake" style="display:none; display:flex; flex-direction:column; gap:8px; align-items:center;">
+      <div id="xummMobileStake" style="display:none; flex-direction:column; gap:8px; align-items:center;">
         <button id="xummMobileBtnStake" class="btn" type="button"
           style="background:#25c2a0;color:white;border:none;padding:15px 20px;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;width:100%;">📱
           Open Xaman App</button>
@@ -573,7 +572,6 @@
         btn.classList.add('active');
         const tab = btn.dataset.tab;
         document.getElementById('panelLong').style.display = tab === 'long' ? 'block' : 'none';
-        document.getElementById('panelMeme').style.display = tab === 'meme' ? 'block' : 'none';
       })
     });
 
@@ -804,41 +802,14 @@
         });
         const redeemedStakes = allPositions.filter(s => s.status === 'redeemed' || s.status === 'completed');
 
-        // Debug logging for badge switching with real-time calculations
-        console.log('[FILTERING-DEBUG] All positions:', allPositions.length);
-        console.log('[FILTERING-DEBUG] Current time:', new Date(now).toISOString());
-        console.log('[FILTERING-DEBUG] Buffer:', bufferMs, 'ms');
-        console.log('[FILTERING-DEBUG] Active stakes:', activeStakes.length, activeStakes.map(s => {
-          const endMs = +new Date(s.endDate || Date.now());
-          const timeRemaining = Math.max(0, endMs - now);
-          const shouldBeReady = timeRemaining <= bufferMs;
-          return {
-            id: s.stakeId,
-            backendDays: s.daysRemaining,
-            realTimeMs: timeRemaining,
-            shouldBeReady: shouldBeReady,
-            endDate: s.endDate,
-            endMs: endMs,
-            bufferAccounted: timeRemaining <= bufferMs,
-            minutesRemaining: Math.ceil(timeRemaining / (60 * 1000))
-          };
-        }));
-        console.log('[FILTERING-DEBUG] Ready stakes:', readyStakes.length, readyStakes.map(s => {
-          const endMs = +new Date(s.endDate || Date.now());
-          const timeRemaining = Math.max(0, endMs - now);
-          return {
-            id: s.stakeId,
-            backendDays: s.daysRemaining,
-            realTimeMs: timeRemaining,
-            endDate: s.endDate
-          };
-        }));
+
+
+
         // Separate mature redemptions from early claims
         const matureRedemptions = redeemedStakes.filter(s => s.status === 'redeemed' || (s.status === 'completed' && !s.isEarlyUnstake && !s.penalty));
         const earlyClaims = redeemedStakes.filter(s => s.status === 'completed' && (s.isEarlyUnstake === 'true' || s.penalty > 0));
 
-        console.log('[FILTERING-DEBUG] Mature redemptions:', matureRedemptions.length);
-        console.log('[FILTERING-DEBUG] Early claims:', earlyClaims.length);
+
 
         renderLongTerm(activeStakes);
         renderReady(readyStakes);
@@ -956,26 +927,7 @@
         const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
         const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
 
-        // Enhanced debug logging
-        console.log(`[RENDER-DEBUG] Stake ${s.stakeId}:`, {
-          endDate: s.endDate,
-          endMs: endMs,
-          now: now,
-          timeRemaining: timeRemaining,
-          bufferMs: bufferMs,
-          mature: mature,
-          buttonType: mature ? 'REDEEM' : 'UNLOCK',
-          minutesRemaining: Math.ceil(timeRemaining / (60 * 1000)),
-          daysRemaining: s.daysRemaining,
-          status: s.status
-        });
 
-        // 🚨 URGENT DEBUG: Log button rendering decision
-        if (timeRemaining <= bufferMs) {
-          console.log(`[BUTTON-DEBUG] 🎯 Stake ${s.stakeId} should show REDEEM button (mature=${mature}, timeRemaining=${timeRemaining}ms)`);
-        } else {
-          console.log(`[BUTTON-DEBUG] ⏰ Stake ${s.stakeId} should show UNLOCK button (mature=${mature}, timeRemaining=${timeRemaining}ms)`);
-        }
 
         // Determine initial countdown color class using real-time calculation
         const percentRemaining = (realTimeDaysRemaining / total) * 100;
@@ -1260,10 +1212,7 @@
           }
         }
         const j = await r.json();
-        console.log('[UNSTAKE] Response:', j);
-        console.log('[UNSTAKE] Response keys:', Object.keys(j));
-        console.log('[UNSTAKE] Has txid?', !!j.txid, 'txid value:', j.txid);
-        console.log('[UNSTAKE] Has uuid?', !!j.uuid, 'uuid value:', j.uuid);
+
         if (!j.success) throw new Error(j.error || 'Unlock failed');
 
         // SUCCESS CASES: Keep row hidden and complete removal
@@ -1532,7 +1481,7 @@
         // Add cache-busting parameter to force fresh data
         const originalLoadInfo = window.stakeLoadInfo;
         window.stakeLoadInfo = async function () {
-          const url = `${API_BASE}/staking/info/${wallet}?t=${Date.now()}`;
+          const url = `${API}/api/staking/info/${wallet}?t=${Date.now()}`;
           console.log('[FORCE-REFRESH] Loading with cache-buster:', url);
           return originalLoadInfo.call(this);
         };
@@ -1900,8 +1849,6 @@
       }
     };
 
-    console.log('[STAKING-WIDGET] ✅ Real-time maturity checking enabled');
-    console.log('[STAKING-WIDGET] 💡 Run forceUpdateButtons() to update buttons');
-    console.log('[STAKING-WIDGET] 💡 Run fixStakeSections() to move stakes to correct sections');
+
   })();
 </script>
