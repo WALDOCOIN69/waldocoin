@@ -896,30 +896,24 @@
               el.classList.add('ready');
               el.textContent = 'READY!';
 
-              // Immediately update the stake button when countdown becomes ready
-              if (!el.classList.contains('ready-triggered')) {
-                el.classList.add('ready-triggered');
-                console.log('[COUNTDOWN] Stake became ready, updating button immediately...');
+              // IMMEDIATELY update the stake button when countdown becomes ready
+              const stakeItem = el.closest('.stake-item');
+              if (stakeItem) {
+                const stakeId = stakeItem.dataset.stakeId;
+                const actionsDiv = stakeItem.querySelector('.actions');
+                const badge = stakeItem.querySelector('.badge.soon');
 
-                // Find the stake item and update the button
-                const stakeItem = el.closest('.stake-item');
-                if (stakeItem) {
-                  const stakeId = stakeItem.dataset.stakeId;
-                  const actionsDiv = stakeItem.querySelector('.actions');
-                  const badge = stakeItem.querySelector('.badge.soon');
+                if (actionsDiv && stakeId) {
+                  // Change button from "Unlock" to "Redeem" IMMEDIATELY
+                  actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">Redeem</button>`;
+                  console.log(`[COUNTDOWN] ✅ IMMEDIATELY updated button for stake ${stakeId} to "Redeem"`);
+                }
 
-                  if (actionsDiv && stakeId) {
-                    // Change button from "Unlock" to "Redeem"
-                    actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">Redeem</button>`;
-                    console.log(`[COUNTDOWN] Updated button for stake ${stakeId} to "Redeem"`);
-                  }
-
-                  if (badge) {
-                    // Change badge from "Maturing Soon" to "Matured"
-                    badge.className = 'badge mature';
-                    badge.textContent = 'Matured';
-                    console.log(`[COUNTDOWN] Updated badge for stake ${stakeId} to "Matured"`);
-                  }
+                if (badge) {
+                  // Change badge from "Maturing Soon" to "Matured"
+                  badge.className = 'badge mature';
+                  badge.textContent = 'Matured';
+                  console.log(`[COUNTDOWN] ✅ Updated badge for stake ${stakeId} to "Matured"`);
                 }
               }
             } else if (percentRemaining <= 25) {
@@ -953,37 +947,34 @@
         const done = Math.max(0, Math.min(total, total - dr));
         const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
 
-        // Use real-time calculation for badge logic (same as countdown)
+        // SIMPLE APPROACH: Check if countdown shows "READY!" to determine maturity
+        const countdownEl = document.querySelector(`[data-end="${+new Date(s.endDate)}"]`);
+        const isCountdownReady = countdownEl && countdownEl.textContent === 'READY!';
+
+        // Also check time-based calculation as backup
         const endMs = +new Date(s.endDate || Date.now());
         const now = Date.now();
-        const bufferMs = 60 * 1000; // 60-second buffer to match backend
         const timeRemaining = Math.max(0, endMs - now);
+        const bufferMs = 60 * 1000; // 60-second buffer
+        const isTimeMatured = timeRemaining <= bufferMs;
+
+        // Stake is mature if EITHER countdown shows READY OR time calculation shows mature
+        const mature = isCountdownReady || isTimeMatured;
+
         const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
-
-        // Debug logging for maturity calculation
-        if (s.stakeId) {
-          console.log(`[MATURITY-DEBUG] Stake ${s.stakeId}:`, {
-            endDate: s.endDate,
-            endMs: endMs,
-            now: now,
-            timeRemaining: timeRemaining,
-            realTimeDaysRemaining: realTimeDaysRemaining,
-            backendDaysRemaining: s.daysRemaining,
-            mature: timeRemaining <= bufferMs,
-            soon: realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7,
-            bufferMs: bufferMs
-          });
-        }
-
-        const mature = timeRemaining <= bufferMs; // Use real-time check with buffer, not backend daysRemaining
         const soon = !mature && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
         const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
         const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
 
-        // Debug logging for button logic
-        if (s.stakeId) {
-          console.log(`[BUTTON-DEBUG] Stake ${s.stakeId}: mature=${mature}, timeRemaining=${timeRemaining}, bufferMs=${bufferMs}`);
-        }
+        // Enhanced debug logging
+        console.log(`[MATURITY-CHECK] Stake ${s.stakeId}:`, {
+          endDate: s.endDate,
+          timeRemaining: timeRemaining,
+          isCountdownReady: isCountdownReady,
+          isTimeMatured: isTimeMatured,
+          mature: mature,
+          buttonType: mature ? 'REDEEM' : 'UNLOCK'
+        });
 
         // Determine initial countdown color class using real-time calculation
         const percentRemaining = (realTimeDaysRemaining / total) * 100;
@@ -1780,12 +1771,12 @@
       }
     };
 
-    // Auto-update stake buttons every 30 seconds to catch maturity changes
+    // Auto-update stake buttons every 5 seconds to catch maturity changes quickly
     setInterval(() => {
       if (document.querySelector('.stake-item')) {
         updateAllStakeButtons();
       }
-    }, 30000);
+    }, 5000);
 
     // Also check immediately when page loads
     setTimeout(() => {
@@ -1816,6 +1807,39 @@
       }
     }, 5000);
 
+    // Add a direct button update function that can be called from console
+    window.forceUpdateButtons = function() {
+      console.log('[FORCE-UPDATE] Checking all stakes for immediate button updates...');
+
+      document.querySelectorAll('.stake-item').forEach(stakeItem => {
+        const stakeId = stakeItem.dataset.stakeId;
+        const countdownEl = stakeItem.querySelector('.countdown');
+        const actionsDiv = stakeItem.querySelector('.actions');
+        const badge = stakeItem.querySelector('.badge');
+
+        if (countdownEl && actionsDiv && stakeId) {
+          const isReady = countdownEl.textContent === 'READY!';
+
+          console.log(`[FORCE-UPDATE] Stake ${stakeId}: countdown="${countdownEl.textContent}", isReady=${isReady}`);
+
+          if (isReady) {
+            // Force update to redeem button
+            actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">Redeem</button>`;
+            if (badge && badge.classList.contains('soon')) {
+              badge.className = 'badge mature';
+              badge.textContent = 'Matured';
+            }
+            console.log(`[FORCE-UPDATE] ✅ Updated ${stakeId} to REDEEM button`);
+          } else {
+            // Ensure it's unlock button
+            actionsDiv.innerHTML = `<button class="btn" onclick="stakeUnstake('${stakeId}')">Unlock</button>`;
+            console.log(`[FORCE-UPDATE] ⏳ Confirmed ${stakeId} has UNLOCK button`);
+          }
+        }
+      });
+    };
+
     console.log('[STAKING-WIDGET] ✅ Real-time maturity checking enabled');
+    console.log('[STAKING-WIDGET] 💡 Run forceUpdateButtons() in console to manually update buttons');
   })();
 </script>
