@@ -1742,9 +1742,21 @@ router.post('/redeem', async (req, res) => {
     }
     const now = Date.now();
     const end = new Date(stakeData.endDate).getTime();
-    if (now < end) {
+    const timeRemaining = end - now;
+
+    console.log(`[REDEEM] Maturity check for stake ${stakeId}:`);
+    console.log(`[REDEEM] Current time: ${new Date(now).toISOString()}`);
+    console.log(`[REDEEM] End time: ${new Date(end).toISOString()}`);
+    console.log(`[REDEEM] Time remaining: ${timeRemaining}ms (${Math.ceil(timeRemaining / (1000 * 60 * 60 * 24))} days)`);
+
+    // Add 30-second buffer to account for timing differences between frontend countdown and backend check
+    const bufferMs = 30 * 1000; // 30 seconds
+    if (now < (end - bufferMs)) {
+      console.log(`[REDEEM] Stake not yet matured - ${timeRemaining}ms remaining (with ${bufferMs}ms buffer)`);
       return res.status(400).json({ success: false, error: 'Stake not yet matured' });
     }
+
+    console.log(`[REDEEM] Stake is mature - proceeding with redemption`);
 
     const type = stakeData.type || 'long_term';
 
