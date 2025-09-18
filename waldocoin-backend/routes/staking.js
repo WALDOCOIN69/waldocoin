@@ -1609,6 +1609,14 @@ router.get('/positions/:wallet', async (req, res) => {
       console.log('Warning: Failed to load redeemed stakes:', e.message);
     }
 
+    // Debug logging for positions endpoint
+    const statusCounts = positions.reduce((acc, pos) => {
+      acc[pos.status] = (acc[pos.status] || 0) + 1;
+      return acc;
+    }, {});
+    console.log(`[POSITIONS] Wallet ${wallet} - Status counts:`, statusCounts);
+    console.log(`[POSITIONS] Returning ${positions.length} total positions`);
+
     return res.json({
       success: true,
       positions,
@@ -1884,7 +1892,9 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
     // Verify it was added
     const redeemedCount = await redis.sCard(`staking:user:${wallet}:redeemed`);
-    console.log(`[REDEEM-STATUS] Wallet ${wallet} now has ${redeemedCount} redeemed stakes`);
+    const redeemedList = await redis.sMembers(`staking:user:${wallet}:redeemed`);
+    console.log(`[REDEEM-STATUS] Wallet ${wallet} now has ${redeemedCount} redeemed stakes:`, redeemedList);
+    console.log(`[REDEEM-STATUS] Stake ${stakeId} status is now: ${stakeData.status} -> redeemed`);
 
     // Update stats
     const amt = Number(stakeData.amount || 0);
