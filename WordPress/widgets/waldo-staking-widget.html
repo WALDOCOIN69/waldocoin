@@ -1779,16 +1779,52 @@
       }
     };
 
-    // Auto-refresh stake sections every 10 seconds to catch maturity changes
+    // SIMPLE DIRECT APPROACH: Check every second and move stakes as needed
     setInterval(() => {
-      const readyCountdowns = document.querySelectorAll('.countdown.ready');
-      if (readyCountdowns.length > 0) {
-        console.log(`[AUTO-REFRESH] Found ${readyCountdowns.length} READY countdowns, triggering section refresh...`);
-        if (typeof stakeLoadInfo === 'function') {
-          stakeLoadInfo().catch(e => console.warn('Auto section refresh failed:', e));
+      // Find all stakes with READY! countdown in the active section
+      const activeSection = document.getElementById('ltActiveList');
+      const readySection = document.getElementById('ltReadyList');
+      const readyBlock = document.getElementById('ltReadyBlock');
+
+      if (!activeSection || !readySection) return;
+
+      const readyStakesInActiveSection = activeSection.querySelectorAll('.stake-item');
+      let movedAny = false;
+
+      readyStakesInActiveSection.forEach(stakeItem => {
+        const countdown = stakeItem.querySelector('.countdown');
+        const stakeId = stakeItem.dataset.stakeId;
+
+        if (countdown && countdown.textContent === 'READY!' && stakeId) {
+          console.log(`[DIRECT-MOVE] Moving stake ${stakeId} from Active to Ready section`);
+
+          // Update the button to Redeem
+          const actionsDiv = stakeItem.querySelector('.actions');
+          if (actionsDiv) {
+            actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">💰 Redeem</button>`;
+          }
+
+          // Update badge to Matured
+          const badge = stakeItem.querySelector('.badge.soon');
+          if (badge) {
+            badge.className = 'badge mature';
+            badge.textContent = 'Matured';
+          }
+
+          // Move the entire stake item to ready section
+          readySection.appendChild(stakeItem);
+          movedAny = true;
+
+          console.log(`[DIRECT-MOVE] ✅ Moved stake ${stakeId} to Ready section with Redeem button`);
         }
+      });
+
+      // Show ready block if we moved any stakes
+      if (movedAny && readyBlock) {
+        readyBlock.style.display = 'block';
       }
-    }, 10000);
+
+    }, 1000); // Check every second
 
     // Also check immediately when page loads
     setTimeout(() => {
