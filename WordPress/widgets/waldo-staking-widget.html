@@ -520,6 +520,33 @@
   .balance-line {
     opacity: .9;
   }
+
+  /* NEW badge animation */
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .badge.new {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
 </style>
 
 <script>
@@ -939,10 +966,16 @@
         const explorerLink = s.redeemTx || s.unstakeTx;
         const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
 
+        // Check if transaction is recent (within last 10 minutes) to show "NEW" badge
+        const completionTime = dateTime ? dateTime.getTime() : 0;
+        const now = Date.now();
+        const isRecent = completionTime > 0 && (now - completionTime) < (10 * 60 * 1000); // 10 minutes
+        const newBadge = isRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
+
         return `
         <div class="stake-item">
           <div class="item-head">
-            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
+            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO ${newBadge}</div>
             <span class="badge ${isEarlyUnlock ? 'warning' : 'redeemed'}">${badgeText}</span>
           </div>
           <div class="meta">
