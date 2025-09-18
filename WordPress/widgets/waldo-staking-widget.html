@@ -994,8 +994,26 @@
         // Check if transaction is recent (within last 10 minutes) to show "NEW" badge
         const completionTime = dateTime ? dateTime.getTime() : 0;
         const now = Date.now();
+
+        // Debug logging for timestamp issues
+        if (!completionTime) {
+          console.log(`[NEW-BADGE] Missing timestamp for stake ${s.stakeId}:`, {
+            status: s.status,
+            redeemedAt: s.redeemedAt,
+            unstakedAt: s.unstakedAt,
+            completionDate: completionDate,
+            dateTime: dateTime
+          });
+        }
+
         const isRecent = completionTime > 0 && (now - completionTime) < (10 * 60 * 1000); // 10 minutes
         const newBadge = isRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
+
+        // Additional debug for NEW badge logic
+        if (completionTime > 0) {
+          const minutesAgo = Math.floor((now - completionTime) / (60 * 1000));
+          console.log(`[NEW-BADGE] Stake ${s.stakeId}: ${minutesAgo} minutes ago, isRecent: ${isRecent}`);
+        }
 
         return `
         <div class="stake-item">
