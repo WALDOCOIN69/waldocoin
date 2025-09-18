@@ -911,25 +911,18 @@
               el.classList.add('ready');
               el.textContent = 'READY!';
 
-              // IMMEDIATELY update the stake button when countdown becomes ready
-              const stakeItem = el.closest('.stake-item');
-              if (stakeItem) {
-                const stakeId = stakeItem.dataset.stakeId;
-                const actionsDiv = stakeItem.querySelector('.actions');
-                const badge = stakeItem.querySelector('.badge.soon');
+              // TRIGGER COMPLETE RE-FILTERING when countdown becomes ready
+              if (!el.classList.contains('refilter-triggered')) {
+                el.classList.add('refilter-triggered');
+                console.log(`[COUNTDOWN] ✅ Countdown became READY! Triggering complete re-filter...`);
 
-                if (actionsDiv && stakeId) {
-                  // Change button from "Unlock" to "Redeem" IMMEDIATELY
-                  actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">Redeem</button>`;
-                  console.log(`[COUNTDOWN] ✅ IMMEDIATELY updated button for stake ${stakeId} to "Redeem"`);
-                }
-
-                if (badge) {
-                  // Change badge from "Maturing Soon" to "Matured"
-                  badge.className = 'badge mature';
-                  badge.textContent = 'Matured';
-                  console.log(`[COUNTDOWN] ✅ Updated badge for stake ${stakeId} to "Matured"`);
-                }
+                // Trigger complete refresh to move stake to correct section
+                setTimeout(() => {
+                  console.log('[COUNTDOWN] Calling stakeLoadInfo() to re-filter sections...');
+                  if (typeof stakeLoadInfo === 'function') {
+                    stakeLoadInfo().catch(e => console.warn('Auto re-filter failed:', e));
+                  }
+                }, 500);
               }
             } else if (percentRemaining <= 25) {
               el.classList.add('danger');
@@ -1786,12 +1779,16 @@
       }
     };
 
-    // Auto-update stake buttons every 5 seconds to catch maturity changes quickly
+    // Auto-refresh stake sections every 10 seconds to catch maturity changes
     setInterval(() => {
-      if (document.querySelector('.stake-item')) {
-        updateAllStakeButtons();
+      const readyCountdowns = document.querySelectorAll('.countdown.ready');
+      if (readyCountdowns.length > 0) {
+        console.log(`[AUTO-REFRESH] Found ${readyCountdowns.length} READY countdowns, triggering section refresh...`);
+        if (typeof stakeLoadInfo === 'function') {
+          stakeLoadInfo().catch(e => console.warn('Auto section refresh failed:', e));
+        }
       }
-    }, 5000);
+    }, 10000);
 
     // Also check immediately when page loads
     setTimeout(() => {
