@@ -34,6 +34,7 @@
         <button class="btn" onclick="cleanupSets()" style="background:#28a745;">Cleanup</button>
         <button class="btn" onclick="createTestStake()" style="background:#ff6b35;">Test 2min</button>
         <button class="btn" onclick="forceRefresh()" style="background:#6c757d;">Force Refresh</button>
+        <button class="btn" onclick="clearAllStakes()" style="background:#dc3545;">Clear All</button>
       </div>
     </div>
 
@@ -1492,6 +1493,59 @@
       } catch (error) {
         console.error('Test stake error:', error);
         alert('Test stake failed: ' + error.message);
+      }
+    }
+
+    // Clear all stakes for current wallet (admin function)
+    window.clearAllStakes = async function () {
+      try {
+        const wallet = WALLET || document.getElementById('stakeWallet').value.trim();
+        if (!wallet) return alert('Connect wallet first');
+
+        if (!confirm(`⚠️ DANGER ⚠️\n\nThis will PERMANENTLY DELETE all stakes for wallet:\n${wallet}\n\nThis action cannot be undone!\n\nAre you absolutely sure?`)) return;
+
+        const adminKey = prompt('Enter admin key:');
+        if (!adminKey) return;
+
+        console.log('[CLEAR-ALL] Clearing all stakes for wallet:', wallet);
+
+        // Clear fake/failed stakes
+        const clearResponse = await fetch(`${API}/api/staking/admin/clear-fake`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ wallet, max: 100 })
+        });
+
+        const clearResult = await clearResponse.json();
+        console.log('Clear fake result:', clearResult);
+
+        // Cleanup sets
+        const cleanupResponse = await fetch(`${API}/api/staking/admin/cleanup-sets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ wallet })
+        });
+
+        const cleanupResult = await cleanupResponse.json();
+        console.log('Cleanup result:', cleanupResult);
+
+        if (clearResult.success && cleanupResult.success) {
+          alert(`✅ Successfully cleared all stakes!\n\nCleared: ${clearResult.clearedCount || 0} fake stakes\nCleaned: ${cleanupResult.cleaned || 0} sets`);
+          // Refresh to show empty state
+          await stakeLoadInfo();
+        } else {
+          alert(`❌ Clear failed:\n${clearResult.error || cleanupResult.error || 'Unknown error'}`);
+        }
+
+      } catch (error) {
+        console.error('Clear all error:', error);
+        alert('Clear all failed: ' + error.message);
       }
     }
 
