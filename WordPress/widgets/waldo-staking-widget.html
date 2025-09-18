@@ -837,7 +837,7 @@
         const mature = dr <= 0;
         const endMs = +new Date(s.endDate || Date.now());
         const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
-        const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
+        const badge = mature ? '<span class="badge mature">Ready</span>' : (soon ? '<span class="badge soon">Ready Soon</span>' : '');
 
         // Determine initial countdown color class
         const percentRemaining = (dr / total) * 100;
@@ -907,16 +907,16 @@
         let rewardAmount, totalReceived, actionText, badgeText;
 
         if (isEarlyUnlock) {
-          // Early unlock - show penalty (no timestamp)
-          const penalty = Number(s.penalty || 0);
-          totalReceived = Number(s.userReceives || s.finalAmount || (originalAmount - penalty));
+          // Early unlock - calculate 15% penalty
+          const penalty = Number(s.penalty || (originalAmount * 0.15));
+          rewardAmount = -penalty; // Show as negative penalty
+          totalReceived = originalAmount - penalty; // What user actually received
           actionText = `Early unlock`;
           badgeText = '⚠️ Early Unlock';
-          rewardAmount = -penalty; // Show as negative
         } else {
-          // Mature redemption - show rewards with timestamp
-          rewardAmount = Number(s.rewardAmount || s.expectedReward || 0);
-          totalReceived = Number(s.totalReceived || (originalAmount + rewardAmount));
+          // Mature redemption - show full rewards
+          rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * 0.12)); // Default 12% bonus
+          totalReceived = originalAmount + rewardAmount; // Original + rewards
           actionText = `Redeemed on ${dateStr} at ${timeStr}`;
           badgeText = '✅ Redeemed';
         }
