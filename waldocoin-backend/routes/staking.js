@@ -3,17 +3,6 @@ import { redis } from '../redisClient.js';
 import getWaldoBalance from '../utils/getWaldoBalance.js';
 import { xummClient } from '../utils/xummClient.js';
 import xrpl from 'xrpl';
-import { validateAdminKey, getAdminKey } from '../utils/adminAuth.js';
-import {
-  calculateMaturity,
-  createStakeId,
-  calculateAPY,
-  calculateExpectedReward,
-  createStakeData,
-  cleanupCompletedStake,
-  addToActiveSets,
-  calculateEarlyUnstakePenalty
-} from '../utils/stakingUtils.js';
 
 // XRPL connection with fallback nodes for better reliability
 const XRPL_NODES = [
@@ -124,6 +113,16 @@ function getUserLevel(xp) {
   return { level: 1, title: "Waldo Watcher", xp: 0, availableDurations: allDurations };
 }
 
+// Calculate APY with Level 5 bonus
+function calculateAPY(duration, userLevel) {
+  const baseAPY = LONG_TERM_APY_RATES[duration];
+  // No await here; config is refreshed elsewhere
+  if (userLevel === 5) {
+    return baseAPY + (LEGEND_BONUS * 100); // Add 2% for Level 5
+  }
+  return baseAPY;
+}
+
 const router = express.Router();
 
 // Helper function to process redemption if transaction is complete
@@ -162,15 +161,18 @@ async function processRedemptionIfComplete(uuid) {
       return true;
     }
 
-    // Mark stake as completed
-    const redeemedAt = new Date().toISOString();
+    // Mark stake as completed - PRESERVE ORIGINAL TIMESTAMP if it exists
+    const existingRedeemedAt = stakeData.redeemedAt;
+    const redeemedAt = existingRedeemedAt || new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
+    console.log(`[REDEEM-FALLBACK] ${existingRedeemedAt ? 'Preserving' : 'Setting'} redeemedAt: ${redeemedAt}`);
+
     await redis.hSet(stakeKey, {
       status: 'redeemed',
-      redeemedAt: redeemedAt,
+      redeemedAt: redeemedAt, // Preserve original timestamp
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),
@@ -954,11 +956,20 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: true, account, txid: actualTxid, paid: true });
     }
 
-    // Update staking record (only if not already completed)
+    // Update staking record (only if not already completed) - PRESERVE ORIGINAL TIMESTAMPS
+    const existingStakeData = await redis.hGetAll(`staking:${stakeId}`);
+    const existingUnstakedAt = existingStakeData.unstakedAt;
+    const existingProcessedAt = existingStakeData.processedAt;
+
+    const unstakedAt = existingUnstakedAt || now.toISOString();
+    const processedAt = existingProcessedAt || now.toISOString();
+
+    console.log(`[UNSTAKE-STATUS] ${existingUnstakedAt ? 'Preserving' : 'Setting'} unstakedAt: ${unstakedAt}`);
+
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
-      processedAt: now.toISOString(), // Time when transferred over to claimed section
+      unstakedAt: unstakedAt, // Preserve original timestamp
+      processedAt: processedAt, // Preserve original timestamp
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
@@ -1874,20 +1885,26 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
     // Check if already processed by looking at stake status
     if (stakeData.status === 'redeemed' && stakeData.redeemedAt) {
-      console.log(`[REDEEM-STATUS] Stake already redeemed, skipping update`);
-      return res.json({ ok: true, signed: true, account, txid, paid: true });
+      console.log(`[REDEEM-STATUS] Stake already redeemed, preserving timestamp: ${stakeData.redeemedAt}`);
+      return res.json({
+        ok: true, signed: true, account, txid, paid: true,
+        redeemedAt: stakeData.redeemedAt // Return original timestamp
+      });
     }
 
-    // Mark stake as completed since Payment was successful
-    const redeemedAt = new Date().toISOString();
+    // Mark stake as completed since Payment was successful - PRESERVE ORIGINAL TIMESTAMP
+    const existingRedeemedAt = stakeData.redeemedAt;
+    const redeemedAt = existingRedeemedAt || new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
+    console.log(`[REDEEM-STATUS] ${existingRedeemedAt ? 'Preserving' : 'Setting'} redeemedAt: ${redeemedAt}`);
+
     await redis.hSet(stakeKey, {
       status: 'redeemed',
-      redeemedAt: redeemedAt, // Time when moved to "Recently Redeemed"
-      processedAt: redeemedAt, // Time when transferred over to claimed section
+      redeemedAt: redeemedAt, // Preserve original timestamp
+      processedAt: existingRedeemedAt ? stakeData.processedAt || redeemedAt : redeemedAt,
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),
@@ -1944,72 +1961,50 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
 
 
-// Admin: Create test stake (flexible - can be mature or maturing)
+// Admin: Create test stake that matures in X minutes
 router.post('/admin/create-test-stake', async (req, res) => {
   try {
-    const adminKey = getAdminKey(req);
-    const validation = validateAdminKey(adminKey);
-
-    if (!validation.valid) {
-      return res.status(403).json({ success: false, error: validation.error });
+    const adminKey = req.headers['x-admin-key'];
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
 
-    const {
-      wallet,
-      amount = 1000,
-      minutesToMaturity = 2,
-      isAlreadyMature = false,
-      duration = 30
-    } = req.body;
-
+    const { wallet, amount = 1000, minutesToMaturity = 2 } = req.body;
     if (!wallet) {
       return res.status(400).json({ success: false, error: 'Wallet required' });
     }
 
-    const apy = calculateAPY(duration, 1); // Default to level 1 for test stakes
-    const expectedReward = calculateExpectedReward(amount, apy);
+    console.log(`[ADMIN] Creating test stake: ${amount} WALDO, matures in ${minutesToMaturity} minutes`);
 
-    let startDate, endDate, stakeId;
+    const stakeId = `test_${wallet}_${Date.now()}`;
+    const startDate = new Date();
+    const endDate = new Date(Date.now() + (minutesToMaturity * 60 * 1000)); // X minutes from now
+    const apy = 12; // 12% bonus
+    const expectedReward = Math.floor((amount * apy / 100) * 100) / 100;
 
-    if (isAlreadyMature) {
-      // Create already mature stake
-      stakeId = createStakeId('longterm', wallet, 'TEST_MATURE');
-      startDate = new Date(Date.now() - (35 * 24 * 60 * 60 * 1000)); // 35 days ago
-      endDate = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000));   // 5 days ago (mature!)
-      console.log(`[ADMIN] Creating mature test stake: ${amount} WALDO (already mature)`);
-    } else {
-      // Create stake that matures in X minutes
-      stakeId = createStakeId('test', wallet);
-      startDate = new Date();
-      endDate = new Date(Date.now() + (minutesToMaturity * 60 * 1000));
-      console.log(`[ADMIN] Creating test stake: ${amount} WALDO, matures in ${minutesToMaturity} minutes`);
-    }
-
-    // Create stake data directly to avoid utility function date conflicts
-    const stakeData = {
+    // Create test staking record
+    await redis.hSet(`staking:${stakeId}`, {
       stakeId,
       wallet,
       amount: amount.toString(),
-      duration: duration.toString(),
       apy: apy.toString(),
-      expectedReward: expectedReward.toString(),
+      duration: '30', // Show as 30-day stake
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      expectedReward: expectedReward.toString(),
       status: 'active',
       type: 'long_term',
-      createdAt: startDate.toISOString(),
       claimed: 'false',
-      isTestData: 'true'
-    };
+      createdAt: startDate.toISOString()
+    });
 
-    // Store staking position
-    await redis.hSet(`staking:${stakeId}`, stakeData);
-    await addToActiveSets(wallet, stakeId);
+    // Add to active sets
+    await redis.sAdd(`staking:user:${wallet}`, stakeId);
+    await redis.sAdd('staking:active', stakeId);
 
-    const maturityStatus = isAlreadyMature ? 'already mature' : `matures in ${minutesToMaturity} minutes`;
     return res.json({
       success: true,
-      message: `Test stake created: ${amount} WALDO (${maturityStatus})`,
+      message: `Test stake created: ${amount} WALDO, matures in ${minutesToMaturity} minutes`,
       stakeId,
       maturesAt: endDate.toISOString(),
       expectedReward
@@ -2242,17 +2237,16 @@ router.get('/status/:uuid', async (req, res) => {
   }
 });
 
-// 🧪 POST /api/staking/create-test-mature - Create test mature stake
+// 🧪 POST /api/staking/create-test-mature - Create test mature stake for testing (admin only)
 router.post('/create-test-mature', async (req, res) => {
   try {
-    const adminKey = getAdminKey(req);
-    const validation = validateAdminKey(adminKey);
+    const adminKey = req.headers['x-admin-key'];
 
-    if (!validation.valid) {
-      return res.status(403).json({ success: false, error: validation.error });
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    const { wallet, amount = 1000, duration = 30 } = req.body;
+    const { wallet } = req.body;
 
     if (!wallet) {
       return res.status(400).json({
@@ -2262,11 +2256,13 @@ router.post('/create-test-mature', async (req, res) => {
     }
 
     // Create test mature stake
-    const stakeId = createStakeId('longterm', wallet, 'TEST_MATURE');
-    const apy = calculateAPY(duration, 1); // Default to level 1 for test stakes
-    const expectedReward = calculateExpectedReward(amount, apy);
+    const stakeId = `longterm_${wallet}_${Date.now()}_TEST_MATURE`;
+    const amount = 1000;
+    const duration = 30;
+    const apy = 12;
+    const expectedReward = Math.floor((amount * apy / 100) * (duration / 365)); // ~98 WALDO
 
-    // Set dates so stake is already mature (5 days overdue)
+    // Set dates so stake is already mature
     const startDate = new Date(Date.now() - (35 * 24 * 60 * 60 * 1000)); // 35 days ago
     const endDate = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000));   // 5 days ago (mature!)
 
@@ -2275,6 +2271,7 @@ router.post('/create-test-mature', async (req, res) => {
       wallet,
       amount: amount.toString(),
       duration: duration.toString(),
+      tier: '1',
       apy: apy.toString(),
       expectedReward: expectedReward.toString(),
       startDate: startDate.toISOString(),
@@ -2287,7 +2284,8 @@ router.post('/create-test-mature', async (req, res) => {
 
     // Store staking position
     await redis.hSet(`staking:${stakeId}`, stakeData);
-    await addToActiveSets(wallet, stakeId);
+    await redis.sAdd(`staking:user:${wallet}`, stakeId);
+    await redis.sAdd('staking:active', stakeId);
 
     console.log(`🧪 Test mature stake created: ${stakeId} for ${wallet}`);
 
@@ -2313,120 +2311,6 @@ router.post('/create-test-mature', async (req, res) => {
       success: false,
       error: "Failed to create test mature stake"
     });
-  }
-});
-
-// 📋 POST /api/staking/mark-viewed - Mark stake as viewed by user
-router.post('/mark-viewed', async (req, res) => {
-  try {
-    const { wallet, stakeId } = req.body;
-
-    if (!wallet || !stakeId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Wallet and stakeId required'
-      });
-    }
-
-    // Store the viewed timestamp
-    const viewedKey = `stake:viewed:${wallet}:${stakeId}`;
-    const viewedAt = new Date().toISOString();
-
-    await redis.set(viewedKey, viewedAt, { EX: 60 * 60 * 24 * 30 }); // 30 days expiry
-
-    console.log(`[MARK-VIEWED] Stake ${stakeId} marked as viewed by ${wallet} at ${viewedAt}`);
-
-    return res.json({
-      success: true,
-      message: 'Stake marked as viewed',
-      viewedAt
-    });
-
-  } catch (error) {
-    console.error('[MARK-VIEWED] Error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to mark stake as viewed'
-    });
-  }
-});
-
-// 📋 GET /api/staking/viewed-status/:wallet/:stakeId - Check if stake has been viewed
-router.get('/viewed-status/:wallet/:stakeId', async (req, res) => {
-  try {
-    const { wallet, stakeId } = req.params;
-    const viewedKey = `stake:viewed:${wallet}:${stakeId}`;
-    const viewedAt = await redis.get(viewedKey);
-
-    return res.json({
-      success: true,
-      viewed: !!viewedAt,
-      viewedAt: viewedAt || null
-    });
-
-  } catch (error) {
-    console.error('[VIEWED-STATUS] Error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to check viewed status'
-    });
-  }
-});
-
-// 🧪 DEBUG: Create test stake without admin auth (for testing only)
-router.post('/debug/create-test-stake', async (req, res) => {
-  try {
-    const { wallet, minutesToMaturity = 2, amount = 1000 } = req.body;
-
-    if (!wallet) {
-      return res.status(400).json({ success: false, error: 'Wallet required' });
-    }
-
-    const stakeId = `debug_${wallet}_${Date.now()}`;
-    const startDate = new Date();
-    const endDate = new Date(Date.now() + (minutesToMaturity * 60 * 1000));
-    const apy = 12;
-    const expectedReward = Math.floor((amount * apy / 100) * 100) / 100;
-
-    const stakeData = {
-      stakeId,
-      wallet,
-      amount: amount.toString(),
-      duration: '30',
-      apy: apy.toString(),
-      expectedReward: expectedReward.toString(),
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      status: 'active',
-      type: 'long_term',
-      createdAt: startDate.toISOString(),
-      claimed: 'false',
-      isTestData: 'true'
-    };
-
-    await redis.hSet(`staking:${stakeId}`, stakeData);
-    await redis.sAdd(`staking:user:${wallet}`, stakeId);
-    await redis.sAdd('staking:active', stakeId);
-
-    console.log(`🧪 DEBUG: Test stake created: ${stakeId}, matures in ${minutesToMaturity} minutes`);
-
-    return res.json({
-      success: true,
-      message: `Debug test stake created: ${amount} WALDO, matures in ${minutesToMaturity} minutes`,
-      stakeId,
-      maturesAt: endDate.toISOString(),
-      expectedReward,
-      debugInfo: {
-        now: new Date().toISOString(),
-        endDate: endDate.toISOString(),
-        minutesToMaturity,
-        millisecondsToMaturity: minutesToMaturity * 60 * 1000
-      }
-    });
-
-  } catch (error) {
-    console.error('[DEBUG] Test stake creation error:', error);
-    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
