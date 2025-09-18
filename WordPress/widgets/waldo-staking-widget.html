@@ -1095,28 +1095,16 @@
 
 
 
-        // Enhanced debug logging for timestamp issues
-        console.log(`[NEW-BADGE] Stake ${s.stakeId} (${s.status}):`, {
-          completionDate: completionDate,
-          dateTime: dateTime,
-          completionTime: completionTime,
-          now: now,
-          ageMs: completionTime > 0 ? (now - completionTime) : 'no-timestamp',
-          ageMinutes: completionTime > 0 ? Math.floor((now - completionTime) / (60 * 1000)) : 'no-timestamp',
-          hasValidTimestamp: completionTime > 0 && !isNaN(completionTime),
-          isWithin10Min: completionTime > 0 && (now - completionTime) < tenMinutesMs,
-          hasBeenViewed: hasBeenViewed,
-          availableFields: {
-            redeemedAt: s.redeemedAt,
-            unstakedAt: s.unstakedAt,
-            processedAt: s.processedAt,
-            completedAt: s.completedAt
-          }
-        });
 
-        // SIMPLE: Only show NEW badge if completed within last 10 minutes AND has valid timestamp
-        const isRecent = completionTime > 0 && !isNaN(completionTime) && (now - completionTime) < tenMinutesMs;
-        const newBadge = isRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
+
+        // ULTRA SIMPLE: Only show NEW if completed within last 3 minutes with valid timestamp
+        const threeMinutesMs = 3 * 60 * 1000; // 3 minutes only
+        const hasValidTimestamp = completionTime > 0 && !isNaN(completionTime);
+        const isVeryRecent = hasValidTimestamp && (now - completionTime) < threeMinutesMs;
+
+        console.log(`[NEW-SIMPLE] Stake ${s.stakeId}: valid=${hasValidTimestamp}, age=${hasValidTimestamp ? Math.floor((now - completionTime) / 60000) : 'N/A'}min, show=${isVeryRecent}`);
+
+        const newBadge = isVeryRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
 
         return `
         <div class="stake-item">
