@@ -124,16 +124,6 @@ function getUserLevel(xp) {
   return { level: 1, title: "Waldo Watcher", xp: 0, availableDurations: allDurations };
 }
 
-// Calculate APY with Level 5 bonus
-function calculateAPY(duration, userLevel) {
-  const baseAPY = LONG_TERM_APY_RATES[duration];
-  // No await here; config is refreshed elsewhere
-  if (userLevel === 5) {
-    return baseAPY + (LEGEND_BONUS * 100); // Add 2% for Level 5
-  }
-  return baseAPY;
-}
-
 const router = express.Router();
 
 // Helper function to process redemption if transaction is complete
@@ -1976,7 +1966,7 @@ router.post('/admin/create-test-stake', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Wallet required' });
     }
 
-    const apy = calculateAPY(duration);
+    const apy = calculateAPY(duration, 1); // Default to level 1 for test stakes
     const expectedReward = calculateExpectedReward(amount, apy);
 
     let startDate, endDate, stakeId;
@@ -2273,7 +2263,7 @@ router.post('/create-test-mature', async (req, res) => {
 
     // Create test mature stake
     const stakeId = createStakeId('longterm', wallet, 'TEST_MATURE');
-    const apy = calculateAPY(duration);
+    const apy = calculateAPY(duration, 1); // Default to level 1 for test stakes
     const expectedReward = calculateExpectedReward(amount, apy);
 
     // Set dates so stake is already mature (5 days overdue)

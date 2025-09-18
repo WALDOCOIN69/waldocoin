@@ -35,23 +35,24 @@ export function createStakeId(type, wallet, suffix = '') {
 }
 
 /**
- * Calculate APY with level bonus
+ * Calculate APY with level bonus (matches staking.js rates)
  * @param {number} duration - Duration in days
  * @param {number} level - User level (1-5)
  * @returns {number} - APY percentage
  */
 export function calculateAPY(duration, level = 1) {
+  // Use the same rates as in staking.js LONG_TERM_APY_RATES
   const baseRates = {
-    30: 10,   // 10% for 30 days
-    90: 12,   // 12% for 90 days
-    180: 18,  // 18% for 180 days
-    365: 25   // 25% for 365 days
+    30: 12,   // 12% bonus for 30 days
+    90: 18,   // 18% bonus for 90 days
+    180: 25,  // 25% bonus for 180 days
+    365: 45   // 45% bonus for 365 days
   };
-  
-  const baseAPY = baseRates[duration] || 10;
-  const levelBonus = level === 5 ? 2 : 0; // Level 5 gets +2% bonus
-  
-  return baseAPY + levelBonus;
+
+  const baseAPY = baseRates[duration] || 12;
+  const legendBonus = level === 5 ? 2 : 0; // Level 5 gets +2% bonus (LEGEND_BONUS * 100)
+
+  return baseAPY + legendBonus;
 }
 
 /**
