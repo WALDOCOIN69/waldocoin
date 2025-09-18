@@ -992,8 +992,26 @@
       if (root) root.innerHTML = redeemed.map(s => {
         // Handle both redemption and unstaking dates/amounts
         const isEarlyUnlock = s.status === 'completed';
-        const completionDate = s.redeemedAt || s.unstakedAt;
-        const dateTime = completionDate ? new Date(completionDate) : null;
+
+        // Try multiple timestamp fields for completion date
+        const completionDate = s.redeemedAt || s.unstakedAt || s.processedAt || s.completedAt;
+        let dateTime = null;
+
+        // Robust date parsing
+        if (completionDate) {
+          try {
+            dateTime = new Date(completionDate);
+            // Check if date is valid
+            if (isNaN(dateTime.getTime())) {
+              console.warn(`[NEW-BADGE] Invalid date for stake ${s.stakeId}:`, completionDate);
+              dateTime = null;
+            }
+          } catch (e) {
+            console.warn(`[NEW-BADGE] Date parsing error for stake ${s.stakeId}:`, e.message);
+            dateTime = null;
+          }
+        }
+
         const dateStr = dateTime ? dateTime.toLocaleDateString() : 'Unknown';
         const timeStr = dateTime ? dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -1021,26 +1039,28 @@
         // Check if transaction is recent (within last 10 minutes) to show "NEW" badge
         const completionTime = dateTime ? dateTime.getTime() : 0;
         const now = Date.now();
+        const tenMinutesMs = 10 * 60 * 1000; // 10 minutes in milliseconds
 
-        // Debug logging for timestamp issues
-        if (!completionTime) {
-          console.log(`[NEW-BADGE] Missing timestamp for stake ${s.stakeId}:`, {
-            status: s.status,
+        // Enhanced debug logging for timestamp issues
+        console.log(`[NEW-BADGE] Stake ${s.stakeId} (${s.status}):`, {
+          completionDate: completionDate,
+          dateTime: dateTime,
+          completionTime: completionTime,
+          now: now,
+          ageMs: completionTime > 0 ? (now - completionTime) : 'no-timestamp',
+          ageMinutes: completionTime > 0 ? Math.floor((now - completionTime) / (60 * 1000)) : 'no-timestamp',
+          isRecent: completionTime > 0 && (now - completionTime) < tenMinutesMs,
+          availableFields: {
             redeemedAt: s.redeemedAt,
             unstakedAt: s.unstakedAt,
-            completionDate: completionDate,
-            dateTime: dateTime
-          });
-        }
+            processedAt: s.processedAt,
+            completedAt: s.completedAt
+          }
+        });
 
-        const isRecent = completionTime > 0 && (now - completionTime) < (10 * 60 * 1000); // 10 minutes
+        // Only show NEW badge if we have a valid timestamp AND it's within 10 minutes
+        const isRecent = completionTime > 0 && !isNaN(completionTime) && (now - completionTime) < tenMinutesMs;
         const newBadge = isRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
-
-        // Additional debug for NEW badge logic
-        if (completionTime > 0) {
-          const minutesAgo = Math.floor((now - completionTime) / (60 * 1000));
-          console.log(`[NEW-BADGE] Stake ${s.stakeId}: ${minutesAgo} minutes ago, isRecent: ${isRecent}`);
-        }
 
         return `
         <div class="stake-item">
