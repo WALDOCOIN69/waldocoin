@@ -15,15 +15,47 @@ router.get("/status", async (req, res) => {
   const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || "WLO").toUpperCase();
 
   try {
-    const client = new xrpl.Client("wss://xrplcluster.com");
-    await client.connect();
-    const resp = await client.request({
-      command: "account_lines",
-      account,
-      ledger_index: 'validated',
-      limit: 400,
-    });
-    await client.disconnect();
+    console.log(`[TRUSTLINE] Checking trustline for account: ${account}`);
+
+    // Try multiple XRPL nodes for better reliability
+    const nodes = [
+      "wss://xrplcluster.com",
+      "wss://s1.ripple.com",
+      "wss://s2.ripple.com"
+    ];
+
+    let client = null;
+    let resp = null;
+
+    for (const node of nodes) {
+      try {
+        console.log(`[TRUSTLINE] Trying node: ${node}`);
+        client = new xrpl.Client(node);
+        await client.connect();
+
+        resp = await client.request({
+          command: "account_lines",
+          account,
+          ledger_index: 'validated',
+          limit: 400,
+        });
+
+        await client.disconnect();
+        console.log(`[TRUSTLINE] Successfully connected to ${node}`);
+        break;
+
+      } catch (nodeError) {
+        console.warn(`[TRUSTLINE] Node ${node} failed:`, nodeError.message);
+        if (client) {
+          try { await client.disconnect(); } catch (_) { }
+        }
+        continue;
+      }
+    }
+
+    if (!resp) {
+      throw new Error('All XRPL nodes failed to respond');
+    }
 
     const lines = resp?.result?.lines || [];
     const has = lines.some((l) => {
@@ -32,8 +64,10 @@ router.get("/status", async (req, res) => {
       return cur === CURRENCY && counterparty === ISSUER;
     });
 
+    console.log(`[TRUSTLINE] Account ${account} has ${CURRENCY} trustline: ${has}`);
     return res.json({ success: true, account, issuer: ISSUER, currency: CURRENCY, trustline: has });
   } catch (e) {
+    console.error(`[TRUSTLINE] Error checking trustline for ${account}:`, e.message);
     return res.status(500).json({ success: false, error: e.message });
   }
 });

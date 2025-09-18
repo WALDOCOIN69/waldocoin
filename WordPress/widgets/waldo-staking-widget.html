@@ -708,10 +708,20 @@
         const positionsR = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
         const positionsJ = await positionsR.json();
         const allPositions = positionsJ.success ? positionsJ.positions : [];
-        // Update TL status
-        const tl = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
-        const tlj = await tl.json();
-        document.getElementById('stakeTlStatus').textContent = `Trustline: ${tlj.trustline ? 'Yes' : 'No'}`;
+        // Update TL status with error handling
+        try {
+          const tl = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
+          if (tl.ok) {
+            const tlj = await tl.json();
+            document.getElementById('stakeTlStatus').textContent = `Trustline: ${tlj.trustline ? 'Yes' : 'No'}`;
+          } else {
+            console.warn('[TRUSTLINE] Status check failed:', tl.status, tl.statusText);
+            document.getElementById('stakeTlStatus').textContent = 'Trustline: Check failed';
+          }
+        } catch (trustlineError) {
+          console.warn('[TRUSTLINE] Status check error:', trustlineError.message);
+          document.getElementById('stakeTlStatus').textContent = 'Trustline: —';
+        }
         // Update duration options based on user level
         const sel = document.getElementById('ltDuration');
         const userLevel = j.userInfo?.level || 1;
