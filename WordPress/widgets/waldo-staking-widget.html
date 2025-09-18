@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- WALDO Staking Widget (matches trading widget look) -->
+<!-- 🔧 DEBUG VERSION: 2024-12-25-MATURE-BUTTON-FIX -->
 <div class="waldo-stake" id="waldoStake">
   <div class="stake-head">
     <div class="title"><span class="accent">🟢</span> WALDO Lock & Boost</div>
@@ -976,8 +977,17 @@
           bufferMs: bufferMs,
           mature: mature,
           buttonType: mature ? 'REDEEM' : 'UNLOCK',
-          minutesRemaining: Math.ceil(timeRemaining / (60 * 1000))
+          minutesRemaining: Math.ceil(timeRemaining / (60 * 1000)),
+          daysRemaining: s.daysRemaining,
+          status: s.status
         });
+
+        // 🚨 URGENT DEBUG: Log button rendering decision
+        if (timeRemaining <= bufferMs) {
+          console.log(`[BUTTON-DEBUG] 🎯 Stake ${s.stakeId} should show REDEEM button (mature=${mature}, timeRemaining=${timeRemaining}ms)`);
+        } else {
+          console.log(`[BUTTON-DEBUG] ⏰ Stake ${s.stakeId} should show UNLOCK button (mature=${mature}, timeRemaining=${timeRemaining}ms)`);
+        }
 
         // Determine initial countdown color class using real-time calculation
         const percentRemaining = (realTimeDaysRemaining / total) * 100;
