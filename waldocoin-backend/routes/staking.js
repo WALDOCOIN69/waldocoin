@@ -2315,24 +2315,6 @@ router.post('/create-test-mature', async (req, res) => {
     });
   }
 });
-        duration,
-        apy,
-        expectedReward,
-        totalRedemption: amount + expectedReward,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        daysOverdue: Math.floor((Date.now() - endDate.getTime()) / (24 * 60 * 60 * 1000))
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error creating test mature stake:', error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to create test mature stake"
-    });
-  }
-});
 
 // 📋 POST /api/staking/mark-viewed - Mark stake as viewed by user
 router.post('/mark-viewed', async (req, res) => {
