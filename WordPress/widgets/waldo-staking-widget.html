@@ -521,33 +521,6 @@
   .balance-line {
     opacity: .9;
   }
-
-  /* NEW badge animation */
-  @keyframes pulse {
-    0% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    50% {
-      opacity: 0.7;
-      transform: scale(1.05);
-    }
-
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .badge.new {
-    font-size: 10px;
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
 </style>
 
 <!-- Load shared staking utilities -->
@@ -1068,11 +1041,11 @@
             dateTime = new Date(completionDate);
             // Check if date is valid
             if (isNaN(dateTime.getTime())) {
-              console.warn(`[NEW-BADGE] Invalid date for stake ${s.stakeId}:`, completionDate);
+              console.warn(`[TIMESTAMP] Invalid date for stake ${s.stakeId}:`, completionDate);
               dateTime = null;
             }
           } catch (e) {
-            console.warn(`[NEW-BADGE] Date parsing error for stake ${s.stakeId}:`, e.message);
+            console.warn(`[TIMESTAMP] Date parsing error for stake ${s.stakeId}:`, e.message);
             dateTime = null;
           }
         }
@@ -1101,62 +1074,12 @@
         const explorerLink = s.redeemTx || s.unstakeTx;
         const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
 
-        // Check if transaction is recent and not yet viewed to show "NEW" badge
-        const completionTime = dateTime ? dateTime.getTime() : 0;
-        const now = Date.now();
-        const tenMinutesMs = 10 * 60 * 1000; // 10 minutes in milliseconds
-
-        // 🔍 COMPREHENSIVE TIMESTAMP DEBUGGING - Find why timestamps keep changing
-        const isRecent = completionTime > 0 && !isNaN(completionTime) && (now - completionTime) < tenMinutesMs;
-
-        console.log(`[TIMESTAMP-DEBUG] 🕐 Stake ${s.stakeId} (${s.status}) FULL ANALYSIS:`, {
-          // Raw timestamp fields from backend
-          rawFields: {
-            redeemedAt: s.redeemedAt,
-            unstakedAt: s.unstakedAt,
-            processedAt: s.processedAt,
-            completedAt: s.completedAt,
-            createdAt: s.createdAt,
-            startDate: s.startDate,
-            endDate: s.endDate
-          },
-          // Selected completion date logic
-          completionDateSelection: {
-            selectedField: completionDate === s.redeemedAt ? 'redeemedAt' :
-              completionDate === s.unstakedAt ? 'unstakedAt' :
-                completionDate === s.processedAt ? 'processedAt' :
-                  completionDate === s.completedAt ? 'completedAt' : 'UNKNOWN',
-            selectedValue: completionDate,
-            parsedDateTime: dateTime ? dateTime.toISOString() : 'INVALID'
-          },
-          // Time calculations
-          timeCalculations: {
-            completionTime: completionTime,
-            currentTime: now,
-            ageMs: completionTime > 0 ? (now - completionTime) : 'no-timestamp',
-            ageMinutes: completionTime > 0 ? Math.floor((now - completionTime) / (60 * 1000)) : 'no-timestamp',
-            ageSeconds: completionTime > 0 ? Math.floor((now - completionTime) / 1000) : 'no-timestamp',
-            isRecent: isRecent,
-            tenMinuteThreshold: tenMinutesMs
-          },
-          // Classification logic
-          classification: {
-            isEarlyUnlock: isEarlyUnlock,
-            isMatureRedemption: isMatureRedemption,
-            shouldShowNewBadge: isRecent && isMatureRedemption,
-            badgeLogic: isEarlyUnlock ? 'EARLY_UNLOCK_NO_BADGE' : (isMatureRedemption ? 'MATURE_REDEMPTION_ELIGIBLE' : 'UNKNOWN_TYPE')
-          }
-        });
-
-        // Show NEW badge ONLY for mature redemptions (good news), NOT for early unlocks (bad news)
-        // Early unlocks have penalties and are negative events, mature redemptions are positive events
-        const shouldShowNewBadge = isRecent && isMatureRedemption; // Only mature redemptions get NEW badges
-        const newBadge = shouldShowNewBadge ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
+        // No NEW badge logic - removed for simplicity
 
         return `
         <div class="stake-item">
           <div class="item-head">
-            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO ${newBadge}</div>
+            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
             <span class="badge ${isEarlyUnlock ? 'warning' : 'redeemed'}">${badgeText}</span>
           </div>
           <div class="meta">
@@ -1863,27 +1786,7 @@
       }
     }, 3000);
 
-    // Auto-cleanup NEW badges after page loads
-    setTimeout(() => {
-      const newBadges = document.querySelectorAll('.badge.new');
-      if (newBadges.length > 0) {
-        console.log(`[NEW-BADGE] Found ${newBadges.length} NEW badges on page load, auto-marking old ones...`);
-
-        // Mark badges for stakes without valid timestamps as viewed after 20 seconds
-        newBadges.forEach(badge => {
-          if (badge.id && badge.id.startsWith('new-badge-')) {
-            const stakeId = badge.id.replace('new-badge-', '');
-            setTimeout(() => {
-              const viewedKey = `viewed_stake_${stakeId}`;
-              if (!localStorage.getItem(viewedKey)) {
-                console.log(`[NEW-BADGE] Auto-marking old stake ${stakeId} as viewed`);
-                markStakeAsViewed(stakeId);
-              }
-            }, 20000);
-          }
-        });
-      }
-    }, 5000);
+    // NEW badge functionality removed for simplicity
 
     // Add a direct button update function that can be called from console
     window.forceUpdateButtons = function () {
