@@ -79,6 +79,11 @@
       <div id="ltRedeemedList"></div>
     </div>
 
+    <div class="list" id="ltEarlyClaimedBlock" style="display:none">
+      <h4>⚠️ Early Claimed (Last 15 Days)</h4>
+      <div id="ltEarlyClaimedList"></div>
+    </div>
+
   </div>
 
   <!-- XUMM Modal (minimal) -->
@@ -684,6 +689,10 @@
       const ltRedeemedBlock = document.getElementById('ltRedeemedBlock'); if (ltRedeemedBlock) ltRedeemedBlock.style.display = 'none';
       const ltRedeemedList = document.getElementById('ltRedeemedList'); if (ltRedeemedList) ltRedeemedList.innerHTML = '';
 
+      // Clear Early Claimed section
+      const ltEarlyClaimedBlock = document.getElementById('ltEarlyClaimedBlock'); if (ltEarlyClaimedBlock) ltEarlyClaimedBlock.style.display = 'none';
+      const ltEarlyClaimedList = document.getElementById('ltEarlyClaimedList'); if (ltEarlyClaimedList) ltEarlyClaimedList.innerHTML = '';
+
     }
 
     // Trustline
@@ -824,11 +833,17 @@
             endDate: s.endDate
           };
         }));
-        console.log('[FILTERING-DEBUG] Redeemed stakes:', redeemedStakes.length);
+        // Separate mature redemptions from early claims
+        const matureRedemptions = redeemedStakes.filter(s => s.status === 'redeemed' || (s.status === 'completed' && !s.isEarlyUnstake && !s.penalty));
+        const earlyClaims = redeemedStakes.filter(s => s.status === 'completed' && (s.isEarlyUnstake === 'true' || s.penalty > 0));
+
+        console.log('[FILTERING-DEBUG] Mature redemptions:', matureRedemptions.length);
+        console.log('[FILTERING-DEBUG] Early claims:', earlyClaims.length);
 
         renderLongTerm(activeStakes);
         renderReady(readyStakes);
-        renderRedeemed(redeemedStakes);
+        renderRedeemed(matureRedemptions);
+        renderEarlyClaimed(earlyClaims);
 
         document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
       } catch (e) {
@@ -1018,18 +1033,74 @@
       `).join('');
     }
 
+    function renderEarlyClaimed(list) {
+      const block = document.getElementById('ltEarlyClaimedBlock');
+      const root = document.getElementById('ltEarlyClaimedList');
+      const earlyClaimed = (list || []); // Already filtered to early claims only
+      if (!earlyClaimed.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
+      if (block) block.style.display = 'block';
+      if (root) root.innerHTML = earlyClaimed.map(s => {
+        // This function only handles early claims (already filtered)
+
+        // Try multiple timestamp fields for completion date
+        const completionDate = s.unstakedAt || s.processedAt || s.completedAt || s.redeemedAt;
+        let dateTime = null;
+
+        // Robust date parsing
+        if (completionDate) {
+          try {
+            dateTime = new Date(completionDate);
+            // Check if date is valid
+            if (isNaN(dateTime.getTime())) {
+              console.warn(`[TIMESTAMP] Invalid date for stake ${s.stakeId}:`, completionDate);
+              dateTime = null;
+            }
+          } catch (e) {
+            console.warn(`[TIMESTAMP] Date parsing error for stake ${s.stakeId}:`, e.message);
+            dateTime = null;
+          }
+        }
+
+        const dateStr = dateTime ? dateTime.toLocaleDateString() : 'Unknown';
+        const timeStr = dateTime ? dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        const originalAmount = Number(s.originalAmount || s.amount || 0);
+
+        // Early unlock - calculate 15% penalty
+        const penalty = Number(s.penalty || (originalAmount * 0.15));
+        const rewardAmount = -penalty; // Show as negative penalty
+        const totalReceived = originalAmount - penalty; // What user actually received
+        const actionText = `Early unlock on ${dateStr} at ${timeStr}`;
+        const badgeText = '⚠️ Early Unlock';
+
+        const explorerLink = s.redeemTx || s.unstakeTx;
+        const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
+
+        // No NEW badge logic - removed for simplicity
+
+        return `
+        <div class="stake-item">
+          <div class="item-head">
+            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
+            <span class="badge warning">${badgeText}</span>
+          </div>
+          <div class="meta">
+            ${actionText} • ${s.duration}d lock • ${s.apy}% APY
+            ${txLink ? ` • <a href="${txLink}" target="_blank" rel="noopener" style="color:#25c2a0;">View Transaction</a>` : ''}
+          </div>
+        </div>
+      `;
+      }).join('');
+    }
+
     function renderRedeemed(list) {
       const block = document.getElementById('ltRedeemedBlock');
       const root = document.getElementById('ltRedeemedList');
-      const redeemed = (list || []).filter(s => s.status === 'redeemed' || s.status === 'completed');
+      const redeemed = (list || []); // Already filtered to mature redemptions only
       if (!redeemed.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
       if (block) block.style.display = 'block';
       if (root) root.innerHTML = redeemed.map(s => {
-        // ✅ CORRECT LOGIC: Differentiate between mature redemptions and early unlocks
-        // Backend sets: 'redeemed' for mature redemptions, 'completed' for early unlocks
-        // Additional check: early unlocks have 'isEarlyUnstake' field or 'penalty' field
-        const isEarlyUnlock = s.status === 'completed' && (s.isEarlyUnstake === 'true' || s.penalty > 0);
-        const isMatureRedemption = s.status === 'redeemed' || (s.status === 'completed' && !s.isEarlyUnstake && !s.penalty);
+        // This function now only handles mature redemptions (already filtered)
 
         // Try multiple timestamp fields for completion date
         const completionDate = s.redeemedAt || s.unstakedAt || s.processedAt || s.completedAt;
@@ -1054,22 +1125,12 @@
         const timeStr = dateTime ? dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
         const originalAmount = Number(s.originalAmount || s.amount || 0);
-        let rewardAmount, totalReceived, actionText, badgeText;
 
-        if (isEarlyUnlock) {
-          // Early unlock - calculate 15% penalty
-          const penalty = Number(s.penalty || (originalAmount * 0.15));
-          rewardAmount = -penalty; // Show as negative penalty
-          totalReceived = originalAmount - penalty; // What user actually received
-          actionText = `Early unlock`;
-          badgeText = '⚠️ Early Unlock';
-        } else {
-          // Mature redemption - show full rewards
-          rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * 0.12)); // Default 12% bonus
-          totalReceived = originalAmount + rewardAmount; // Original + rewards
-          actionText = `Redeemed on ${dateStr} at ${timeStr}`;
-          badgeText = '✅ Redeemed';
-        }
+        // Mature redemption - show full rewards
+        const rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * 0.12)); // Default 12% bonus
+        const totalReceived = originalAmount + rewardAmount; // Original + rewards
+        const actionText = `Redeemed on ${dateStr} at ${timeStr}`;
+        const badgeText = '✅ Redeemed';
 
         const explorerLink = s.redeemTx || s.unstakeTx;
         const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
@@ -1080,7 +1141,7 @@
         <div class="stake-item">
           <div class="item-head">
             <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
-            <span class="badge ${isEarlyUnlock ? 'warning' : 'redeemed'}">${badgeText}</span>
+            <span class="badge redeemed">${badgeText}</span>
           </div>
           <div class="meta">
             ${actionText} • ${s.duration}d lock • ${s.apy}% APY
