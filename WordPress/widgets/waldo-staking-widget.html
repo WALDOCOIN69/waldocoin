@@ -955,19 +955,12 @@
         const done = Math.max(0, Math.min(total, total - dr));
         const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
 
-        // SIMPLE APPROACH: Check if countdown shows "READY!" to determine maturity
-        const countdownEl = document.querySelector(`[data-end="${+new Date(s.endDate)}"]`);
-        const isCountdownReady = countdownEl && countdownEl.textContent === 'READY!';
-
-        // Also check time-based calculation as backup
+        // FIXED: Use only time-based calculation for initial rendering
         const endMs = +new Date(s.endDate || Date.now());
         const now = Date.now();
         const timeRemaining = Math.max(0, endMs - now);
         const bufferMs = 60 * 1000; // 60-second buffer
-        const isTimeMatured = timeRemaining <= bufferMs;
-
-        // Stake is mature if EITHER countdown shows READY OR time calculation shows mature
-        const mature = isCountdownReady || isTimeMatured;
+        const mature = timeRemaining <= bufferMs;
 
         const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
         const soon = !mature && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
@@ -975,13 +968,15 @@
         const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
 
         // Enhanced debug logging
-        console.log(`[MATURITY-CHECK] Stake ${s.stakeId}:`, {
+        console.log(`[RENDER-DEBUG] Stake ${s.stakeId}:`, {
           endDate: s.endDate,
+          endMs: endMs,
+          now: now,
           timeRemaining: timeRemaining,
-          isCountdownReady: isCountdownReady,
-          isTimeMatured: isTimeMatured,
+          bufferMs: bufferMs,
           mature: mature,
-          buttonType: mature ? 'REDEEM' : 'UNLOCK'
+          buttonType: mature ? 'REDEEM' : 'UNLOCK',
+          minutesRemaining: Math.ceil(timeRemaining / (60 * 1000))
         });
 
         // Determine initial countdown color class using real-time calculation
