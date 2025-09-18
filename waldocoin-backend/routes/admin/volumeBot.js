@@ -2,6 +2,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import Redis from "ioredis";
+import { requireAdmin } from "../../utils/adminAuth.js";
 
 dotenv.config();
 
@@ -9,15 +10,6 @@ const router = express.Router();
 const redis = new Redis(process.env.REDIS_URL);
 
 console.log("🧩 Loaded: routes/admin/volumeBot.js");
-
-// Admin authentication middleware
-const requireAdmin = (req, res, next) => {
-  const adminKey = req.headers['x-admin-key'];
-  if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
-  next();
-};
 
 // GET /api/admin/volume-bot/status - Get bot status and metrics
 router.get("/status", requireAdmin, async (req, res) => {

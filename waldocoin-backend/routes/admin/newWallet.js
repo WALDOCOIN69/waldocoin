@@ -2,18 +2,11 @@
 import express from "express";
 import dotenv from "dotenv";
 import xrpl from "xrpl";
+import { checkAdmin } from "../../utils/adminAuth.js";
 
 dotenv.config();
 
 const router = express.Router();
-
-// Simple admin key check (optional). If X_ADMIN_KEY is set, require it.
-function checkAdmin(req) {
-  const key = process.env.X_ADMIN_KEY;
-  if (!key) return true; // no key configured -> allow
-  const hdr = req.header("x-admin-key") || req.header("X-Admin-Key") || req.query.admin_key;
-  return hdr === key;
-}
 
 // POST /api/admin/new-wallet  (or GET)
 router.post("/", async (req, res) => {

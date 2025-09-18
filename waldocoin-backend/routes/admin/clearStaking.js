@@ -1,20 +1,21 @@
 // Admin endpoint to clear all staking data
 import express from 'express';
 import { connectRedis } from '../../redisClient.js';
+import { validateAdminKey, getAdminKey } from '../../utils/adminAuth.js';
 
 const router = express.Router();
 
 // POST /api/admin/clear-staking - Clear all staking data (admin only)
 router.post('/clear-staking', async (req, res) => {
   try {
-    // Check admin key
-    const adminKey = req.headers['x-admin-key'] || req.body.adminKey;
-    const expectedKey = process.env.X_ADMIN_KEY;
-    
-    if (!adminKey || !expectedKey || adminKey !== expectedKey) {
+    // Check admin key using shared utility
+    const adminKey = getAdminKey(req);
+    const validation = validateAdminKey(adminKey);
+
+    if (!validation.valid) {
       return res.status(401).json({
         success: false,
-        error: 'Unauthorized - Invalid admin key'
+        error: validation.error
       });
     }
 

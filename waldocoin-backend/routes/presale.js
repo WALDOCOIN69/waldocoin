@@ -40,12 +40,8 @@ function calculateWaldoBonus(xrpAmount) {
   };
 }
 
-// 🛡️ Admin key check middleware
-function adminCheck(req, res, next) {
-  const key = req.headers["x-admin-key"];
-  if (key !== process.env.X_ADMIN_KEY) return res.status(401).json({ success: false, error: "Unauthorized" });
-  next();
-}
+// Import shared admin utilities
+import { requireAdmin } from '../utils/adminAuth.js';
 
 // ✅ GET /api/presale — Return presale buyers from Redis
 router.get("/", async (req, res) => {
@@ -123,7 +119,7 @@ router.get("/calculate", async (req, res) => {
 });
 
 // ✅ POST /api/presale/set-end-date — Set presale end date
-router.post("/set-end-date", adminCheck, async (req, res) => {
+router.post("/set-end-date", requireAdmin, async (req, res) => {
   const { newDate } = req.body;
   if (!newDate || isNaN(new Date(newDate))) {
     return res.status(400).json({ success: false, error: "Invalid date" });

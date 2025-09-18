@@ -7,6 +7,7 @@ import {
   WALDO_ISSUER,
   WALDO_DISTRIBUTOR_SECRET
 } from "../constants.js";
+import { validateAdminKey, getAdminKey } from "../utils/adminAuth.js";
 
 const router = express.Router();
 
@@ -362,11 +363,11 @@ router.get("/check/:wallet", async (req, res) => {
 router.post("/set-password", async (req, res) => {
   try {
     const { newPassword } = req.body;
-    const adminKey = req.headers['x-admin-key'];
+    const adminKey = getAdminKey(req);
+    const validation = validateAdminKey(adminKey);
 
-    // Validate admin access using X_ADMIN_KEY
-    if (adminKey !== process.env.X_ADMIN_KEY) {
-      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    if (!validation.valid) {
+      return res.status(403).json({ success: false, error: validation.error });
     }
 
     // Handle clearing override (empty password)

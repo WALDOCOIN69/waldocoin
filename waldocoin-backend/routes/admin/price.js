@@ -1,15 +1,9 @@
 // routes/admin/price.js
 import express from "express";
 import { redis } from "../../redisClient.js";
+import { checkAdmin } from "../../utils/adminAuth.js";
 
 const router = express.Router();
-
-function checkAdmin(req) {
-  const key = process.env.X_ADMIN_KEY;
-  if (!key) return true;
-  const hdr = req.header("x-admin-key") || req.header("X-Admin-Key") || req.query.admin_key;
-  return hdr === key;
-}
 
 // POST /api/admin/price/override { xrpPerWlo: number }
 router.post('/override', async (req, res) => {

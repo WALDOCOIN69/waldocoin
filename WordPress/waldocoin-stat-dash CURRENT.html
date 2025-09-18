@@ -4784,7 +4784,8 @@
                 const unlockDate = new Date(position.unlockDate).toLocaleDateString();
                 const now = new Date();
                 const unlockDateTime = new Date(position.unlockDate);
-                const isMatured = now >= unlockDateTime;
+                const bufferMs = 60 * 1000; // 60-second buffer to match backend
+                const isMatured = now >= (unlockDateTime.getTime() - bufferMs);
 
                 // Status-based styling
                 let statusColor, statusText, actionButton;
@@ -4810,7 +4811,7 @@
                   statusColor = '#25c2a0';
                   statusText = 'Active';
                   actionButton = isMatured ?
-                    `<button onclick="unstakePosition('${position.stakeId}')" class="button-style js-button-unstake">🔓 Unstake Now</button>` :
+                    `<button onclick="unstakePosition('${position.stakeId}')" class="button-style js-button-redeem">💰 Redeem Now</button>` :
                     `<div class="js-status-locked">Locked until ${unlockDate}</div>`;
 
                 } else {
@@ -4849,25 +4850,54 @@
         }
       }
 
-      // Unstake function
+      // Unstake/Redeem function - automatically chooses correct endpoint based on maturity
       async function unstakePosition(stakeId) {
-        if (!confirm("Are you sure you want to unstake this position?")) return;
+        // First check if stake is matured to determine which endpoint to use
+        const wallet = getWallet();
+        let isMatured = false;
 
         try {
-          const res = await fetch(`${baseURL}/api/staking/unstake`, {
+          const posRes = await fetch(`${baseURL}/api/staking/positions/${wallet}`);
+          const posData = await posRes.json();
+          if (posData.success) {
+            const stake = posData.positions.find(p => p.stakeId === stakeId);
+            if (stake) {
+              const now = new Date();
+              const unlockDateTime = new Date(stake.unlockDate || stake.endDate);
+              const bufferMs = 60 * 1000; // 60-second buffer to match backend
+              isMatured = now >= (unlockDateTime.getTime() - bufferMs);
+            }
+          }
+        } catch (e) {
+          console.warn('Could not check stake maturity, defaulting to unstake:', e);
+        }
+
+        const action = isMatured ? "redeem" : "unstake";
+        const confirmMsg = isMatured ?
+          "Are you sure you want to redeem this matured position? You'll receive your full stake + rewards." :
+          "Are you sure you want to unstake this position early? A 15% penalty will be applied.";
+
+        if (!confirm(confirmMsg)) return;
+
+        try {
+          const endpoint = isMatured ? `${baseURL}/api/staking/redeem` : `${baseURL}/api/staking/unstake`;
+          const body = isMatured ?
+            { wallet, stakeId } :
+            { wallet, stakeId, force: false };
+
+          const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              wallet: getWallet(),
-              stakeId: stakeId,
-              force: false
-            })
+            body: JSON.stringify(body)
           });
 
           const data = await res.json();
 
           if (data.success) {
-            showToast("Unstaking initiated! Check your XAMAN wallet.", "success");
+            const successMsg = isMatured ?
+              "Redemption initiated! Check your XAMAN wallet." :
+              "Early unstaking initiated! Check your XAMAN wallet.";
+            showToast(successMsg, "success");
 
             // Open XUMM payment if available
             if (data.qr) {
@@ -4880,7 +4910,7 @@
             }, 2000);
 
           } else {
-            showToast(data.error || "Failed to unstake", "error");
+            showToast(data.error || `Failed to ${action}`, "error");
           }
 
         } catch (error) {
