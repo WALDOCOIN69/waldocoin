@@ -806,8 +806,19 @@
 
 
         // Separate mature redemptions from early claims
+        console.log('[DEBUG] All redeemed stakes:', redeemedStakes.map(s => ({
+          stakeId: s.stakeId,
+          status: s.status,
+          isEarlyUnstake: s.isEarlyUnstake,
+          penalty: s.penalty,
+          amount: s.amount
+        })));
+
         const matureRedemptions = redeemedStakes.filter(s => s.status === 'redeemed' || (s.status === 'completed' && !s.isEarlyUnstake && !s.penalty));
-        const earlyClaims = redeemedStakes.filter(s => s.status === 'completed' && (s.isEarlyUnstake === 'true' || s.penalty > 0));
+        const earlyClaims = redeemedStakes.filter(s => s.status === 'completed' && (s.isEarlyUnstake === 'true' || s.isEarlyUnstake === true || s.penalty > 0));
+
+        console.log('[DEBUG] Mature redemptions:', matureRedemptions.length);
+        console.log('[DEBUG] Early claims:', earlyClaims.length);
 
 
 
@@ -989,7 +1000,16 @@
       const block = document.getElementById('ltEarlyClaimedBlock');
       const root = document.getElementById('ltEarlyClaimedList');
       const earlyClaimed = (list || []); // Already filtered to early claims only
-      if (!earlyClaimed.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
+
+      console.log('[DEBUG] renderEarlyClaimed called with:', earlyClaimed.length, 'items');
+      console.log('[DEBUG] Early claimed data:', earlyClaimed);
+
+      if (!earlyClaimed.length) {
+        console.log('[DEBUG] No early claims to show, hiding section');
+        if (block) block.style.display = 'none';
+        if (root) root.innerHTML = '';
+        return;
+      }
       if (block) block.style.display = 'block';
       if (root) root.innerHTML = earlyClaimed.map(s => {
         // This function only handles early claims (already filtered)
