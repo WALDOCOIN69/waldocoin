@@ -1117,6 +1117,8 @@
           isRecent: completionTime > 0 && (now - completionTime) < tenMinutesMs,
           isEarlyUnlock: isEarlyUnlock,
           isMatureRedemption: isMatureRedemption,
+          shouldShowNewBadge: 'calculated_below',
+          badgeLogic: isEarlyUnlock ? 'EARLY_UNLOCK_NO_BADGE' : (isMatureRedemption ? 'MATURE_REDEMPTION_ELIGIBLE' : 'UNKNOWN_TYPE'),
           availableFields: {
             redeemedAt: s.redeemedAt,
             unstakedAt: s.unstakedAt,
@@ -1127,10 +1129,10 @@
           }
         });
 
-        // Only show NEW badge if we have a valid timestamp AND it's within 10 minutes AND it's an early unlock
-        // NEVER show NEW badge on mature redemptions (they should not be "urgent" notifications)
+        // Show NEW badge ONLY for mature redemptions (good news), NOT for early unlocks (bad news)
+        // Early unlocks have penalties and are negative events, mature redemptions are positive events
         const isRecent = completionTime > 0 && !isNaN(completionTime) && (now - completionTime) < tenMinutesMs;
-        const shouldShowNewBadge = isRecent && isEarlyUnlock; // Only early unlocks get NEW badges
+        const shouldShowNewBadge = isRecent && isMatureRedemption; // Only mature redemptions get NEW badges
         const newBadge = shouldShowNewBadge ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
 
         return `
