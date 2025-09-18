@@ -1507,23 +1507,12 @@
         const adminKey = prompt('Enter admin key:');
         if (!adminKey) return;
 
-        console.log('[CLEAR-ALL] Clearing all stakes for wallet:', wallet);
+        console.log('[CLEAR-ALL] NUCLEAR CLEAR: Removing ALL stakes for wallet:', wallet);
+        console.log('[CLEAR-ALL] Using admin key:', adminKey ? 'PROVIDED' : 'MISSING');
 
-        // Clear fake/failed stakes
-        const clearResponse = await fetch(`${API}/api/staking/admin/clear-fake`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          },
-          body: JSON.stringify({ wallet, max: 100 })
-        });
-
-        const clearResult = await clearResponse.json();
-        console.log('Clear fake result:', clearResult);
-
-        // Cleanup sets
-        const cleanupResponse = await fetch(`${API}/api/staking/admin/cleanup-sets`, {
+        // Use the nuclear clear endpoint
+        console.log('[CLEAR-ALL] Calling nuclear clear endpoint...');
+        const response = await fetch(`${API}/api/staking/admin/clear-all-stakes`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1532,15 +1521,19 @@
           body: JSON.stringify({ wallet })
         });
 
-        const cleanupResult = await cleanupResponse.json();
-        console.log('Cleanup result:', cleanupResult);
+        const result = await response.json();
+        console.log('Nuclear clear result:', result);
 
-        if (clearResult.success && cleanupResult.success) {
-          alert(`✅ Successfully cleared all stakes!\n\nCleared: ${clearResult.clearedCount || 0} fake stakes\nCleaned: ${cleanupResult.cleaned || 0} sets`);
+        if (result.success) {
+          alert(`✅ NUCLEAR CLEAR SUCCESSFUL!\n\n` +
+            `Deleted: ${result.deletedStakes} stakes\n` +
+            `Cleared: ${result.deletedSets} sets\n` +
+            `Stakes removed: ${result.stakeIds?.length || 0}\n\n` +
+            `Wallet ${wallet} is now completely clean!`);
           // Refresh to show empty state
           await stakeLoadInfo();
         } else {
-          alert(`❌ Clear failed:\n${clearResult.error || cleanupResult.error || 'Unknown error'}`);
+          alert(`❌ Nuclear clear failed:\n${result.error || 'Unknown error'}`);
         }
 
       } catch (error) {
