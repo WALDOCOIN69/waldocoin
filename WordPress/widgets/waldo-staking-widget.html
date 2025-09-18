@@ -1106,32 +1106,50 @@
         const now = Date.now();
         const tenMinutesMs = 10 * 60 * 1000; // 10 minutes in milliseconds
 
-        // Enhanced debug logging for timestamp issues
-        console.log(`[NEW-BADGE] Stake ${s.stakeId} (${s.status}):`, {
-          completionDate: completionDate,
-          dateTime: dateTime,
-          completionTime: completionTime,
-          now: now,
-          ageMs: completionTime > 0 ? (now - completionTime) : 'no-timestamp',
-          ageMinutes: completionTime > 0 ? Math.floor((now - completionTime) / (60 * 1000)) : 'no-timestamp',
-          isRecent: completionTime > 0 && (now - completionTime) < tenMinutesMs,
-          isEarlyUnlock: isEarlyUnlock,
-          isMatureRedemption: isMatureRedemption,
-          shouldShowNewBadge: 'calculated_below',
-          badgeLogic: isEarlyUnlock ? 'EARLY_UNLOCK_NO_BADGE' : (isMatureRedemption ? 'MATURE_REDEMPTION_ELIGIBLE' : 'UNKNOWN_TYPE'),
-          availableFields: {
+        // 🔍 COMPREHENSIVE TIMESTAMP DEBUGGING - Find why timestamps keep changing
+        const isRecent = completionTime > 0 && !isNaN(completionTime) && (now - completionTime) < tenMinutesMs;
+
+        console.log(`[TIMESTAMP-DEBUG] 🕐 Stake ${s.stakeId} (${s.status}) FULL ANALYSIS:`, {
+          // Raw timestamp fields from backend
+          rawFields: {
             redeemedAt: s.redeemedAt,
             unstakedAt: s.unstakedAt,
             processedAt: s.processedAt,
             completedAt: s.completedAt,
-            isEarlyUnstake: s.isEarlyUnstake,
-            penalty: s.penalty
+            createdAt: s.createdAt,
+            startDate: s.startDate,
+            endDate: s.endDate
+          },
+          // Selected completion date logic
+          completionDateSelection: {
+            selectedField: completionDate === s.redeemedAt ? 'redeemedAt' :
+              completionDate === s.unstakedAt ? 'unstakedAt' :
+                completionDate === s.processedAt ? 'processedAt' :
+                  completionDate === s.completedAt ? 'completedAt' : 'UNKNOWN',
+            selectedValue: completionDate,
+            parsedDateTime: dateTime ? dateTime.toISOString() : 'INVALID'
+          },
+          // Time calculations
+          timeCalculations: {
+            completionTime: completionTime,
+            currentTime: now,
+            ageMs: completionTime > 0 ? (now - completionTime) : 'no-timestamp',
+            ageMinutes: completionTime > 0 ? Math.floor((now - completionTime) / (60 * 1000)) : 'no-timestamp',
+            ageSeconds: completionTime > 0 ? Math.floor((now - completionTime) / 1000) : 'no-timestamp',
+            isRecent: isRecent,
+            tenMinuteThreshold: tenMinutesMs
+          },
+          // Classification logic
+          classification: {
+            isEarlyUnlock: isEarlyUnlock,
+            isMatureRedemption: isMatureRedemption,
+            shouldShowNewBadge: isRecent && isMatureRedemption,
+            badgeLogic: isEarlyUnlock ? 'EARLY_UNLOCK_NO_BADGE' : (isMatureRedemption ? 'MATURE_REDEMPTION_ELIGIBLE' : 'UNKNOWN_TYPE')
           }
         });
 
         // Show NEW badge ONLY for mature redemptions (good news), NOT for early unlocks (bad news)
         // Early unlocks have penalties and are negative events, mature redemptions are positive events
-        const isRecent = completionTime > 0 && !isNaN(completionTime) && (now - completionTime) < tenMinutesMs;
         const shouldShowNewBadge = isRecent && isMatureRedemption; // Only mature redemptions get NEW badges
         const newBadge = shouldShowNewBadge ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
 

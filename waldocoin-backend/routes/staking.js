@@ -161,15 +161,18 @@ async function processRedemptionIfComplete(uuid) {
       return true;
     }
 
-    // Mark stake as completed
-    const redeemedAt = new Date().toISOString();
+    // Mark stake as completed - PRESERVE ORIGINAL TIMESTAMP if it exists
+    const existingRedeemedAt = stakeData.redeemedAt;
+    const redeemedAt = existingRedeemedAt || new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
+    console.log(`[REDEEM-FALLBACK] ${existingRedeemedAt ? 'Preserving' : 'Setting'} redeemedAt: ${redeemedAt}`);
+
     await redis.hSet(stakeKey, {
       status: 'redeemed',
-      redeemedAt: redeemedAt,
+      redeemedAt: redeemedAt, // Preserve original timestamp
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),
@@ -953,11 +956,20 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       return res.json({ ok: true, signed: true, account, txid: actualTxid, paid: true });
     }
 
-    // Update staking record (only if not already completed)
+    // Update staking record (only if not already completed) - PRESERVE ORIGINAL TIMESTAMPS
+    const existingStakeData = await redis.hGetAll(`staking:${stakeId}`);
+    const existingUnstakedAt = existingStakeData.unstakedAt;
+    const existingProcessedAt = existingStakeData.processedAt;
+
+    const unstakedAt = existingUnstakedAt || now.toISOString();
+    const processedAt = existingProcessedAt || now.toISOString();
+
+    console.log(`[UNSTAKE-STATUS] ${existingUnstakedAt ? 'Preserving' : 'Setting'} unstakedAt: ${unstakedAt}`);
+
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
-      processedAt: now.toISOString(), // Time when transferred over to claimed section
+      unstakedAt: unstakedAt, // Preserve original timestamp
+      processedAt: processedAt, // Preserve original timestamp
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
@@ -1873,11 +1885,8 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
     // Check if already processed by looking at stake status
     if (stakeData.status === 'redeemed' && stakeData.redeemedAt) {
-      console.log(`[REDEEM-STATUS] Stake already redeemed, preserving timestamp: ${stakeData.redeemedAt}`);
-      return res.json({
-        ok: true, signed: true, account, txid, paid: true,
-        redeemedAt: stakeData.redeemedAt // Return original timestamp
-      });
+      console.log(`[REDEEM-STATUS] Stake already redeemed, skipping update`);
+      return res.json({ ok: true, signed: true, account, txid, paid: true });
     }
 
     // Mark stake as completed since Payment was successful - PRESERVE ORIGINAL TIMESTAMP
