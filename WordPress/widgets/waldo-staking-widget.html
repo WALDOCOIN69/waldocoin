@@ -663,22 +663,26 @@
       if (isMobile()) {
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
         B.onclick = () => {
-          const candidates = [appDeep, appDeepAlt, deepStr];
-          for (const url of candidates) {
-            if (!url) continue;
-            let opened = false;
-            try { const w = window.open(url, '_blank'); opened = !!w; } catch (_) { opened = false; }
-            if (!opened) {
+          const urls = [appDeep, appDeepAlt, deepStr].filter(Boolean);
+          const tryNext = (idx) => {
+            if (idx >= urls.length) return;
+            const url = urls[idx];
+            // Best chance first: direct navigation
+            try { window.location.href = url; } catch (_) { }
+            setTimeout(() => {
+              // Fallbacks if blocked
+              try { window.open(url, '_self'); } catch (_) { }
+              try { window.open(url, '_blank'); } catch (_) { }
               try {
                 const a = document.createElement('a');
-                a.href = url; a.target = '_blank'; a.rel = 'noopener';
-                document.body.appendChild(a); a.click();
-                setTimeout(() => { try { a.remove(); } catch (_) { } }, 0);
-                opened = true;
-              } catch (_) { opened = false; }
-            }
-            if (opened) break;
-          }
+                a.href = url; a.target = '_self'; a.rel = 'noopener';
+                document.body.appendChild(a); a.click(); a.remove();
+              } catch (_) { }
+              // If still here after a short delay, try the next candidate
+              setTimeout(() => tryNext(idx + 1), 500);
+            }, 120);
+          };
+          tryNext(0);
         };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
