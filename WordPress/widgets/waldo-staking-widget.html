@@ -1734,30 +1734,39 @@
         console.log('[CLEAR-ALL] NUCLEAR CLEAR: Removing ALL stakes for wallet:', wallet);
         console.log('[CLEAR-ALL] Using admin key:', adminKey ? 'PROVIDED' : 'MISSING');
 
-        // Use the nuclear clear endpoint
-        console.log('[CLEAR-ALL] Calling nuclear clear endpoint...');
-        const response = await fetch(`${API}/api/staking/admin/clear-all-stakes`, {
+        // Use the admin clear endpoint (clears ALL staking data server-side)
+        console.log('[CLEAR-ALL] Calling admin clear-staking endpoint...');
+        const response = await fetch(`${API}/api/admin/clear-staking`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-admin-key': adminKey
           },
-          body: JSON.stringify({ wallet })
+          body: JSON.stringify({})
         });
 
-        const result = await response.json();
-        console.log('Nuclear clear result:', result);
+        let result;
+        try {
+          result = await response.json();
+        } catch (e) {
+          throw new Error(`Server did not return JSON (status ${response.status}).`);
+        }
+
+        console.log('[CLEAR-ALL] Result:', result);
 
         if (result.success) {
-          alert(`✅ NUCLEAR CLEAR SUCCESSFUL!\n\n` +
-            `Deleted: ${result.deletedStakes} stakes\n` +
-            `Cleared: ${result.deletedSets} sets\n` +
-            `Stakes removed: ${result.stakeIds?.length || 0}\n\n` +
-            `Wallet ${wallet} is now completely clean!`);
+          const cats = result.categories || {};
+          alert(`✅ All staking data cleared!\n\n` +
+            `Total keys deleted: ${result.keysDeleted}\n` +
+            `- staking:* = ${cats.stakingKeys ?? 'n/a'}\n` +
+            `- user:*:long_term_stakes = ${cats.userStakeKeys ?? 'n/a'}\n` +
+            `- staking:user:* = ${cats.userStakeGenericKeys ?? 'n/a'}\n` +
+            `- staking:total_* = ${cats.stakingStatsKeys ?? 'n/a'}\n` +
+            `- stake:* = ${cats.stakingLockKeys ?? 'n/a'}`);
           // Refresh to show empty state
           await stakeLoadInfo();
         } else {
-          alert(`❌ Nuclear clear failed:\n${result.error || 'Unknown error'}`);
+          alert(`❌ Clear failed:\n${(result.error || result.details || 'Unknown error')}`);
         }
 
       } catch (error) {
