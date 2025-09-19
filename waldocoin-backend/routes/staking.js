@@ -2300,4 +2300,90 @@ router.post('/create-test-mature', async (req, res) => {
   }
 });
 
+// Admin: completely clear ALL stakes for a wallet (nuclear option)
+router.post('/admin/clear-all-stakes', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { wallet } = req.body;
+    if (!wallet || typeof wallet !== 'string' || !wallet.startsWith('r')) {
+      return res.status(400).json({ success: false, error: 'Invalid wallet' });
+    }
+
+    console.log(`[ADMIN] NUCLEAR CLEAR: Removing ALL stakes for wallet: ${wallet}`);
+
+    let deletedStakes = 0;
+    let deletedSets = 0;
+
+    // Get all stake IDs from all possible sets
+    const activeIds = await redis.sMembers(`staking:user:${wallet}`) || [];
+    const legacyIds = await redis.sMembers(`user:${wallet}:long_term_stakes`) || [];
+    const redeemedIds = await redis.sMembers(`staking:user:${wallet}:redeemed`) || [];
+    const perMemeIds = await redis.sMembers(`user:${wallet}:per_meme_stakes`) || [];
+
+    const allStakeIds = Array.from(new Set([...activeIds, ...legacyIds, ...redeemedIds, ...perMemeIds]));
+
+    console.log(`[ADMIN] Found ${allStakeIds.length} stakes to delete:`, allStakeIds);
+
+    // Delete all stake data
+    for (const stakeId of allStakeIds) {
+      try {
+        const stakeKey = `staking:${stakeId}`;
+        const exists = await redis.exists(stakeKey);
+        if (exists) {
+          await redis.del(stakeKey);
+          deletedStakes++;
+          console.log(`[ADMIN] Deleted stake: ${stakeId}`);
+        }
+      } catch (error) {
+        console.error(`[ADMIN] Error deleting stake ${stakeId}:`, error);
+      }
+    }
+
+    // Clear all user sets
+    const setsToDelete = [
+      `staking:user:${wallet}`,
+      `user:${wallet}:long_term_stakes`,
+      `staking:user:${wallet}:redeemed`,
+      `user:${wallet}:per_meme_stakes`
+    ];
+
+    for (const setKey of setsToDelete) {
+      try {
+        const count = await redis.sCard(setKey);
+        if (count > 0) {
+          await redis.del(setKey);
+          deletedSets++;
+          console.log(`[ADMIN] Deleted set: ${setKey} (had ${count} members)`);
+        }
+      } catch (error) {
+        console.error(`[ADMIN] Error deleting set ${setKey}:`, error);
+      }
+    }
+
+    // Remove from global active set
+    for (const stakeId of allStakeIds) {
+      await redis.sRem('staking:active', stakeId);
+    }
+
+    console.log(`[ADMIN] NUCLEAR CLEAR COMPLETE: ${deletedStakes} stakes deleted, ${deletedSets} sets cleared`);
+
+    return res.json({
+      success: true,
+      wallet,
+      deletedStakes,
+      deletedSets,
+      stakeIds: allStakeIds,
+      message: `Completely cleared ${deletedStakes} stakes and ${deletedSets} sets for wallet ${wallet}`
+    });
+
+  } catch (e) {
+    console.error('[ADMIN] Nuclear clear error:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 export default router;
