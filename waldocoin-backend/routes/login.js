@@ -12,11 +12,11 @@ router.get("/ping", (_, res) => {
 router.get("/", async (req, res) => {
   try {
     const returnWeb = typeof req.query.return === 'string' ? req.query.return : null;
+
+    // Use account verification instead of invalid SignIn transaction
     const payload = {
-      txjson: { TransactionType: "SignIn" },
+      user_token: true, // This requests account verification without a transaction
       options: {
-        submit: true,
-        multisign: false,
         expire: 300, // 5 minutes
         return_url: { app: "xaman://xaman.app/done", web: returnWeb }
       },
