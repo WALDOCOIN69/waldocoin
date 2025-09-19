@@ -536,8 +536,41 @@
   }
 </style>
 
-<!-- Load shared staking utilities -->
-<script src="../shared/stakingUtils.js"></script>
+<!-- Inline utility functions to avoid 404 errors -->
+<script>
+  // Utility functions (inlined to avoid path issues)
+  function calculateMaturity(endDate, bufferMs = 60 * 1000) {
+    const now = Date.now();
+    const end = new Date(endDate).getTime();
+    const timeRemaining = Math.max(0, end - now);
+
+    return {
+      isMatured: timeRemaining <= bufferMs,
+      timeRemaining,
+      daysRemaining: Math.ceil(timeRemaining / (24 * 60 * 60 * 1000)),
+      endTimestamp: end,
+      bufferMs
+    };
+  }
+
+  function formatDate(dateStr) {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString();
+    } catch (_) {
+      return dateStr || '';
+    }
+  }
+
+  function formatTime(dateStr) {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (_) {
+      return '';
+    }
+  }
+</script>
 
 <script>
   // Set API endpoint for WordPress widget
