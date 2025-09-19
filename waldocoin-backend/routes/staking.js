@@ -162,7 +162,7 @@ async function processRedemptionIfComplete(uuid) {
     }
 
     // Mark stake as completed
-    const redeemedAt = stakeData.redeemedAt || new Date().toISOString(); // Preserve existing timestamp
+    const redeemedAt = new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
@@ -956,13 +956,17 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
-      processedAt: now.toISOString(), // Time when transferred over to claimed section
+      unstakedAt: currentStakeData.unstakedAt || now.toISOString(), // Preserve existing timestamp
+      processedAt: currentStakeData.processedAt || now.toISOString(), // Preserve existing timestamp
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
       claimed: 'true',
-      unstakeTx: actualTxid
+      unstakeTx: actualTxid,
+      // For early unlocks: rewardAmount is negative penalty, totalReceived is what user got
+      rewardAmount: (-penalty).toString(),
+      totalReceived: userReceives.toString(),
+      originalAmount: originalAmount.toString()
     });
 
     console.log(`[UNSTAKE-STATUS] Updated stake record: ${stakeId} -> completed`);
@@ -1878,7 +1882,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     }
 
     // Mark stake as completed since Payment was successful
-    const redeemedAt = stakeData.redeemedAt || new Date().toISOString(); // Preserve existing timestamp
+    const redeemedAt = new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
