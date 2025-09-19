@@ -815,43 +815,11 @@
 
 
         // Separate mature redemptions from early claims
-        // DEBUGGING: Let's see exactly what data we're getting
-        console.log('=== RAW REDEEMED STAKES DATA ===');
-        redeemedStakes.forEach((s, i) => {
-          if (i < 5) { // Only show first 5 to avoid spam
-            console.log(`Stake ${i + 1}:`, {
-              stakeId: s.stakeId,
-              amount: s.amount,
-              originalAmount: s.originalAmount,
-              rewardAmount: s.rewardAmount,
-              totalReceived: s.totalReceived,
-              penalty: s.penalty,
-              userReceives: s.userReceives,
-              status: s.status,
-              isEarlyUnstake: s.isEarlyUnstake,
-              unstakeTx: s.unstakeTx,
-              redeemTx: s.redeemTx,
-              unstakedAt: s.unstakedAt,
-              redeemedAt: s.redeemedAt,
-              processedAt: s.processedAt
-            });
-          }
-        });
-
-        // SIMPLE filtering: If it has unstakeTx OR negative rewardAmount, it's early unlock
-        const earlyClaims = redeemedStakes.filter(s => {
-          const hasUnstakeTx = !!s.unstakeTx;
-          const hasNegativeReward = s.rewardAmount && parseFloat(s.rewardAmount) < 0;
-
-          const isEarly = hasUnstakeTx || hasNegativeReward;
-
-          // Minimal debug logging
-
-          return isEarly;
-        });
-
-        // Mature redemptions are everything else
-        const matureRedemptions = redeemedStakes.filter(s => !earlyClaims.includes(s));
+        // SIMPLE FIX: Use status to determine type
+        // 'completed' = early unlock (with penalty)
+        // 'redeemed' = mature redemption (with rewards)
+        const earlyClaims = redeemedStakes.filter(s => s.status === 'completed');
+        const matureRedemptions = redeemedStakes.filter(s => s.status === 'redeemed');
 
         // Sort both lists by most recent first (newest at top)
         const sortByMostRecent = (a, b) => {
