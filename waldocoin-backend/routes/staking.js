@@ -956,17 +956,13 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: currentStakeData.unstakedAt || now.toISOString(), // PRESERVE EXISTING
-      processedAt: currentStakeData.processedAt || now.toISOString(), // PRESERVE EXISTING
+      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
+      processedAt: now.toISOString(), // Time when transferred over to claimed section
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
       claimed: 'true',
-      unstakeTx: actualTxid,
-      // Required fields for display
-      rewardAmount: (-penalty).toString(),
-      totalReceived: userReceives.toString(),
-      originalAmount: originalAmount.toString()
+      unstakeTx: actualTxid
     });
 
     console.log(`[UNSTAKE-STATUS] Updated stake record: ${stakeId} -> completed`);
@@ -1589,18 +1585,22 @@ router.get('/positions/:wallet', async (req, res) => {
           if (stakeData && Object.keys(stakeData).length > 0) {
             positions.push({
               stakeId: stakeData.stakeId || stakeId,
-              amount: parseInt(stakeData.amount || 0),
+              amount: parseFloat(stakeData.amount || 0),
               duration: parseInt(stakeData.duration || 30),
               apy: parseFloat(stakeData.apy || 12),
-              expectedReward: parseInt(stakeData.expectedReward || 0),
-              startDate: stakeData.startDate || new Date().toISOString(),
-              endDate: stakeData.endDate || new Date().toISOString(),
+              expectedReward: parseFloat(stakeData.expectedReward || 0),
+              startDate: stakeData.startDate || null,
+              endDate: stakeData.endDate || null,
               status: stakeData.status || 'redeemed',
-              redeemedAt: stakeData.redeemedAt || new Date().toISOString(),
+              // Do NOT default timestamps to now() — preserve what's stored
+              redeemedAt: stakeData.redeemedAt || null,
+              unstakedAt: stakeData.unstakedAt || null,
+              processedAt: stakeData.processedAt || null,
+              completedAt: stakeData.completedAt || null,
               redeemTx: stakeData.redeemTx || '',
-              totalReceived: parseFloat(stakeData.totalReceived || stakeData.amount || 0),
-              originalAmount: parseFloat(stakeData.originalAmount || stakeData.amount || 0),
-              rewardAmount: parseFloat(stakeData.rewardAmount || stakeData.expectedReward || 0),
+              totalReceived: parseFloat((stakeData.totalReceived ?? stakeData.amount) || 0),
+              originalAmount: parseFloat((stakeData.originalAmount ?? stakeData.amount) || 0),
+              rewardAmount: parseFloat((stakeData.rewardAmount ?? stakeData.expectedReward) || 0),
               daysRemaining: 0 // Already redeemed
             });
             seen.add(stakeId);
