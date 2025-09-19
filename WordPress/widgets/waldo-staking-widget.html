@@ -1067,8 +1067,8 @@
       if (root) root.innerHTML = earlyClaimed.map(s => {
         // This function only handles early claims (already filtered)
 
-        // DEBUG: Log timestamp fields for early unlocks
-        console.log(`[EARLY-TIMESTAMP] ${s.stakeId}:`, {
+        // DEBUG: Log timestamp fields for early unlocks with alert to make it visible
+        console.warn(`🔴 EARLY-TIMESTAMP ${s.stakeId}:`, {
           unstakedAt: s.unstakedAt,
           processedAt: s.processedAt,
           completedAt: s.completedAt,
@@ -1135,8 +1135,8 @@
       if (root) root.innerHTML = redeemed.map(s => {
         // This function now only handles mature redemptions (already filtered)
 
-        // DEBUG: Log timestamp fields for mature redemptions
-        console.log(`[MATURE-TIMESTAMP] ${s.stakeId}:`, {
+        // DEBUG: Log timestamp fields for mature redemptions with alert to make it visible
+        console.warn(`🟢 MATURE-TIMESTAMP ${s.stakeId}:`, {
           redeemedAt: s.redeemedAt,
           unstakedAt: s.unstakedAt,
           processedAt: s.processedAt,
