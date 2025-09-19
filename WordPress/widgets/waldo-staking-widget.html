@@ -644,13 +644,21 @@
         }
       }
 
-      const deep = payload?.qr_uri || payload?.refs?.qr_uri || payload?.deeplink ||
-        (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.always || payload?.next?.app || payload?.refs?.qr || ''));
+      // Debug: log the payload structure to see what we're getting
+      console.log('XUMM Login Payload received:', payload);
+
+      // Extract deep link - try multiple possible field locations
+      const deep = payload?.next?.always || payload?.next?.app || payload?.refs?.qr_uri || payload?.qr_uri || payload?.deeplink ||
+        (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.refs?.qr || ''));
       const qrImg = payload?.refs?.qr_png || payload?.qr_png || payload?.refs?.qr || payload?.qr || '';
+
+      // Extract UUID from payload or deep link
+      const uuid = payload?.uuid || (String(deep || '').match(/sign\/([a-z0-9-]+)/i)?.[1] || '');
+
+      console.log('Deep link extracted:', { deep, uuid, qrImg });
 
       // Prefer native app scheme on mobile (works better from iframes/in-app browsers)
       const deepStr = String(deep || '');
-      const uuid = payload?.uuid || (deepStr.match(/sign\/([a-z0-9-]+)/i)?.[1] || '');
       let appDeep = '';
       if (/^(xumm|xaman):\/\//i.test(deepStr)) {
         appDeep = deepStr;
@@ -659,14 +667,30 @@
       }
       const appDeepAlt = uuid ? `xaman://sign/${uuid}` : '';
 
+      console.log('Mobile deep links:', { appDeep, appDeepAlt, deepStr });
+
       M.style.display = 'block';
       if (isMobile()) {
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
         B.onclick = () => {
+          // Build candidate URLs with fallbacks
           const urls = [appDeep, appDeepAlt, deepStr].filter(Boolean);
+
+          // If we still don't have any URLs but have a UUID, construct them manually
+          if (urls.length === 0 && uuid) {
+            urls.push(`xumm://sign/${uuid}`, `xaman://sign/${uuid}`, `https://xumm.app/sign/${uuid}`);
+          }
+
+          console.log('Trying to open URLs:', urls);
+
           const tryNext = (idx) => {
-            if (idx >= urls.length) return;
+            if (idx >= urls.length) {
+              console.error('All deep link attempts failed');
+              return;
+            }
             const url = urls[idx];
+            console.log(`Attempting to open: ${url}`);
+
             // Best chance first: direct navigation
             try { window.location.href = url; } catch (_) { }
             setTimeout(() => {
