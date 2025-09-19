@@ -956,13 +956,17 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
-      processedAt: now.toISOString(), // Time when transferred over to claimed section
+      unstakedAt: currentStakeData.unstakedAt || now.toISOString(), // PRESERVE EXISTING
+      processedAt: currentStakeData.processedAt || now.toISOString(), // PRESERVE EXISTING
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
       claimed: 'true',
-      unstakeTx: actualTxid
+      unstakeTx: actualTxid,
+      // Required fields for display
+      rewardAmount: (-penalty).toString(),
+      totalReceived: userReceives.toString(),
+      originalAmount: originalAmount.toString()
     });
 
     console.log(`[UNSTAKE-STATUS] Updated stake record: ${stakeId} -> completed`);
@@ -2293,62 +2297,6 @@ router.post('/create-test-mature', async (req, res) => {
       success: false,
       error: "Failed to create test mature stake"
     });
-  }
-});
-
-// Admin endpoint to clear all stakes for a wallet
-router.post('/admin/clear-all-stakes', async (req, res) => {
-  try {
-    const { wallet } = req.body;
-    const adminKey = req.headers['x-admin-key'];
-
-    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
-      return res.status(403).json({ success: false, error: 'Invalid admin key' });
-    }
-
-    if (!wallet) {
-      return res.status(400).json({ success: false, error: 'Wallet required' });
-    }
-
-    console.log(`[ADMIN] Nuclear clear requested for wallet: ${wallet}`);
-
-    // Get all stake IDs for this wallet
-    const activeStakes = await redis.sMembers(`user:${wallet}:long_term_stakes`);
-    const redeemedStakes = await redis.sMembers(`staking:user:${wallet}:redeemed`);
-    const allStakeIds = [...activeStakes, ...redeemedStakes];
-
-    console.log(`[ADMIN] Found ${allStakeIds.length} stakes to delete`);
-
-    // Delete all stake records
-    let deletedStakes = 0;
-    for (const stakeId of allStakeIds) {
-      await redis.del(`staking:${stakeId}`);
-      deletedStakes++;
-    }
-
-    // Clear all sets
-    await redis.del(`user:${wallet}:long_term_stakes`);
-    await redis.del(`staking:user:${wallet}`);
-    await redis.del(`staking:user:${wallet}:redeemed`);
-
-    // Remove from global active set
-    for (const stakeId of allStakeIds) {
-      await redis.sRem('staking:active', stakeId);
-    }
-
-    console.log(`[ADMIN] Nuclear clear complete: ${deletedStakes} stakes deleted`);
-
-    res.json({
-      success: true,
-      deletedStakes,
-      deletedSets: 3,
-      stakeIds: allStakeIds,
-      message: `Cleared all stakes for wallet ${wallet}`
-    });
-
-  } catch (error) {
-    console.error('[ADMIN] Nuclear clear error:', error);
-    res.status(500).json({ success: false, error: error.message });
   }
 });
 
