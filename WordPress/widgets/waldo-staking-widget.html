@@ -1067,6 +1067,14 @@
       if (root) root.innerHTML = earlyClaimed.map(s => {
         // This function only handles early claims (already filtered)
 
+        // DEBUG: Log timestamp fields for early unlocks
+        console.log(`[EARLY-TIMESTAMP] ${s.stakeId}:`, {
+          unstakedAt: s.unstakedAt,
+          processedAt: s.processedAt,
+          completedAt: s.completedAt,
+          redeemedAt: s.redeemedAt
+        });
+
         // Try multiple timestamp fields for completion date
         const completionDate = s.unstakedAt || s.processedAt || s.completedAt || s.redeemedAt;
         let dateTime = null;
@@ -1126,6 +1134,14 @@
       if (block) block.style.display = 'block';
       if (root) root.innerHTML = redeemed.map(s => {
         // This function now only handles mature redemptions (already filtered)
+
+        // DEBUG: Log timestamp fields for mature redemptions
+        console.log(`[MATURE-TIMESTAMP] ${s.stakeId}:`, {
+          redeemedAt: s.redeemedAt,
+          unstakedAt: s.unstakedAt,
+          processedAt: s.processedAt,
+          completedAt: s.completedAt
+        });
 
         // Try multiple timestamp fields for completion date
         const completionDate = s.redeemedAt || s.unstakedAt || s.processedAt || s.completedAt;
