@@ -13,21 +13,18 @@ router.get("/", async (req, res) => {
   try {
     const returnWeb = typeof req.query.return === 'string' ? req.query.return : null;
 
-    // Use a minimal AccountSet transaction for authentication (no actual changes)
+    // Use XUMM/Xaman SignIn flow so the app shows a proper "Sign in" request
     const payload = {
-      txjson: {
-        TransactionType: "AccountSet",
-        // No flags = no changes, just a signature for authentication
-      },
+      txjson: { TransactionType: "SignIn" },
       options: {
-        submit: false, // Don't submit to ledger, just get signature for auth
+        submit: false,
         multisign: false,
         expire: 300, // 5 minutes
         return_url: { app: "xaman://xaman.app/done", web: returnWeb }
       },
       custom_meta: {
         identifier: "WALDOCOIN_LOGIN",
-        instruction: "Sign to connect your wallet to WALDOCOIN"
+        instruction: "Sign in to connect your wallet to WALDOCOIN"
       }
     };
 
