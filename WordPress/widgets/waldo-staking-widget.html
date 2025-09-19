@@ -573,6 +573,9 @@
 </script>
 
 <script>
+  // Track in-flight actions to prevent double-submits
+  window.PENDING = window.PENDING || { redeem: new Set(), unstake: new Set() };
+
   // Set API endpoint for WordPress widget
   // Map to parent fallbacks when embedded via iframe and local handlers are missing
   try {
@@ -645,23 +648,46 @@
         (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.next?.always || payload?.next?.app || payload?.refs?.qr || ''));
       const qrImg = payload?.refs?.qr_png || payload?.qr_png || payload?.refs?.qr || payload?.qr || '';
 
+      // Prefer native app scheme on mobile (works better from iframes/in-app browsers)
+      const deepStr = String(deep || '');
+      const uuid = payload?.uuid || (deepStr.match(/sign\/([a-z0-9-]+)/i)?.[1] || '');
+      let appDeep = '';
+      if (/^(xumm|xaman):\/\//i.test(deepStr)) {
+        appDeep = deepStr;
+      } else if (uuid) {
+        appDeep = `xumm://sign/${uuid}`;
+      }
+      const appDeepAlt = uuid ? `xaman://sign/${uuid}` : '';
+
       M.style.display = 'block';
       if (isMobile()) {
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
         B.onclick = () => {
-          if (deep) {
-            try { window.location.href = deep; } catch (_) { }
-            setTimeout(() => { try { window.open(deep, '_self'); } catch (_) { } }, 150);
+          const candidates = [appDeep, appDeepAlt, deepStr];
+          for (const url of candidates) {
+            if (!url) continue;
+            let opened = false;
+            try { const w = window.open(url, '_blank'); opened = !!w; } catch (_) { opened = false; }
+            if (!opened) {
+              try {
+                const a = document.createElement('a');
+                a.href = url; a.target = '_blank'; a.rel = 'noopener';
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { try { a.remove(); } catch (_) { } }, 0);
+                opened = true;
+              } catch (_) { opened = false; }
+            }
+            if (opened) break;
           }
         };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
-        if (link) { if (deep) { link.href = deep; link.style.display = 'inline-block'; } else { link.style.display = 'none'; } }
+        if (link) { if (deepStr) { link.href = deepStr; link.style.display = 'inline-block'; } else { link.style.display = 'none'; } }
         if (qrImg) {
-          QR.onerror = () => { if (deep) QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deep)}`; };
+          QR.onerror = () => { if (deepStr) QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deepStr)}`; };
           QR.src = qrImg;
-        } else if (deep) {
-          QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deep)}`;
+        } else if (deepStr) {
+          QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deepStr)}`;
         } else {
           QR.src = '';
         }
@@ -674,8 +700,10 @@
       try {
         const r = await fetch(`${API}/api/login`);
         const j = await r.json();
+        try { if (j?.uuid) localStorage.setItem('waldo_login_uuid', j.uuid); } catch (_) { }
         xummOpenStake('Connect Xaman', j);
         startLoginStatusPoll(j.uuid, async (s) => {
+          try { localStorage.removeItem('waldo_login_uuid'); } catch (_) { }
           WALLET = s?.account || WALLET;
           const status = document.getElementById('stakeConnStatus');
           if (status) status.textContent = WALLET ? `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}` : 'Connected';
@@ -705,9 +733,106 @@
             xummCloseStake();
           }
           if (tries > 180) { clearInterval(iv); }
-        } catch (_) { clearInterval(iv); }
+        } catch (_) { /* ignore transient errors to keep polling */ }
+
+
+
       }, 1000);
     }
+
+    // Resume login if user returns from Xaman and the page was backgrounded/reloaded
+    async function resumeLoginIfNeeded() {
+      try {
+        const uuid = localStorage.getItem('waldo_login_uuid');
+        if (!uuid) return;
+        const s = await fetch(`${API}/api/login/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
+        const j = await s.json();
+        if (j?.signed) {
+          try { localStorage.removeItem('waldo_login_uuid'); } catch (_) { }
+          WALLET = j?.account || WALLET;
+          const status = document.getElementById('stakeConnStatus');
+          if (status) status.textContent = WALLET ? `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}` : 'Connected';
+          const btn = document.getElementById('btnStakeDisconnect'); if (btn) btn.style.display = 'inline-block';
+          try { await stakeLoadInfo(); } catch (_) { }
+          try { xummCloseStake(); } catch (_) { }
+        }
+      } catch (_) { /* ignore */ }
+    }
+
+    // When tab becomes visible again, attempt to resume
+    try { document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resumeLoginIfNeeded(); }); } catch (_) { }
+    // One-time check shortly after load in case the browser killed background timers
+    try { setTimeout(resumeLoginIfNeeded, 1200); } catch (_) { }
+
+
+    // Resume Xaman operations (trustline, lock, redeem, early unlock) when returning from the app
+    async function resumeXummOpsIfNeeded() {
+      if (window._resumeOpsRunning) return;
+      window._resumeOpsRunning = true;
+      try {
+        const msg = document.getElementById('ltMsg');
+
+        // Long-term lock
+        try {
+          const lockUuid = localStorage.getItem('waldo_lock_uuid');
+          if (lockUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Resuming lock confirmation...';
+            startStakeStatusPoll(lockUuid, async () => {
+              try { localStorage.removeItem('waldo_lock_uuid'); } catch (_) { }
+              if (msg) msg.textContent = 'Lock confirmed on‑ledger ✔';
+              try { await stakeLoadInfo(); } catch (_) { }
+              try { xummCloseStake(); } catch (_) { }
+            });
+          }
+        } catch (_) { }
+
+        // Early unlock
+        try {
+          const unstakeUuid = localStorage.getItem('waldo_unstake_uuid');
+          if (unstakeUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Resuming unlock...';
+            startUnstakeStatusPoll(unstakeUuid, async () => {
+              try { localStorage.removeItem('waldo_unstake_uuid'); } catch (_) { }
+              if (msg) msg.textContent = 'Unlocked ✔ — WALDO sent back';
+              try { xummCloseStake(); } catch (_) { }
+              try { await stakeLoadInfo(); } catch (_) { }
+            });
+          }
+        } catch (_) { }
+
+        // Redeem
+        try {
+          const redeemUuid = localStorage.getItem('waldo_redeem_uuid');
+          if (redeemUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Resuming redemption...';
+            startRedeemStatusPoll(redeemUuid, async () => {
+              try { localStorage.removeItem('waldo_redeem_uuid'); } catch (_) { }
+              if (msg) msg.textContent = 'Redeemed ✔ — WALDO sent back';
+              try { xummCloseStake(); } catch (_) { }
+              try { await stakeLoadInfo(); } catch (_) { }
+            });
+          }
+        } catch (_) { }
+
+        // Trustline (no UUID status poll; refresh account state)
+        try {
+          const trustUuid = localStorage.getItem('waldo_trust_uuid');
+          if (trustUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Checking trustline...';
+            try { await stakeLoadInfo(); } catch (_) { }
+            try { localStorage.removeItem('waldo_trust_uuid'); } catch (_) { }
+            try { xummCloseStake(); } catch (_) { }
+          }
+        } catch (_) { }
+      } finally {
+        window._resumeOpsRunning = false;
+      }
+    }
+
+    // Hook resume handler on visibility change and shortly after load
+    try { document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resumeXummOpsIfNeeded(); }); } catch (_) { }
+    try { setTimeout(resumeXummOpsIfNeeded, 1500); } catch (_) { }
+
     window.stakeDisconnect = function () {
       WALLET = ''; CURRENT_BAL = 0;
       const w = document.getElementById('stakeWallet'); if (w) w.value = '';
@@ -741,6 +866,7 @@
         const r = await fetch(`${API}/api/xrpl/trustline/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Trustline failed');
+        try { if (j?.uuid) localStorage.setItem('waldo_trust_uuid', j.uuid); } catch (_) { }
         xummOpenStake('Add WALDO Trustline', j);
       } catch (e) { alert('Trustline error: ' + e.message); }
     }
@@ -1045,7 +1171,9 @@
           </div>
           <div class="meta">Locked ${s.duration}d • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO</div>
           <div class="meta">Started: ${fmtDate(s.startDate)} ${fmtTime(s.startDate)} • Matured: ${fmtDate(s.endDate)} ${fmtTime(s.endDate)}</div>
-          <div class="actions"><button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button></div>
+          <div class="actions">
+            <button class="btn buy" data-stake-id="${s.stakeId}" ${(window.PENDING && window.PENDING.redeem && window.PENDING.redeem.has(s.stakeId)) ? 'disabled' : ''} onclick="stakeRedeem('${s.stakeId}', this)">Redeem</button>
+          </div>
         </div>
       `).join('');
     }
@@ -1204,9 +1332,10 @@
         const r = await fetch(`${API}/api/staking/long-term`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur }) });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Lock failed');
+        try { if (j?.uuid) localStorage.setItem('waldo_lock_uuid', j.uuid); } catch (_) { }
         msg.textContent = `Sign in Xaman to lock ${amt} WALDO for ${dur} days...`;
         xummOpenStake('Long‑term Lock', j);
-        if (j.uuid) startStakeStatusPoll(j.uuid, async () => { msg.textContent = 'Lock confirmed on‑ledger ✔'; await stakeLoadInfo(); });
+        if (j.uuid) startStakeStatusPoll(j.uuid, async () => { try { localStorage.removeItem('waldo_lock_uuid'); } catch (_) { } msg.textContent = 'Lock confirmed on‑ledger ✔'; await stakeLoadInfo(); });
       } catch (e) { msg.textContent = 'Error: ' + e.message; }
     }
 
@@ -1337,6 +1466,7 @@
 
         // Otherwise proceed with XUMM QR flow
         msg.textContent = 'Sign in Xaman to unlock your WALDO...';
+        try { if (j?.uuid) localStorage.setItem('waldo_unstake_uuid', j.uuid); } catch (_) { }
         if (typeof xummOpenStake === 'function') {
           xummOpenStake('Early Unlock', j);
         }
@@ -1392,6 +1522,7 @@
             // Transaction completed successfully
             console.log('[UNSTAKE-POLL] Unstake completed successfully!');
             clearInterval(pollInterval);
+            try { localStorage.removeItem('waldo_unstake_uuid'); } catch (_) { }
             xummCloseStake();
             if (onSuccess) onSuccess(status);
             return;
@@ -1424,12 +1555,15 @@
 
 
     // Redeem (maturity only, long-term visible here)
-    window.stakeRedeem = async function (stakeId) {
+    window.stakeRedeem = async function (stakeId, btnEl) {
+      try { if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Processing…'; } } catch (_) { }
+      try { window.PENDING?.redeem?.add(stakeId); } catch (_) { }
       const msg = document.getElementById('ltMsg');
       try {
         const r = await fetch(`${API}/api/staking/redeem`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'Redeem init failed');
+        try { if (j?.uuid) localStorage.setItem('waldo_redeem_uuid', j.uuid); } catch (_) { }
         msg.textContent = 'Sign in Xaman to redeem your WALDO + bonus...';
         xummOpenStake('Redeem Stake', j);
 
@@ -1448,6 +1582,9 @@
             }
           }, 1000);
         });
+
+        // Optimistic: remove from Ready list immediately to prevent double-clicks
+        try { await stakeLoadInfo(); } catch (_) { }
 
         // Add 15-second fallback timeout for CORS issues
         setTimeout(async () => {
@@ -1655,12 +1792,14 @@
           if (j?.signed) {
             if (j?.error === 'missing_sender_secret') {
               clearInterval(iv);
+              try { localStorage.removeItem('waldo_redeem_uuid'); } catch (_) { }
               if (msg) msg.textContent = 'Signed, but payout is not configured (admin: set WALDO_SENDER_SECRET or WALDO_DISTRIBUTOR_SECRET)';
               xummCloseStake();
               return;
             }
             if (j?.paid) {
               clearInterval(iv);
+              try { localStorage.removeItem('waldo_redeem_uuid'); } catch (_) { }
               try { onDone && onDone(j); } catch (_) { }
               xummCloseStake();
               return;
@@ -1701,7 +1840,7 @@
         try {
           const s = await fetch(`${API}/api/staking/status/${encodeURIComponent(uuid)}`);
           const j = await s.json();
-          if (j?.signed && j?.activated) { clearInterval(iv); try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
+          if (j?.signed && j?.activated) { clearInterval(iv); try { localStorage.removeItem('waldo_lock_uuid'); } catch (_) { } try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
           if (tries > 180) { clearInterval(iv); }
         } catch (_) { /* ignore */ }
       }, 2000);
