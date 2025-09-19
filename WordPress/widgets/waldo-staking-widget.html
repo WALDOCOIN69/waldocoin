@@ -677,50 +677,34 @@
           ].filter(Boolean)));
 
           const tryOpen = (url) => {
-            let attempted = false;
-            try {
-              // Prefer top-level navigation to escape iframes/in-app browsers
-              if (window.top && window.top !== window) {
-                try { window.top.location.href = url; attempted = true; } catch (_) { }
-              }
-              if (!attempted) { window.location.href = url; attempted = true; }
-            } catch (_) { }
-
-            // Also try <a target="_top"> for stricter environments
-            try {
-              const a = document.createElement('a');
-              a.href = url; a.target = '_top'; a.rel = 'noopener';
-              document.body.appendChild(a); a.click(); a.remove();
-            } catch (_) { }
-
-            // iOS fallback: hidden iframe scheme attempt
+            let opened = false;
+            // Best: open in a new context to keep this page alive
+            try { const w = window.open(url, '_blank'); opened = !!w; } catch (_) { opened = false; }
+            if (!opened) {
+              try {
+                const a = document.createElement('a');
+                a.href = url; a.target = '_blank'; a.rel = 'noopener';
+                document.body.appendChild(a); a.click(); a.remove();
+                opened = true;
+              } catch (_) { opened = false; }
+            }
+            // iOS fallback: hidden iframe scheme (doesn't navigate away)
             try {
               const iframe = document.createElement('iframe');
               iframe.style.display = 'none';
               iframe.src = url;
               document.body.appendChild(iframe);
-              setTimeout(() => { try { document.body.removeChild(iframe); } catch (_) { } }, 1500);
+              setTimeout(() => { try { document.body.removeChild(iframe); } catch (_) { } }, 1200);
             } catch (_) { }
           };
 
           // Sequentially try schemes; if the page didn't background, try next
           let idx = 0;
           const startVisibility = document.visibilityState;
-          const step = () => {
-            if (idx >= urls.length) {
-              alert('Could not open Xaman app. Please make sure Xaman is installed.');
-              return;
-            }
-            const url = urls[idx++];
-            tryOpen(url);
-            setTimeout(() => {
-              if (document.visibilityState === 'visible' && startVisibility === 'visible') {
-                step(); // try next scheme
-              }
-              // If visibility is hidden, the app likely opened
-            }, 1200);
-          };
-          step();
+          // Try the best candidate only to keep the page/tab alive
+          const best = urls[0];
+          tryOpen(best);
+          // If nothing happens, user can tap again (we keep the page open)
         };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
