@@ -956,20 +956,29 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: currentStakeData.unstakedAt || now.toISOString(), // Preserve existing timestamp
-      processedAt: currentStakeData.processedAt || now.toISOString(), // Preserve existing timestamp
+      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
+      processedAt: now.toISOString(), // Time when transferred over to claimed section
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
       claimed: 'true',
-      unstakeTx: actualTxid,
-      // CRITICAL: Store correct amounts for early unlock display
-      rewardAmount: (-penalty).toString(), // Negative penalty for display
-      totalReceived: userReceives.toString(), // What user actually got
-      originalAmount: originalAmount.toString() // Original stake amount
+      unstakeTx: actualTxid
     });
 
     console.log(`[UNSTAKE-STATUS] Updated stake record: ${stakeId} -> completed`);
+
+    // DEBUGGING: Log exactly what we stored
+    const storedData = await redis.hGetAll(`staking:${stakeId}`);
+    console.log(`[DEBUG] Stored early unlock data for ${stakeId}:`, {
+      status: storedData.status,
+      isEarlyUnstake: storedData.isEarlyUnstake,
+      penalty: storedData.penalty,
+      rewardAmount: storedData.rewardAmount,
+      totalReceived: storedData.totalReceived,
+      originalAmount: storedData.originalAmount,
+      userReceives: storedData.userReceives,
+      unstakeTx: storedData.unstakeTx
+    });
 
     // Remove from active stake sets
     await redis.sRem(`user:${wallet}:long_term_stakes`, stakeId);
@@ -1882,7 +1891,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     }
 
     // Mark stake as completed since Payment was successful
-    const redeemedAt = stakeData.redeemedAt || stakeData.unstakedAt || new Date().toISOString(); // Preserve existing timestamp
+    const redeemedAt = new Date().toISOString();
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
@@ -1890,7 +1899,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     await redis.hSet(stakeKey, {
       status: 'redeemed',
       redeemedAt: redeemedAt, // Time when moved to "Recently Redeemed"
-      processedAt: stakeData.processedAt || redeemedAt, // Preserve existing processedAt timestamp
+      processedAt: redeemedAt, // Time when transferred over to claimed section
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),
@@ -1912,6 +1921,18 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     const redeemedList = await redis.sMembers(`staking:user:${wallet}:redeemed`);
     console.log(`[REDEEM-STATUS] Wallet ${wallet} now has ${redeemedCount} redeemed stakes:`, redeemedList);
     console.log(`[REDEEM-STATUS] Stake ${stakeId} status is now: ${stakeData.status} -> redeemed`);
+
+    // DEBUGGING: Log exactly what we stored for mature redemption
+    const storedData = await redis.hGetAll(stakeKey);
+    console.log(`[DEBUG] Stored mature redemption data for ${stakeId}:`, {
+      status: storedData.status,
+      rewardAmount: storedData.rewardAmount,
+      totalReceived: storedData.totalReceived,
+      originalAmount: storedData.originalAmount,
+      redeemedAt: storedData.redeemedAt,
+      processedAt: storedData.processedAt,
+      redeemTx: storedData.redeemTx
+    });
 
     // Update stats
     const amt = Number(stakeData.amount || 0);

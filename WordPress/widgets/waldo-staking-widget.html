@@ -815,7 +815,28 @@
 
 
         // Separate mature redemptions from early claims
-        // Clean filtering without excessive debug logging
+        // DEBUGGING: Let's see exactly what data we're getting
+        console.log('=== RAW REDEEMED STAKES DATA ===');
+        redeemedStakes.forEach((s, i) => {
+          if (i < 5) { // Only show first 5 to avoid spam
+            console.log(`Stake ${i + 1}:`, {
+              stakeId: s.stakeId,
+              amount: s.amount,
+              originalAmount: s.originalAmount,
+              rewardAmount: s.rewardAmount,
+              totalReceived: s.totalReceived,
+              penalty: s.penalty,
+              userReceives: s.userReceives,
+              status: s.status,
+              isEarlyUnstake: s.isEarlyUnstake,
+              unstakeTx: s.unstakeTx,
+              redeemTx: s.redeemTx,
+              unstakedAt: s.unstakedAt,
+              redeemedAt: s.redeemedAt,
+              processedAt: s.processedAt
+            });
+          }
+        });
 
         // SIMPLE filtering: If it has unstakeTx OR negative rewardAmount, it's early unlock
         const earlyClaims = redeemedStakes.filter(s => {
