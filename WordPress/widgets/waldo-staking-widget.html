@@ -826,6 +826,16 @@
         // Mature redemptions are everything else
         const matureRedemptions = redeemedStakes.filter(s => !earlyClaims.includes(s));
 
+        // Sort both lists by most recent first (newest at top)
+        const sortByMostRecent = (a, b) => {
+          const timeA = new Date(a.unstakedAt || a.redeemedAt || a.processedAt || 0).getTime();
+          const timeB = new Date(b.unstakedAt || b.redeemedAt || b.processedAt || 0).getTime();
+          return timeB - timeA; // Descending order (newest first)
+        };
+
+        earlyClaims.sort(sortByMostRecent);
+        matureRedemptions.sort(sortByMostRecent);
+
         console.log('[DEBUG] Mature redemptions:', matureRedemptions.length);
         console.log('[DEBUG] Early claims:', earlyClaims.length);
 
