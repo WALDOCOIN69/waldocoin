@@ -302,6 +302,14 @@
     border-color: rgba(255, 184, 121, .25)
   }
 
+  .badge.early-unlock {
+    background: linear-gradient(90deg, #2a0f0f, #4a1313);
+    color: #ff7979;
+    box-shadow: 0 0 12px rgba(255, 121, 121, .18);
+    border-color: rgba(255, 121, 121, .25);
+    font-weight: bold;
+  }
+
   /* Color-coded countdown based on time remaining */
   .countdown {
     font-weight: bold;
@@ -861,6 +869,15 @@
           console.log('[DEBUG] Is in mature redemptions?', matureRedemptions.includes(problematicStake));
         }
 
+        // Debug transaction links
+        console.log('[DEBUG] Transaction fields for first few stakes:', redeemedStakes.slice(0, 3).map(s => ({
+          stakeId: s.stakeId,
+          redeemTx: s.redeemTx,
+          unstakeTx: s.unstakeTx,
+          txid: s.txid,
+          hasAnyTx: !!(s.redeemTx || s.unstakeTx || s.txid)
+        })));
+
 
 
         renderLongTerm(activeStakes);
@@ -1092,9 +1109,9 @@
         const rewardAmount = -penalty; // Show as negative penalty
         const totalReceived = originalAmount - penalty; // What user actually received
         const actionText = `Early unlock on ${dateStr} at ${timeStr}`;
-        const badgeText = '⚠️ Early Unlock';
+        const badgeText = 'EARLY UNLOCK';
 
-        const explorerLink = s.redeemTx || s.unstakeTx;
+        const explorerLink = s.unstakeTx || s.redeemTx || s.txid;
         const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
 
         // No NEW badge logic - removed for simplicity
@@ -1103,7 +1120,7 @@
         <div class="stake-item">
           <div class="item-head">
             <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
-            <span class="badge warning">${badgeText}</span>
+            <span class="badge early-unlock">${badgeText}</span>
           </div>
           <div class="meta">
             ${actionText} • ${s.duration}d lock • ${s.apy}% APY
@@ -1153,7 +1170,7 @@
         const actionText = `Redeemed on ${dateStr} at ${timeStr}`;
         const badgeText = '✅ Redeemed';
 
-        const explorerLink = s.redeemTx || s.unstakeTx;
+        const explorerLink = s.redeemTx || s.unstakeTx || s.txid;
         const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
 
         // No NEW badge logic - removed for simplicity
