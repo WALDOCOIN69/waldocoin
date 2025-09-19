@@ -815,38 +815,16 @@
 
 
         // Separate mature redemptions from early claims
-        console.log('[DEBUG] All redeemed stakes:', redeemedStakes.map(s => ({
-          stakeId: s.stakeId,
-          status: s.status,
-          isEarlyUnstake: s.isEarlyUnstake,
-          penalty: s.penalty,
-          amount: s.amount
-        })));
+        // Clean filtering without excessive debug logging
 
-        // Fix filtering: Check for early unlock indicators regardless of status
+        // SIMPLE filtering: If it has unstakeTx OR negative rewardAmount, it's early unlock
         const earlyClaims = redeemedStakes.filter(s => {
-          const hasNegativeReward = s.rewardAmount && parseFloat(s.rewardAmount) < 0;
-          const hasPenalty = s.penalty && parseFloat(s.penalty) > 0;
           const hasUnstakeTx = !!s.unstakeTx;
-          const isMarkedEarly = s.isEarlyUnstake === 'true' || s.isEarlyUnstake === true;
+          const hasNegativeReward = s.rewardAmount && parseFloat(s.rewardAmount) < 0;
 
-          const isEarly = isMarkedEarly || hasPenalty || hasUnstakeTx || hasNegativeReward;
+          const isEarly = hasUnstakeTx || hasNegativeReward;
 
-          // Debug each stake's classification
-          if (s.amount && parseFloat(s.amount) > 70000) {
-            console.log(`[DEBUG] Stake ${s.stakeId} (${s.amount} WALDO):`, {
-              isEarlyUnstake: s.isEarlyUnstake,
-              penalty: s.penalty,
-              rewardAmount: s.rewardAmount,
-              unstakeTx: s.unstakeTx,
-              status: s.status,
-              hasNegativeReward,
-              hasPenalty,
-              hasUnstakeTx,
-              isMarkedEarly,
-              isClassifiedAsEarly: isEarly
-            });
-          }
+          // Minimal debug logging
 
           return isEarly;
         });
@@ -864,39 +842,7 @@
         earlyClaims.sort(sortByMostRecent);
         matureRedemptions.sort(sortByMostRecent);
 
-        console.log('[DEBUG] Mature redemptions:', matureRedemptions.length);
-        console.log('[DEBUG] Early claims:', earlyClaims.length);
-
-        // Debug the problematic stake
-        const problematicStake = redeemedStakes.find(s =>
-          s.amount && parseFloat(s.amount) > 90000 && parseFloat(s.amount) < 95000
-        );
-        if (problematicStake) {
-          console.log('[DEBUG] Found problematic stake:', {
-            stakeId: problematicStake.stakeId,
-            amount: problematicStake.amount,
-            status: problematicStake.status,
-            isEarlyUnstake: problematicStake.isEarlyUnstake,
-            penalty: problematicStake.penalty,
-            unstakeTx: problematicStake.unstakeTx,
-            redeemTx: problematicStake.redeemTx,
-            unstakedAt: problematicStake.unstakedAt,
-            redeemedAt: problematicStake.redeemedAt,
-            rewardAmount: problematicStake.rewardAmount,
-            totalReceived: problematicStake.totalReceived
-          });
-          console.log('[DEBUG] Is in early claims?', earlyClaims.includes(problematicStake));
-          console.log('[DEBUG] Is in mature redemptions?', matureRedemptions.includes(problematicStake));
-        }
-
-        // Debug transaction links
-        console.log('[DEBUG] Transaction fields for first few stakes:', redeemedStakes.slice(0, 3).map(s => ({
-          stakeId: s.stakeId,
-          redeemTx: s.redeemTx,
-          unstakeTx: s.unstakeTx,
-          txid: s.txid,
-          hasAnyTx: !!(s.redeemTx || s.unstakeTx || s.txid)
-        })));
+        console.log(`[STAKING] Found ${earlyClaims.length} early unlocks, ${matureRedemptions.length} mature redemptions`);
 
 
 
@@ -1087,8 +1033,7 @@
       const root = document.getElementById('ltEarlyClaimedList');
       const earlyClaimed = (list || []); // Already filtered to early claims only
 
-      console.log('[DEBUG] renderEarlyClaimed called with:', earlyClaimed.length, 'items');
-      console.log('[DEBUG] Early claimed data:', earlyClaimed);
+      // Render early unlock stakes with red badges
 
       if (!earlyClaimed.length) {
         console.log('[DEBUG] No early claims to show, hiding section');
@@ -1184,26 +1129,12 @@
 
         const originalAmount = Number(s.originalAmount || s.amount || 0);
 
-        // Check if this is actually an early unlock that got misclassified
-        const rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * (parseFloat(s.apy || 12) / 100))); // Use actual APY
-        const isActuallyEarlyUnlock = rewardAmount < 0 || s.penalty > 0 || s.unstakeTx;
-
-        let totalReceived, actionText, badgeText, badgeClass;
-
-        if (isActuallyEarlyUnlock) {
-          // This should be in early claims - treat as penalty
-          const penalty = Math.abs(rewardAmount);
-          totalReceived = originalAmount - penalty;
-          actionText = `Early unlock on ${dateStr} at ${timeStr}`;
-          badgeText = 'EARLY UNLOCK';
-          badgeClass = 'early-unlock';
-        } else {
-          // Normal mature redemption
-          totalReceived = originalAmount + rewardAmount; // Original + rewards
-          actionText = `Redeemed on ${dateStr} at ${timeStr}`;
-          badgeText = '✅ Redeemed';
-          badgeClass = 'redeemed';
-        }
+        // Mature redemption - show full rewards (early unlocks should be filtered out already)
+        const rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * (parseFloat(s.apy || 12) / 100)));
+        const totalReceived = originalAmount + Math.abs(rewardAmount); // Always positive for mature redemptions
+        const actionText = `Redeemed on ${dateStr} at ${timeStr}`;
+        const badgeText = '✅ Redeemed';
+        const badgeClass = 'redeemed';
 
         const explorerLink = s.redeemTx || s.unstakeTx || s.txid;
         const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
