@@ -1113,6 +1113,72 @@ router.get('/positions', async (req, res) => {
   }
 });
 
+// GET /api/staking/active-wallets - List distinct wallets with active stakes (admin only)
+router.get('/active-wallets', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized access' });
+    }
+
+    // Fetch all active stake IDs
+    const activeIds = await redis.sMembers('staking:active');
+    const byWallet = new Map();
+
+    for (const stakeId of activeIds) {
+      try {
+        const stake = await redis.hGetAll(`staking:${stakeId}`);
+        if (!stake || Object.keys(stake).length === 0) continue;
+        const wallet = stake.wallet;
+        if (!wallet) continue;
+
+        const amount = parseFloat(stake.amount || 0) || 0;
+        const exp = parseFloat(stake.expectedReward || 0) || 0;
+        const end = stake.endDate || stake.unlockDate || null;
+
+        const prev = byWallet.get(wallet) || {
+          wallet,
+          activeCount: 0,
+          totalAmount: 0,
+          totalExpectedReward: 0,
+          nextUnlock: null,
+          lastUnlock: null
+        };
+
+        prev.activeCount += 1;
+        prev.totalAmount += amount;
+        prev.totalExpectedReward += exp;
+
+        if (end) {
+          const t = new Date(end).toISOString();
+          if (!prev.nextUnlock || new Date(t) < new Date(prev.nextUnlock)) prev.nextUnlock = t;
+          if (!prev.lastUnlock || new Date(t) > new Date(prev.lastUnlock)) prev.lastUnlock = t;
+        }
+
+        byWallet.set(wallet, prev);
+      } catch (_) { /* best-effort per stake */ }
+    }
+
+    const wallets = Array.from(byWallet.values())
+      .sort((a, b) => b.totalAmount - a.totalAmount);
+
+    const summary = wallets.reduce((acc, w) => {
+      acc.totalActiveStakes += w.activeCount;
+      acc.totalAmount += w.totalAmount;
+      acc.totalExpectedReward += w.totalExpectedReward;
+      return acc;
+    }, { totalActiveStakes: 0, totalAmount: 0, totalExpectedReward: 0, distinctWallets: wallets.length });
+
+    summary.distinctWallets = wallets.length;
+
+    return res.json({ success: true, wallets, summary, timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('❌ Error listing active stakers:', error);
+    return res.status(500).json({ success: false, error: 'Failed to list active stakers' });
+  }
+});
+
+
 // GET /api/staking/user/:wallet - Get user's staking positions
 router.get('/user/:wallet', async (req, res) => {
   try {

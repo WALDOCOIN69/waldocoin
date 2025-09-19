@@ -1456,7 +1456,7 @@
             <div>
               <div class="form-group">
                 <label class="form-label">24h Activity</label>
-                <div id="recentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                <div id="recentActivity24h" class="info-display" style="color: #25c2a0; font-weight: bold;">
                   Loading...
                 </div>
                 <small class="help-text">Claims in last 24 hours</small>
@@ -2335,6 +2335,19 @@
             <div id="unstakeResult" class="margin-top-15"></div>
           </div>
         </div>
+
+        <!-- Active Stakers Overview -->
+        <div class="admin-card">
+          <div class="card-title">👥 Active Stakers</div>
+          <div class="input-button-row margin-bottom-15">
+            <input id="stakerSearch" class="form-input" placeholder="Filter by wallet (r...)">
+            <button type="button" class="btn btn-info" onclick="loadActiveStakers()">🔄 Load Active Stakers</button>
+          </div>
+          <div id="activeStakersTable" class="loading">
+            <div class="spinner"></div> Loading active stakers...
+          </div>
+        </div>
+
       </div>
 
       <!-- Security Section -->
@@ -4348,6 +4361,8 @@
                     <td>${pos.duration} days</td>
                     <td>${(pos.apy * 100).toFixed(1)}%</td>
                     <td>${pos.currentRewards.toFixed(2)} WALDO</td>
+
+
                     <td>${new Date(pos.unlockDate).toLocaleDateString()}</td>
                   </tr>
                 `).join('')}
@@ -4407,6 +4422,8 @@
       if (!stakeSelector.value) {
         showAlert('Please select a stake to unstake', 'error');
         return;
+
+
       }
 
       if (!reason) {
@@ -4530,6 +4547,7 @@ This action cannot be undone. Continue?`;
             alertsHtml += '<div style="color: #666; text-align: center; padding: 20px;">No recent security events</div>';
           }
 
+
           alertsDiv.innerHTML = alertsHtml;
         } else {
           alertsDiv.innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">Error loading security data</div>';
@@ -4585,6 +4603,8 @@ This action cannot be undone. Continue?`;
         resultDiv.className = 'error';
         resultDiv.innerHTML = '❌ Invalid wallet address format';
         return;
+
+
       }
 
       try {
@@ -6862,7 +6882,7 @@ This action cannot be undone. Continue?`;
 
         if (data.success) {
           // Update dashboard elements
-          document.getElementById('recentActivity').textContent = `${data.activity.recentClaims24h} claims`;
+          document.getElementById('recentActivity24h').textContent = `${data.activity.recentClaims24h} claims`;
           document.getElementById('totalDistributed').textContent = data.overview.totalDistributedFormatted;
           document.getElementById('walletStats').textContent = `B:${data.walletManagement.blacklistedWallets} W:${data.walletManagement.whitelistedWallets}`;
           document.getElementById('successRate').textContent = `${data.overview.successRate}%`;
@@ -8065,9 +8085,56 @@ This action cannot be undone. Continue?`;
         showAlert('Error optimizing bot settings', 'error');
       }
     }
+
+    // List distinct wallets with active stakes (Admin)
+    async function loadActiveStakers() {
+      try {
+        const target = document.getElementById('activeStakersTable');
+        if (!target) return;
+        target.innerHTML = '<div class="spinner"></div> Loading...';
+
+        const data = await apiCall('/api/staking/active-wallets');
+        const wallets = (data && data.wallets) ? data.wallets : [];
+        const filter = (document.getElementById('stakerSearch')?.value || '').trim().toLowerCase();
+
+        const filtered = wallets.filter(w => !filter || (w.wallet || '').toLowerCase().includes(filter));
+        if (!filtered.length) {
+          target.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">No active stakers found</div>';
+          return;
+        }
+
+        const rows = filtered.map(w => `
+          <tr>
+            <td><code>${w.wallet.slice(0, 10)}...${w.wallet.slice(-6)}</code></td>
+            <td>${w.activeCount}</td>
+            <td>${Number(w.totalAmount || 0).toFixed(2)} WALDO</td>
+            <td>${Number(w.totalExpectedReward || 0).toFixed(2)} WALDO</td>
+            <td>${w.nextUnlock ? new Date(w.nextUnlock).toLocaleDateString() : '-'}</td>
+          </tr>
+        `).join('');
+
+        target.innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Wallet</th>
+                <th>Active Stakes</th>
+                <th>Total Amount</th>
+                <th>Expected Rewards</th>
+                <th>Next Unlock</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      } catch (e) {
+        console.error('Error loading active stakers:', e);
+        showAlert('Failed to load active stakers', 'error');
+      }
+    }
+
   </script>
 
-  </div> <!-- Close adminPanel -->
 </body>
 
 </html>
