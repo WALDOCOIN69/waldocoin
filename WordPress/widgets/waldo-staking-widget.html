@@ -726,7 +726,7 @@
       const iv = setInterval(async () => {
         tries++;
         try {
-          const s = await fetch(`${API}/api/login/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
+          const s = await fetch(`${API}/api/login/status?uuid=${encodeURIComponent(uuid)}&_t=${Date.now()}`);
           const j = await s.json();
           if (j?.signed) {
             clearInterval(iv);
@@ -746,7 +746,7 @@
       try {
         const uuid = localStorage.getItem('waldo_login_uuid');
         if (!uuid) return;
-        const s = await fetch(`${API}/api/login/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
+        const s = await fetch(`${API}/api/login/status?uuid=${encodeURIComponent(uuid)}&_t=${Date.now()}`);
         const j = await s.json();
         if (j?.signed) {
           try { localStorage.removeItem('waldo_login_uuid'); } catch (_) { }
