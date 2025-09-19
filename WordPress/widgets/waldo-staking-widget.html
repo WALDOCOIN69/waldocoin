@@ -648,12 +648,14 @@
       const uuid = payload?.uuid;
       const qrImg = payload?.refs?.qr_png || payload?.qr_png || payload?.refs?.qr || payload?.qr || '';
 
-      // For mobile: ONLY use native app schemes, ignore web URLs
-      const appDeep = uuid ? `xumm://sign/${uuid}` : '';
-      const appDeepAlt = uuid ? `xaman://sign/${uuid}` : '';
+      // Build canonical deep links from payload
+      const deepApp = (payload?.next?.app || '').trim();
+      const deepAlways = (payload?.next?.always || '').trim();
 
-      // For desktop: use web URL as fallback
-      const webDeep = uuid ? `https://xumm.app/sign/${uuid}` : '';
+      // Canonical web deep link
+      const webDeep = uuid ? `https://xumm.app/sign/${uuid}` : (payload?.refs?.qr_uri || payload?.qr_uri || '');
+      // Keep a generic deep string for desktop QR fallback
+      const deepStr = deepAlways || webDeep;
 
       M.style.display = 'block';
       if (isMobile()) {
@@ -664,7 +666,15 @@
             return;
           }
 
-          const urls = [`xumm://sign/${uuid}`, `xaman://sign/${uuid}`];
+          // Prefer SDK-provided app link; then robust scheme variants; then universal web link
+          const urls = Array.from(new Set([
+            deepApp, deepAlways,
+            uuid ? `xumm://xumm.app/sign/${uuid}` : '',
+            uuid ? `xumm://sign/${uuid}` : '',
+            uuid ? `xaman://xumm.app/sign/${uuid}` : '',
+            uuid ? `xaman://sign/${uuid}` : '',
+            webDeep
+          ].filter(Boolean)));
 
           const tryOpen = (url) => {
             let attempted = false;
