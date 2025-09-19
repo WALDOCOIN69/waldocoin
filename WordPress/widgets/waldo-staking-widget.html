@@ -825,18 +825,25 @@
 
         // Fix filtering: Check for early unlock indicators regardless of status
         const earlyClaims = redeemedStakes.filter(s => {
-          const isEarly = s.isEarlyUnstake === 'true' ||
-            s.isEarlyUnstake === true ||
-            (s.penalty && parseFloat(s.penalty) > 0) ||
-            s.unstakeTx; // Has unstake transaction (early unlock)
+          const hasNegativeReward = s.rewardAmount && parseFloat(s.rewardAmount) < 0;
+          const hasPenalty = s.penalty && parseFloat(s.penalty) > 0;
+          const hasUnstakeTx = !!s.unstakeTx;
+          const isMarkedEarly = s.isEarlyUnstake === 'true' || s.isEarlyUnstake === true;
+
+          const isEarly = isMarkedEarly || hasPenalty || hasUnstakeTx || hasNegativeReward;
 
           // Debug each stake's classification
           if (s.amount && parseFloat(s.amount) > 70000) {
             console.log(`[DEBUG] Stake ${s.stakeId} (${s.amount} WALDO):`, {
               isEarlyUnstake: s.isEarlyUnstake,
               penalty: s.penalty,
+              rewardAmount: s.rewardAmount,
               unstakeTx: s.unstakeTx,
               status: s.status,
+              hasNegativeReward,
+              hasPenalty,
+              hasUnstakeTx,
+              isMarkedEarly,
               isClassifiedAsEarly: isEarly
             });
           }
@@ -1177,11 +1184,26 @@
 
         const originalAmount = Number(s.originalAmount || s.amount || 0);
 
-        // Mature redemption - show full rewards
+        // Check if this is actually an early unlock that got misclassified
         const rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * (parseFloat(s.apy || 12) / 100))); // Use actual APY
-        const totalReceived = originalAmount + rewardAmount; // Original + rewards
-        const actionText = `Redeemed on ${dateStr} at ${timeStr}`;
-        const badgeText = '✅ Redeemed';
+        const isActuallyEarlyUnlock = rewardAmount < 0 || s.penalty > 0 || s.unstakeTx;
+
+        let totalReceived, actionText, badgeText, badgeClass;
+
+        if (isActuallyEarlyUnlock) {
+          // This should be in early claims - treat as penalty
+          const penalty = Math.abs(rewardAmount);
+          totalReceived = originalAmount - penalty;
+          actionText = `Early unlock on ${dateStr} at ${timeStr}`;
+          badgeText = 'EARLY UNLOCK';
+          badgeClass = 'early-unlock';
+        } else {
+          // Normal mature redemption
+          totalReceived = originalAmount + rewardAmount; // Original + rewards
+          actionText = `Redeemed on ${dateStr} at ${timeStr}`;
+          badgeText = '✅ Redeemed';
+          badgeClass = 'redeemed';
+        }
 
         const explorerLink = s.redeemTx || s.unstakeTx || s.txid;
         const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
@@ -1192,7 +1214,7 @@
         <div class="stake-item">
           <div class="item-head">
             <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
-            <span class="badge redeemed">${badgeText}</span>
+            <span class="badge ${badgeClass}">${badgeText}</span>
           </div>
           <div class="meta">
             ${actionText} • ${s.duration}d lock • ${s.apy}% APY
