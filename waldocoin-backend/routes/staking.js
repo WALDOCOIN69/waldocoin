@@ -956,13 +956,17 @@ router.get('/unstake/status/:uuid', async (req, res) => {
     // Update staking record (only if not already completed)
     await redis.hSet(`staking:${stakeId}`, {
       status: 'completed',
-      unstakedAt: now.toISOString(), // Time when moved to "Recently Redeemed"
-      processedAt: now.toISOString(), // Time when transferred over to claimed section
+      unstakedAt: currentStakeData.unstakedAt || now.toISOString(), // Preserve existing timestamp
+      processedAt: currentStakeData.processedAt || now.toISOString(), // Preserve existing timestamp
       isEarlyUnstake: 'true',
       penalty: penalty,
       userReceives: userReceives,
       claimed: 'true',
-      unstakeTx: actualTxid
+      unstakeTx: actualTxid,
+      // CRITICAL: Store correct amounts for early unlock display
+      rewardAmount: (-penalty).toString(), // Negative penalty for display
+      totalReceived: userReceives.toString(), // What user actually got
+      originalAmount: originalAmount.toString() // Original stake amount
     });
 
     console.log(`[UNSTAKE-STATUS] Updated stake record: ${stakeId} -> completed`);
@@ -1878,7 +1882,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     }
 
     // Mark stake as completed since Payment was successful
-    const redeemedAt = new Date().toISOString();
+    const redeemedAt = stakeData.redeemedAt || stakeData.unstakedAt || new Date().toISOString(); // Preserve existing timestamp
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
@@ -1886,7 +1890,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     await redis.hSet(stakeKey, {
       status: 'redeemed',
       redeemedAt: redeemedAt, // Time when moved to "Recently Redeemed"
-      processedAt: stakeData.processedAt || redeemedAt, // Preserve existing processedAt
+      processedAt: stakeData.processedAt || redeemedAt, // Preserve existing processedAt timestamp
       redeemTx: txid || '',
       claimed: 'true',
       totalReceived: totalAmount.toString(),
