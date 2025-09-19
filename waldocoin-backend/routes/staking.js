@@ -162,7 +162,7 @@ async function processRedemptionIfComplete(uuid) {
     }
 
     // Mark stake as completed
-    const redeemedAt = new Date().toISOString();
+    const redeemedAt = stakeData.redeemedAt || new Date().toISOString(); // Preserve existing timestamp
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
@@ -962,11 +962,7 @@ router.get('/unstake/status/:uuid', async (req, res) => {
       penalty: penalty,
       userReceives: userReceives,
       claimed: 'true',
-      unstakeTx: actualTxid,
-      // For early unlocks: rewardAmount is negative penalty, totalReceived is what user got
-      rewardAmount: (-penalty).toString(),
-      totalReceived: userReceives.toString(),
-      originalAmount: originalAmount.toString()
+      unstakeTx: actualTxid
     });
 
     console.log(`[UNSTAKE-STATUS] Updated stake record: ${stakeId} -> completed`);
@@ -1882,7 +1878,7 @@ router.get('/redeem/status/:uuid', async (req, res) => {
     }
 
     // Mark stake as completed since Payment was successful
-    const redeemedAt = new Date().toISOString();
+    const redeemedAt = stakeData.redeemedAt || new Date().toISOString(); // Preserve existing timestamp
     const originalAmount = parseFloat(stakeData.amount || 0);
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
