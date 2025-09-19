@@ -644,73 +644,46 @@
         }
       }
 
-      // Debug: log the payload structure to see what we're getting
-      console.log('XUMM Login Payload received:', payload);
-
-      // Extract deep link - try multiple possible field locations
-      const deep = payload?.next?.always || payload?.next?.app || payload?.refs?.qr_uri || payload?.qr_uri || payload?.deeplink ||
-        (payload?.uuid ? `https://xumm.app/sign/${payload.uuid}` : (payload?.refs?.qr || ''));
+      // Extract UUID first - this is what we really need
+      const uuid = payload?.uuid;
       const qrImg = payload?.refs?.qr_png || payload?.qr_png || payload?.refs?.qr || payload?.qr || '';
 
-      // Extract UUID from payload or deep link
-      const uuid = payload?.uuid || (String(deep || '').match(/sign\/([a-z0-9-]+)/i)?.[1] || '');
-
-      console.log('Deep link extracted:', { deep, uuid, qrImg });
-
-      // Prefer native app scheme on mobile (works better from iframes/in-app browsers)
-      const deepStr = String(deep || '');
-      let appDeep = '';
-      if (/^(xumm|xaman):\/\//i.test(deepStr)) {
-        appDeep = deepStr;
-      } else if (uuid) {
-        appDeep = `xumm://sign/${uuid}`;
-      }
+      // For mobile: ONLY use native app schemes, ignore web URLs
+      const appDeep = uuid ? `xumm://sign/${uuid}` : '';
       const appDeepAlt = uuid ? `xaman://sign/${uuid}` : '';
 
-      console.log('Mobile deep links:', { appDeep, appDeepAlt, deepStr });
+      // For desktop: use web URL as fallback
+      const webDeep = uuid ? `https://xumm.app/sign/${uuid}` : '';
 
       M.style.display = 'block';
       if (isMobile()) {
         MB.style.display = 'flex'; QR.style.display = 'none'; LD.style.display = 'none'; HT.style.display = 'none';
         B.onclick = () => {
-          // Build candidate URLs with fallbacks
-          const urls = [appDeep, appDeepAlt, deepStr].filter(Boolean);
-
-          // If we still don't have any URLs but have a UUID, construct them manually
-          if (urls.length === 0 && uuid) {
-            urls.push(`xumm://sign/${uuid}`, `xaman://sign/${uuid}`, `https://xumm.app/sign/${uuid}`);
+          if (!uuid) {
+            alert('No payload UUID found. Please try again.');
+            return;
           }
 
-          console.log('Trying to open URLs:', urls);
+          // On mobile: try native app schemes ONLY
+          const mobileUrls = [`xumm://sign/${uuid}`, `xaman://sign/${uuid}`];
 
-          const tryNext = (idx) => {
-            if (idx >= urls.length) {
-              console.error('All deep link attempts failed');
-              return;
+          // Try each app scheme
+          for (const url of mobileUrls) {
+            try {
+              // Direct navigation - most reliable for app schemes
+              window.location.href = url;
+              return; // If we get here, it worked
+            } catch (e) {
+              console.log(`Failed to open ${url}:`, e);
             }
-            const url = urls[idx];
-            console.log(`Attempting to open: ${url}`);
+          }
 
-            // Best chance first: direct navigation
-            try { window.location.href = url; } catch (_) { }
-            setTimeout(() => {
-              // Fallbacks if blocked
-              try { window.open(url, '_self'); } catch (_) { }
-              try { window.open(url, '_blank'); } catch (_) { }
-              try {
-                const a = document.createElement('a');
-                a.href = url; a.target = '_self'; a.rel = 'noopener';
-                document.body.appendChild(a); a.click(); a.remove();
-              } catch (_) { }
-              // If still here after a short delay, try the next candidate
-              setTimeout(() => tryNext(idx + 1), 500);
-            }, 120);
-          };
-          tryNext(0);
+          // If app schemes failed, show error
+          alert('Could not open Xaman app. Please make sure Xaman is installed.');
         };
       } else {
         MB.style.display = 'none'; QR.style.display = 'block'; LD.style.display = 'none'; HT.style.display = 'block';
-        if (link) { if (deepStr) { link.href = deepStr; link.style.display = 'inline-block'; } else { link.style.display = 'none'; } }
+        if (link) { if (webDeep) { link.href = webDeep; link.style.display = 'inline-block'; } else { link.style.display = 'none'; } }
         if (qrImg) {
           QR.onerror = () => { if (deepStr) QR.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(deepStr)}`; };
           QR.src = qrImg;
