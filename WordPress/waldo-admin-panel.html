@@ -4441,7 +4441,7 @@
       }
 
       const stake = JSON.parse(stakeSelector.value);
-      const isMatured = new Date() >= new Date(stake.unlockDate);
+      const isMatured = new Date() >= new Date(stake.endDate || stake.endTime || stake.unlockDate);
 
       // Confirmation dialog
       const confirmMessage = `🚨 MANUAL UNSTAKING OVERRIDE
@@ -4461,19 +4461,20 @@ This action cannot be undone. Continue?`;
       }
 
       try {
-        const res = await fetch(`${API_BASE}/api/staking/unstake`, {
+        const action = isMatured ? 'redeem' : 'unstake';
+        const payload = {
+          wallet: stake.wallet,
+          stakeId: stake.stakeId,
+          adminOverride: true,
+          adminReason: reason,
+          adminWallet: ADMIN_WALLET
+        };
+        if (!isMatured) payload.force = forceUnstake || !isMatured;
+
+        const res = await fetch(`${API_BASE}/api/staking/${action}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            wallet: stake.wallet,
-            stakeId: stake.stakeId,
-            force: forceUnstake || !isMatured,
-            adminOverride: true,
-            adminReason: reason,
-            adminWallet: ADMIN_WALLET
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
 
         const data = await res.json();
@@ -4481,13 +4482,15 @@ This action cannot be undone. Continue?`;
 
         if (data.success) {
           resultDiv.className = 'success';
+          const amt = data.finalAmount || data.amount || data.originalAmount;
+          const pen = typeof data.penalty !== 'undefined' ? data.penalty : null;
           resultDiv.innerHTML = `
-            ✅ <strong>Manual Unstake Successful</strong><br>
+            ✅ <strong>${isMatured ? 'Redeem' : 'Early Unstake'} Initiated</strong><br>
             Stake ID: ${stake.stakeId}<br>
-            Final Amount: ${data.finalAmount} WALDO<br>
-            ${data.penalty > 0 ? `Penalty Applied: ${data.penalty} WALDO<br>` : ''}
-            XUMM Transaction: ${data.uuid}<br>
-            <small>User will receive XUMM notification to sign the transaction.</small>
+            ${amt ? `Amount: ${amt} WALDO<br>` : ''}
+            ${pen ? `Penalty Applied: ${pen} WALDO<br>` : ''}
+            ${data.uuid ? `Xaman Payload: ${data.uuid}<br>` : ''}
+            <small>User will receive a Xaman prompt to sign.</small>
           `;
 
           // Reset form
@@ -6129,30 +6132,6 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    function refreshAllData() {
-      if (confirm('🔄 FORCE DATA REFRESH\n\nThis will reload all dashboard data and may cause temporary slowdowns.\n\nContinue?')) {
-        showAlert('🔄 Forcing data refresh...', 'success');
-        loadSectionData(currentSection);
-      }
-    }
-
-    function clearCache() {
-      if (confirm('🗑️ EMERGENCY CACHE CLEAR\n\nThis will clear all system caches and may cause temporary performance issues.\n\nUse only if system is behaving unexpectedly.\n\nContinue?')) {
-        showAlert('🗑️ Emergency cache clear initiated', 'warning');
-        // In production, this would call the cache clear API
-      }
-    }
-
-    function emergencyStop() {
-      const confirmation = prompt('🚨 SYSTEM EMERGENCY STOP\n\nThis will halt ALL WALDOCOIN operations:\n- Stop all battles\n- Disable airdrops\n- Block all transactions\n- Affect all users\n\nType "EMERGENCY STOP" to confirm:');
-
-      if (confirmation === 'EMERGENCY STOP') {
-        showAlert('🛑 SYSTEM EMERGENCY STOP ACTIVATED', 'error');
-        // In production, this would call the emergency stop API
-      } else if (confirmation !== null) {
-        showAlert('❌ Emergency stop cancelled - incorrect confirmation', 'warning');
-      }
-    }
 
 
 
