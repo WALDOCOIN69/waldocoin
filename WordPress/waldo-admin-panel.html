@@ -4333,14 +4333,15 @@
       try {
         const data = await apiCall('/api/staking/positions?limit=20');
 
-        if (data.success) {
-          document.getElementById('totalStakingPositions').textContent = data.data.totalPositions || '0';
-          document.getElementById('totalStakingValue').textContent = (data.data.totalValue / 1000).toFixed(1) + 'K';
-          document.getElementById('totalStakingRewards').textContent = (data.data.totalRewards / 1000).toFixed(1) + 'K';
+        if (data && data.success && data.summary) {
+          document.getElementById('totalStakingPositions').textContent = data.summary.totalPositions || '0';
+          document.getElementById('totalStakingValue').textContent = (Number(data.summary.totalStaked || 0) / 1000).toFixed(1) + 'K';
+          document.getElementById('totalStakingRewards').textContent = (Number(data.summary.totalRewards || 0) / 1000).toFixed(1) + 'K';
         }
 
         const positionsDiv = document.getElementById('stakingPositions');
-        if (data.success && data.data.positions.length > 0) {
+        const positions = (data && data.positions) ? data.positions : [];
+        if (data && data.success && positions.length > 0) {
           positionsDiv.innerHTML = `
             <table class="data-table">
               <thead>
@@ -4354,18 +4355,24 @@
                 </tr>
               </thead>
               <tbody>
-                ${data.data.positions.slice(0, 20).map(pos => `
-                  <tr>
-                    <td><code>${pos.wallet.slice(0, 8)}...${pos.wallet.slice(-6)}</code></td>
-                    <td>${pos.amount} WALDO</td>
-                    <td>${pos.duration} days</td>
-                    <td>${(pos.apy * 100).toFixed(1)}%</td>
-                    <td>${pos.currentRewards.toFixed(2)} WALDO</td>
-
-
-                    <td>${new Date(pos.unlockDate).toLocaleDateString()}</td>
-                  </tr>
-                `).join('')}
+                ${positions.slice(0, 20).map(pos => {
+            const wallet = pos.walletAddress || pos.wallet || '';
+            const start = pos.startTime ? new Date(pos.startTime) : (pos.startDate ? new Date(pos.startDate) : null);
+            const end = pos.endTime ? new Date(pos.endTime) : (pos.endDate ? new Date(pos.endDate) : null);
+            const durationDays = (start && end) ? Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24))) : (pos.duration || 0);
+            const apyPct = typeof pos.apy === 'number' ? pos.apy : Number(pos.apy || 0);
+            const rewards = (typeof pos.currentRewards === 'number') ? pos.currentRewards : (Number(pos.amount || 0) * (apyPct / 100));
+            const unlock = end ? end : (pos.unlockDate ? new Date(pos.unlockDate) : null);
+            return `
+                    <tr>
+                      <td><code>${wallet ? wallet.slice(0, 8) + '...' + wallet.slice(-6) : ''}</code></td>
+                      <td>${Number(pos.amount || 0)} WALDO</td>
+                      <td>${durationDays} days</td>
+                      <td>${apyPct.toFixed(1)}%</td>
+                      <td>${Number(rewards || 0).toFixed(2)} WALDO</td>
+                      <td>${unlock ? new Date(unlock).toLocaleDateString() : ''}</td>
+                    </tr>`;
+          }).join('')}
               </tbody>
             </table>
           `;
