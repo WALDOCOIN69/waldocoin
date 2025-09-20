@@ -1077,7 +1077,49 @@ router.get('/positions', async (req, res) => {
             positions.push(position);
           }
         }
+
+
       }
+    }
+
+    // Also include Schema B (generic) active stakes to support new storage format
+    try {
+      const existingIds = new Set(positions.map(p => p.id));
+      const genericIds = await redis.sMembers('staking:active');
+      for (const stakeId of genericIds) {
+        if (existingIds.has(stakeId)) continue;
+        const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+        if (!stakeData || Object.keys(stakeData).length === 0) continue;
+        const start = new Date(stakeData.startDate);
+        const end = new Date(stakeData.endDate);
+        const now = new Date();
+        const timeRemaining = Math.max(0, end - now);
+        const totalDuration = end - start;
+        const elapsed = now - start;
+        const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
+        const baseAmount = parseFloat(stakeData.amount) || 0;
+        const apy = parseFloat(stakeData.apy) || 0;
+        const currentRewards = baseAmount * (apy / 100);
+
+        positions.push({
+          id: stakeId,
+          walletAddress: stakeData.wallet || '',
+          amount: baseAmount,
+          tier: stakeData.tier || 'unknown',
+          apy: apy,
+          startTime: stakeData.startDate,
+          endTime: stakeData.endDate,
+          status: stakeData.status || 'active',
+          progress: progress.toFixed(1),
+          timeRemaining: timeRemaining,
+          currentRewards: currentRewards.toFixed(2),
+          totalValue: (baseAmount + currentRewards).toFixed(2),
+          canUnstake: (stakeData.status || 'active') === 'active' && timeRemaining <= 0,
+          earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%'
+        });
+      }
+    } catch (e) {
+      console.warn('positions: failed to augment with generic active stakes:', e?.message || e);
     }
 
     // Sort by start time (newest first)
@@ -1118,6 +1160,8 @@ router.get('/active-wallets', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
     if (adminKey !== process.env.X_ADMIN_KEY) {
+
+
       return res.status(403).json({ success: false, error: 'Unauthorized access' });
     }
 
