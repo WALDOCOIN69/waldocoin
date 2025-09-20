@@ -5,7 +5,8 @@ import { redis } from "../redisClient.js";
 import {
   WALDOCOIN_TOKEN,
   WALDO_ISSUER,
-  WALDO_DISTRIBUTOR_SECRET
+  WALDO_DISTRIBUTOR_SECRET,
+  DISTRIBUTOR_WALLET
 } from "../constants.js";
 import { validateAdminKey, getAdminKey } from "../utils/adminAuth.js";
 
@@ -110,7 +111,7 @@ router.post("/", async (req, res) => {
   if (isAdminOverride) {
     // Admin override - validate admin wallet and custom amount
     const adminWallet = req.headers['x-admin-wallet'];
-    if (adminWallet !== "rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC") {
+    if (adminWallet !== DISTRIBUTOR_WALLET) {
       return res.status(403).json({ success: false, error: "Admin access required" });
     }
 
@@ -1458,7 +1459,7 @@ router.get("/system-health", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            account: DISTRIBUTOR_WALLET,
             ledger_index: 'validated'
           }]
         }),
@@ -1855,7 +1856,7 @@ router.get("/analytics", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL',
+            account: DISTRIBUTOR_WALLET,
             ledger_index: 'validated'
           }]
         }),
@@ -2184,7 +2185,7 @@ router.get("/token-distribution", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL',
+            account: DISTRIBUTOR_WALLET,
             ledger_index: 'validated'
           }]
         }),
@@ -2450,7 +2451,7 @@ router.get("/advanced-reports", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            account: DISTRIBUTOR_WALLET,
             ledger_index: 'validated'
           }]
         }),
