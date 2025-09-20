@@ -5139,17 +5139,21 @@ This action cannot be undone. Continue?`;
 
       const title = document.getElementById('daoTitle').value.trim();
       const description = document.getElementById('daoDescription').value.trim();
-      const options = document.getElementById('daoOptions').value.split(',').map(opt => opt.trim()).filter(Boolean);
-      const duration = parseInt(document.getElementById('daoDuration').value);
+      const durationHours = parseInt(document.getElementById('daoDuration').value);
+
+      if (!title || !description || !durationHours || durationHours <= 0) {
+        showAlert('Please provide title, description, and duration (hours)', 'warning');
+        return;
+      }
+
+      // Backend create-proposal expects duration in days; convert hours -> days (ceil)
+      const durationDays = Math.max(1, Math.ceil(durationHours / 24));
 
       try {
-        const res = await fetch(`${API_BASE}/api/dao/proposals/create`, {
+        const data = await apiCall('/api/dao/create-proposal', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, description, options, durationHours: duration })
+          body: JSON.stringify({ title, description, type: 'general', duration: durationDays })
         });
-
-        const data = await res.json();
 
         if (data.success) {
           showAlert('DAO proposal created successfully!', 'success');
@@ -5159,7 +5163,7 @@ This action cannot be undone. Continue?`;
           showAlert(data.error || 'Failed to create proposal', 'error');
         }
       } catch (error) {
-        showAlert('Network error creating proposal', 'error');
+        showAlert(error.message || 'Network error creating proposal', 'error');
       }
     }
 
