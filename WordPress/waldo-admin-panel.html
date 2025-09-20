@@ -2342,6 +2342,8 @@
           <div class="input-button-row margin-bottom-15">
             <input id="stakerSearch" class="form-input" placeholder="Filter by wallet (r...)">
             <button type="button" class="btn btn-info" onclick="loadActiveStakers()">🔄 Load Active Stakers</button>
+            <button type="button" class="btn btn-warning" onclick="reindexActiveStakers()">🧹 Reindex Active
+              Stakers</button>
           </div>
           <div id="activeStakersTable" class="loading">
             <div class="spinner"></div> Loading active stakers...
@@ -8137,6 +8139,22 @@ This action cannot be undone. Continue?`;
       } catch (e) {
         console.error('Error loading active stakers:', e);
         showAlert('Failed to load active stakers', 'error');
+      }
+    }
+
+    // Reindex Active Stakers (Admin)
+    async function reindexActiveStakers() {
+      try {
+        if (!checkAdminAuth()) return;
+        showAlert('Re-indexing active stakes...', 'info');
+        const data = await apiCall('/api/staking/admin/reindex-active', { method: 'POST' });
+        const scanned = data?.scanned ?? 0;
+        const added = data?.added ?? 0;
+        showAlert(`✅ Reindex complete. Scanned ${scanned}, added ${added} active stakes.`, 'success');
+        await loadActiveStakers();
+      } catch (e) {
+        console.error('Reindex error:', e);
+        showAlert(`Failed to reindex active stakes: ${e.message || e}`, 'error');
       }
     }
 
