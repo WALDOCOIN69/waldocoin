@@ -99,7 +99,7 @@ const startServer = async () => {
     },
     credentials: false,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key', 'X-Admin-Wallet']
   }));
   // Ensure preflight (OPTIONS) also returns proper CORS headers for cross-site POSTs
   app.options(/.*/, cors({
@@ -109,8 +109,8 @@ const startServer = async () => {
       cb(null, allowed);
     },
     credentials: false,
-    methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization','X-Requested-With','X-Admin-Key']
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key', 'X-Admin-Wallet']
   }));
 
 
@@ -249,7 +249,7 @@ const startServer = async () => {
       }
 
       if (!out.length) {
-        out = knownRoutes.map(p => ({ methods: ['GET','POST','OPTIONS','PUT','DELETE','PATCH'], path: p }));
+        out = knownRoutes.map(p => ({ methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'], path: p }));
       }
 
       res.json({ success: true, count: out.length, routes: out });
