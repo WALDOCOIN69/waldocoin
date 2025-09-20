@@ -1178,6 +1178,54 @@ router.get('/active-wallets', async (req, res) => {
   }
 });
 
+// ✅ POST /api/staking/admin/reindex-active - Rebuild the staking:active index from stored stakes (admin only)
+router.post('/admin/reindex-active', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized access' });
+    }
+
+    // Clear current index
+    await redis.del('staking:active');
+
+    // Scan all staking records with pattern staking:<id>
+    const allKeys = await redis.keys('staking:*');
+    let scanned = 0;
+    let added = 0;
+    let byWallet = 0;
+
+    for (const key of allKeys) {
+      // Skip non-stake records like staking:user:* and staking:active
+      if (key === 'staking:active' || key.startsWith('staking:user:')) continue;
+      // Skip records that don't look like a single-level stake key
+      if (!/^staking:[^:]+$/.test(key)) continue;
+
+      scanned++;
+      const data = await redis.hGetAll(key);
+      if (!data || Object.keys(data).length === 0) continue;
+
+      const status = data.status;
+      const stakeId = data.stakeId || key.replace('staking:', '');
+      const wallet = data.wallet;
+
+      if (status === 'active' && stakeId) {
+        await redis.sAdd('staking:active', stakeId);
+        if (wallet) {
+          await redis.sAdd(`staking:user:${wallet}`, stakeId);
+          byWallet++;
+        }
+        added++;
+      }
+    }
+
+    return res.json({ success: true, scanned, added, byWallet, timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('❌ Error reindexing staking:active:', error);
+    return res.status(500).json({ success: false, error: 'Failed to reindex active stakes' });
+  }
+});
+
 
 // GET /api/staking/user/:wallet - Get user's staking positions
 router.get('/user/:wallet', async (req, res) => {
@@ -2253,6 +2301,15 @@ router.get('/status/:uuid', async (req, res) => {
       signer: account || '',
       fundingTx: txid || ''
     });
+
+    // Index active stake for admin/monitoring views
+    try {
+      const w = stakeData.wallet || offer?.wallet || account || '';
+      if (w && stakeId) {
+        await redis.sAdd(`staking:user:${w}`, stakeId);
+        await redis.sAdd('staking:active', stakeId);
+      }
+    } catch (_) { /* best-effort indexing */ }
 
     // Update global totals now that funds are locked on-ledger
     const type = stakeData.type || offer?.type || 'long_term';
