@@ -602,6 +602,31 @@
 
 
 
+    // Robust JSON parser: handles non-JSON (HTML/text) responses gracefully
+    async function parseJsonResponse(resp) {
+      try {
+        const ct = (resp.headers && resp.headers.get && resp.headers.get('content-type')) || '';
+        if (!resp.ok) {
+          const t = await resp.text().catch(() => '');
+          const snippet = (t || '').slice(0, 180).replace(/\s+/g, ' ').trim();
+          throw new Error(`${resp.status} ${resp.statusText}${snippet ? ' — ' + snippet : ''}`);
+        }
+        if (ct && ct.includes('application/json')) {
+          return await resp.json();
+        }
+        const t = await resp.text();
+        try { return JSON.parse(t); } catch (_) {
+          const snippet = (t || '').slice(0, 180).replace(/\s+/g, ' ').trim();
+          throw new Error(snippet ? `Unexpected response (not JSON): ${snippet}` : 'Unexpected response (not JSON)');
+        }
+      } catch (e) {
+        if (e && e.message) throw e;
+        throw new Error('Unexpected response format');
+      }
+    }
+
+
+
     // Tabs
     document.querySelectorAll('.waldo-stake .tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -717,7 +742,7 @@
     window.stakeConnect = async function () {
       try {
         const r = await fetch(`${API}/api/login`);
-        const j = await r.json();
+        const j = await parseJsonResponse(r);
         try { if (j?.uuid) localStorage.setItem('waldo_login_uuid', j.uuid); } catch (_) { }
         xummOpenStake('Connect Xaman', j);
         startLoginStatusPoll(j.uuid, async (s) => {
@@ -744,7 +769,7 @@
         tries++;
         try {
           const s = await fetch(`${API}/api/login/status?uuid=${encodeURIComponent(uuid)}&_t=${Date.now()}`);
-          const j = await s.json();
+          const j = await parseJsonResponse(s);
           if (j?.signed) {
             clearInterval(iv);
             try { onDone && onDone(j); } catch (_) { }
@@ -764,7 +789,7 @@
         const uuid = localStorage.getItem('waldo_login_uuid');
         if (!uuid) return;
         const s = await fetch(`${API}/api/login/status?uuid=${encodeURIComponent(uuid)}&_t=${Date.now()}`);
-        const j = await s.json();
+        const j = await parseJsonResponse(s);
         if (j?.signed) {
           try { localStorage.removeItem('waldo_login_uuid'); } catch (_) { }
           WALLET = j?.account || WALLET;
@@ -882,7 +907,7 @@
     window.stakeTrustline = async function () {
       try {
         const r = await fetch(`${API}/api/xrpl/trustline/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-        const j = await r.json();
+        const j = await parseJsonResponse(r);
         if (!j.success) throw new Error(j.error || 'Trustline failed');
         try { if (j?.uuid) localStorage.setItem('waldo_trust_uuid', j.uuid); } catch (_) { }
         xummOpenStake('Add WALDO Trustline', j);
@@ -899,12 +924,12 @@
         if (!isValid(w)) return alert('Enter a valid XRPL wallet');
         WALLET = w;
         const r = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
-        const j = await r.json();
+        const j = await parseJsonResponse(r);
         if (!j.success) throw new Error(j.error || 'Failed to load user info');
 
         // Also get positions (including redeemed stakes)
         const positionsR = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
-        const positionsJ = await positionsR.json();
+        const positionsJ = await parseJsonResponse(positionsR);
         const allPositions = positionsJ.success ? positionsJ.positions : [];
         // Update TL status with error handling
         try {
@@ -1348,7 +1373,7 @@
       if (!amt || !dur) return msg.textContent = 'Enter amount and select duration';
       try {
         const r = await fetch(`${API}/api/staking/long-term`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur }) });
-        const j = await r.json();
+        const j = await parseJsonResponse(r);
         if (!j.success) throw new Error(j.error || 'Lock failed');
         try { if (j?.uuid) localStorage.setItem('waldo_lock_uuid', j.uuid); } catch (_) { }
         msg.textContent = `Sign in Xaman to lock ${amt} WALDO for ${dur} days...`;
@@ -1371,7 +1396,7 @@
       console.log('[UNSTAKE] Checking real-time maturity for stake:', stakeId);
       try {
         const r = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
-        const j = await r.json();
+        const j = await parseJsonResponse(r);
         if (j.success) {
           const stake = j.positions.find(p => p.stakeId === stakeId);
           if (stake) {
@@ -1448,7 +1473,7 @@
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         }
-        const j = await r.json();
+        const j = await parseJsonResponse(r);
 
         if (!j.success) throw new Error(j.error || 'Unlock failed');
 
@@ -1533,7 +1558,7 @@
 
         try {
           const response = await fetch(`${API}/api/staking/unstake/status/${uuid}?account=${WALLET}&txid=pending&_t=${Date.now()}`);
-          const status = await response.json();
+          const status = await parseJsonResponse(response);
           console.log(`[UNSTAKE-POLL] Status response:`, status);
 
           if (status?.signed && status?.paid) {
@@ -1579,7 +1604,7 @@
       const msg = document.getElementById('ltMsg');
       try {
         const r = await fetch(`${API}/api/staking/redeem`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
-        const j = await r.json();
+        const j = await parseJsonResponse(r);
         if (!j.success) throw new Error(j.error || 'Redeem init failed');
         try { if (j?.uuid) localStorage.setItem('waldo_redeem_uuid', j.uuid); } catch (_) { }
         msg.textContent = 'Sign in Xaman to redeem your WALDO + bonus...';
@@ -1617,7 +1642,7 @@
               if (j.uuid) {
                 try {
                   const statusResponse = await fetch(`${API}/api/staking/redeem/status/${j.uuid}`);
-                  const statusResult = await statusResponse.json();
+                  const statusResult = await parseJsonResponse(statusResponse);
                   console.log('[REDEEM] Status check result:', statusResult);
                 } catch (statusError) {
                   console.log('[REDEEM] Status check failed (expected with CORS):', statusError.message);
@@ -1668,7 +1693,7 @@
           // Reset CORS error count on successful request
           corsErrorCount = 0;
 
-          const j = await s.json();
+          const j = await parseJsonResponse(s);
           if (j?.signed) {
             if (j?.error === 'missing_sender_secret') {
               clearInterval(iv);
@@ -1719,7 +1744,7 @@
         tries++;
         try {
           const s = await fetch(`${API}/api/staking/status/${encodeURIComponent(uuid)}`);
-          const j = await s.json();
+          const j = await parseJsonResponse(s);
           if (j?.signed && j?.activated) { clearInterval(iv); try { localStorage.removeItem('waldo_lock_uuid'); } catch (_) { } try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
           if (tries > 180) { clearInterval(iv); }
         } catch (_) { /* ignore */ }
@@ -1744,7 +1769,7 @@
 
       try {
         const response = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
 
         if (!data.success) {
           console.warn('[UPDATE-BUTTONS] Failed to fetch stake data');
@@ -1800,7 +1825,7 @@
       try {
         // Get current stake data
         const response = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
 
         if (!data.success) {
           console.warn('[REAL-TIME] Failed to fetch stake data:', data.error);
