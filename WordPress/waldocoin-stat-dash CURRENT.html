@@ -4167,6 +4167,9 @@
 
       /** === CHARTS === **/
       let xpChartInstance = null;
+      let priceChartMergedInstance = null;
+      let priceChartNewInstance = null;
+
       function renderXPTrendChart(xpTrend) {
         const el = $("xpChart");
         if (!el || !window.Chart) return;
@@ -4177,6 +4180,201 @@
           data: xpTrend || { labels: [], datasets: [] },
           options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
+      }
+
+      // Initialize price charts with real-time data
+      async function initializePriceCharts() {
+        try {
+          const res = await fetch(`${baseURL}/api/market/price-history?days=7`);
+          const data = await res.json();
+
+          if (data.success && data.history && data.history.length > 0) {
+            const labels = data.history.map(h => {
+              const date = new Date(h.timestamp);
+              return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const prices = data.history.map(h => h.usdPrice || 0);
+
+            // Calculate 24h and 7d changes
+            const currentPrice = prices[prices.length - 1];
+            const price24hAgo = prices.length > 1 ? prices[prices.length - 2] : currentPrice;
+            const price7dAgo = prices[0];
+
+            const change24h = ((currentPrice - price24hAgo) / price24hAgo * 100).toFixed(2);
+            const change7d = ((currentPrice - price7dAgo) / price7dAgo * 100).toFixed(2);
+
+            // Update change displays
+            const change24hEl = $("change24h");
+            const change7dEl = $("change7d");
+
+            if (change24hEl) {
+              change24hEl.textContent = `${change24h >= 0 ? '+' : ''}${change24h}%`;
+              change24hEl.className = `trend-value ${change24h >= 0 ? 'trend-positive' : 'trend-negative'}`;
+            }
+
+            if (change7dEl) {
+              change7dEl.textContent = `${change7d >= 0 ? '+' : ''}${change7d}%`;
+              change7dEl.className = `trend-value ${change7d >= 0 ? 'trend-positive' : 'trend-negative'}`;
+            }
+
+            // Update rate displays
+            if (data.current) {
+              $("waldoXrpRate") && ($("waldoXrpRate").textContent = `${data.current.xrpPrice || '0.00'} XRP`);
+              $("waldoUsdRate") && ($("waldoUsdRate").textContent = `$${data.current.usdPrice || '0.00'}`);
+            }
+
+            const chartData = {
+              labels: labels,
+              datasets: [{
+                label: 'WALDO/USD',
+                data: prices,
+                borderColor: '#25c2a0',
+                backgroundColor: 'rgba(37, 194, 160, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#25c2a0',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+              }]
+            };
+
+            const chartOptions = {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  titleColor: '#25c2a0',
+                  bodyColor: '#fff',
+                  borderColor: '#25c2a0',
+                  borderWidth: 1,
+                  padding: 10,
+                  displayColors: false,
+                  callbacks: {
+                    label: function (context) {
+                      return `$${context.parsed.y.toFixed(6)}`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                  ticks: { color: '#ccc', font: { size: 10 } }
+                },
+                y: {
+                  grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                  ticks: {
+                    color: '#ccc',
+                    font: { size: 10 },
+                    callback: function (value) {
+                      return '$' + value.toFixed(6);
+                    }
+                  }
+                }
+              }
+            };
+
+            // Render merged chart
+            const mergedEl = $("waldoPriceChartMerged");
+            if (mergedEl) {
+              const ctx = mergedEl.getContext("2d");
+              if (priceChartMergedInstance) priceChartMergedInstance.destroy();
+              priceChartMergedInstance = new Chart(ctx, {
+                type: "line",
+                data: chartData,
+                options: chartOptions
+              });
+            }
+
+            // Render new chart
+            const newEl = $("waldoPriceChartNew");
+            if (newEl) {
+              const ctx = newEl.getContext("2d");
+              if (priceChartNewInstance) priceChartNewInstance.destroy();
+              priceChartNewInstance = new Chart(ctx, {
+                type: "line",
+                data: chartData,
+                options: chartOptions
+              });
+            }
+          } else {
+            // Show placeholder if no data
+            showPlaceholderCharts();
+          }
+        } catch (err) {
+          console.error('Error loading price charts:', err);
+          showPlaceholderCharts();
+        }
+      }
+
+      function showPlaceholderCharts() {
+        // Show placeholder data when API isn't available
+        const labels = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
+        const prices = [0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001];
+
+        $("waldoXrpRate") && ($("waldoXrpRate").textContent = 'Loading...');
+        $("waldoUsdRate") && ($("waldoUsdRate").textContent = 'Loading...');
+        $("change24h") && ($("change24h").textContent = '+0.00%');
+        $("change7d") && ($("change7d").textContent = '+0.00%');
+
+        const chartData = {
+          labels: labels,
+          datasets: [{
+            label: 'WALDO/USD',
+            data: prices,
+            borderColor: '#666',
+            backgroundColor: 'rgba(102, 102, 102, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        };
+
+        const chartOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.1)' },
+              ticks: { color: '#666' }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.1)' },
+              ticks: { color: '#666' }
+            }
+          }
+        };
+
+        const mergedEl = $("waldoPriceChartMerged");
+        if (mergedEl) {
+          const ctx = mergedEl.getContext("2d");
+          if (priceChartMergedInstance) priceChartMergedInstance.destroy();
+          priceChartMergedInstance = new Chart(ctx, {
+            type: "line",
+            data: chartData,
+            options: chartOptions
+          });
+        }
+
+        const newEl = $("waldoPriceChartNew");
+        if (newEl) {
+          const ctx = newEl.getContext("2d");
+          if (priceChartNewInstance) priceChartNewInstance.destroy();
+          priceChartNewInstance = new Chart(ctx, {
+            type: "line",
+            data: chartData,
+            options: chartOptions
+          });
+        }
       }
 
       /** === DASHBOARD POPULATION === **/
@@ -5540,7 +5738,8 @@
             fetchBattleHistory().catch(e => console.warn('Battle history failed:', e)),
             fetchBattleLeaderboard().catch(e => console.warn('Battle leaderboard failed:', e)),
             fetchDAOProposals().catch(e => console.warn('DAO proposals failed:', e)),
-            fetchStakingStatsSummary().catch(e => console.warn('Staking stats summary failed:', e))
+            fetchStakingStatsSummary().catch(e => console.warn('Staking stats summary failed:', e)),
+            initializePriceCharts().catch(e => console.warn('Price charts failed:', e))
           ];
 
           await Promise.allSettled(loadPromises);
