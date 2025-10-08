@@ -285,7 +285,7 @@
       color: #ff6b6b;
     }
 
-    /* Hide WordPress comment and navigation sections */
+    /* Hide WordPress comment and navigation sections - NUCLEAR OPTION */
     #comments,
     .comment-respond,
     .comments-area,
@@ -309,13 +309,30 @@
     .nav-next,
     .screen-reader-text,
     .post-nav-links,
-    .entry-navigation {
+    .entry-navigation,
+    .comments-title,
+    .comment-form-comment,
+    .form-submit,
+    h2#comments-title,
+    h3#reply-title {
       display: none !important;
       visibility: hidden !important;
       height: 0 !important;
       overflow: hidden !important;
       margin: 0 !important;
       padding: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+
+    /* Hide any text that says "Comments" */
+    body *:not(script):not(style) {
+      color: inherit;
+    }
+
+    /* Force hide WordPress injected content after body */
+    body::after {
+      display: none !important;
     }
 
     @media (max-width: 768px) {
@@ -548,7 +565,7 @@
       submitBtn.disabled = true;
 
       const formData = {
-        fullName: document.getElementById('fullName').value,
+        fullName: document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value,
         email: document.getElementById('email').value,
         phone: document.getElementById('phone').value,
         position: document.getElementById('position').value,
