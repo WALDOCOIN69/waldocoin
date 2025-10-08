@@ -109,8 +109,8 @@ const startServer = async () => {
       cb(null, allowed);
     },
     credentials: false,
-    methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization','X-Requested-With','X-Admin-Key']
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key']
   }));
 
 
@@ -149,6 +149,7 @@ const startServer = async () => {
   app.use("/api/activity", activityRoute);
   app.use("/api/system", (await import("./routes/system.js")).default);
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
+  app.use("/api/market/price-history", (await import("./routes/market/price-history.js")).default);
   app.use("/api/xrpl/trade", (await import("./routes/xrpl/trade.js")).default);
   app.use("/api/xrpl/trustline", (await import("./routes/xrpl/trustline.js")).default);
   app.use("/api/xrpl/balance", (await import("./routes/xrpl/balance.js")).default);
@@ -249,7 +250,7 @@ const startServer = async () => {
       }
 
       if (!out.length) {
-        out = knownRoutes.map(p => ({ methods: ['GET','POST','OPTIONS','PUT','DELETE','PATCH'], path: p }));
+        out = knownRoutes.map(p => ({ methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'], path: p }));
       }
 
       res.json({ success: true, count: out.length, routes: out });
