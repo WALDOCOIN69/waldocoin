@@ -4191,9 +4191,20 @@
       // Initialize price charts with real-time data
       async function initializePriceCharts() {
         console.log('📊 Initializing price charts...');
+
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+          console.error('❌ Chart.js is not loaded!');
+          showPlaceholderCharts();
+          return;
+        }
+
         try {
           // STEP 1: Get real-time price from DEX (same as exchange widget)
           const marketRes = await fetch(`${baseURL}/api/market/wlo?_=${Date.now()}`, { cache: 'no-store' });
+          if (!marketRes.ok) {
+            throw new Error(`Market API failed: ${marketRes.status}`);
+          }
           const marketData = await marketRes.json();
 
           console.log('📊 Market data received:', marketData);
@@ -4320,29 +4331,45 @@
 
             // Render merged chart
             const mergedEl = $("waldoPriceChartMerged");
+            console.log('📊 Merged chart element:', mergedEl);
             if (mergedEl) {
               const ctx = mergedEl.getContext("2d");
-              if (priceChartMergedInstance) priceChartMergedInstance.destroy();
+              if (priceChartMergedInstance) {
+                console.log('📊 Destroying old merged chart');
+                priceChartMergedInstance.destroy();
+              }
+              console.log('📊 Creating merged chart with', prices.length, 'data points');
               priceChartMergedInstance = new Chart(ctx, {
                 type: "line",
                 data: chartData,
                 options: chartOptions
               });
+              console.log('✅ Merged chart created successfully');
+            } else {
+              console.warn('⚠️ Merged chart element not found');
             }
 
             // Render new chart
             const newEl = $("waldoPriceChartNew");
+            console.log('📊 New chart element:', newEl);
             if (newEl) {
               const ctx = newEl.getContext("2d");
-              if (priceChartNewInstance) priceChartNewInstance.destroy();
+              if (priceChartNewInstance) {
+                console.log('📊 Destroying old new chart');
+                priceChartNewInstance.destroy();
+              }
+              console.log('📊 Creating new chart with', prices.length, 'data points');
               priceChartNewInstance = new Chart(ctx, {
                 type: "line",
                 data: chartData,
                 options: chartOptions
               });
+              console.log('✅ New chart created successfully');
+            } else {
+              console.warn('⚠️ New chart element not found');
             }
           } else {
-            // Show placeholder if no data
+            console.warn('⚠️ No history data, showing placeholder');
             showPlaceholderCharts();
           }
         } catch (err) {
