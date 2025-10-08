@@ -4188,9 +4188,42 @@
 
       // Initialize price charts with real-time data
       async function initializePriceCharts() {
+        console.log('📊 Initializing price charts...');
         try {
+          // STEP 1: Get real-time price from DEX (same as exchange widget)
+          const marketRes = await fetch(`${baseURL}/api/market/wlo?_=${Date.now()}`, { cache: 'no-store' });
+          const marketData = await marketRes.json();
+
+          console.log('📊 Market data received:', marketData);
+
+          // Get current XRP price per WLO from DEX
+          const xrpPerWlo = (marketData?.xrpPerWlo && isFinite(marketData.xrpPerWlo))
+            ? marketData.xrpPerWlo
+            : (marketData?.best?.mid || 0.0001);
+
+          // Approximate USD rate (XRP ~$0.50)
+          const xrpUsdRate = 0.50;
+          const usdPerWlo = xrpPerWlo * xrpUsdRate;
+
+          console.log('📊 Current price - XRP:', xrpPerWlo, 'USD:', usdPerWlo);
+
+          // Update rate displays immediately with REAL price
+          const xrpEl = $("waldoXrpRate");
+          const usdEl = $("waldoUsdRate");
+
+          if (xrpEl) {
+            xrpEl.textContent = `${xrpPerWlo.toFixed(8)} XRP`;
+            console.log('📊 Updated XRP rate element');
+          }
+          if (usdEl) {
+            usdEl.textContent = `$${usdPerWlo.toFixed(8)}`;
+            console.log('📊 Updated USD rate element');
+          }
+
+          // STEP 2: Get historical data for charts
           const res = await fetch(`${baseURL}/api/market/price-history?days=7`);
           const data = await res.json();
+          console.log('📊 History data received:', data);
 
           if (data.success && data.history && data.history.length > 0) {
             const labels = data.history.map(h => {
@@ -4207,6 +4240,8 @@
             const change24h = ((currentPrice - price24hAgo) / price24hAgo * 100).toFixed(2);
             const change7d = ((currentPrice - price7dAgo) / price7dAgo * 100).toFixed(2);
 
+            console.log('📊 Price changes - 24h:', change24h, '7d:', change7d);
+
             // Update change displays
             const change24hEl = $("change24h");
             const change7dEl = $("change7d");
@@ -4214,18 +4249,16 @@
             if (change24hEl) {
               change24hEl.textContent = `${change24h >= 0 ? '+' : ''}${change24h}%`;
               change24hEl.className = `trend-value ${change24h >= 0 ? 'trend-positive' : 'trend-negative'}`;
+              console.log('📊 Updated 24h change element');
             }
 
             if (change7dEl) {
               change7dEl.textContent = `${change7d >= 0 ? '+' : ''}${change7d}%`;
               change7dEl.className = `trend-value ${change7d >= 0 ? 'trend-positive' : 'trend-negative'}`;
+              console.log('📊 Updated 7d change element');
             }
 
-            // Update rate displays
-            if (data.current) {
-              $("waldoXrpRate") && ($("waldoXrpRate").textContent = `${data.current.xrpPrice || '0.00'} XRP`);
-              $("waldoUsdRate") && ($("waldoUsdRate").textContent = `$${data.current.usdPrice || '0.00'}`);
-            }
+            // Rate displays already updated above with real DEX price
 
             const chartData = {
               labels: labels,
