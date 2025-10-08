@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -56,7 +57,7 @@
       font-size: 3.5em;
       font-weight: 900;
       margin-bottom: 20px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
       color: #000;
     }
 
@@ -158,7 +159,9 @@
       font-size: 1.1em;
     }
 
-    input, select, textarea {
+    input,
+    select,
+    textarea {
       width: 100%;
       padding: 15px;
       background: #333;
@@ -169,7 +172,9 @@
       transition: border-color 0.3s ease;
     }
 
-    input:focus, select:focus, textarea:focus {
+    input:focus,
+    select:focus,
+    textarea:focus {
       outline: none;
       border-color: #25c2a0;
       box-shadow: 0 0 10px rgba(37, 194, 160, 0.3);
@@ -283,27 +288,28 @@
       .main-content {
         grid-template-columns: 1fr;
       }
-      
+
       .form-row {
         grid-template-columns: 1fr;
       }
-      
+
       .header h1 {
         font-size: 2.5em;
       }
-      
+
       .container {
         padding: 10px;
       }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <!-- Header Section -->
     <div class="header">
       <div class="header-content">
-        <h1>🐸 WE'RE HIRING!</h1>
+        <h1>� WE'RE HIRING!</h1>
         <p>Come Meme With Us & Get Paid in WALDO! 💰</p>
       </div>
     </div>
@@ -338,7 +344,7 @@
           <div class="job-title">📱 Chief Meme Officer</div>
           <div class="job-type">Full-time • Remote • Must Love Chaos</div>
           <div class="job-description">
-            Manage our wild community, create viral content, and turn Twitter into our playground! 🐸
+            Manage our wild community, create viral content, and turn Twitter into our playground! �
           </div>
         </div>
 
@@ -392,16 +398,16 @@
       <div class="meme-text" style="margin-bottom: 30px;">
         "This is where legends are born and memes become reality!" 🚀
       </div>
-      
+
       <div id="alertContainer"></div>
-      
+
       <form id="applicationForm">
         <div class="form-row">
           <div class="form-group">
             <label for="firstName">First Name *</label>
             <input type="text" id="firstName" name="firstName" required>
           </div>
-          
+
           <div class="form-group">
             <label for="lastName">Last Name *</label>
             <input type="text" id="lastName" name="lastName" required>
@@ -413,7 +419,7 @@
             <label for="email">Email Address *</label>
             <input type="email" id="email" name="email" required>
           </div>
-          
+
           <div class="form-group">
             <label for="phone">Phone Number</label>
             <input type="tel" id="phone" name="phone">
@@ -432,7 +438,7 @@
               <option value="other">🤷 Something Else (tell us below!)</option>
             </select>
           </div>
-          
+
           <div class="form-group">
             <label for="experience">How Long Have You Been Coding/Creating? *</label>
             <select id="experience" name="experience" required>
@@ -448,17 +454,22 @@
 
         <div class="form-group">
           <label for="skills">What's Your Superpower? *</label>
-          <textarea id="skills" name="skills" placeholder="Tell us what you're good at! Programming languages, design tools, social media wizardry, etc. Don't be shy! 🚀" required></textarea>
+          <textarea id="skills" name="skills"
+            placeholder="Tell us what you're good at! Programming languages, design tools, social media wizardry, etc. Don't be shy! 🚀"
+            required></textarea>
         </div>
 
         <div class="form-group">
           <label for="portfolio">Show Us Your Cool Stuff!</label>
-          <textarea id="portfolio" name="portfolio" placeholder="Drop your GitHub, portfolio, LinkedIn, Twitter, or anything that shows off your work! We love seeing what you've built 🎨"></textarea>
+          <textarea id="portfolio" name="portfolio"
+            placeholder="Drop your GitHub, portfolio, LinkedIn, Twitter, or anything that shows off your work! We love seeing what you've built 🎨"></textarea>
         </div>
 
         <div class="form-group">
           <label for="coverLetter">Why Do You Want to Join Our Meme Empire? *</label>
-          <textarea id="coverLetter" name="coverLetter" placeholder="Tell us your story! Why WALDOCOIN? What gets you excited about memes and crypto? What would you bring to our chaotic but awesome team? 🐸" required></textarea>
+          <textarea id="coverLetter" name="coverLetter"
+            placeholder="Tell us your story! Why WALDOCOIN? What gets you excited about memes and crypto? What would you bring to our chaotic but awesome team? �"
+            required></textarea>
         </div>
 
         <div class="form-group">
@@ -494,7 +505,7 @@
 
   <script>
     // File upload handling
-    document.getElementById('resume').addEventListener('change', function(e) {
+    document.getElementById('resume').addEventListener('change', function (e) {
       const fileName = e.target.files[0]?.name;
       const fileNameDiv = document.getElementById('fileName');
       if (fileName) {
@@ -505,46 +516,46 @@
     });
 
     // Form submission
-    document.getElementById('applicationForm').addEventListener('submit', function(e) {
+    document.getElementById('applicationForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      
+
       const formData = new FormData(this);
       const alertContainer = document.getElementById('alertContainer');
-      
+
       // Show loading state
       const submitBtn = document.querySelector('.submit-btn');
       const originalText = submitBtn.textContent;
       submitBtn.textContent = '⏳ Submitting...';
       submitBtn.disabled = true;
-      
+
       // Simulate form submission (replace with actual endpoint)
       setTimeout(() => {
         // Success message
         alertContainer.innerHTML = `
           <div class="alert success">
             🎉 <strong>YOOO! Application Received!</strong><br>
-            Welcome to the WALDO family! We'll check out your application and slide into your DMs within a few days. Get ready to meme your way to the moon! 🚀🐸
+            Welcome to the WALDO family! We'll check out your application and slide into your DMs within a few days. Get ready to meme your way to the moon! 🚀�
           </div>
         `;
-        
+
         // Reset form
         this.reset();
         document.getElementById('fileName').textContent = '';
-        
+
         // Reset button
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
-        
+
         // Scroll to alert
         alertContainer.scrollIntoView({ behavior: 'smooth' });
-        
+
       }, 2000);
     });
 
     // Form validation
     const requiredFields = document.querySelectorAll('[required]');
     requiredFields.forEach(field => {
-      field.addEventListener('blur', function() {
+      field.addEventListener('blur', function () {
         if (!this.value.trim()) {
           this.style.borderColor = '#ff6b6b';
         } else {
@@ -554,4 +565,5 @@
     });
   </script>
 </body>
+
 </html>
