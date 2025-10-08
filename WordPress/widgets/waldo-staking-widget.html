@@ -1121,17 +1121,22 @@
 
 
 
-        // STRICT: Only show NEW if completed within last 2 minutes AND has valid timestamp
-        const twoMinutesMs = 2 * 60 * 1000; // 2 minutes only
-        const hasValidTimestamp = completionTime > 0 && !isNaN(completionTime) && completionTime > 1000000000000; // Must be a real timestamp (after year 2001)
-        const isVeryRecent = hasValidTimestamp && (now - completionTime) < twoMinutesMs;
+        // ULTRA STRICT: Only show NEW if completed within last 30 seconds AND has very recent timestamp
+        const thirtySecondsMs = 30 * 1000; // 30 seconds only
+        const recentTimestamp = Date.now() - (24 * 60 * 60 * 1000); // Must be from last 24 hours
+        const hasValidRecentTimestamp = completionTime > recentTimestamp && !isNaN(completionTime);
+        const isUltraRecent = hasValidRecentTimestamp && (now - completionTime) < thirtySecondsMs;
 
-        // Debug only for stakes that would show NEW
-        if (isVeryRecent) {
-          console.log(`[NEW-BADGE] Stake ${s.stakeId}: age=${Math.floor((now - completionTime) / 60000)}min - SHOWING NEW`);
+        // Never show NEW for stakes without recent timestamps
+        const newBadge = isUltraRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
+
+        // Debug log for any stake that might show NEW
+        if (completionTime > 0) {
+          const ageMinutes = Math.floor((now - completionTime) / 60000);
+          if (ageMinutes < 60) { // Only log if less than 1 hour old
+            console.log(`[NEW-CHECK] Stake ${s.stakeId}: age=${ageMinutes}min, recent=${hasValidRecentTimestamp}, show=${isUltraRecent}`);
+          }
         }
-
-        const newBadge = isVeryRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
 
         return `
         <div class="stake-item">
@@ -1897,8 +1902,28 @@
       }
     };
 
+    // One-time cleanup: Remove any existing NEW badges on page load
+    setTimeout(() => {
+      const existingNewBadges = document.querySelectorAll('.badge.new');
+      if (existingNewBadges.length > 0) {
+        console.log(`[NEW-CLEANUP] Removing ${existingNewBadges.length} existing NEW badges on page load`);
+        existingNewBadges.forEach(badge => {
+          badge.remove();
+        });
+      }
+    }, 3000); // Wait 3 seconds for page to fully load
+
+    // Add function to manually remove all NEW badges
+    window.removeAllNewBadges = function() {
+      const newBadges = document.querySelectorAll('.badge.new');
+      console.log(`[MANUAL-CLEANUP] Removing ${newBadges.length} NEW badges`);
+      newBadges.forEach(badge => badge.remove());
+      return `Removed ${newBadges.length} NEW badges`;
+    };
+
     console.log('[STAKING-WIDGET] ✅ Real-time maturity checking enabled');
     console.log('[STAKING-WIDGET] 💡 Run forceUpdateButtons() to update buttons');
     console.log('[STAKING-WIDGET] 💡 Run fixStakeSections() to move stakes to correct sections');
+    console.log('[STAKING-WIDGET] 💡 Run removeAllNewBadges() to remove all NEW badges');
   })();
 </script>
