@@ -5068,7 +5068,8 @@
             const stake = posData.positions.find(p => p.stakeId === stakeId);
             if (stake) {
               const now = new Date();
-              const unlockDateTime = new Date(stake.unlockDate || stake.endDate);
+              // Backend returns 'endDate', not 'unlockDate'
+              const unlockDateTime = new Date(stake.endDate);
               const bufferMs = 60 * 1000; // 60-second buffer to match backend
               isMatured = now >= (unlockDateTime.getTime() - bufferMs);
             }
