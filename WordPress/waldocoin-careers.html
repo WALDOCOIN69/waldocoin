@@ -284,7 +284,8 @@
       color: #ff6b6b;
     }
 
-    /* Hide ALL WordPress comment and navigation sections */
+    /* Hide ALL WordPress-generated content */
+    body:not(.container)>*:not(.container),
     #comments,
     .comment-respond,
     .comments-area,
@@ -303,11 +304,37 @@
     .comment-content,
     .comment-list,
     .trackback,
-    .pingback {
+    .pingback,
+    .nav-previous,
+    .nav-next,
+    .screen-reader-text,
+    .post-nav-links,
+    .entry-navigation,
+    article>*:not(.container),
+    .entry-content>*:not(.container),
+    main>*:not(.container) {
       display: none !important;
       visibility: hidden !important;
       height: 0 !important;
       overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Force show only our container */
+    .container {
+      display: block !important;
+      visibility: visible !important;
+    }
+
+    /* Hide everything before and after our content */
+    body::before,
+    body::after,
+    main::before,
+    main::after,
+    article::before,
+    article::after {
+      display: none !important;
     }
 
     @media (max-width: 768px) {
