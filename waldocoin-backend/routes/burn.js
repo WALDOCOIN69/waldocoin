@@ -173,7 +173,42 @@ router.get('/history', async (req, res) => {
   }
 });
 
-// ✅ GET /api/burn/stats - Get burn statistics
+// ✅ GET /api/burn/total - Get total burned (PUBLIC)
+router.get('/total', async (req, res) => {
+  try {
+    const totalBurned = await redis.get('total_tokens_burned') || 0;
+    const burnHistory = await redis.lRange('token_burns', 0, 9); // Last 10 burns
+
+    const recentBurns = burnHistory.map(burn => {
+      try {
+        const parsed = JSON.parse(burn);
+        return {
+          amount: parsed.amount,
+          timestamp: parsed.timestamp,
+          reason: parsed.reason
+        };
+      } catch (error) {
+        return null;
+      }
+    }).filter(burn => burn !== null);
+
+    res.json({
+      success: true,
+      totalBurned: parseFloat(totalBurned),
+      recentBurns: recentBurns,
+      count: recentBurns.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching burn total:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch burn total'
+    });
+  }
+});
+
+// ✅ GET /api/burn/stats - Get burn statistics (ADMIN ONLY)
 router.get('/stats', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
