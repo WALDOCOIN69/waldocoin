@@ -1000,9 +1000,10 @@
         });
 
         const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
-        const soon = !mature && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
+        const isReady = timeRemaining <= bufferMs;
+        const soon = !isReady && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
         const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
-        const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
+        const badge = isReady ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
 
         // Enhanced debug logging
         console.log(`[RENDER-DEBUG] Stake ${s.stakeId}:`, {
@@ -1019,7 +1020,7 @@
         // Determine initial countdown color class using real-time calculation
         const percentRemaining = (realTimeDaysRemaining / total) * 100;
         let countdownClass = '';
-        if (mature) {
+        if (isReady) {
           countdownClass = 'ready';
         } else if (percentRemaining <= 25) {
           countdownClass = 'danger';
@@ -1033,14 +1034,14 @@
             <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
             ${badge}
           </div>
-          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${mature ? 'READY!' : dr + 'd'}</span></div>
+          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${timeRemaining <= bufferMs ? 'READY!' : dr + 'd'}</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
           <div class="details">
             <div>Start: ${fmtDate(s.startDate)} ${fmtTime(s.startDate)} • End: ${fmtDate(s.endDate)} ${fmtTime(s.endDate)} • Progress: ${pct}%</div>
             <div>Accrued so far: ${accrued.toFixed(2)} WALDO</div>
           </div>
           <div class="actions" data-stake-id="${s.stakeId}">
-            ${mature ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
+            ${timeRemaining <= bufferMs ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">💰 Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
           </div>
         </div>`
       }).join('') || '<div class="subline">No active long‑term locks</div>';
