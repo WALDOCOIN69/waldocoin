@@ -3238,8 +3238,8 @@
 
 
       <!-- WALDO/USD Trend -->
-      <div class="card">
-        <h2>📈 WALDO/USD Trend (7 Days)</h2>
+      <div class="card" onclick="openChartModal()" style="cursor: pointer;">
+        <h2>📈 WALDO/USD Trend (7 Days) <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to expand</span></h2>
         <div class="chart-container">
           <canvas height="160" id="waldoPriceChartNew" class="chart-canvas"></canvas>
         </div>
@@ -3834,6 +3834,18 @@
       <div id="proposalContainer">COMMING SOON...</div>
     </div> <!-- Close .battle-bottom-row -->
     <!-- END .container -->
+
+    <!-- Chart Expand Modal -->
+    <div id="chartModal" class="nft-modal modal-container" style="display: none;">
+      <div class="modal-content" style="max-width: 1200px; width: 95%;">
+        <span onclick="closeChartModal()" class="close-nft-modal modal-close">&times;</span>
+        <h3 class="modal-title">📈 WALDO/USD Price Trend (7 Days)</h3>
+        <div class="chart-container" style="margin-top: 20px;">
+          <canvas id="waldoPriceChartExpanded" class="chart-canvas" height="400"></canvas>
+        </div>
+      </div>
+    </div>
+
     <!--script src="dashboard-fix.js"></-script-->
     <script>
       (function () {
@@ -4094,6 +4106,8 @@
       let xpChartInstance = null;
       let priceChartMergedInstance = null;
       let priceChartNewInstance = null;
+      let priceChartExpandedInstance = null;
+      let lastChartData = null; // Store chart data for modal
 
       function renderXPTrendChart(xpTrend) {
         const el = $("xpChart");
@@ -4194,6 +4208,9 @@
                 pointBorderWidth: 2
               }]
             };
+
+            // Store chart data for modal
+            lastChartData = { data: chartData, labels: labels, prices: prices };
 
             const chartOptions = {
               responsive: true,
@@ -4939,6 +4956,72 @@
         if (modal) modal.style.display = "none";
       }
 
+      // === Chart Modal Functions ===
+      function openChartModal() {
+        const modal = document.getElementById("chartModal");
+        if (!modal) return;
+        modal.style.display = "block";
+
+        // Render expanded chart with stored data
+        if (lastChartData && window.Chart) {
+          const canvas = document.getElementById("waldoPriceChartExpanded");
+          if (canvas) {
+            const ctx = canvas.getContext("2d");
+            if (priceChartExpandedInstance) {
+              priceChartExpandedInstance.destroy();
+            }
+
+            const chartOptions = {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: true },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  titleColor: '#25c2a0',
+                  bodyColor: '#fff',
+                  borderColor: '#25c2a0',
+                  borderWidth: 1,
+                  padding: 12,
+                  displayColors: false,
+                  callbacks: {
+                    label: function (context) {
+                      return `$${context.parsed.y.toFixed(8)}`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                  ticks: { color: '#ccc' }
+                },
+                y: {
+                  grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                  ticks: {
+                    color: '#ccc',
+                    callback: function (value) {
+                      return '$' + value.toFixed(8);
+                    }
+                  }
+                }
+              }
+            };
+
+            priceChartExpandedInstance = new Chart(ctx, {
+              type: "line",
+              data: lastChartData.data,
+              options: chartOptions
+            });
+          }
+        }
+      }
+
+      function closeChartModal() {
+        const modal = document.getElementById("chartModal");
+        if (modal) modal.style.display = "none";
+      }
+
       async function createStake() {
         const amount = parseFloat(document.getElementById("stakeAmount").value);
         const duration = parseInt(document.getElementById("stakeDuration").value);
@@ -5238,6 +5321,8 @@
       window.closeStakingModal = closeStakingModal;
       window.createStake = createStake;
       window.fetchStakingPositions = fetchStakingPositions;
+      window.openChartModal = openChartModal;
+      window.closeChartModal = closeChartModal;
       window.unstakePosition = unstakePosition;
       window.linkTwitterAccount = linkTwitterAccount;
       window.toggleStakingZone = toggleStakingZone;
