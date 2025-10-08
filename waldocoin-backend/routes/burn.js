@@ -12,7 +12,47 @@ const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TX
 const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
 const DISTRIBUTOR_WALLET = 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
 
+// Total supply (1 billion)
+const TOTAL_SUPPLY = 1000000000;
+
 console.log("🔥 Loaded: routes/burn.js");
+
+// Helper function to get total burned from XRPL
+async function getTotalBurnedFromXRPL() {
+  let client;
+  try {
+    client = new Client(XRPL_SERVER);
+    await client.connect();
+
+    // Get issuer's account lines to see how much has been returned (burned)
+    const response = await client.request({
+      command: 'gateway_balances',
+      account: WALDO_ISSUER,
+      ledger_index: 'validated'
+    });
+
+    await client.disconnect();
+
+    // The obligations show how much is currently in circulation
+    // Burned = Total Supply - Obligations
+    const obligations = response.result.obligations || {};
+    const wloInCirculation = parseFloat(obligations.WLO || 0);
+    const totalBurned = TOTAL_SUPPLY - wloInCirculation;
+
+    console.log(`📊 XRPL Data: ${wloInCirculation.toLocaleString()} WLO in circulation, ${totalBurned.toLocaleString()} burned`);
+
+    return totalBurned;
+
+  } catch (error) {
+    console.error('❌ Error fetching burn data from XRPL:', error);
+    if (client && client.isConnected()) {
+      await client.disconnect();
+    }
+    // Fallback to Redis if XRPL fails
+    const redisBurned = await redis.get('total_tokens_burned') || 0;
+    return parseFloat(redisBurned);
+  }
+}
 
 // ✅ POST /api/burn/tokens - Burn WALDO tokens on-chain
 router.post('/tokens', async (req, res) => {
@@ -173,10 +213,63 @@ router.get('/history', async (req, res) => {
   }
 });
 
-// ✅ GET /api/burn/total - Get total burned (PUBLIC)
+// ✅ POST /api/burn/set-total - Manually set total burned (ADMIN ONLY)
+router.post('/set-total', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'] || req.body.adminKey;
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized: Invalid admin key'
+      });
+    }
+
+    const { totalBurned, reason } = req.body;
+
+    if (!totalBurned || isNaN(totalBurned) || parseFloat(totalBurned) < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid totalBurned. Must be a positive number.'
+      });
+    }
+
+    const newTotal = parseFloat(totalBurned);
+    await redis.set('total_tokens_burned', String(newTotal));
+
+    // Add adjustment event to history
+    const adjustmentEvent = {
+      amount: newTotal,
+      reason: reason || 'Manual total adjustment',
+      timestamp: new Date().toISOString(),
+      type: 'adjustment'
+    };
+    await redis.lPush('token_burns', JSON.stringify(adjustmentEvent));
+
+    console.log(`✅ Total burned manually set to ${newTotal} WALDO`);
+
+    res.json({
+      success: true,
+      message: `Total burned set to ${newTotal} WALDO`,
+      totalBurned: newTotal
+    });
+
+  } catch (error) {
+    console.error('❌ Error setting total burned:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set total burned'
+    });
+  }
+});
+
+// ✅ GET /api/burn/total - Get total burned from XRPL (PUBLIC)
 router.get('/total', async (req, res) => {
   try {
-    const totalBurned = await redis.get('total_tokens_burned') || 0;
+    // Get actual burned amount from XRPL
+    const totalBurned = await getTotalBurnedFromXRPL();
+
+    // Get recent burn events from Redis (for history display)
     const burnHistory = await redis.lRange('token_burns', 0, 9); // Last 10 burns
 
     const recentBurns = burnHistory.map(burn => {
@@ -194,9 +287,12 @@ router.get('/total', async (req, res) => {
 
     res.json({
       success: true,
-      totalBurned: parseFloat(totalBurned),
+      totalBurned: totalBurned,
+      totalSupply: TOTAL_SUPPLY,
+      inCirculation: TOTAL_SUPPLY - totalBurned,
       recentBurns: recentBurns,
-      count: recentBurns.length
+      count: recentBurns.length,
+      source: 'xrpl'
     });
 
   } catch (error) {
