@@ -4590,6 +4590,8 @@
         try {
           const scoreDisplay = document.getElementById("memeScoreDisplay");
           const scoreCard = document.getElementById("memeScoreCard");
+          const currentLevelEl = document.getElementById("currentLevel");
+          const nextLevelInfoEl = document.getElementById("nextLevelInfo");
 
           if (!scoreDisplay || !scoreCard) return;
 
@@ -4603,6 +4605,23 @@
           const currentLevel = level || 1;
           const bgClass = `level-bg-${Math.min(currentLevel, 5)}`; // Max 5 levels for backgrounds
           scoreCard.classList.add(bgClass);
+
+          // Update level text dynamically
+          if (currentLevelEl) {
+            const levelTitle = levelTitles[currentLevel] || `Level ${currentLevel}`;
+            currentLevelEl.textContent = `Level ${currentLevel}: ${levelTitle}`;
+          }
+
+          // Update next level info dynamically
+          if (nextLevelInfoEl) {
+            const xpNeeded = calculateXPToNextLevel(xp);
+            const nextLevel = currentLevel + 1;
+            if (currentLevel >= 5) {
+              nextLevelInfoEl.textContent = "Max Level Reached! 🎉";
+            } else {
+              nextLevelInfoEl.textContent = `${xpNeeded} XP to Level ${nextLevel}`;
+            }
+          }
 
           // Add pulsing effect for high scores
           if (xp > 10000) {
