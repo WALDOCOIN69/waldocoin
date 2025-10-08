@@ -911,6 +911,8 @@
               el.classList.add('ready');
               el.textContent = 'READY!';
 
+              console.log(`[COUNTDOWN] 🔥 COUNTDOWN HIT READY! diff=${diff}, bufferMs=${bufferMs}`);
+
               // DIRECT DOM MANIPULATION: Move stake to ready section immediately
               if (!el.classList.contains('moved-to-ready')) {
                 el.classList.add('moved-to-ready');
@@ -1808,33 +1810,37 @@
       }
     };
 
-    // AGGRESSIVE APPROACH: Check every 5 seconds for misplaced stakes and force refresh
+    // SIMPLE BRUTE FORCE: Check every second for READY! countdowns and fix buttons
     setInterval(() => {
-      // Check if there are any stakes with READY! countdown in the active section
-      const activeSection = document.getElementById('ltList'); // This is the active stakes section
-      if (!activeSection) return;
-
-      const readyStakesInActiveSection = activeSection.querySelectorAll('.countdown');
-      let foundMisplacedStakes = false;
-
-      readyStakesInActiveSection.forEach(countdown => {
+      document.querySelectorAll('.countdown').forEach(countdown => {
         if (countdown.textContent === 'READY!') {
-          foundMisplacedStakes = true;
           const stakeItem = countdown.closest('.stake-item');
-          const stakeId = stakeItem ? stakeItem.dataset.stakeId : 'unknown';
-          console.log(`[MISPLACED-STAKE] Found READY stake ${stakeId} in Active section - triggering refresh`);
+          if (stakeItem) {
+            const stakeId = stakeItem.dataset.stakeId;
+            const actionsDiv = stakeItem.querySelector('.actions');
+            const currentButton = actionsDiv ? actionsDiv.innerHTML : '';
+
+            // If it has READY! countdown but Unlock button, fix it
+            if (currentButton.includes('Unlock')) {
+              console.log(`[BRUTE-FORCE] 🔥 Found READY! countdown with Unlock button for ${stakeId} - FIXING NOW!`);
+
+              if (actionsDiv) {
+                actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">💰 Redeem</button>`;
+                console.log(`[BRUTE-FORCE] ✅ Fixed button for ${stakeId}`);
+              }
+
+              // Also fix badge
+              const badge = stakeItem.querySelector('.badge.soon');
+              if (badge) {
+                badge.className = 'badge mature';
+                badge.textContent = 'Matured';
+                console.log(`[BRUTE-FORCE] ✅ Fixed badge for ${stakeId}`);
+              }
+            }
+          }
         }
       });
-
-      // If we found any misplaced stakes, trigger a complete refresh
-      if (foundMisplacedStakes) {
-        console.log('[MISPLACED-STAKE] Triggering stakeLoadInfo() to fix section placement...');
-        if (typeof stakeLoadInfo === 'function') {
-          stakeLoadInfo().catch(e => console.warn('Misplaced stake refresh failed:', e));
-        }
-      }
-
-    }, 5000); // Check every 5 seconds
+    }, 1000); // Check every second
 
     // Also check immediately when page loads
     setTimeout(() => {
