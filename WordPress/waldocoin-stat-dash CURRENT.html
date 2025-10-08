@@ -3579,7 +3579,7 @@
           </div>
           <div class="staking-stat-item">
             <div class="staking-stat-value staking-stat-green" id="totalStakedDisplay">Loading...</div>
-            <div class="staking-stat-label">Total WALDO Staked</div>
+            <div class="staking-stat-label">Ecosystem Total Staked</div>
           </div>
         </div>
 
@@ -4709,12 +4709,23 @@
         }
       }
 
-      // Load staking stats summary (Per‑Meme redemptions)
+      // Load staking stats summary (Per‑Meme redemptions + ecosystem total)
       async function fetchStakingStatsSummary() {
         try {
           const res = await fetch(`${baseURL}/api/staking/stats`);
           const data = await res.json();
           if (!data || !data.success) return;
+
+          // Update ecosystem-wide total staked
+          if (data.stats && data.stats.overview) {
+            const totalStakedDisplay = document.getElementById('totalStakedDisplay');
+            if (totalStakedDisplay) {
+              const ecosystemTotal = parseFloat(data.stats.overview.totalStaked) || 0;
+              totalStakedDisplay.textContent = `${ecosystemTotal.toLocaleString()} WALDO`;
+            }
+          }
+
+          // Update per-meme redemptions
           const s = data.stats && data.stats.perMemeRedemptions;
           if (!s) return;
 
