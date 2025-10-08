@@ -1810,37 +1810,32 @@
       }
     };
 
-    // SIMPLE BRUTE FORCE: Check every second for READY! countdowns and fix buttons
+    // ULTIMATE OVERRIDE: Force fix any READY! countdown with wrong button
     setInterval(() => {
-      document.querySelectorAll('.countdown').forEach(countdown => {
-        if (countdown.textContent === 'READY!') {
-          const stakeItem = countdown.closest('.stake-item');
-          if (stakeItem) {
-            const stakeId = stakeItem.dataset.stakeId;
-            const actionsDiv = stakeItem.querySelector('.actions');
-            const currentButton = actionsDiv ? actionsDiv.innerHTML : '';
+      // Find ALL elements with READY! text
+      const readyElements = Array.from(document.querySelectorAll('*')).filter(el =>
+        el.textContent && el.textContent.trim() === 'READY!'
+      );
 
-            // If it has READY! countdown but Unlock button, fix it
-            if (currentButton.includes('Unlock')) {
-              console.log(`[BRUTE-FORCE] 🔥 Found READY! countdown with Unlock button for ${stakeId} - FIXING NOW!`);
+      readyElements.forEach(readyEl => {
+        const stakeItem = readyEl.closest('.stake-item');
+        if (stakeItem) {
+          const stakeId = stakeItem.dataset.stakeId || 'unknown';
+          const actionsDiv = stakeItem.querySelector('.actions');
 
-              if (actionsDiv) {
-                actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">💰 Redeem</button>`;
-                console.log(`[BRUTE-FORCE] ✅ Fixed button for ${stakeId}`);
-              }
+          if (actionsDiv) {
+            const currentHTML = actionsDiv.innerHTML;
 
-              // Also fix badge
-              const badge = stakeItem.querySelector('.badge.soon');
-              if (badge) {
-                badge.className = 'badge mature';
-                badge.textContent = 'Matured';
-                console.log(`[BRUTE-FORCE] ✅ Fixed badge for ${stakeId}`);
-              }
+            // If it shows READY! anywhere but has Unlock button, fix it immediately
+            if (currentHTML.includes('Unlock') || currentHTML.includes('onclick="stakeUnstake')) {
+              console.log(`[ULTIMATE-FIX] 🚨 FOUND READY! WITH UNLOCK BUTTON - FIXING ${stakeId}!`);
+              actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">💰 Redeem</button>`;
+              console.log(`[ULTIMATE-FIX] ✅ FIXED ${stakeId}`);
             }
           }
         }
       });
-    }, 1000); // Check every second
+    }, 500); // Check every 500ms
 
     // Also check immediately when page loads
     setTimeout(() => {
