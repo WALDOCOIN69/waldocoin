@@ -284,12 +284,30 @@
       color: #ff6b6b;
     }
 
-    /* Hide WordPress comment section */
+    /* Hide ALL WordPress comment and navigation sections */
     #comments,
     .comment-respond,
     .comments-area,
-    #respond {
+    #respond,
+    .comment-form,
+    .comment-reply-title,
+    .logged-in-as,
+    .comment-notes,
+    .nav-links,
+    .post-navigation,
+    .navigation,
+    .entry-footer,
+    .entry-meta,
+    .post-edit-link,
+    .comment-metadata,
+    .comment-content,
+    .comment-list,
+    .trackback,
+    .pingback {
       display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      overflow: hidden !important;
     }
 
     @media (max-width: 768px) {
