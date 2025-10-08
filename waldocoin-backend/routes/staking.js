@@ -7,7 +7,7 @@ import { validateAdminKey, getAdminKey } from '../utils/adminAuth.js';
 import {
   calculateMaturity,
   createStakeId,
-  calculateAPY,
+  calculateStakeAPY,
   calculateExpectedReward,
   createStakeData,
   cleanupCompletedStake,
@@ -347,7 +347,7 @@ router.post("/long-term", async (req, res) => {
     }
 
     // Calculate APY with Level 5 bonus
-    const apy = calculateAPY(parseInt(duration), userLevel.level);
+    const apy = calculateStakeAPY(parseInt(duration), userLevel.level);
 
     // Calculate expected rewards as flat bonus (not annualized APY)
     const rewardCalculation = stakeAmount * (apy / 100); // Simple percentage bonus
@@ -682,7 +682,7 @@ router.get("/info/:wallet", async (req, res) => {
     // Calculate available durations with APY rates
     const availableDurations = userLevel.availableDurations.map(duration => ({
       days: duration,
-      apy: `${calculateAPY(duration, userLevel.level)}%`,
+      apy: `${calculateStakeAPY(duration, userLevel.level)}%`,
       baseAPY: `${LONG_TERM_APY_RATES[duration]}%`,
       legendBonus: userLevel.level === 5 ? `+${LEGEND_BONUS * 100}%` : null
     }));
@@ -1966,7 +1966,7 @@ router.post('/admin/create-test-stake', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Wallet required' });
     }
 
-    const apy = calculateAPY(duration, 1); // Default to level 1 for test stakes
+    const apy = calculateStakeAPY(duration, 1); // Default to level 1 for test stakes
     const expectedReward = calculateExpectedReward(amount, apy);
 
     let startDate, endDate, stakeId;
@@ -2263,7 +2263,7 @@ router.post('/create-test-mature', async (req, res) => {
 
     // Create test mature stake
     const stakeId = createStakeId('longterm', wallet, 'TEST_MATURE');
-    const apy = calculateAPY(duration, 1); // Default to level 1 for test stakes
+    const apy = calculateStakeAPY(duration, 1); // Default to level 1 for test stakes
     const expectedReward = calculateExpectedReward(amount, apy);
 
     // Set dates so stake is already mature (5 days overdue)

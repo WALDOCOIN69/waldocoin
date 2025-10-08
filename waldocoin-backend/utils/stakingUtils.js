@@ -40,7 +40,7 @@ export function createStakeId(type, wallet, suffix = '') {
  * @param {number} level - User level (1-5)
  * @returns {number} - APY percentage
  */
-export function calculateAPY(duration, level = 1) {
+export function calculateStakeAPY(duration, level = 1) {
   // Use the same rates as in staking.js LONG_TERM_APY_RATES
   const baseRates = {
     30: 12,   // 12% bonus for 30 days
