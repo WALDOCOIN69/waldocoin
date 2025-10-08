@@ -2,6 +2,7 @@
 import express from "express";
 import { redis } from "../../redisClient.js";
 import getWaldoPerXrp from "../../utils/getWaldoPerXrp.js";
+import fetch from "node-fetch";
 
 const router = express.Router();
 
@@ -12,9 +13,32 @@ router.get("/", async (req, res) => {
     const maxDays = 30; // Limit to 30 days max
     const requestedDays = Math.min(days, maxDays);
 
-    // Get current price
-    const waldoPerXrp = await getWaldoPerXrp();
-    const xrpPerWlo = waldoPerXrp > 0 ? (1 / waldoPerXrp) : 0;
+    // Get current price from /api/market/wlo (same source as exchange widget)
+    let xrpPerWlo = 0;
+    let waldoPerXrp = 0;
+
+    try {
+      const baseURL = process.env.BASE_URL || 'https://waldocoin-backend-api.onrender.com';
+      const marketRes = await fetch(`${baseURL}/api/market/wlo`);
+      const marketData = await marketRes.json();
+
+      if (marketData.success && marketData.xrpPerWlo) {
+        xrpPerWlo = marketData.xrpPerWlo;
+        waldoPerXrp = marketData.waldoPerXrp || (1 / xrpPerWlo);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch from /api/market/wlo, using fallback:', e.message);
+    }
+
+    // Fallback: try getWaldoPerXrp but ignore 10000 default
+    if (xrpPerWlo === 0) {
+      waldoPerXrp = await getWaldoPerXrp();
+      // Ignore the 10000 fallback (presale rate) - it's not real market price
+      if (waldoPerXrp === 10000) {
+        waldoPerXrp = 0;
+      }
+      xrpPerWlo = waldoPerXrp > 0 ? (1 / waldoPerXrp) : 0;
+    }
 
     // Get XRP/USD rate (approximate)
     const xrpUsdRate = 0.50; // Approximate XRP price in USD (could fetch from external API)
@@ -29,7 +53,7 @@ router.get("/", async (req, res) => {
     for (let i = requestedDays - 1; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      
+
       // Add some realistic variation (±5% random walk)
       const variation = 1 + (Math.random() - 0.5) * 0.1; // ±5% variation
       const historicalPrice = waldoUsdPrice * variation;
