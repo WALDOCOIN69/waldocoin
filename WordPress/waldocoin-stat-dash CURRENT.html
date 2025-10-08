@@ -3438,6 +3438,24 @@
         </div>
       </div>
 
+      <!-- Tokens Burned -->
+      <div class="card">
+        <h2>🔥 Tokens Burned</h2>
+        <div class="content-center-padded">
+          <div class="large-number large-number-red" id="totalBurnedDisplay">0</div>
+          <div class="subtitle-text">WALDO Burned Forever</div>
+        </div>
+        <div style="margin-top: 20px;">
+          <h3 style="font-size: 14px; margin-bottom: 10px;">Recent Burns:</h3>
+          <ul id="recentBurnsList" class="activity-feed activity-feed-padded">
+            <li class="activity-item">
+              <span class="activity-icon">🔥</span>
+              <span class="activity-text">Loading burn history...</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
 
 
     </div> <!-- End container -->
@@ -4756,6 +4774,49 @@
           console.warn('Staking stats summary failed:', e);
         }
       }
+
+      // Fetch total burned tokens
+      async function fetchTotalBurned() {
+        try {
+          const res = await fetch(`${baseURL}/api/burn/total`);
+          const data = await res.json();
+
+          if (data.success) {
+            // Update total burned display
+            const totalBurnedEl = document.getElementById('totalBurnedDisplay');
+            if (totalBurnedEl) {
+              totalBurnedEl.textContent = (data.totalBurned || 0).toLocaleString();
+            }
+
+            // Update recent burns list
+            const recentBurnsList = document.getElementById('recentBurnsList');
+            if (recentBurnsList && data.recentBurns && data.recentBurns.length > 0) {
+              recentBurnsList.innerHTML = data.recentBurns.map(burn => {
+                const amount = (burn.amount || 0).toLocaleString();
+                const date = burn.timestamp ? new Date(burn.timestamp).toLocaleDateString() : '';
+                const reason = burn.reason || 'Token burn';
+                return `
+                  <li class="activity-item">
+                    <span class="activity-icon">🔥</span>
+                    <span class="activity-text">${amount} WALDO burned - ${reason}</span>
+                    <span class="activity-time">${date}</span>
+                  </li>
+                `;
+              }).join('');
+            } else if (recentBurnsList) {
+              recentBurnsList.innerHTML = `
+                <li class="activity-item">
+                  <span class="activity-icon">🔥</span>
+                  <span class="activity-text">No burns yet</span>
+                </li>
+              `;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch burn data:', e);
+        }
+      }
+
       // === Meme Table Logic ===
       async function fetchMemes(wallet, page = 1, perPage = 5) {
         try {
@@ -5848,7 +5909,8 @@
             fetchBattleLeaderboard().catch(e => console.warn('Battle leaderboard failed:', e)),
             fetchDAOProposals().catch(e => console.warn('DAO proposals failed:', e)),
             fetchStakingStatsSummary().catch(e => console.warn('Staking stats summary failed:', e)),
-            initializePriceCharts().catch(e => console.warn('Price charts failed:', e))
+            initializePriceCharts().catch(e => console.warn('Price charts failed:', e)),
+            fetchTotalBurned().catch(e => console.warn('Total burned failed:', e))
           ];
 
           await Promise.allSettled(loadPromises);
@@ -5893,6 +5955,9 @@
         );
         dashboardIntervals.push(
           setInterval(() => fetchStakingStatsSummary().catch(e => console.warn('Periodic staking stats summary failed:', e)), 2 * 60 * 1000)
+        );
+        dashboardIntervals.push(
+          setInterval(() => fetchTotalBurned().catch(e => console.warn('Periodic total burned failed:', e)), 5 * 60 * 1000)
         );
 
       }
