@@ -979,12 +979,15 @@
         const done = Math.max(0, Math.min(total, total - dr));
         const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
 
-        // FIXED: Use only time-based calculation for initial rendering
+        // SIMPLE FIX: Use bigger buffer and add logging
         const endMs = +new Date(s.endDate || Date.now());
         const now = Date.now();
         const timeRemaining = Math.max(0, endMs - now);
-        const bufferMs = 60 * 1000; // 60-second buffer
+        const bufferMs = 5 * 60 * 1000; // 5-minute buffer (was 60 seconds)
         const mature = timeRemaining <= bufferMs;
+
+        // Log for debugging
+        console.log(`[BUTTON-LOGIC] Stake ${s.stakeId}: timeRemaining=${Math.floor(timeRemaining/1000)}s, mature=${mature}, button=${mature ? 'REDEEM' : 'UNLOCK'}`);
 
         const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
         const soon = !mature && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
