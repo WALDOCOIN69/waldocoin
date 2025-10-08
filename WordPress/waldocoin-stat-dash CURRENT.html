@@ -4971,67 +4971,67 @@
           const data = await res.json();
 
           if (data.success) {
-            // Update totals
-            document.getElementById("totalStaked").textContent = `${data.totalStaked.toFixed(2)} WALDO`;
-            document.getElementById("totalRewards").textContent = `${data.totalRewards.toFixed(2)} WALDO`;
+            // Calculate totals from positions
+            const totalStaked = data.positions
+              .filter(p => p.status === 'active')
+              .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
-            // Update positions display with new payout logic
+            const totalRewards = data.positions
+              .filter(p => p.status === 'active')
+              .reduce((sum, p) => sum + (parseFloat(p.expectedReward) || 0), 0);
+
+            document.getElementById("totalStaked").textContent = `${totalStaked.toFixed(2)} WALDO`;
+            document.getElementById("totalRewards").textContent = `${totalRewards.toFixed(2)} WALDO`;
+
+            // Update positions display
             const positionsDiv = document.getElementById("stakingPositions");
             if (data.positions && data.positions.length > 0) {
               positionsDiv.innerHTML = data.positions.map(position => {
-                const unlockDate = new Date(position.unlockDate).toLocaleDateString();
+                // Use endDate from backend (not unlockDate)
+                const unlockDate = new Date(position.endDate).toLocaleDateString();
                 const now = new Date();
-                const unlockDateTime = new Date(position.unlockDate);
+                const unlockDateTime = new Date(position.endDate);
                 const bufferMs = 60 * 1000; // 60-second buffer to match backend
                 const isMatured = now >= (unlockDateTime.getTime() - bufferMs);
 
                 // Status-based styling
                 let statusColor, statusText, actionButton;
 
-                if (position.status === 'completed') {
+                if (position.status === 'redeemed' || position.status === 'completed') {
                   statusColor = '#ffd93d';
-                  statusText = 'Paid Out';
-
-                  // Check if re-staking window is still open
-                  const restakeWindowEnd = position.restakeWindowEnd ? new Date(position.restakeWindowEnd) : null;
-                  const canRestake = restakeWindowEnd && now < restakeWindowEnd && !position.restakedTo;
-
-                  actionButton = canRestake ?
-                    `<button onclick="showTieredRestakeModal('${position.stakeId}')" class="button-style js-button-tiered">⭐ Tiered Re-stake Available</button>` :
-                    `<div class="js-status-completed">Completed</div>`;
+                  statusText = 'Redeemed';
+                  actionButton = `<div class="js-status-completed">✅ Completed</div>`;
 
                 } else if (position.status === 'active' && isMatured) {
-                  statusColor = '#ff6b6b';
-                  statusText = 'Auto-Payout Pending';
-                  actionButton = `<div class="js-status-processing">⏳ Processing automatic payout...</div>`;
+                  statusColor = '#25c2a0';
+                  statusText = 'Ready to Redeem';
+                  actionButton = `<button onclick="unstakePosition('${position.stakeId}')" class="button-style js-button-redeem">💰 Redeem Now</button>`;
 
                 } else if (position.status === 'active') {
                   statusColor = '#25c2a0';
                   statusText = 'Active';
-                  actionButton = isMatured ?
-                    `<button onclick="unstakePosition('${position.stakeId}')" class="button-style js-button-redeem">💰 Redeem Now</button>` :
-                    `<div class="js-status-locked">Locked until ${unlockDate}</div>`;
+                  actionButton = `<div class="js-status-locked">🔒 Locked until ${unlockDate}</div>`;
 
                 } else {
                   statusColor = '#aaa';
-                  statusText = position.status;
+                  statusText = position.status || 'Unknown';
                   actionButton = `<div class="js-status-completed">${position.status}</div>`;
                 }
 
-                const apyPercent = (position.apy * 100).toFixed(1);
-                const tierBonus = position.tierMultiplier ? `(${((position.tierMultiplier - 1) * 100).toFixed(0)}% tier bonus)` : '';
+                const apyPercent = position.apy ? (position.apy).toFixed(1) : '0.0';
+                const currentRewards = position.expectedReward || 0;
 
                 return `
             <div class="js-position-card" style="border-left-color: ${statusColor};">
               <div class="js-position-header">
                 <div>
                   <div class="js-position-amount" style="color: ${statusColor};">${position.amount} WALDO</div>
-                  <div class="js-position-details">${position.duration} days • ${apyPercent}% APY ${tierBonus}</div>
+                  <div class="js-position-details">${position.duration} days • ${apyPercent}% APY</div>
                   <div class="js-position-status" style="color: ${statusColor};">● ${statusText}</div>
                 </div>
                 <div class="js-position-right">
-                  <div class="js-position-rewards">+${(position.currentRewards || 0).toFixed(2)} WALDO</div>
-                  <div class="js-position-unlock">${position.status === 'completed' ? 'Paid out' : `Unlocks: ${unlockDate}`}</div>
+                  <div class="js-position-rewards">+${parseFloat(currentRewards).toFixed(2)} WALDO</div>
+                  <div class="js-position-unlock">${position.status === 'redeemed' ? 'Redeemed' : `Unlocks: ${unlockDate}`}</div>
                 </div>
               </div>
               ${actionButton}
@@ -5039,12 +5039,13 @@
           `;
               }).join('');
             } else {
-              positionsDiv.innerHTML = '<div class="js-no-stakes">No active stakes</div>';
+              positionsDiv.innerHTML = '<div class="js-no-stakes">No active stakes yet. Create your first stake above!</div>';
             }
           }
         } catch (error) {
           console.error("Error fetching staking positions:", error);
           showToast("Could not load staking positions", "error");
+          document.getElementById("stakingPositions").innerHTML = '<div class="js-no-stakes">Error loading stakes. Please refresh.</div>';
         }
       }
 
