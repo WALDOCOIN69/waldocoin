@@ -1137,22 +1137,8 @@
 
 
 
-        // ULTRA STRICT: Only show NEW if completed within last 30 seconds AND has very recent timestamp
-        const thirtySecondsMs = 30 * 1000; // 30 seconds only
-        const recentTimestamp = Date.now() - (24 * 60 * 60 * 1000); // Must be from last 24 hours
-        const hasValidRecentTimestamp = completionTime > recentTimestamp && !isNaN(completionTime);
-        const isUltraRecent = hasValidRecentTimestamp && (now - completionTime) < thirtySecondsMs;
-
-        // Never show NEW for stakes without recent timestamps
-        const newBadge = isUltraRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
-
-        // Debug log for any stake that might show NEW
-        if (completionTime > 0) {
-          const ageMinutes = Math.floor((now - completionTime) / 60000);
-          if (ageMinutes < 60) { // Only log if less than 1 hour old
-            console.log(`[NEW-CHECK] Stake ${s.stakeId}: age=${ageMinutes}min, recent=${hasValidRecentTimestamp}, show=${isUltraRecent}`);
-          }
-        }
+        // DISABLE ALL NEW BADGES - No more NEW badges until we fix the data properly
+        const newBadge = '';
 
         return `
         <div class="stake-item">
@@ -1917,16 +1903,16 @@
       }
     };
 
-    // One-time cleanup: Remove any existing NEW badges on page load
-    setTimeout(() => {
-      const existingNewBadges = document.querySelectorAll('.badge.new');
-      if (existingNewBadges.length > 0) {
-        console.log(`[NEW-CLEANUP] Removing ${existingNewBadges.length} existing NEW badges on page load`);
-        existingNewBadges.forEach(badge => {
+    // AGGRESSIVE NEW BADGE REMOVAL: Remove ALL NEW badges every 2 seconds
+    setInterval(() => {
+      const newBadges = document.querySelectorAll('.badge.new');
+      if (newBadges.length > 0) {
+        console.log(`[NEW-REMOVAL] Removing ${newBadges.length} NEW badges`);
+        newBadges.forEach(badge => {
           badge.remove();
         });
       }
-    }, 3000); // Wait 3 seconds for page to fully load
+    }, 2000); // Remove every 2 seconds
 
     // Add function to manually remove all NEW badges
     window.removeAllNewBadges = function() {
