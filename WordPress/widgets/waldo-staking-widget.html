@@ -911,17 +911,41 @@
               el.classList.add('ready');
               el.textContent = 'READY!';
 
-              // IMMEDIATELY TRIGGER SECTION RE-FILTERING when countdown becomes ready
-              if (!el.classList.contains('refilter-triggered')) {
-                el.classList.add('refilter-triggered');
-                console.log(`[COUNTDOWN] ✅ Countdown became READY! Triggering IMMEDIATE section re-filter...`);
+              // DIRECT DOM MANIPULATION: Move stake to ready section immediately
+              if (!el.classList.contains('moved-to-ready')) {
+                el.classList.add('moved-to-ready');
+                console.log(`[COUNTDOWN] ✅ Countdown became READY! Moving stake directly...`);
 
-                // Trigger complete refresh IMMEDIATELY to move stake to correct section
-                if (typeof stakeLoadInfo === 'function') {
-                  console.log('[COUNTDOWN] Calling stakeLoadInfo() NOW to re-filter sections...');
-                  stakeLoadInfo().catch(e => console.warn('Auto re-filter failed:', e));
-                } else {
-                  console.warn('[COUNTDOWN] stakeLoadInfo function not available!');
+                // Find the stake item that contains this countdown
+                const stakeItem = el.closest('.stake-item');
+                if (stakeItem) {
+                  const stakeId = stakeItem.dataset.stakeId;
+                  console.log(`[DIRECT-MOVE] Moving stake ${stakeId} from Active to Ready section`);
+
+                  // Update the button to Redeem
+                  const actionsDiv = stakeItem.querySelector('.actions');
+                  if (actionsDiv) {
+                    actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">💰 Redeem</button>`;
+                    console.log(`[DIRECT-MOVE] ✅ Updated button to Redeem for ${stakeId}`);
+                  }
+
+                  // Update badge to Matured
+                  const badge = stakeItem.querySelector('.badge.soon');
+                  if (badge) {
+                    badge.className = 'badge mature';
+                    badge.textContent = 'Matured';
+                    console.log(`[DIRECT-MOVE] ✅ Updated badge to Matured for ${stakeId}`);
+                  }
+
+                  // Move the entire stake item to ready section
+                  const readySection = document.getElementById('ltReadyList');
+                  const readyBlock = document.getElementById('ltReadyBlock');
+
+                  if (readySection && readyBlock) {
+                    readySection.appendChild(stakeItem);
+                    readyBlock.style.display = 'block';
+                    console.log(`[DIRECT-MOVE] ✅ Moved stake ${stakeId} to Ready section`);
+                  }
                 }
               }
             } else if (percentRemaining <= 25) {
