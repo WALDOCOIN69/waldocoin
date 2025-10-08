@@ -555,6 +555,30 @@
   </div>
 
   <script>
+    // REMOVE WordPress-injected comments and navigation
+    window.addEventListener('DOMContentLoaded', function () {
+      // Remove all WordPress comment elements
+      const selectors = [
+        '#comments', '.comment-respond', '.comments-area', '#respond',
+        '.comment-form', '.comment-reply-title', '.logged-in-as',
+        '.nav-links', '.post-navigation', '.navigation',
+        '.entry-footer', '.entry-meta', '.nav-previous', '.nav-next',
+        'h2#comments-title', 'h3#reply-title', '.comments-title'
+      ];
+
+      selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => el.remove());
+      });
+
+      // Remove any element containing "Comments" or "Previous:" text
+      document.querySelectorAll('*').forEach(el => {
+        const text = el.textContent.trim();
+        if (text === 'Comments' || text.includes('←Previous:') || text.includes('Help Wanted')) {
+          el.remove();
+        }
+      });
+    });
+
     // Form submission
     document.getElementById('applicationForm').addEventListener('submit', async function (e) {
       e.preventDefault();
