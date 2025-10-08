@@ -536,67 +536,6 @@
     </div>
   </div>
 
-  <script>
-    // File upload handling
-    document.getElementById('resume').addEventListener('change', function (e) {
-      const fileName = e.target.files[0]?.name;
-      const fileNameDiv = document.getElementById('fileName');
-      if (fileName) {
-        fileNameDiv.textContent = `Selected: ${fileName}`;
-      } else {
-        fileNameDiv.textContent = '';
-      }
-    });
-
-    // Form submission
-    document.getElementById('applicationForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      const formData = new FormData(this);
-      const alertContainer = document.getElementById('alertContainer');
-
-      // Show loading state
-      const submitBtn = document.querySelector('.submit-btn');
-      const originalText = submitBtn.textContent;
-      submitBtn.textContent = '⏳ Submitting...';
-      submitBtn.disabled = true;
-
-      // Simulate form submission (replace with actual endpoint)
-      setTimeout(() => {
-        // Success message
-        alertContainer.innerHTML = `
-          <div class="alert success">
-            🎉 <strong>YOOO! Application Received!</strong><br>
-            Welcome to the WALDO family! We'll check out your application and slide into your DMs within a few days. Get ready to meme your way to the moon! 🚀�
-          </div>
-        `;
-
-        // Reset form
-        this.reset();
-        document.getElementById('fileName').textContent = '';
-
-        // Reset button
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-
-        // Scroll to alert
-        alertContainer.scrollIntoView({ behavior: 'smooth' });
-
-      }, 2000);
-    });
-
-    // Form validation
-    const requiredFields = document.querySelectorAll('[required]');
-    requiredFields.forEach(field => {
-      field.addEventListener('blur', function () {
-        if (!this.value.trim()) {
-          this.style.borderColor = '#ff6b6b';
-        } else {
-          this.style.borderColor = '#25c2a0';
-        }
-      });
-    });
-  </script>
 </body>
 
 </html>
