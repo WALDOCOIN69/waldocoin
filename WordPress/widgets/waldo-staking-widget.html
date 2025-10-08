@@ -986,8 +986,18 @@
         const bufferMs = 5 * 60 * 1000; // 5-minute buffer (was 60 seconds)
         const mature = timeRemaining <= bufferMs;
 
-        // Log for debugging
-        console.log(`[BUTTON-LOGIC] Stake ${s.stakeId}: timeRemaining=${Math.floor(timeRemaining/1000)}s, mature=${mature}, button=${mature ? 'REDEEM' : 'UNLOCK'}`);
+        // DETAILED DEBUG: Log everything about this stake
+        console.log(`[STAKE-DEBUG] Stake ${s.stakeId}:`, {
+          endDate: s.endDate,
+          endMs: endMs,
+          now: now,
+          timeRemaining: timeRemaining,
+          timeRemainingSeconds: Math.floor(timeRemaining/1000),
+          bufferMs: bufferMs,
+          mature: mature,
+          buttonType: mature ? 'REDEEM' : 'UNLOCK',
+          rawStakeData: s
+        });
 
         const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
         const soon = !mature && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
@@ -1924,9 +1934,49 @@
       return `Removed ${newBadges.length} NEW badges`;
     };
 
+    // Add function to force a stake to be mature for testing
+    window.forceStakeMature = function(stakeId) {
+      console.log(`[FORCE-MATURE] Forcing stake ${stakeId} to show as mature...`);
+
+      // Find the stake item
+      const stakeItem = document.querySelector(`[data-stake-id="${stakeId}"]`);
+      if (!stakeItem) {
+        console.error(`[FORCE-MATURE] Stake ${stakeId} not found`);
+        return;
+      }
+
+      // Update the button
+      const actionsDiv = stakeItem.querySelector('.actions');
+      if (actionsDiv) {
+        actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">💰 Redeem</button>`;
+        console.log(`[FORCE-MATURE] ✅ Updated button to Redeem for ${stakeId}`);
+      }
+
+      // Update the badge
+      const badge = stakeItem.querySelector('.badge.soon');
+      if (badge) {
+        badge.className = 'badge mature';
+        badge.textContent = 'Matured';
+        console.log(`[FORCE-MATURE] ✅ Updated badge to Matured for ${stakeId}`);
+      }
+
+      // Move to ready section
+      const readySection = document.getElementById('ltReadyList');
+      const readyBlock = document.getElementById('ltReadyBlock');
+
+      if (readySection && readyBlock) {
+        readySection.appendChild(stakeItem);
+        readyBlock.style.display = 'block';
+        console.log(`[FORCE-MATURE] ✅ Moved stake ${stakeId} to Ready section`);
+      }
+
+      return `Forced stake ${stakeId} to mature state`;
+    };
+
     console.log('[STAKING-WIDGET] ✅ Real-time maturity checking enabled');
     console.log('[STAKING-WIDGET] 💡 Run forceUpdateButtons() to update buttons');
     console.log('[STAKING-WIDGET] 💡 Run fixStakeSections() to move stakes to correct sections');
     console.log('[STAKING-WIDGET] 💡 Run removeAllNewBadges() to remove all NEW badges');
+    console.log('[STAKING-WIDGET] 💡 Run forceStakeMature("stake_id") to force a stake to mature state');
   })();
 </script>
