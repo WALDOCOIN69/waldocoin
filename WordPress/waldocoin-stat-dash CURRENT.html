@@ -4700,49 +4700,49 @@
           if (data && data.image) {
             $("topMemeImage") && ($("topMemeImage").src = data.image);
           }
-          // Load staking stats summary (Per‑Meme redemptions)
-          async function fetchStakingStatsSummary() {
-            try {
-              const res = await fetch(`${baseURL}/api/staking/stats`);
-              const data = await res.json();
-              if (!data || !data.success) return;
-              const s = data.stats && data.stats.perMemeRedemptions;
-              if (!s) return;
-
-              const countEl = document.getElementById('pmRedCount');
-              const totalEl = document.getElementById('pmRedTotal');
-              const listEl = document.getElementById('pmRedList');
-
-              if (countEl) countEl.textContent = (s.count || 0).toLocaleString();
-              if (totalEl) totalEl.textContent = `${Number(s.totalAmount || 0).toFixed(2)} WALDO`;
-
-              if (listEl) {
-                if (!s.last10 || s.last10.length === 0) {
-                  listEl.innerHTML = '<div class="js-no-stakes">No matured per‑meme redemptions yet</div>';
-                } else {
-                  listEl.innerHTML = '<ul style="list-style:none;padding:0;margin:0;"></ul>';
-                  const ul = listEl.querySelector('ul');
-                  s.last10.forEach(ev => {
-                    const short = ev.txid ? `${ev.txid.slice(0, 8)}…${ev.txid.slice(-6)}` : '—';
-                    const when = ev.timestamp ? new Date(ev.timestamp).toLocaleString() : '';
-                    const li = document.createElement('li');
-                    li.style.margin = '6px 0';
-                    li.innerHTML = `+${(Number(ev.amount) || 0).toFixed(2)} WALDO • <a class="xrpl-link-green" href="https://livenet.xrpl.org/transactions/${ev.txid}" target="_blank" rel="noopener">${short}</a> <span style="color:#888;">${when}</span>`;
-                    ul.appendChild(li);
-                  });
-                }
-              }
-            } catch (e) {
-              console.warn('Staking stats summary failed:', e);
-            }
-          }
-
 
           if (data && data.author && data.id) {
             $("topMemeLink") && ($("topMemeLink").href = `https://x.com/${data.author}/status/${data.id}`);
           }
         } catch (err) {
           console.warn('Top meme not available:', err.message);
+        }
+      }
+
+      // Load staking stats summary (Per‑Meme redemptions)
+      async function fetchStakingStatsSummary() {
+        try {
+          const res = await fetch(`${baseURL}/api/staking/stats`);
+          const data = await res.json();
+          if (!data || !data.success) return;
+          const s = data.stats && data.stats.perMemeRedemptions;
+          if (!s) return;
+
+          const countEl = document.getElementById('pmRedCount');
+          const totalEl = document.getElementById('pmRedTotal');
+          const listEl = document.getElementById('pmRedList');
+
+          if (countEl) countEl.textContent = (s.count || 0).toLocaleString();
+          if (totalEl) totalEl.textContent = `${Number(s.totalAmount || 0).toFixed(2)} WALDO`;
+
+          if (listEl) {
+            if (!s.last10 || s.last10.length === 0) {
+              listEl.innerHTML = '<div class="js-no-stakes">No matured per‑meme redemptions yet</div>';
+            } else {
+              listEl.innerHTML = '<ul style="list-style:none;padding:0;margin:0;"></ul>';
+              const ul = listEl.querySelector('ul');
+              s.last10.forEach(ev => {
+                const short = ev.txid ? `${ev.txid.slice(0, 8)}…${ev.txid.slice(-6)}` : '—';
+                const when = ev.timestamp ? new Date(ev.timestamp).toLocaleString() : '';
+                const li = document.createElement('li');
+                li.style.margin = '6px 0';
+                li.innerHTML = `+${(Number(ev.amount) || 0).toFixed(2)} WALDO • <a class="xrpl-link-green" href="https://livenet.xrpl.org/transactions/${ev.txid}" target="_blank" rel="noopener">${short}</a> <span style="color:#888;">${when}</span>`;
+                ul.appendChild(li);
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Staking stats summary failed:', e);
         }
       }
       // === Meme Table Logic ===
@@ -5072,6 +5072,11 @@
 
             // Update positions display
             const positionsDiv = document.getElementById("stakingPositions");
+            if (!positionsDiv) {
+              console.warn('⚠️ stakingPositions element not found');
+              return;
+            }
+
             if (data.positions && data.positions.length > 0) {
               positionsDiv.innerHTML = data.positions.map(position => {
                 // Use endDate from backend (not unlockDate)
@@ -5132,7 +5137,10 @@
         } catch (error) {
           console.error("Error fetching staking positions:", error);
           showToast("Could not load staking positions", "error");
-          document.getElementById("stakingPositions").innerHTML = '<div class="js-no-stakes">Error loading stakes. Please refresh.</div>';
+          const positionsDiv = document.getElementById("stakingPositions");
+          if (positionsDiv) {
+            positionsDiv.innerHTML = '<div class="js-no-stakes">Error loading stakes. Please refresh.</div>';
+          }
         }
       }
 
