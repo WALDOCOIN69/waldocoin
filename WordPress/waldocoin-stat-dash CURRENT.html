@@ -3888,11 +3888,14 @@
         <div class="modal-field">
           <label class="modal-label">Staking Duration:</label>
           <select id="stakeDuration" class="modal-select">
-            <option value="30">30 days (12% APY)</option>
-            <option value="90">90 days (13.2% APY)</option>
-            <option value="180">180 days (24% APY)</option>
-            <option value="365">365 days (26% APY)</option>
+            <option value="30">30 days (+12% bonus)</option>
+            <option value="90">90 days (+18% bonus)</option>
+            <option value="180">180 days (+25% bonus)</option>
+            <option value="365">365 days (+45% bonus)</option>
           </select>
+          <div class="modal-hint" style="margin-top: 8px; font-size: 12px; color: #888;">
+            💎 Level 5 (Waldo Legend) gets +2% bonus on all durations
+          </div>
         </div>
 
         <div class="modal-estimate">
@@ -4872,26 +4875,28 @@
         const updateEstimate = () => {
           const amount = parseFloat(amountInput.value) || 0;
           const duration = parseInt(durationSelect.value) || 30;
-          let apy;
+
+          // Use flat bonus rates (not annualized APY) - matches backend calculation
+          let bonusPercent;
           if (duration >= 365) {
-            apy = 0.26; // 26% APY for 365+ days
+            bonusPercent = 45; // +45% flat bonus for 365 days
           } else if (duration >= 180) {
-            apy = 0.24; // 24% APY for 180+ days
+            bonusPercent = 25; // +25% flat bonus for 180 days
           } else if (duration >= 90) {
-            apy = 0.132; // 13.2% APY for 90+ days
+            bonusPercent = 18; // +18% flat bonus for 90 days
           } else {
-            apy = 0.12; // 12% APY for 30-89 days
+            bonusPercent = 12; // +12% flat bonus for 30 days
           }
 
           if (amount > 0) {
-            const dailyRate = apy / 365;
-            const totalRewards = amount * dailyRate * duration;
+            // Calculate as flat bonus (not annualized)
+            const totalRewards = amount * (bonusPercent / 100);
             const finalAmount = amount + totalRewards;
 
             document.getElementById("stakingEstimate").innerHTML = `
         <div class="js-estimate-rewards">💰 Estimated Rewards: ${totalRewards.toFixed(2)} WALDO</div>
         <div class="js-estimate-total">📈 Total Return: ${finalAmount.toFixed(2)} WALDO</div>
-        <div class="js-estimate-apy">APY: ${(apy * 100).toFixed(0)}% | Duration: ${duration} days</div>
+        <div class="js-estimate-apy">+${bonusPercent}% bonus | Duration: ${duration} days</div>
       `;
           } else {
             document.getElementById("stakingEstimate").textContent = "Enter amount to see estimate";
