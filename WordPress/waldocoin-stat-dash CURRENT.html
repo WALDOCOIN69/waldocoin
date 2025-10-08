@@ -3120,7 +3120,7 @@
 
       <!-- Eligibility Badge Card (top status) -->
       <div class="card" id="eligibilityCard">
-        <h2>✅ WALDO Eligibility</h2>
+        <h2 id="eligibilityTitle">✅ WALDO Eligibility</h2>
         <div class="content-center">
           <div class="large-number" id="eligibilityStatus">Checking…</div>
           <div class="subtitle-text" id="eligibilityDetail">—</div>
@@ -5712,25 +5712,59 @@
           const data = await res.json();
           const statusEl = $("eligibilityStatus");
           const detailEl = $("eligibilityDetail");
-          if (!statusEl || !detailEl) return;
+          const cardEl = $("eligibilityCard");
+          const titleEl = $("eligibilityTitle");
+
+          if (!statusEl || !detailEl || !cardEl) return;
+
           if (data && data.success) {
-            statusEl.textContent = data.ok ? "Eligible" : "Not Eligible";
-            statusEl.style.color = data.ok ? "#25c2a0" : "#ff6b6b";
-            const bal = Number(data.balance || 0).toLocaleString();
-            const req = Number(data.requiredWaldo || 0).toLocaleString();
-            const rate = Number(data.waldoPerXrp || 0).toLocaleString();
-            detailEl.textContent = data.ok
-              ? `You have ${bal} WALDO (min ${req} at ${rate} WALDO/XRP)`
-              : `You need ${req} WALDO (≈${data.minXrp} XRP at ${rate} WALDO/XRP). You have ${bal}.`;
+            const bal = Number(data.balance || 0);
+            const req = Number(data.requiredWaldo || 0);
+            const needed = Math.max(0, req - bal);
+
+            if (data.ok) {
+              // ELIGIBLE - Green background
+              statusEl.textContent = "✅ Eligible";
+              statusEl.style.color = "#000";
+              cardEl.style.background = "linear-gradient(135deg, #25c2a0 0%, #00ff88 100%)";
+              cardEl.style.color = "#000";
+              if (titleEl) titleEl.style.color = "#000";
+              detailEl.style.color = "#000";
+              detailEl.textContent = `You have ${bal.toLocaleString()} WALDO (minimum: ${req.toLocaleString()})`;
+            } else {
+              // NOT ELIGIBLE - Red background
+              statusEl.textContent = "❌ Not Eligible";
+              statusEl.style.color = "#fff";
+              cardEl.style.background = "linear-gradient(135deg, #ff6b6b 0%, #ff4444 100%)";
+              cardEl.style.color = "#fff";
+              if (titleEl) titleEl.style.color = "#fff";
+              detailEl.style.color = "#fff";
+              detailEl.textContent = `You need ${needed.toLocaleString()} more WALDO (have ${bal.toLocaleString()}, need ${req.toLocaleString()})`;
+            }
           } else {
+            // UNKNOWN - Default gray
             statusEl.textContent = "Unknown";
+            statusEl.style.color = "#ccc";
+            if (titleEl) titleEl.style.color = "";
+            cardEl.style.background = "";
+            cardEl.style.color = "";
+            detailEl.style.color = "#ccc";
             detailEl.textContent = data?.error || "Policy status unavailable";
           }
         } catch (e) {
           const statusEl = $("eligibilityStatus");
           const detailEl = $("eligibilityDetail");
+          const cardEl = $("eligibilityCard");
+
           if (statusEl) statusEl.textContent = "Unknown";
-          if (detailEl) detailEl.textContent = "Policy status unavailable";
+          if (detailEl) {
+            detailEl.style.color = "#ccc";
+            detailEl.textContent = "Policy status unavailable";
+          }
+          if (cardEl) {
+            cardEl.style.background = "";
+            cardEl.style.color = "";
+          }
         }
       }
 
