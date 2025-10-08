@@ -1097,12 +1097,15 @@
 
 
 
-        // ULTRA SIMPLE: Only show NEW if completed within last 3 minutes with valid timestamp
-        const threeMinutesMs = 3 * 60 * 1000; // 3 minutes only
-        const hasValidTimestamp = completionTime > 0 && !isNaN(completionTime);
-        const isVeryRecent = hasValidTimestamp && (now - completionTime) < threeMinutesMs;
+        // STRICT: Only show NEW if completed within last 2 minutes AND has valid timestamp
+        const twoMinutesMs = 2 * 60 * 1000; // 2 minutes only
+        const hasValidTimestamp = completionTime > 0 && !isNaN(completionTime) && completionTime > 1000000000000; // Must be a real timestamp (after year 2001)
+        const isVeryRecent = hasValidTimestamp && (now - completionTime) < twoMinutesMs;
 
-        console.log(`[NEW-SIMPLE] Stake ${s.stakeId}: valid=${hasValidTimestamp}, age=${hasValidTimestamp ? Math.floor((now - completionTime) / 60000) : 'N/A'}min, show=${isVeryRecent}`);
+        // Debug only for stakes that would show NEW
+        if (isVeryRecent) {
+          console.log(`[NEW-BADGE] Stake ${s.stakeId}: age=${Math.floor((now - completionTime) / 60000)}min - SHOWING NEW`);
+        }
 
         const newBadge = isVeryRecent ? '<span class="badge new" style="background:#ff4444; color:white; margin-left:8px; animation:pulse 2s infinite;">NEW</span>' : '';
 

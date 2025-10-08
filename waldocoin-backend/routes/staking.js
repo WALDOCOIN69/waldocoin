@@ -2430,4 +2430,70 @@ router.post('/debug/create-test-stake', async (req, res) => {
   }
 });
 
+// 🔧 POST /api/staking/fix-old-timestamps - Add timestamps to old stakes without them
+router.post('/fix-old-timestamps', async (req, res) => {
+  try {
+    const adminKey = getAdminKey(req);
+    const validation = validateAdminKey(adminKey);
+
+    if (!validation.valid) {
+      return res.status(403).json({ success: false, error: validation.error });
+    }
+
+    const { wallet } = req.body;
+    if (!wallet) {
+      return res.status(400).json({ success: false, error: 'Wallet required' });
+    }
+
+    console.log(`[FIX-TIMESTAMPS] Checking stakes for wallet: ${wallet}`);
+
+    // Get all redeemed stakes for this wallet
+    const redeemedStakeIds = await redis.sMembers(`staking:user:${wallet}:redeemed`);
+    let fixedCount = 0;
+
+    for (const stakeId of redeemedStakeIds) {
+      const stakeData = await redis.hGetAll(`staking:${stakeId}`);
+
+      if (stakeData && (stakeData.status === 'completed' || stakeData.status === 'redeemed')) {
+        const hasTimestamp = stakeData.unstakedAt || stakeData.redeemedAt || stakeData.processedAt || stakeData.completedAt;
+
+        if (!hasTimestamp) {
+          // Add a timestamp from 1 hour ago so it won't show as NEW
+          const oldTimestamp = new Date(Date.now() - (60 * 60 * 1000)).toISOString(); // 1 hour ago
+
+          const updateData = {
+            processedAt: oldTimestamp
+          };
+
+          // Add appropriate completion timestamp based on type
+          if (stakeData.isEarlyUnstake === 'true') {
+            updateData.unstakedAt = oldTimestamp;
+          } else {
+            updateData.redeemedAt = oldTimestamp;
+          }
+
+          await redis.hSet(`staking:${stakeId}`, updateData);
+          fixedCount++;
+
+          console.log(`[FIX-TIMESTAMPS] Added timestamps to stake ${stakeId}`);
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Fixed timestamps for ${fixedCount} old stakes`,
+      wallet,
+      fixedCount
+    });
+
+  } catch (error) {
+    console.error('[FIX-TIMESTAMPS] Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fix timestamps'
+    });
+  }
+});
+
 export default router;
