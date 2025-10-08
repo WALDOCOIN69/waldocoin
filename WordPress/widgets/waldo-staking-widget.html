@@ -1002,7 +1002,7 @@
         });
 
         const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
-        const isReady = timeRemaining <= bufferMs;
+        const isReady = (timeRemaining <= bufferMs || dr <= 0);
         const soon = !isReady && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
         const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
         const badge = isReady ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
@@ -1036,14 +1036,14 @@
             <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
             ${badge}
           </div>
-          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${timeRemaining <= bufferMs ? 'READY!' : dr + 'd'}</span></div>
+          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${(timeRemaining <= bufferMs || dr <= 0) ? 'READY!' : dr + 'd'}</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
           <div class="details">
             <div>Start: ${fmtDate(s.startDate)} ${fmtTime(s.startDate)} • End: ${fmtDate(s.endDate)} ${fmtTime(s.endDate)} • Progress: ${pct}%</div>
             <div>Accrued so far: ${accrued.toFixed(2)} WALDO</div>
           </div>
           <div class="actions" data-stake-id="${s.stakeId}">
-            ${timeRemaining <= bufferMs ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">💰 Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
+            ${(timeRemaining <= bufferMs || dr <= 0) ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">💰 Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
           </div>
         </div>`
       }).join('') || '<div class="subline">No active long‑term locks</div>';
