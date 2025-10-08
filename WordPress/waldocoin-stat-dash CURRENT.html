@@ -1599,49 +1599,6 @@
       }
     }
 
-    /* === MEDIA CARD STYLES === */
-    .media-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-      margin-top: 15px;
-      justify-items: center;
-    }
-
-    .media-item {
-      text-align: center;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      transition: all 0.3s ease;
-    }
-
-    .media-item:hover {
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateY(-2px);
-    }
-
-    .media-image {
-      width: 100%;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 6px;
-      margin-bottom: 10px;
-    }
-
-    .media-title {
-      color: #25c2a0;
-      font-weight: 600;
-      font-size: 0.9em;
-      margin-bottom: 5px;
-    }
-
-    .media-description {
-      color: #ccc;
-      font-size: 0.8em;
-      line-height: 1.3;
-    }
-
     /* === REFERRAL BENEFITS STYLES === */
     .referral-benefits {
       margin-top: 20px;
@@ -1703,11 +1660,6 @@
     }
 
     @media (max-width: 768px) {
-      .media-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
-
       .referral-benefits {
         gap: 8px;
       }
@@ -2808,32 +2760,6 @@
     .duplicate-restrictions-text {
       font-size: 0.85em;
       color: #ccc;
-    }
-
-    /* === WALDO PROMO STYLES === */
-    .waldo-promo-content {
-      background: linear-gradient(135deg, #25c2a0 0%, #00ff88 100%);
-      padding: 30px;
-      border-radius: 15px;
-      text-align: center;
-      color: #000;
-    }
-
-    .waldo-promo-icon {
-      font-size: 2.5em;
-      margin-bottom: 15px;
-    }
-
-    .waldo-promo-title {
-      margin: 0;
-      font-size: 1.8em;
-      font-weight: bold;
-    }
-
-    .waldo-promo-subtitle {
-      font-size: 1.1em;
-      margin-top: 10px;
-      opacity: 0.8;
     }
 
     /* === MEDIUM CARD STYLES === */
@@ -4183,8 +4109,6 @@
 
       // Initialize price charts with real-time data
       async function initializePriceCharts() {
-        console.log('📊 Initializing price charts...');
-
         // Check if Chart.js is loaded
         if (typeof Chart === 'undefined') {
           console.error('❌ Chart.js is not loaded!');
@@ -4200,8 +4124,6 @@
           }
           const marketData = await marketRes.json();
 
-          console.log('📊 Market data received:', marketData);
-
           // Get current XRP price per WLO from DEX
           const xrpPerWlo = (marketData?.xrpPerWlo && isFinite(marketData.xrpPerWlo))
             ? marketData.xrpPerWlo
@@ -4211,25 +4133,20 @@
           const xrpUsdRate = 0.50;
           const usdPerWlo = xrpPerWlo * xrpUsdRate;
 
-          console.log('📊 Current price - XRP:', xrpPerWlo, 'USD:', usdPerWlo);
-
           // Update rate displays immediately with REAL price
           const xrpEl = $("waldoXrpRate");
           const usdEl = $("waldoUsdRate");
 
           if (xrpEl) {
             xrpEl.textContent = `${xrpPerWlo.toFixed(8)} XRP`;
-            console.log('📊 Updated XRP rate element');
           }
           if (usdEl) {
             usdEl.textContent = `$${usdPerWlo.toFixed(8)}`;
-            console.log('📊 Updated USD rate element');
           }
 
           // STEP 2: Get historical data for charts
           const res = await fetch(`${baseURL}/api/market/price-history?days=7`);
           const data = await res.json();
-          console.log('📊 History data received:', data);
 
           if (data.success && data.history && data.history.length > 0) {
             const labels = data.history.map(h => {
@@ -4246,8 +4163,6 @@
             const change24h = ((currentPrice - price24hAgo) / price24hAgo * 100).toFixed(2);
             const change7d = ((currentPrice - price7dAgo) / price7dAgo * 100).toFixed(2);
 
-            console.log('📊 Price changes - 24h:', change24h, '7d:', change7d);
-
             // Update change displays
             const change24hEl = $("change24h");
             const change7dEl = $("change7d");
@@ -4255,16 +4170,12 @@
             if (change24hEl) {
               change24hEl.textContent = `${change24h >= 0 ? '+' : ''}${change24h}%`;
               change24hEl.className = `trend-value ${change24h >= 0 ? 'trend-positive' : 'trend-negative'}`;
-              console.log('📊 Updated 24h change element');
             }
 
             if (change7dEl) {
               change7dEl.textContent = `${change7d >= 0 ? '+' : ''}${change7d}%`;
               change7dEl.className = `trend-value ${change7d >= 0 ? 'trend-positive' : 'trend-negative'}`;
-              console.log('📊 Updated 7d change element');
             }
-
-            // Rate displays already updated above with real DEX price
 
             const chartData = {
               labels: labels,
@@ -4324,45 +4235,32 @@
 
             // Render merged chart
             const mergedEl = $("waldoPriceChartMerged");
-            console.log('📊 Merged chart element:', mergedEl);
             if (mergedEl) {
               const ctx = mergedEl.getContext("2d");
               if (priceChartMergedInstance) {
-                console.log('📊 Destroying old merged chart');
                 priceChartMergedInstance.destroy();
               }
-              console.log('📊 Creating merged chart with', prices.length, 'data points');
               priceChartMergedInstance = new Chart(ctx, {
                 type: "line",
                 data: chartData,
                 options: chartOptions
               });
-              console.log('✅ Merged chart created successfully');
-            } else {
-              console.warn('⚠️ Merged chart element not found');
             }
 
             // Render new chart
             const newEl = $("waldoPriceChartNew");
-            console.log('📊 New chart element:', newEl);
             if (newEl) {
               const ctx = newEl.getContext("2d");
               if (priceChartNewInstance) {
-                console.log('📊 Destroying old new chart');
                 priceChartNewInstance.destroy();
               }
-              console.log('📊 Creating new chart with', prices.length, 'data points');
               priceChartNewInstance = new Chart(ctx, {
                 type: "line",
                 data: chartData,
                 options: chartOptions
               });
-              console.log('✅ New chart created successfully');
-            } else {
-              console.warn('⚠️ New chart element not found');
             }
           } else {
-            console.warn('⚠️ No history data, showing placeholder');
             showPlaceholderCharts();
           }
         } catch (err) {
