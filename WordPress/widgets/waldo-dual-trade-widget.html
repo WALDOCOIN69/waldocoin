@@ -1113,7 +1113,7 @@
     window.xummClose = function () { el('xummModal').style.display = 'none'; }
 
     // Swap logic (global scope)
-    let swapFrom = 'XRP'; let swapTo = 'WLO'; let swapSlip = 0; let swapMid = null;
+    let swapFrom = 'XRP'; let swapTo = 'WLO'; let swapSlip = 0; let swapMid = null; let swapBid = null; let swapAsk = null;
 
     window.swapFlip = function () {
       const f = swapFrom; swapFrom = swapTo; swapTo = f;
@@ -1125,6 +1125,8 @@
       try {
         const r = await fetch(`${API}/api/market/wlo?_=${Date.now()}`, { cache: 'no-store' });
         const j = await r.json();
+        swapBid = j?.best?.bid || null;
+        swapAsk = j?.best?.ask || null;
         swapMid = (j?.xrpPerWlo && isFinite(j.xrpPerWlo)) ? j.xrpPerWlo : (j?.best?.mid || null);
         updateSwapPrice(); recomputeSwap();
       } catch (_) { }
@@ -1139,19 +1141,23 @@
 
     function recomputeSwap() {
       const amt = parseFloat(el('fromAmount').value);
-      if (!isFinite(amt) || !swapMid) {
+      if (!isFinite(amt)) {
         el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return;
       }
       const slip = swapSlip / 10000;
       const fee = 0.03; // 3% fee
       if (swapFrom === 'XRP') {
-        // Buying WLO with XRP: deduct 3% fee from output
-        const out = (amt / (swapMid * (1 + slip))) * (1 - fee);
+        // Buying WLO with XRP: use ASK price (what sellers are asking)
+        const price = swapAsk || swapMid;
+        if (!price) { el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return; }
+        const out = (amt / (price * (1 + slip))) * (1 - fee);
         el('toAmount').value = out.toFixed(2);
         el('swapMinOut').textContent = `${out.toFixed(2)} WLO`;
       } else {
-        // Selling WLO for XRP: deduct 3% fee from output
-        const out = (amt * (swapMid * (1 - slip))) * (1 - fee);
+        // Selling WLO for XRP: use BID price (what buyers are bidding)
+        const price = swapBid || swapMid;
+        if (!price) { el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return; }
+        const out = (amt * (price * (1 - slip))) * (1 - fee);
         el('toAmount').value = out.toFixed(6);
         el('swapMinOut').textContent = `${out.toFixed(6)} XRP`;
       }

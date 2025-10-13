@@ -30,7 +30,7 @@ router.post("/offer", async (req, res) => {
     } catch (_) { overrideMid = null; }
 
     // Prefer Magnetic mid, then XRPL books; override always wins if present
-    async function getXrpPerWloFromBooks() {
+    async function getPricesFromBooks() {
       const client = new xrpl.Client("wss://xrplcluster.com");
       await client.connect();
       const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
@@ -41,11 +41,12 @@ router.post("/offer", async (req, res) => {
       let ask = null, bid = null;
       if (a.result?.offers?.length) { const o = a.result.offers[0]; const px = (Number(o.TakerGets) / 1_000_000) / Number(o.TakerPays.value); if (px > 0 && isFinite(px)) ask = px; }
       if (b.result?.offers?.length) { const o = b.result.offers[0]; const px = (Number(o.TakerPays) / 1_000_000) / Number(o.TakerGets.value); if (px > 0 && isFinite(px)) bid = px; }
-      return (bid && ask) ? (bid + ask) / 2 : (bid || ask || null);
+      const mid = (bid && ask) ? (bid + ask) / 2 : (bid || ask || null);
+      return { bid, ask, mid };
     }
     const magMid = (waldoPerXrpRaw && isFinite(waldoPerXrpRaw) && waldoPerXrpRaw !== 10000) ? (1 / waldoPerXrpRaw) : null;
-    const bookMid = await getXrpPerWloFromBooks().catch(() => null);
-    const baseMid = overrideMid ?? (magMid ?? bookMid ?? 0.00001); // XRP per WLO
+    const bookPrices = await getPricesFromBooks().catch(() => ({ bid: null, ask: null, mid: null }));
+    const baseMid = overrideMid ?? (magMid ?? bookPrices.mid ?? 0.00001); // XRP per WLO
 
     // Optional price adjustments (raise price) via env (skip if override specified)
     const multRaw = process.env.PRICE_MULTIPLIER_XRP_PER_WLO;
@@ -71,9 +72,12 @@ router.post("/offer", async (req, res) => {
       const xrp = Number(amountXrp);
       if (!Number.isFinite(xrp) || xrp <= 0) return res.status(400).json({ success: false, error: "amountXrp required for buy" });
 
+      // For BUY: use ASK price (what sellers are asking) - user pays more
+      const priceToUse = bookPrices.ask || mid;
+
       // For buy: Create a simple XRP to WLO payment
       // Apply 3% fee: user gets 3% less WLO
-      const wloAmount = (xrp / mid) * (1 - tradeFee);
+      const wloAmount = (xrp / priceToUse) * (1 - tradeFee);
       const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
       txjson = {
         TransactionType: "Payment",
@@ -82,7 +86,7 @@ router.post("/offer", async (req, res) => {
         Memos: [{
           Memo: {
             MemoType: Buffer.from('WALDO_BUY').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(`Buy ${wloAmount.toFixed(6)} WLO for ${xrp} XRP (3% fee)`).toString('hex').toUpperCase()
+            MemoData: Buffer.from(`Buy ${wloAmount.toFixed(6)} WLO for ${xrp} XRP (3% fee, ask price)`).toString('hex').toUpperCase()
           }
         }]
       };
@@ -90,9 +94,12 @@ router.post("/offer", async (req, res) => {
       const wlo = Number(amountWlo);
       if (!Number.isFinite(wlo) || wlo <= 0) return res.status(400).json({ success: false, error: "amountWlo required for sell" });
 
+      // For SELL: use BID price (what buyers are bidding) - user gets less
+      const priceToUse = bookPrices.bid || mid;
+
       // For sell: Create a simple WLO to distributor payment
       // Apply 3% fee: user gets 3% less XRP
-      const xrpAmount = (wlo * mid) * (1 - tradeFee);
+      const xrpAmount = (wlo * priceToUse) * (1 - tradeFee);
       const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
       txjson = {
         TransactionType: "Payment",
@@ -101,7 +108,7 @@ router.post("/offer", async (req, res) => {
         Memos: [{
           Memo: {
             MemoType: Buffer.from('WALDO_SELL').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(`Sell ${wlo} WLO for ${xrpAmount.toFixed(6)} XRP (3% fee)`).toString('hex').toUpperCase()
+            MemoData: Buffer.from(`Sell ${wlo} WLO for ${xrpAmount.toFixed(6)} XRP (3% fee, bid price)`).toString('hex').toUpperCase()
           }
         }]
       };
