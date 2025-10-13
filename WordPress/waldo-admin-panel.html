@@ -842,6 +842,8 @@
         <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
         <button type="button" class="nav-btn" onclick="showSection('volumebot')">🤖 Volume Bot</button>
         <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
+        <button type="button" class="nav-btn" onclick="runDiagnostics()" style="background: #f39c12;">🔍
+          Diagnostics</button>
       </div>
     </div>
 
@@ -2571,6 +2573,54 @@
     let currentSection = 'dashboard';
     let isAuthenticated = false;
 
+    // Debug mode for troubleshooting
+    const DEBUG_MODE = true;
+
+    // Enhanced error logging
+    function logError(context, error, response = null) {
+      if (DEBUG_MODE) {
+        console.error(`❌ [${context}] Error:`, error);
+        if (response) {
+          console.error(`❌ [${context}] Response:`, response);
+        }
+      }
+    }
+
+    // Enhanced API call wrapper with better error handling
+    async function apiCall(endpoint, options = {}) {
+      const defaultOptions = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': localStorage.getItem('adminKey')
+        }
+      };
+
+      try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          ...defaultOptions,
+          ...options,
+          headers: { ...defaultOptions.headers, ...options.headers }
+        });
+
+        if (DEBUG_MODE) {
+          console.log(`📡 API Call: ${options.method || 'GET'} ${endpoint} → ${response.status}`);
+        }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logError(`API Call ${endpoint}`, `HTTP ${response.status}: ${errorText}`, response);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        logError(`API Call ${endpoint}`, error);
+        throw error;
+      }
+    }
+
     // Login Functions
     async function attemptLogin() {
       const password = document.getElementById('loginPassword').value.trim();
@@ -2583,8 +2633,10 @@
 
       try {
         // Debug: Log the password being sent
-        console.log('Attempting login with password:', password);
-        console.log('API_BASE:', API_BASE);
+        if (DEBUG_MODE) {
+          console.log('🔐 Attempting login with password:', password);
+          console.log('🔗 API_BASE:', API_BASE);
+        }
 
         // Use verify-admin endpoint for authentication
         const response = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
@@ -2595,16 +2647,22 @@
           }
         });
 
-        console.log('Response status:', response.status);
+        if (DEBUG_MODE) {
+          console.log('🔐 Response status:', response.status);
+        }
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.log('Error response:', errorText);
+          if (DEBUG_MODE) {
+            console.log('❌ Error response:', errorText);
+          }
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
-        console.log('Login response:', data);
+        if (DEBUG_MODE) {
+          console.log('🔐 Login response:', data);
+        }
 
         if (data.success) {
           // Admin authentication successful
@@ -2621,14 +2679,18 @@
           hideLoginError();
 
           // Show success message
-          console.log('Admin login successful!', data.message);
+          if (DEBUG_MODE) {
+            console.log('✅ Admin login successful!', data.message);
+          }
+          showAlert('Successfully logged in as admin', 'success');
         } else {
           showLoginError(`Invalid admin password. Error: ${data.error || 'Unknown error'}`);
-          console.log('Login failed:', data);
+          logError('Login', data.error || 'Unknown error');
         }
       } catch (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
         showLoginError(`Connection failed: ${error.message}. Check if backend is running.`);
+        logError('Login', error);
       }
     }
 
@@ -2636,6 +2698,63 @@
       if (event.key === 'Enter') {
         attemptLogin();
       }
+    }
+
+    // Comprehensive diagnostic function
+    async function runDiagnostics() {
+      const diagnosticsDiv = document.getElementById('diagnosticsResults') || createDiagnosticsDiv();
+      diagnosticsDiv.innerHTML = '<h3>🔍 Running Admin Panel Diagnostics...</h3>';
+
+      const adminKey = localStorage.getItem('adminKey');
+      const tests = [
+        { name: 'Backend Health', endpoint: '/api/health', requiresAuth: false },
+        { name: 'Admin Authentication', endpoint: '/api/airdrop/verify-admin', requiresAuth: true },
+        { name: 'System Requirements', endpoint: '/api/system/waldo-requirements', requiresAuth: true },
+        { name: 'Airdrop Config', endpoint: '/api/airdrop/config', requiresAuth: true },
+        { name: 'Volume Bot Status', endpoint: '/api/admin/volume-bot/status', requiresAuth: true },
+        { name: 'Rewards Bonuses', endpoint: '/api/rewards/active-bonuses', requiresAuth: true },
+        { name: 'Battle System', endpoint: '/api/battle/current', requiresAuth: false },
+        { name: 'Presale Analytics', endpoint: '/api/presale/analytics', requiresAuth: true }
+      ];
+
+      let results = '<div style="margin-top: 20px;">';
+
+      for (const test of tests) {
+        try {
+          const headers = test.requiresAuth && adminKey ? { 'x-admin-key': adminKey } : {};
+          const response = await fetch(`${API_BASE}${test.endpoint}`, { headers });
+
+          if (response.ok) {
+            const data = await response.json();
+            results += `<div style="color: #25c2a0; margin: 5px 0;">✅ ${test.name}: OK (${response.status})</div>`;
+            if (DEBUG_MODE) {
+              console.log(`✅ ${test.name}:`, data);
+            }
+          } else {
+            const errorText = await response.text();
+            results += `<div style="color: #e74c3c; margin: 5px 0;">❌ ${test.name}: Failed (${response.status}) - ${errorText.substring(0, 100)}</div>`;
+            if (DEBUG_MODE) {
+              console.error(`❌ ${test.name}:`, errorText);
+            }
+          }
+        } catch (error) {
+          results += `<div style="color: #f39c12; margin: 5px 0;">⚠️ ${test.name}: Error - ${error.message}</div>`;
+          if (DEBUG_MODE) {
+            console.error(`⚠️ ${test.name}:`, error);
+          }
+        }
+      }
+
+      results += '</div>';
+      diagnosticsDiv.innerHTML += results;
+    }
+
+    function createDiagnosticsDiv() {
+      const div = document.createElement('div');
+      div.id = 'diagnosticsResults';
+      div.style.cssText = 'background: #222; padding: 20px; margin: 20px 0; border-radius: 8px; border: 1px solid #333;';
+      document.querySelector('.admin-content').appendChild(div);
+      return div;
     }
 
     // 💰 WALDO Requirements Control Functions
