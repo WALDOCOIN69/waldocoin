@@ -48,6 +48,7 @@
         </div>
         <div class="minline">Min receive: <span id="swapMinOut">—</span></div>
         <div class="subline">Price: <span id="swapPrice">—</span> • Impact: <span id="swapImpact">—</span></div>
+        <div class="feeline" style="color: #ffa500; font-size: 13px; margin-top: 8px;">⚠️ 3% fee applicable</div>
         <div class="actions"><button id="btnSwap" class="btn buy" onclick="waldoSwap()" disabled>Connect to
             swap</button></div>
       </div>
@@ -1142,12 +1143,15 @@
         el('toAmount').value = ''; el('swapMinOut').textContent = '—'; return;
       }
       const slip = swapSlip / 10000;
+      const fee = 0.03; // 3% fee
       if (swapFrom === 'XRP') {
-        const out = amt / (swapMid * (1 + slip));
+        // Buying WLO with XRP: deduct 3% fee from output
+        const out = (amt / (swapMid * (1 + slip))) * (1 - fee);
         el('toAmount').value = out.toFixed(2);
         el('swapMinOut').textContent = `${out.toFixed(2)} WLO`;
       } else {
-        const out = amt * (swapMid * (1 - slip));
+        // Selling WLO for XRP: deduct 3% fee from output
+        const out = (amt * (swapMid * (1 - slip))) * (1 - fee);
         el('toAmount').value = out.toFixed(6);
         el('swapMinOut').textContent = `${out.toFixed(6)} XRP`;
       }

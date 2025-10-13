@@ -60,6 +60,7 @@ router.post("/offer", async (req, res) => {
 
     const bps = Number.isFinite(Number(slippageBps)) ? Number(slippageBps) : 0;
     const slip = Math.max(0, bps) / 10_000; // 0.01 = 1%
+    const tradeFee = 0.03; // 3% fee on all trades
 
     // Optional default destination for SELL payouts (e.g., treasury)
     const DEFAULT_DEST = process.env.SWAP_DESTINATION || process.env.SWAP_PAYOUT_DESTINATION;
@@ -71,7 +72,8 @@ router.post("/offer", async (req, res) => {
       if (!Number.isFinite(xrp) || xrp <= 0) return res.status(400).json({ success: false, error: "amountXrp required for buy" });
 
       // For buy: Create a simple XRP to WLO payment
-      // Use the distributor as destination to handle the swap
+      // Apply 3% fee: user gets 3% less WLO
+      const wloAmount = (xrp / mid) * (1 - tradeFee);
       const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
       txjson = {
         TransactionType: "Payment",
@@ -80,7 +82,7 @@ router.post("/offer", async (req, res) => {
         Memos: [{
           Memo: {
             MemoType: Buffer.from('WALDO_BUY').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(`Buy ${(xrp / mid).toFixed(6)} WLO for ${xrp} XRP`).toString('hex').toUpperCase()
+            MemoData: Buffer.from(`Buy ${wloAmount.toFixed(6)} WLO for ${xrp} XRP (3% fee)`).toString('hex').toUpperCase()
           }
         }]
       };
@@ -89,7 +91,8 @@ router.post("/offer", async (req, res) => {
       if (!Number.isFinite(wlo) || wlo <= 0) return res.status(400).json({ success: false, error: "amountWlo required for sell" });
 
       // For sell: Create a simple WLO to distributor payment
-      // The distributor will handle sending XRP back
+      // Apply 3% fee: user gets 3% less XRP
+      const xrpAmount = (wlo * mid) * (1 - tradeFee);
       const distributorWallet = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
       txjson = {
         TransactionType: "Payment",
@@ -98,7 +101,7 @@ router.post("/offer", async (req, res) => {
         Memos: [{
           Memo: {
             MemoType: Buffer.from('WALDO_SELL').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(`Sell ${wlo} WLO for ${(wlo * mid).toFixed(6)} XRP`).toString('hex').toUpperCase()
+            MemoData: Buffer.from(`Sell ${wlo} WLO for ${xrpAmount.toFixed(6)} XRP (3% fee)`).toString('hex').toUpperCase()
           }
         }]
       };
