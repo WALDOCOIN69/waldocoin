@@ -5230,7 +5230,7 @@ This action cannot be undone. Continue?`;
       const duration = parseInt(document.getElementById('daoDuration').value);
 
       try {
-        const res = await fetch(`${API_BASE}/api/dao/proposals/create`, {
+        const res = await fetch(`${API_BASE}/api/dao/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, description, options, durationHours: duration })
@@ -5350,12 +5350,15 @@ This action cannot be undone. Continue?`;
     async function clearPasswordOverride() {
       try {
         const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/airdrop/clear-password-override`, {
+        const response = await fetch(`${API_BASE}/api/airdrop/set-password`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-admin-key': adminKey
-          }
+          },
+          body: JSON.stringify({
+            password: ''
+          })
         });
 
         const data = await response.json();
@@ -5437,7 +5440,7 @@ This action cannot be undone. Continue?`;
 
       try {
         const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/staking/user-stakes?wallet=${wallet}`, {
+        const response = await fetch(`${API_BASE}/api/staking/positions/${wallet}`, {
           headers: { 'x-admin-key': adminKey }
         });
 
@@ -5518,7 +5521,7 @@ This action cannot be undone. Continue?`;
 
       try {
         const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/security/wallet-check?wallet=${wallet}`, {
+        const response = await fetch(`${API_BASE}/api/security/check/${wallet}`, {
           headers: { 'x-admin-key': adminKey }
         });
 
@@ -5679,7 +5682,7 @@ This action cannot be undone. Continue?`;
 
       try {
         const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/airdrop/reset-system`, {
+        const response = await fetch(`${API_BASE}/api/airdrop/reset`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
