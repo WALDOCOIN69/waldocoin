@@ -50,7 +50,7 @@ router.get("/", async (_req, res) => {
     const ISSUER = process.env.WALDO_ISSUER || "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
     const CURRENCY = (process.env.WALDO_CURRENCY || "WLO").toUpperCase();
 
-    // Ask: people selling WLO for XRP (WLO->XRP book)
+    // Bid: people buying WLO with XRP (WLO->XRP book) - they offer XRP for WLO
     const wloToXrp = await client.request({
       command: "book_offers",
       taker_gets: { currency: "XRP" }, // taker receives XRP (drops)
@@ -58,17 +58,17 @@ router.get("/", async (_req, res) => {
       limit: 10,
     });
 
-    let askPrice = null; // XRP per WLO (best ask)
+    let bidPrice = null; // XRP per WLO (best bid - what buyers pay)
     if (wloToXrp.result?.offers?.length) {
       const best = wloToXrp.result.offers[0];
       // Compute strictly from amounts to avoid quality interpretation surprises
       const getsXrp = Number(best.TakerGets) / 1_000_000; // drops -> XRP
       const paysWlo = Number(best.TakerPays?.value);
       const p = getsXrp > 0 && paysWlo > 0 ? (getsXrp / paysWlo) : null;
-      if (p && isFinite(p) && p > 0) askPrice = p;
+      if (p && isFinite(p) && p > 0) bidPrice = p;
     }
 
-    // Bid: people buying WLO with XRP (XRP->WLO book)
+    // Ask: people selling WLO for XRP (XRP->WLO book) - they want XRP for WLO
     const xrpToWlo = await client.request({
       command: "book_offers",
       taker_gets: { currency: CURRENCY, issuer: ISSUER }, // taker receives WLO (issued)
@@ -76,13 +76,13 @@ router.get("/", async (_req, res) => {
       limit: 10,
     });
 
-    let bidPrice = null; // XRP per WLO (best bid)
+    let askPrice = null; // XRP per WLO (best ask - what sellers want)
     if (xrpToWlo.result?.offers?.length) {
       const best = xrpToWlo.result.offers[0];
       const paysXrp = Number(best.TakerPays) / 1_000_000; // drops -> XRP
       const getsWlo = Number(best.TakerGets?.value);
       const p = paysXrp > 0 && getsWlo > 0 ? (paysXrp / getsWlo) : null;
-      if (p && isFinite(p) && p > 0) bidPrice = p;
+      if (p && isFinite(p) && p > 0) askPrice = p;
     }
 
     await client.disconnect();

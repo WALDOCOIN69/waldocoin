@@ -1,19 +1,130 @@
 <style>
-  #waldoLegalGate { position: fixed; inset: 0; z-index: 999999; display: none; align-items: center; justify-content: center; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-  #waldoLegalGate.show { display: flex; }
-  #waldoLegalGate * { box-sizing: border-box; }
-  .lg-backdrop { position: absolute; inset: 0; background: #000; opacity: 0.96; }
-  .lg-modal { position: relative; z-index: 1; width: min(760px, 92vw); max-height: min(88vh, 100%); overflow: auto; border: 1px solid #1e1e1e; border-radius: 14px; background: #0b0b0b; color: #eafff9; padding: 22px; box-shadow: 0 0 28px rgba(0,0,0,.45); }
-  .lg-modal h2 { margin: 0 0 10px; font-weight: 900; letter-spacing: .3px; font-size: 20px; }
-  .lg-body { font-size: 14px; line-height: 1.5; }
-  .lg-body a { color: #9adbcf; text-decoration: underline; }
-  .lg-list { margin: 10px 0 0 18px; }
-  .lg-ack { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; }
-  .lg-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
-  .lg-btn { background: linear-gradient(90deg, #00f7ff, #ff3df7); color: #061018; border: 0; padding: 10px 14px; border-radius: 10px; font-weight: 900; cursor: pointer; }
-  .lg-btn[disabled] { opacity: .5; cursor: not-allowed; }
-  @media (max-width: 480px) { .lg-modal { padding: 16px; } }
-  noscript .lg-noscript { position: fixed; inset: 0; z-index: 1000000; display: flex; align-items: center; justify-content: center; background: #000; color: #fff; padding: 24px; text-align: center; }
+  #waldoLegalGate {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 999999 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    background: rgba(0, 0, 0, 0.96) !important;
+    box-sizing: border-box !important;
+  }
+
+  #waldoLegalGate.show {
+    display: flex !important;
+  }
+
+  #waldoLegalGate * {
+    box-sizing: border-box !important;
+  }
+
+  .lg-backdrop {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: #000 !important;
+    opacity: 0.96 !important;
+  }
+
+  .lg-modal {
+    position: relative !important;
+    z-index: 1 !important;
+    width: min(760px, 92vw) !important;
+    max-width: 760px !important;
+    max-height: min(88vh, 100%) !important;
+    overflow: auto !important;
+    border: 1px solid #1e1e1e !important;
+    border-radius: 14px !important;
+    background: #0b0b0b !important;
+    color: #eafff9 !important;
+    padding: 22px !important;
+    margin: 0 auto !important;
+    box-shadow: 0 0 28px rgba(0, 0, 0, .45) !important;
+  }
+
+  .lg-modal h2 {
+    margin: 0 0 10px !important;
+    font-weight: 900 !important;
+    letter-spacing: .3px !important;
+    font-size: 20px !important;
+  }
+
+  .lg-body {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+
+  .lg-body a {
+    color: #9adbcf !important;
+    text-decoration: underline !important;
+  }
+
+  .lg-list {
+    margin: 10px 0 0 18px !important;
+  }
+
+  .lg-ack {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+    margin-top: 12px !important;
+  }
+
+  .lg-actions {
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: flex-end !important;
+    margin-top: 14px !important;
+  }
+
+  .lg-btn {
+    background: linear-gradient(90deg, #00f7ff, #ff3df7) !important;
+    color: #061018 !important;
+    border: 0 !important;
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
+    font-weight: 900 !important;
+    cursor: pointer !important;
+  }
+
+  .lg-btn[disabled] {
+    opacity: .5 !important;
+    cursor: not-allowed !important;
+  }
+
+  @media (max-width: 480px) {
+    .lg-modal {
+      padding: 16px !important;
+    }
+  }
+
+  noscript .lg-noscript {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 1000000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #000 !important;
+    color: #fff !important;
+    padding: 24px !important;
+    text-align: center !important;
+  }
 </style>
 
 <div id="waldoLegalGate" role="dialog" aria-modal="true" aria-labelledby="lgTitle">
@@ -24,14 +135,19 @@
       <p>By accessing this site you confirm and agree that:</p>
       <ul class="lg-list">
         <li>You are at least 18 years old (or the legal age in your jurisdiction).</li>
-        <li>This site and any WALDO-related features are for informational and entertainment purposes only and do not constitute financial, investment, or legal advice.</li>
-        <li>WALDOCOIN is not offered as a security or an investment product; there is no expectation of profit, yield, or returns, and no guarantees.</li>
-        <li>You are solely responsible for complying with the laws of your jurisdiction. Do not use this site if doing so would be unlawful where you are located.</li>
-        <li>Blockchain transactions are generally irreversible and carry risk. Use at your own risk; the team is not liable for losses or damages.</li>
+        <li>This site and any WALDO-related features are for informational and entertainment purposes only and do not
+          constitute financial, investment, or legal advice.</li>
+        <li>WALDOCOIN is not offered as a security or an investment product; there is no expectation of profit, yield,
+          or returns, and no guarantees.</li>
+        <li>You are solely responsible for complying with the laws of your jurisdiction. Do not use this site if doing
+          so would be unlawful where you are located.</li>
+        <li>Blockchain transactions are generally irreversible and carry risk. Use at your own risk; the team is not
+          liable for losses or damages.</li>
         <li>By proceeding, you accept our Terms and Privacy Policy.</li>
       </ul>
-      <label class="lg-ack"><input id="lgCheck" type="checkbox"> I confirm I am 18+ and I agree to the above and the site Terms.</label>
-      <label class="lg-ack"><input id="lgRemember" type="checkbox"> Don’t show again on this device</label>
+      <label class="lg-ack"><input id="lgCheck" type="checkbox"> I confirm I am 18+ and I agree to the above and the
+        site Terms.</label>
+      <label class="lg-ack"><input id="lgRemember" type="checkbox"> Don't show again on this device</label>
       <div class="lg-actions">
         <button id="lgAgree" class="lg-btn" disabled>Enter Site</button>
       </div>
@@ -41,56 +157,136 @@
 
 <noscript>
   <div class="lg-noscript">
-    You must enable JavaScript to use this site. By using this site you confirm you are 18+ and agree to our terms. If you do not agree, please leave this site.
+    You must enable JavaScript to use this site. By using this site you confirm you are 18+ and agree to our terms. If
+    you do not agree, please leave this site.
   </div>
 </noscript>
 
 <script>
-(function(){
-  const KEY = 'waldo_legal_accepted_v2';
-  function getAccepted(){
-    try { return localStorage.getItem(KEY) === 'true'; }
-    catch(_) { return document.cookie.indexOf(KEY + '=true') !== -1; }
-  }
-  function setAccepted(val){
-    try {
-      if (val) localStorage.setItem(KEY, 'true'); else localStorage.removeItem(KEY);
-    } catch(_) {
-      if (val) document.cookie = KEY + '=true; path=/; max-age=31536000; SameSite=Lax';
-      else document.cookie = KEY + '=; Max-Age=0; path=/; SameSite=Lax';
+  (function () {
+    const KEY = 'waldo_legal_accepted_v2';
+    let gate; // Declare in outer scope
+
+    function getAccepted() {
+      try { return localStorage.getItem(KEY) === 'true'; }
+      catch (_) { return document.cookie.indexOf(KEY + '=true') !== -1; }
     }
-  }
-  function lockScroll(yes){
-    try {
-      if (yes) { document.body.dataset._lgScroll = document.body.style.overflow || ''; document.body.style.overflow = 'hidden'; }
-      else { document.body.style.overflow = document.body.dataset._lgScroll || ''; }
-    } catch(_){}
-  }
-  function showGate(){ gate.classList.add('show'); lockScroll(true); }
-  function hideGate(){ gate.classList.remove('show'); lockScroll(false); }
 
-  function init(){
-    gate = document.getElementById('waldoLegalGate');
-    if (!gate) return;
-    const agree = document.getElementById('lgAgree');
-    const check = document.getElementById('lgCheck');
-    const remember = document.getElementById('lgRemember');
+    function setAccepted(val) {
+      try {
+        if (val) localStorage.setItem(KEY, 'true'); else localStorage.removeItem(KEY);
+      } catch (_) {
+        if (val) document.cookie = KEY + '=true; path=/; max-age=31536000; SameSite=Lax';
+        else document.cookie = KEY + '=; Max-Age=0; path=/; SameSite=Lax';
+      }
+    }
 
-    // Always show on any page where this block is present unless user opted out
-    if (getAccepted()) hideGate(); else showGate();
+    function lockScroll(yes) {
+      try {
+        if (yes) {
+          // Only lock if modal is actually visible
+          if (gate && gate.classList.contains('show')) {
+            document.body.dataset._lgScroll = document.body.style.overflow || '';
+            document.body.style.overflow = 'hidden';
+          }
+        } else {
+          // Always unlock scroll when hiding
+          document.body.style.overflow = document.body.dataset._lgScroll || '';
+          delete document.body.dataset._lgScroll;
+        }
+      } catch (_) { }
+    }
 
-    if (check) check.addEventListener('change', function(){ agree && (agree.disabled = !check.checked); });
-    if (agree) agree.addEventListener('click', function(){
-      if (!check || !check.checked) return;
-      // Only remember if user opted out from seeing it again
-      if (remember && remember.checked) setAccepted(true); else setAccepted(false);
-      hideGate();
-    });
-  }
+    function showGate() {
+      if (gate) {
+        gate.classList.add('show');
+        lockScroll(true);
+        console.log('Legal gate shown');
+      }
+    }
 
-  // Initialize as soon as DOM is ready
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
-})();
+    function hideGate() {
+      if (gate) {
+        gate.classList.remove('show');
+        lockScroll(false);
+        console.log('Legal gate hidden');
+      }
+    }
+
+    function init() {
+      console.log('Legal gate initializing...');
+      gate = document.getElementById('waldoLegalGate');
+
+      if (!gate) {
+        console.error('Legal gate element not found!');
+        return;
+      }
+
+      // Move the modal to document.body to escape WordPress containers
+      if (gate.parentNode !== document.body) {
+        document.body.appendChild(gate);
+        console.log('Moved legal gate to document.body');
+      }
+
+      const agree = document.getElementById('lgAgree');
+      const check = document.getElementById('lgCheck');
+      const remember = document.getElementById('lgRemember');
+
+      console.log('Legal gate elements found:', { gate: !!gate, agree: !!agree, check: !!check, remember: !!remember });
+
+      // Check if user has already accepted
+      const hasAccepted = getAccepted();
+      console.log('User has accepted:', hasAccepted);
+
+      if (hasAccepted) {
+        hideGate();
+      } else {
+        showGate();
+      }
+
+      if (check) {
+        check.addEventListener('change', function () {
+          if (agree) agree.disabled = !check.checked;
+        });
+      }
+
+      if (agree) {
+        agree.addEventListener('click', function () {
+          if (!check || !check.checked) return;
+
+          // Set acceptance based on remember checkbox
+          if (remember && remember.checked) {
+            setAccepted(true);
+            console.log('User opted to remember acceptance');
+          } else {
+            setAccepted(false);
+            console.log('User did not opt to remember');
+          }
+
+          hideGate();
+        });
+      }
+    }
+
+    // Force immediate initialization for WordPress
+    function forceInit() {
+      console.log('Force initializing legal gate...');
+      setTimeout(init, 100);
+    }
+
+    // Multiple initialization attempts for WordPress compatibility
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // Backup initialization
+    setTimeout(forceInit, 500);
+
+    // WordPress-specific initialization
+    if (typeof jQuery !== 'undefined') {
+      jQuery(document).ready(init);
+    }
+  })();
 </script>
-
