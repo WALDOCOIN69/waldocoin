@@ -671,7 +671,8 @@
         // Always show battle content so users can see controls
         content.style.display = "block";
 
-        if (!battle.active) {
+        // Check if battle exists and is active (backend returns success: false when no battle)
+        if (!battle.success) {
           statusDiv.textContent = "No current battle. Start one!";
 
           // Hide meme voting sections when no battle
@@ -693,19 +694,38 @@
           return;
         }
 
+        const battleData = battle.battle;
+
         // Active battle - show everything
         statusDiv.textContent = "Current Battle:";
         $("voteMeme1Btn").style.display = "block";
         $("voteMeme2Btn").style.display = "block";
         $("battleTimer").style.display = "block";
 
-        $("meme1Img").src = battle.meme1.image;
-        $("meme2Img").src = battle.meme2.image;
-        $("meme1Link").href = battle.meme1.link;
-        $("meme2Link").href = battle.meme2.link;
+        // Set meme images and links from backend data
+        if (battleData.meme1 && battleData.meme1.imageUrl) {
+          $("meme1Img").src = battleData.meme1.imageUrl;
+        }
+        if (battleData.meme2 && battleData.meme2.imageUrl) {
+          $("meme2Img").src = battleData.meme2.imageUrl;
+        }
+
+        // Construct Twitter links from meme IDs
+        if (battleData.meme1 && battleData.meme1.id) {
+          $("meme1Link").href = `https://twitter.com/i/status/${battleData.meme1.id}`;
+        }
+        if (battleData.meme2 && battleData.meme2.id) {
+          $("meme2Link").href = `https://twitter.com/i/status/${battleData.meme2.id}`;
+        }
+
         $("voteMeme1Btn").disabled = false;
         $("voteMeme2Btn").disabled = false;
-        renderBattleTimer(battle.timerSeconds);
+
+        // Render timer if available
+        if (battleData.timerSeconds !== null && battleData.timerSeconds !== undefined) {
+          renderBattleTimer(battleData.timerSeconds);
+        }
+
         $("battle-wrapper").dataset.status = "running";
         $("accept-battle-btn").disabled = true;
         $("start-battle-btn").disabled = true;
@@ -765,17 +785,35 @@
     }
 
     async function acceptBattle() {
+      const tweetId = $("memeTweetId").value.trim();
+      if (!tweetId) return showToast("Paste a meme tweet link to accept battle!", "error");
+
       try {
+        // First get current battle ID
+        const battleRes = await fetch(`${baseURL}/api/battle/current`);
+        const battleData = await battleRes.json();
+
+        if (!battleData.success || !battleData.battle) {
+          return showToast("No active battle to accept", "error");
+        }
+
         const res = await fetch(`${baseURL}/api/battle/accept`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet: getWallet() })
+          body: JSON.stringify({
+            wallet: getWallet(),
+            tweetId: tweetId,
+            battleId: battleData.battle.id
+          })
         });
         const data = await res.json();
         if (data.success) showToast("Battle accepted. Battle is ON!", "success");
         else showToast(data.error || "Accept failed", "error");
         fetchBattleStatus();
-      } catch (e) { showToast("Battle accept error", "error"); }
+      } catch (e) {
+        console.error("Accept battle error:", e);
+        showToast("Battle accept error", "error");
+      }
     }
 
     async function voteBattle(meme) {

@@ -176,7 +176,7 @@ const startServer = async () => {
   app.use("/api/battle/vote", battleVoteRoute);
   app.use("/api/battle/payout", battlePayoutRoute);
   app.use("/api/battle/results", battleResultsRoute);
-  app.use("/api/battle", battleCurrentRoute);
+  app.use("/api/battle/current", battleCurrentRoute);
 
   app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/dao/vote", daoVoteRoute);

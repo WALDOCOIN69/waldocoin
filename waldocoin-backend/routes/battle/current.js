@@ -7,7 +7,7 @@ const router = express.Router();
 // How long battles run (seconds)
 const BATTLE_DURATION = 60 * 60 * 24; // 24 hours; adjust if needed
 
-router.get("/current", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const battleId = await redis.get("battle:current");
     if (!battleId) {
