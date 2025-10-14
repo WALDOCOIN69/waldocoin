@@ -84,7 +84,14 @@ const startServer = async () => {
   // CORS: Allow waldocoin.live and waldo.live domains and subdomains
   const allowedDomains = ["waldocoin.live", "waldo.live", "waldocoin.onrender.com"];
   const corsOriginCheck = (origin) => {
-    if (!origin) return true; // allow curl/local
+    if (!origin) return true; // allow curl/local/file://
+
+    // Allow file:// protocol for local development
+    if (origin.startsWith('file://')) return true;
+
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) return true;
+
     try {
       const url = new URL(origin);
       return allowedDomains.some(domain =>
