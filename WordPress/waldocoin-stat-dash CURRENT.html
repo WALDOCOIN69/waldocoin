@@ -4017,9 +4017,18 @@
       function generateRewardTable(userLevel = 1) {
         const table = $("rewardTierBody");
         const titleElement = $("rewardTableTitle");
-        if (!table) return;
+
+        console.log('🎯 Generating reward table for level:', userLevel);
+        console.log('📊 Table element found:', !!table);
+        console.log('📋 Title element found:', !!titleElement);
+
+        if (!table) {
+          console.warn('❌ Reward table body element not found');
+          return;
+        }
 
         const levelData = levelRewardTables[userLevel] || levelRewardTables[1];
+        console.log('📈 Level data:', levelData);
 
         // Update title
         if (titleElement) {
@@ -4031,35 +4040,34 @@
         levelData.tiers.forEach(t => {
           const row = document.createElement("tr");
           row.innerHTML = `
-      <td>${t.tier}</td>
-      <td>${t.likes}+</td>
-      <td>${t.retweets}+</td>
-      <td>${t.base.toFixed(2)} WALDO</td>
-      <td>${t.instant.toFixed(4)} WALDO</td>
-      <td>${t.staking.toFixed(4)} WALDO</td>
-
-    /** === COUNT-UP UTILS === */
-    function animateCountUp(el, to, duration=800) {
-      try {
-        if (!el) return;
-        const start = Number(el.textContent.replace(/[^0-9.]/g,'')) || 0;
-        const diff = to - start;
-        const startTime = performance.now();
-        function step(now){
-          const p = Math.min(1, (now - startTime)/duration);
-          const val = Math.floor(start + diff * p);
-          el.textContent = val.toLocaleString();
-          if (p < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      } catch(e){ /* noop */ }
-    }
-
-      <td>${t.maxNoStake.toFixed(2)} WALDO</td>
-      <td>${t.maxStake.toFixed(4)} WALDO</td>
-    `;
+            <td>${t.tier}</td>
+            <td>${t.likes}+</td>
+            <td>${t.retweets}+</td>
+            <td>${t.base.toFixed(2)} WALDO</td>
+            <td>${t.instant.toFixed(4)} WALDO</td>
+            <td>${t.staking.toFixed(4)} WALDO</td>
+            <td>${t.maxNoStake.toFixed(2)} WALDO</td>
+            <td>${t.maxStake.toFixed(4)} WALDO</td>
+          `;
           table.appendChild(row);
         });
+      }
+
+      /** === COUNT-UP UTILS === */
+      function animateCountUp(el, to, duration = 800) {
+        try {
+          if (!el) return;
+          const start = Number(el.textContent.replace(/[^0-9.]/g, '')) || 0;
+          const diff = to - start;
+          const startTime = performance.now();
+          function step(now) {
+            const p = Math.min(1, (now - startTime) / duration);
+            const val = Math.floor(start + diff * p);
+            el.textContent = val.toLocaleString();
+            if (p < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+        } catch (e) { /* noop */ }
       }
 
       /** === XP CALC === **/
@@ -4738,6 +4746,7 @@
               }
             }
 
+            console.log('📊 User stats loaded, updating reward table for level:', level);
             generateRewardTable(level);
           }
 
@@ -6392,6 +6401,7 @@
         try {
           // Generate reward table based on user level (use stats value if available later)
           const userLevel = getCurrentUserLevel(0);
+          console.log('🚀 Starting dashboard, generating reward table for level:', userLevel);
           generateRewardTable(userLevel);
 
           const loadPromises = [
