@@ -3341,20 +3341,10 @@
       <div class="card" onclick="openActivityModal()" style="cursor: pointer;">
         <h2>📰 Recent Activity <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to expand</span></h2>
         <ul id="activityFeedMain" class="activity-feed activity-feed-padded">
-          <li class="activity-item">
-            <span class="activity-icon">🎉</span>
-            <span class="activity-text">Welcome to WALDOCOIN!</span>
-            <span class="activity-time">Just now</span>
-          </li>
-          <li class="activity-item">
+          <li class="activity-item" style="text-align: center; padding: 20px; color: #888;">
             <span class="activity-icon">📊</span>
-            <span class="activity-text">Dashboard loaded successfully</span>
-            <span class="activity-time">1 min ago</span>
-          </li>
-          <li class="activity-item">
-            <span class="activity-icon">🔗</span>
-            <span class="activity-text">Connect your wallet to see more activity</span>
-            <span class="activity-time">2 min ago</span>
+            <span class="activity-text">No recent activity. Connect your wallet and start using WALDOCOIN!</span>
+            <span class="activity-time"></span>
           </li>
         </ul>
         <div class="activity-footer">
@@ -5497,28 +5487,25 @@
             }
           }
 
-          // Fallback to mock data if API doesn't exist or returns no data
-          console.log('Using mock activity data - real API not available yet');
-          const activities = generateMockActivity(wallet);
-
-          expandedFeed.innerHTML = activities.map(activity => `
-            <li class="activity-item">
-              <span class="activity-icon">${activity.icon}</span>
-              <span class="activity-text">${activity.text}</span>
-              <span class="activity-time">${activity.time}</span>
+          // Show empty state if API doesn't exist or returns no data
+          console.log('No activity data available yet');
+          expandedFeed.innerHTML = `
+            <li class="activity-item" style="text-align: center; padding: 40px 20px; color: #888;">
+              <span class="activity-icon">📊</span>
+              <span class="activity-text">No activity yet. Start using WALDOCOIN features to see your activity history here!</span>
+              <span class="activity-time"></span>
             </li>
-          `).join('');
+          `;
         } catch (e) {
-          console.warn('Activity loading failed, using mock data:', e);
-          // Use mock data as fallback
-          const activities = generateMockActivity(wallet);
-          expandedFeed.innerHTML = activities.map(activity => `
-            <li class="activity-item">
-              <span class="activity-icon">${activity.icon}</span>
-              <span class="activity-text">${activity.text}</span>
-              <span class="activity-time">${activity.time}</span>
+          console.warn('Activity loading failed:', e);
+          // Show empty state on error
+          expandedFeed.innerHTML = `
+            <li class="activity-item" style="text-align: center; padding: 40px 20px; color: #888;">
+              <span class="activity-icon">📊</span>
+              <span class="activity-text">No activity yet. Start using WALDOCOIN features to see your activity history here!</span>
+              <span class="activity-time"></span>
             </li>
-          `).join('');
+          `;
         }
       }
 
@@ -5976,27 +5963,25 @@
             }
           }
 
-          // Fallback to mock data if API doesn't exist or returns no data
-          console.log('Using mock activity data - real API not available yet');
-          const activities = generateMockActivity(wallet).slice(0, 3); // Show only 3 in card
-          ul.innerHTML = activities.map(activity => `
-            <li class="activity-item">
-              <span class="activity-icon">${activity.icon}</span>
-              <span class="activity-text">${activity.text}</span>
-              <span class="activity-time">${activity.time}</span>
+          // Show empty state if API doesn't exist or returns no data
+          console.log('No activity data available yet');
+          ul.innerHTML = `
+            <li class="activity-item" style="text-align: center; padding: 20px; color: #888;">
+              <span class="activity-icon">📊</span>
+              <span class="activity-text">No recent activity. Connect your wallet and start using WALDOCOIN!</span>
+              <span class="activity-time"></span>
             </li>
-          `).join('');
+          `;
         } catch (e) {
-          console.warn('Activity fetch failed, using mock data:', e);
-          // Use mock data as fallback
-          const activities = generateMockActivity(wallet).slice(0, 3);
-          ul.innerHTML = activities.map(activity => `
-            <li class="activity-item">
-              <span class="activity-icon">${activity.icon}</span>
-              <span class="activity-text">${activity.text}</span>
-              <span class="activity-time">${activity.time}</span>
+          console.warn('Activity fetch failed:', e);
+          // Show empty state on error
+          ul.innerHTML = `
+            <li class="activity-item" style="text-align: center; padding: 20px; color: #888;">
+              <span class="activity-icon">📊</span>
+              <span class="activity-text">No recent activity. Connect your wallet and start using WALDOCOIN!</span>
+              <span class="activity-time"></span>
             </li>
-          `).join('');
+          `;
         }
       }
       // After init, call: fetchActivity(getWallet());
