@@ -6942,7 +6942,7 @@
         ) return;
 
         if (event.data.wallet) {
-          localStorage.setItem("xummWallet", event.data.wallet);
+          setWallet(event.data.wallet);
           sessionStorage.setItem("waldoLoginDesktop", "1");
 
           if (!dashboardStarted) {
@@ -7004,7 +7004,7 @@
 
             if (status.signed && status.account) {
               clearInterval(pollInterval);
-              localStorage.setItem('xummWallet', status.account);
+              setWallet(status.account);
               sessionStorage.setItem('waldoLoginDesktop', 'true');
               updateWalletUI(status.account);
               hideXummModal();

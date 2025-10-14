@@ -562,13 +562,14 @@
             const currentWallet = getWallet();
             if (data.wallet !== currentWallet) {
               localStorage.setItem('xummWallet', data.wallet);
-              // Refresh the page to update with new wallet
+              // Update UI immediately instead of refreshing
               if (data.wallet) {
-                showToast('Wallet connected in another tab - refreshing...', 'success');
-                setTimeout(() => location.reload(), 1500);
+                showToast('Wallet connected in another tab!', 'success');
+                showBattleDashboard();
+                initializeBattleArena();
               } else {
-                showToast('Wallet disconnected in another tab - refreshing...', 'info');
-                setTimeout(() => location.reload(), 1500);
+                showToast('Wallet disconnected in another tab', 'info');
+                showWalletConnection();
               }
             }
           } catch (e) {
@@ -585,13 +586,14 @@
             const currentWallet = getWallet();
             if (event.data.wallet !== currentWallet) {
               localStorage.setItem('xummWallet', event.data.wallet);
-              // Refresh the page to update with new wallet
+              // Update UI immediately instead of refreshing
               if (event.data.wallet) {
-                showToast('Wallet connected in another tab - refreshing...', 'success');
-                setTimeout(() => location.reload(), 1500);
+                showToast('Wallet connected in another tab!', 'success');
+                showBattleDashboard();
+                initializeBattleArena();
               } else {
-                showToast('Wallet disconnected in another tab - refreshing...', 'info');
-                setTimeout(() => location.reload(), 1500);
+                showToast('Wallet disconnected in another tab', 'info');
+                showWalletConnection();
               }
             }
           }
@@ -977,19 +979,43 @@
       loadBattleFeesForUI();
     }
 
+    function checkWalletAndInitialize() {
+      // Check multiple sources for wallet data
+      let wallet = getWallet();
+
+      // Also check if there's recent wallet sync data
+      try {
+        const syncData = localStorage.getItem('waldoWalletSync');
+        if (syncData) {
+          const parsed = JSON.parse(syncData);
+          if (parsed.wallet && !wallet) {
+            localStorage.setItem('xummWallet', parsed.wallet);
+            wallet = parsed.wallet;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse wallet sync data:', e);
+      }
+
+      if (wallet) {
+        console.log('✅ Wallet found, initializing battle arena:', wallet);
+        showBattleDashboard();
+        initializeBattleArena();
+      } else {
+        console.log('❌ No wallet found, showing connection screen');
+        showWalletConnection();
+      }
+    }
+
     // === EVENT LISTENERS ===
     document.addEventListener('DOMContentLoaded', function () {
       // Initialize shared authentication listener
       listenForWalletChanges();
 
-      // Check if wallet is already connected
-      const wallet = getWallet();
-      if (wallet) {
-        showBattleDashboard();
-        initializeBattleArena();
-      } else {
-        showWalletConnection();
-      }
+      // Check for wallet with a small delay to allow cross-tab sync
+      setTimeout(() => {
+        checkWalletAndInitialize();
+      }, 100);
 
       // Connect wallet button
       const connectBtn = document.getElementById('connectWalletBtn');
