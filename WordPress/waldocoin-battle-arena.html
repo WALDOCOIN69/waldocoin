@@ -602,12 +602,22 @@
     }
 
     // === WALLET CONNECTION ===
+    let dashboardShown = false;
+
     function showWalletConnection() {
+      // Don't show wallet connection if dashboard is already shown
+      if (dashboardShown) {
+        console.log('🚫 Dashboard already shown, not showing wallet connection');
+        return;
+      }
+      console.log('🔐 Showing wallet connection screen');
       $('walletConnectionScreen').style.display = 'block';
       $('battleDashboard').style.display = 'none';
     }
 
     function showBattleDashboard() {
+      console.log('📊 Showing battle dashboard');
+      dashboardShown = true;
       $('walletConnectionScreen').style.display = 'none';
       $('battleDashboard').style.display = 'block';
     }
@@ -980,15 +990,20 @@
     }
 
     function checkWalletAndInitialize() {
+      console.log('🔍 Checking wallet and initializing...');
+
       // Check multiple sources for wallet data
       let wallet = getWallet();
+      console.log('📱 Direct wallet check:', wallet);
 
       // Also check if there's recent wallet sync data
       try {
         const syncData = localStorage.getItem('waldoWalletSync');
+        console.log('🔄 Sync data:', syncData);
         if (syncData) {
           const parsed = JSON.parse(syncData);
           if (parsed.wallet && !wallet) {
+            console.log('📥 Using sync data wallet:', parsed.wallet);
             localStorage.setItem('xummWallet', parsed.wallet);
             wallet = parsed.wallet;
           }
@@ -997,10 +1012,15 @@
         console.warn('Failed to parse wallet sync data:', e);
       }
 
+      console.log('🎯 Final wallet decision:', wallet);
+
       if (wallet) {
         console.log('✅ Wallet found, initializing battle arena:', wallet);
         showBattleDashboard();
-        initializeBattleArena();
+        // Add a small delay before initializing to ensure UI is updated
+        setTimeout(() => {
+          initializeBattleArena();
+        }, 100);
       } else {
         console.log('❌ No wallet found, showing connection screen');
         showWalletConnection();
@@ -1012,10 +1032,10 @@
       // Initialize shared authentication listener
       listenForWalletChanges();
 
-      // Check for wallet with a small delay to allow cross-tab sync
+      // Check for wallet with a delay to allow cross-tab sync
       setTimeout(() => {
         checkWalletAndInitialize();
-      }, 100);
+      }, 500);
 
       // Connect wallet button
       const connectBtn = document.getElementById('connectWalletBtn');
