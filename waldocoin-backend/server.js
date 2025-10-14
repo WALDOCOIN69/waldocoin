@@ -160,6 +160,7 @@ const startServer = async () => {
   app.use("/api/topMeme", topMemeRoute);
   app.use("/api/linkTwitter", linkTwitterRoute);
   app.use("/api/activity", activityRoute);
+  app.use("/api/referral", (await import("./routes/referral.js")).default);
   app.use("/api/system", (await import("./routes/system.js")).default);
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
   app.use("/api/market/price-history", (await import("./routes/market/price-history.js")).default);
@@ -229,7 +230,7 @@ const startServer = async () => {
         '/api/userMemes', '/api/policy', '/api/config', '/api/userLevel', '/api/tokenomics',
         '/api/security', '/api/staking', '/api/marketplace', '/api/burn', '/api/battle',
         '/api/dao', '/api/users', '/api/rewards', '/api/proposals', '/api/conversion',
-        '/api/topMeme', '/api/linkTwitter', '/api/activity', '/api/system', '/api/market/wlo',
+        '/api/topMeme', '/api/linkTwitter', '/api/activity', '/api/referral', '/api/system', '/api/market/wlo',
         '/api/xrpl/trade', '/api/xrpl/trustline', '/api/xrpl/balance', '/api/debug/autodistribute',
         '/api/airdrop', '/api/admin/send-waldo', '/api/admin/trustline', '/api/admin/volume-bot',
         '/api/presale'

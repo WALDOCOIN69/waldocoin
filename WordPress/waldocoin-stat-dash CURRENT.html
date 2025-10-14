@@ -6755,6 +6755,9 @@
               hideXummModal();
               showToast('✅ Wallet connected successfully!', 'success');
 
+              // Process referral if exists
+              await processReferralRegistration(status.account);
+
               // Start dashboard if not already started
               if (!dashboardStarted) {
                 startDashboard();
@@ -6808,6 +6811,8 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const params = new URLSearchParams(window.location.search);
+
+      // Handle logout notification
       if (params.get("logout") === "1") {
         const toast = document.createElement("div");
         toast.textContent = "✅ You have been logged out.";
@@ -6819,7 +6824,105 @@
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3200);
       }
+
+      // Handle referral parameter
+      const referralCode = params.get("ref");
+      if (referralCode) {
+        handleReferralVisit(referralCode);
+      }
     });
+
+    // Handle referral link visits
+    function handleReferralVisit(referralCode) {
+      try {
+        // Store referral code in localStorage for when user connects wallet
+        localStorage.setItem('waldocoin_referral', referralCode);
+
+        // Show welcome message for referred users
+        const toast = document.createElement("div");
+        toast.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span>🤝</span>
+            <div>
+              <div style="font-weight: 600;">Welcome to WALDOCOIN!</div>
+              <div style="font-size: 12px; opacity: 0.9;">You were referred by a friend. Connect your wallet to get started!</div>
+            </div>
+          </div>
+        `;
+        toast.style.cssText = `
+          position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+          background: #25c2a0; color: white; padding: 15px 20px; border-radius: 8px;
+          font-weight: 500; z-index: 99999; box-shadow: 0 0 12px rgba(0,0,0,0.28);
+          max-width: 400px; text-align: left;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 8000);
+
+        console.log(`🤝 Referral detected: ${referralCode}`);
+      } catch (e) {
+        console.warn('Failed to handle referral:', e);
+      }
+    }
+
+    // Process referral registration when wallet connects
+    async function processReferralRegistration(walletAddress) {
+      try {
+        const referralCode = localStorage.getItem('waldocoin_referral');
+        if (!referralCode) {
+          console.log('No referral code found');
+          return;
+        }
+
+        console.log(`🤝 Processing referral registration: ${walletAddress} referred by ${referralCode}`);
+
+        // Register referral with backend
+        const response = await fetch(`${baseURL}/api/referral/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            wallet: walletAddress,
+            referrer: referralCode
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Clear referral code from localStorage
+          localStorage.removeItem('waldocoin_referral');
+
+          // Show success message
+          const toast = document.createElement("div");
+          toast.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span>🎉</span>
+              <div>
+                <div style="font-weight: 600;">Referral Registered!</div>
+                <div style="font-size: 12px; opacity: 0.9;">You and your referrer will both earn rewards!</div>
+              </div>
+            </div>
+          `;
+          toast.style.cssText = `
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+            background: #2ecc71; color: white; padding: 15px 20px; border-radius: 8px;
+            font-weight: 500; z-index: 99999; box-shadow: 0 0 12px rgba(0,0,0,0.28);
+            max-width: 400px; text-align: left;
+          `;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 6000);
+
+          console.log('✅ Referral registered successfully');
+        } else {
+          console.warn('Failed to register referral:', data.error);
+          // Don't show error to user, just log it
+        }
+      } catch (e) {
+        console.warn('Failed to process referral registration:', e);
+        // Don't show error to user, just log it
+      }
+    }
   </script>
 
   <!-- XUMM Connection Modal -->

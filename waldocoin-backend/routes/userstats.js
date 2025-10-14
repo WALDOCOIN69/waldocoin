@@ -62,20 +62,32 @@ router.get("/", async (req, res) => {
     const retweets = parseInt(await redis.get(`user:${wallet}:retweets`)) || 0;
     const memes = parseInt(await redis.get(`user:${wallet}:memes`)) || 0;
     const battles = parseInt(await redis.get(`user:${wallet}:battles`)) || 0;
-    // referrals may be stored as JSON array or numeric count; normalize to array length
-    const referralsRaw = await redis.get(`user:${wallet}:referrals`);
-    const referrals = (() => {
-      if (!referralsRaw) return [];
-      try {
-        const parsed = JSON.parse(referralsRaw);
-        if (Array.isArray(parsed)) return parsed;
-        const n = parseInt(referralsRaw);
-        return Number.isFinite(n) ? Array.from({ length: Math.max(0, n) }) : [];
-      } catch {
-        const n = parseInt(referralsRaw);
-        return Number.isFinite(n) ? Array.from({ length: Math.max(0, n) }) : [];
+    // Get referrals from user stats (new referral system)
+    let referrals = [];
+    try {
+      const userStatsRaw = await redis.get(`user:${wallet}:stats`);
+      if (userStatsRaw) {
+        const userStats = JSON.parse(userStatsRaw);
+        referrals = userStats.referrals || [];
       }
-    })();
+    } catch (e) {
+      // Fallback to old referrals format
+      const referralsRaw = await redis.get(`user:${wallet}:referrals`);
+      if (referralsRaw) {
+        try {
+          const parsed = JSON.parse(referralsRaw);
+          if (Array.isArray(parsed)) {
+            referrals = parsed;
+          } else {
+            const n = parseInt(referralsRaw);
+            referrals = Number.isFinite(n) ? Array.from({ length: Math.max(0, n) }) : [];
+          }
+        } catch {
+          const n = parseInt(referralsRaw);
+          referrals = Number.isFinite(n) ? Array.from({ length: Math.max(0, n) }) : [];
+        }
+      }
+    }
 
     // Count minted NFTs for this wallet
     let mintedCount = 0;
@@ -107,7 +119,7 @@ router.get("/", async (req, res) => {
     const likesXP = (likes || 0) * XP_RATES.LIKE;
     const retweetsXP = (retweets || 0) * XP_RATES.RETWEET;
     const battlesXP = (battles || 0) * XP_RATES.BATTLE_WIN;
-    const referralsXP = (referrals || 0) * XP_RATES.REFERRAL;
+    const referralsXP = (Array.isArray(referrals) ? referrals.length : 0) * XP_RATES.REFERRAL;
 
     // Get voting XP (placeholder for now)
     let votingXP = 0;
