@@ -3144,8 +3144,8 @@
       </div>
 
       <!-- XP Trends -->
-      <div class="card">
-        <h2>📊 Meme XP Trends</h2>
+      <div class="card" onclick="openXPChartModal()" style="cursor: pointer;">
+        <h2>📊 Meme XP Trends <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to expand</span></h2>
         <canvas width="800" height="300" id="xpChart"
           style="width: 100%; height: 300px; background: rgba(255,255,255,0.05); border-radius: 8px;"></canvas>
         <div id="xpChartStatus" style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
@@ -3873,6 +3873,18 @@
       </div>
     </div>
 
+    <!-- XP Chart Expand Modal -->
+    <div id="xpChartModal" class="nft-modal modal-container" style="display: none;">
+      <div class="modal-content" style="max-width: 1200px; width: 95%;">
+        <span onclick="closeXPChartModal()" class="close-nft-modal modal-close">&times;</span>
+        <h3 class="modal-title">📊 Meme XP Trends (7 Days)</h3>
+        <div class="chart-container" style="margin-top: 20px;">
+          <canvas width="1000" height="500" id="xpChartExpanded"
+            style="width: 100%; height: 500px; background: rgba(255,255,255,0.05); border-radius: 8px;"></canvas>
+        </div>
+      </div>
+    </div>
+
     <!--script src="dashboard-fix.js"></-script-->
     <script>
       (function () {
@@ -4202,8 +4214,9 @@
         // Clear canvas
         ctx.clearRect(0, 0, width, height);
 
-        // Chart dimensions - larger padding for bigger chart
-        const padding = 60;
+        // Chart dimensions - adjust padding based on canvas size
+        const isLarge = width > 900; // Modal canvas is larger
+        const padding = isLarge ? 80 : 60;
         const chartWidth = width - (padding * 2);
         const chartHeight = height - (padding * 2);
 
@@ -4246,44 +4259,48 @@
 
         // Draw data points
         ctx.fillStyle = '#25c2a0';
+        const pointSize = isLarge ? 8 : 6;
         for (let i = 0; i < values.length; i++) {
           const x = padding + (chartWidth / (values.length - 1)) * i;
           const y = padding + chartHeight - (values[i] / maxValue) * chartHeight;
 
           ctx.beginPath();
-          ctx.arc(x, y, 6, 0, 2 * Math.PI);
+          ctx.arc(x, y, pointSize, 0, 2 * Math.PI);
           ctx.fill();
 
           // Add white border to points
           ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = isLarge ? 3 : 2;
           ctx.stroke();
         }
 
         // Draw Y-axis values
         ctx.fillStyle = '#999';
-        ctx.font = '12px Arial';
+        ctx.font = isLarge ? '16px Arial' : '12px Arial';
         ctx.textAlign = 'right';
         for (let i = 0; i <= 4; i++) {
           const value = Math.round((maxValue / 4) * (4 - i));
-          const y = padding + (chartHeight / 4) * i + 4;
-          ctx.fillText(value.toString(), padding - 10, y);
+          const y = padding + (chartHeight / 4) * i + (isLarge ? 6 : 4);
+          ctx.fillText(value.toString(), padding - (isLarge ? 15 : 10), y);
         }
 
         // Draw labels
         ctx.fillStyle = '#ccc';
-        ctx.font = '14px Arial';
+        ctx.font = isLarge ? '18px Arial' : '14px Arial';
         ctx.textAlign = 'center';
         for (let i = 0; i < labels.length; i++) {
           const x = padding + (chartWidth / (labels.length - 1)) * i;
-          ctx.fillText(labels[i], x, height - 15);
+          ctx.fillText(labels[i], x, height - (isLarge ? 20 : 15));
         }
 
         // Draw title
         ctx.fillStyle = '#fff';
-        ctx.font = '18px Arial';
+        ctx.font = isLarge ? '24px Arial' : '18px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Meme XP Progress', width / 2, 30);
+        ctx.fillText('Meme XP Progress', width / 2, isLarge ? 40 : 30);
+
+        // Store data for modal
+        xpChartModalData = data;
 
         // Update status
         const statusEl = $("xpChartStatus");
@@ -4297,6 +4314,7 @@
       let priceChartNewInstance = null;
       let priceChartExpandedInstance = null;
       let lastChartData = null; // Store chart data for modal
+      let xpChartModalData = null; // Store XP chart data for modal
 
       function renderXPTrendChart(xpTrend) {
         console.log('🎯 renderXPTrendChart called with:', xpTrend);
@@ -5375,6 +5393,27 @@
         if (modal) modal.style.display = "none";
       }
 
+      // === XP Chart Modal Functions ===
+      function openXPChartModal() {
+        const modal = document.getElementById("xpChartModal");
+        if (!modal) return;
+        modal.style.display = "block";
+
+        // Render expanded XP chart with stored data
+        if (xpChartModalData) {
+          const canvas = document.getElementById("xpChartExpanded");
+          if (canvas) {
+            // Use larger version of simple chart for modal
+            drawSimpleXPChart(canvas, xpChartModalData);
+          }
+        }
+      }
+
+      function closeXPChartModal() {
+        const modal = document.getElementById("xpChartModal");
+        if (modal) modal.style.display = "none";
+      }
+
       async function createStake() {
         const amount = parseFloat(document.getElementById("stakeAmount").value);
         const duration = parseInt(document.getElementById("stakeDuration").value);
@@ -5671,6 +5710,8 @@
       window.fetchStakingPositions = fetchStakingPositions;
       window.openChartModal = openChartModal;
       window.closeChartModal = closeChartModal;
+      window.openXPChartModal = openXPChartModal;
+      window.closeXPChartModal = closeXPChartModal;
       window.unstakePosition = unstakePosition;
       window.linkTwitterAccount = linkTwitterAccount;
       window.toggleStakingZone = toggleStakingZone;
