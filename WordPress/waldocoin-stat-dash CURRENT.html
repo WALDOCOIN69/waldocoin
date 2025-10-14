@@ -3152,8 +3152,12 @@
         </div>
         <div style="text-align: center; margin-top: 10px;">
           <button onclick="testXPChart()"
-            style="background: #25c2a0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-            🧪 Test Chart
+            style="background: #25c2a0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 10px;">
+            🧪 Test Chart.js
+          </button>
+          <button onclick="testSimpleChart()"
+            style="background: #ff6b6b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            🎨 Test Simple Chart
           </button>
         </div>
       </div>
@@ -4196,6 +4200,92 @@
         ctx.lineTo(width - 50, height - 100);
         ctx.stroke();
       }
+
+      // Simple canvas-based chart as alternative to Chart.js
+      function drawSimpleXPChart(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Chart dimensions
+        const padding = 40;
+        const chartWidth = width - (padding * 2);
+        const chartHeight = height - (padding * 2);
+
+        // Get data values
+        const values = data.datasets[0].data;
+        const labels = data.labels;
+        const maxValue = Math.max(...values, 1);
+
+        // Draw background
+        ctx.fillStyle = 'rgba(37, 194, 160, 0.1)';
+        ctx.fillRect(padding, padding, chartWidth, chartHeight);
+
+        // Draw grid lines
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+          const y = padding + (chartHeight / 4) * i;
+          ctx.beginPath();
+          ctx.moveTo(padding, y);
+          ctx.lineTo(padding + chartWidth, y);
+          ctx.stroke();
+        }
+
+        // Draw data line
+        ctx.strokeStyle = '#25c2a0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        for (let i = 0; i < values.length; i++) {
+          const x = padding + (chartWidth / (values.length - 1)) * i;
+          const y = padding + chartHeight - (values[i] / maxValue) * chartHeight;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+
+        // Draw data points
+        ctx.fillStyle = '#25c2a0';
+        for (let i = 0; i < values.length; i++) {
+          const x = padding + (chartWidth / (values.length - 1)) * i;
+          const y = padding + chartHeight - (values[i] / maxValue) * chartHeight;
+
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+
+        // Draw labels
+        ctx.fillStyle = '#ccc';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        for (let i = 0; i < labels.length; i++) {
+          const x = padding + (chartWidth / (labels.length - 1)) * i;
+          ctx.fillText(labels[i], x, height - 10);
+        }
+
+        // Draw title
+        ctx.fillStyle = '#fff';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Meme XP Progress', width / 2, 20);
+
+        // Update status
+        const statusEl = $("xpChartStatus");
+        if (statusEl) {
+          statusEl.textContent = '';
+          statusEl.style.display = 'none';
+        }
+      }
+
       let priceChartMergedInstance = null;
       let priceChartNewInstance = null;
       let priceChartExpandedInstance = null;
@@ -4222,9 +4312,9 @@
         }
 
         if (!window.Chart) {
-          console.warn('❌ Chart.js not loaded, showing placeholder');
-          if (statusEl) statusEl.textContent = 'Chart.js not loaded';
-          showXPChartPlaceholder(el);
+          console.warn('❌ Chart.js not loaded, using simple canvas chart');
+          if (statusEl) statusEl.textContent = 'Using simple chart';
+          drawSimpleXPChart(el, xpTrend || generateMockXPTrend(0, 1));
           return;
         }
 
@@ -4258,12 +4348,29 @@
             type: "line",
             data: xpTrend || defaultData,
             options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: false,  // Disable animations to prevent loops
+              responsive: false,  // Disable responsive to prevent resize loops
+              maintainAspectRatio: true,
+              animation: false,  // Disable all animations
+              animations: false, // Disable animations (alternative property)
+              transitions: {
+                active: {
+                  animation: {
+                    duration: 0
+                  }
+                }
+              },
               interaction: {
                 intersect: false,
                 mode: 'index'
+              },
+              elements: {
+                line: {
+                  tension: 0.4
+                },
+                point: {
+                  radius: 4,
+                  hoverRadius: 6
+                }
               },
               scales: {
                 y: {
@@ -4293,6 +4400,11 @@
               }
             }
           });
+
+          // Force stop any animations that might still be running
+          if (xpChartInstance.stop) {
+            xpChartInstance.stop();
+          }
 
           console.log('✅ Chart created successfully!');
           const statusEl = $("xpChartStatus");
@@ -6018,8 +6130,19 @@
         renderXPTrendChart(testData);
       }
 
-      // Make testXPChart available globally for manual testing
+      // Test function for simple canvas chart
+      function testSimpleChart() {
+        console.log('🎨 Testing Simple Canvas Chart...');
+        const canvas = $("xpChart");
+        if (canvas) {
+          const testData = generateMockXPTrend(150, 3);
+          drawSimpleXPChart(canvas, testData);
+        }
+      }
+
+      // Make test functions available globally for manual testing
       window.testXPChart = testXPChart;
+      window.testSimpleChart = testSimpleChart;
 
       // Fetch policy worth (eligibility check)
       async function fetchPolicyWorth(wallet) {
