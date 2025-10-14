@@ -4014,43 +4014,165 @@
         return 1; // Waldo Watcher (default)
       }
 
-      function generateRewardTable(userLevel = 1) {
+      async function generateRewardTable(userLevel = 1) {
         const table = $("rewardTierBody");
         const titleElement = $("rewardTableTitle");
 
-        console.log('🎯 Generating reward table for level:', userLevel);
+        console.log('🎯 Generating dynamic reward table for level:', userLevel);
         console.log('📊 Table element found:', !!table);
-        console.log('📋 Title element found:', !!titleElement);
 
         if (!table) {
           console.warn('❌ Reward table body element not found');
           return;
         }
 
+        // Get level data for structure (likes/retweets requirements)
         const levelData = levelRewardTables[userLevel] || levelRewardTables[1];
-        console.log('📈 Level data:', levelData);
 
         // Update title
         if (titleElement) {
           titleElement.textContent = `💎 ${levelData.title}`;
         }
 
-        // Clear and populate table
-        table.innerHTML = "";
-        levelData.tiers.forEach(t => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${t.tier}</td>
-            <td>${t.likes}+</td>
-            <td>${t.retweets}+</td>
-            <td>${t.base.toFixed(2)} WALDO</td>
-            <td>${t.instant.toFixed(4)} WALDO</td>
-            <td>${t.staking.toFixed(4)} WALDO</td>
-            <td>${t.maxNoStake.toFixed(2)} WALDO</td>
-            <td>${t.maxStake.toFixed(4)} WALDO</td>
+        // Clear table and show loading
+        table.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 20px; color: #888;">
+              🔄 Loading dynamic rewards with active bonuses...
+            </td>
+          </tr>
+        `;
+
+        try {
+          // Fetch dynamic rewards for each tier using backend API
+          const tierPromises = levelData.tiers.map(async (tier) => {
+            try {
+              // Get dynamic reward calculation from backend
+              const response = await fetch(`${baseURL}/api/rewards/calculate?baseAmount=${tier.base}&rewardType=meme`);
+              const rewardData = await response.json();
+
+              if (rewardData.success) {
+                // Calculate instant and bonus payouts with dynamic multipliers
+                const dynamicBase = rewardData.finalAmount;
+                const instantPayout = dynamicBase * 0.9; // 10% fee
+                const bonusPayout = dynamicBase * 0.95 * 1.15; // 5% fee + 15% bonus
+                const maxInstant = instantPayout * 40;
+                const maxBonus = bonusPayout * 40;
+
+                return {
+                  ...tier,
+                  dynamicBase: dynamicBase,
+                  instantPayout: instantPayout,
+                  bonusPayout: bonusPayout,
+                  maxInstant: maxInstant,
+                  maxBonus: maxBonus,
+                  hasBonus: rewardData.totalMultiplier > 1,
+                  bonusMultiplier: rewardData.totalMultiplier,
+                  appliedBonuses: rewardData.appliedBonuses || []
+                };
+              } else {
+                // Fallback to static data if API fails
+                return {
+                  ...tier,
+                  dynamicBase: tier.base,
+                  instantPayout: tier.instant,
+                  bonusPayout: tier.staking,
+                  maxInstant: tier.maxNoStake,
+                  maxBonus: tier.maxStake,
+                  hasBonus: false,
+                  bonusMultiplier: 1,
+                  appliedBonuses: []
+                };
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch reward for tier ${tier.tier}:`, error);
+              // Fallback to static data
+              return {
+                ...tier,
+                dynamicBase: tier.base,
+                instantPayout: tier.instant,
+                bonusPayout: tier.staking,
+                maxInstant: tier.maxNoStake,
+                maxBonus: tier.maxStake,
+                hasBonus: false,
+                bonusMultiplier: 1,
+                appliedBonuses: []
+              };
+            }
+          });
+
+          const dynamicTiers = await Promise.all(tierPromises);
+
+          // Clear loading and populate with dynamic data
+          table.innerHTML = "";
+
+          dynamicTiers.forEach(tier => {
+            const row = document.createElement("tr");
+            const bonusIndicator = tier.hasBonus ? ` 🔥 ${tier.bonusMultiplier}x` : '';
+
+            row.innerHTML = `
+              <td>${tier.tier}</td>
+              <td>${tier.likes}+</td>
+              <td>${tier.retweets}+</td>
+              <td>${tier.dynamicBase.toFixed(2)} WALDO${bonusIndicator}</td>
+              <td>${tier.instantPayout.toFixed(4)} WALDO</td>
+              <td>${tier.bonusPayout.toFixed(4)} WALDO</td>
+              <td>${tier.maxInstant.toFixed(2)} WALDO</td>
+              <td>${tier.maxBonus.toFixed(4)} WALDO</td>
+            `;
+
+            // Add bonus styling if active
+            if (tier.hasBonus) {
+              row.style.backgroundColor = '#1a2f1a';
+              row.style.border = '1px solid #25c2a0';
+            }
+
+            table.appendChild(row);
+          });
+
+          // Show bonus info if any bonuses are active
+          const hasAnyBonus = dynamicTiers.some(t => t.hasBonus);
+          if (hasAnyBonus) {
+            const bonusRow = document.createElement("tr");
+            bonusRow.innerHTML = `
+              <td colspan="8" style="text-align: center; padding: 10px; background: #1a2f1a; color: #25c2a0; font-size: 12px;">
+                🔥 Active bonus multipliers applied! Rewards are dynamically calculated.
+              </td>
+            `;
+            table.appendChild(bonusRow);
+          }
+
+          console.log('✅ Dynamic reward table generated successfully');
+
+        } catch (error) {
+          console.error('❌ Failed to generate dynamic reward table:', error);
+
+          // Fallback to static table
+          table.innerHTML = "";
+          levelData.tiers.forEach(t => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${t.tier}</td>
+              <td>${t.likes}+</td>
+              <td>${t.retweets}+</td>
+              <td>${t.base.toFixed(2)} WALDO</td>
+              <td>${t.instant.toFixed(4)} WALDO</td>
+              <td>${t.staking.toFixed(4)} WALDO</td>
+              <td>${t.maxNoStake.toFixed(2)} WALDO</td>
+              <td>${t.maxStake.toFixed(4)} WALDO</td>
+            `;
+            table.appendChild(row);
+          });
+
+          // Show fallback notice
+          const fallbackRow = document.createElement("tr");
+          fallbackRow.innerHTML = `
+            <td colspan="8" style="text-align: center; padding: 10px; background: #2a1a1a; color: #888; font-size: 12px;">
+              ⚠️ Using static rewards (API unavailable)
+            </td>
           `;
-          table.appendChild(row);
-        });
+          table.appendChild(fallbackRow);
+        }
       }
 
       /** === COUNT-UP UTILS === */
@@ -4747,7 +4869,7 @@
             }
 
             console.log('📊 User stats loaded, updating reward table for level:', level);
-            generateRewardTable(level);
+            await generateRewardTable(level);
           }
 
           // Generate XP trend data if not provided by backend
@@ -6402,7 +6524,7 @@
           // Generate reward table based on user level (use stats value if available later)
           const userLevel = getCurrentUserLevel(0);
           console.log('🚀 Starting dashboard, generating reward table for level:', userLevel);
-          generateRewardTable(userLevel);
+          generateRewardTable(userLevel); // Don't await here to avoid blocking dashboard start
 
           const loadPromises = [
             fetchUserStats(wallet).catch(e => console.warn('User stats failed:', e)),
