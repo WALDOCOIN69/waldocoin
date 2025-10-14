@@ -3150,6 +3150,12 @@
         <div id="xpChartStatus" style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
           Loading chart...
         </div>
+        <div style="text-align: center; margin-top: 10px;">
+          <button onclick="testXPChart()"
+            style="background: #25c2a0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            🧪 Test Chart
+          </button>
+        </div>
       </div>
       <!-- Social Stats -->
       <div class="card">
@@ -4669,7 +4675,11 @@
           }
 
           console.log('📊 Rendering XP chart with data:', xpTrendData);
-          renderXPTrendChart(xpTrendData);
+
+          // Force render chart with a small delay to ensure DOM is ready
+          setTimeout(() => {
+            renderXPTrendChart(xpTrendData);
+          }, 100);
 
           // Update Next Level Requirements card using fetched stats
           try {
@@ -4683,6 +4693,14 @@
 
         } catch (err) {
           showToast("Error loading user stats", "error");
+          console.error("❌ fetchUserStats error:", err);
+
+          // Still render chart with default data even if stats fail
+          console.log('📊 Rendering fallback XP chart due to stats error');
+          const fallbackData = generateMockXPTrend(0, 1);
+          setTimeout(() => {
+            renderXPTrendChart(fallbackData);
+          }, 100);
         }
       }
 
@@ -5999,6 +6017,9 @@
         const testData = generateMockXPTrend(100, 2);
         renderXPTrendChart(testData);
       }
+
+      // Make testXPChart available globally for manual testing
+      window.testXPChart = testXPChart;
 
       // Fetch policy worth (eligibility check)
       async function fetchPolicyWorth(wallet) {
