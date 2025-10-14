@@ -5188,6 +5188,11 @@
         const wallet = getWallet();
         if (!wallet) return; // Don't render pagination if no wallet
 
+        // Only show pagination if there are multiple pages
+        if (totalPages <= 1) {
+          return; // Hide pagination for single page
+        }
+
         for (let i = 1; i <= totalPages; i++) {
           pag.innerHTML += `<button onclick="fetchMemes('${wallet}', ${i})" ${i === currentPage ? 'class="js-pagination-bold"' : ''}>${i}</button>`;
         }
