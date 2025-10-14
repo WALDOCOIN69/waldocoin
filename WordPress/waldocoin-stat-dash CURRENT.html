@@ -1472,6 +1472,18 @@
       padding: 15px;
       border-radius: 8px;
       text-align: center;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .xp-multiplier-card.active {
+      border-color: #25c2a0;
+      background: #1a2f1a;
+    }
+
+    .xp-multiplier-card.inactive {
+      opacity: 0.6;
+      background: #1a1a1a;
     }
 
     .xp-multiplier-value {
@@ -1493,6 +1505,34 @@
 
     .xp-multiplier-value-light-green {
       color: #6bcf7f;
+    }
+
+    .xp-multiplier-status {
+      font-size: 0.8em;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .xp-multiplier-status.active {
+      background: #25c2a0;
+      color: white;
+    }
+
+    .xp-multiplier-status.inactive {
+      background: #666;
+      color: #ccc;
+    }
+
+    .xp-multiplier-status.loading {
+      background: #444;
+      color: #888;
+    }
+
+    .xp-multiplier-status.error {
+      background: #ff6b6b;
+      color: white;
     }
 
     .xp-multiplier-label {
@@ -3484,33 +3524,69 @@
     <div class="card">
       <h2>⚡ Active XP Multipliers</h2>
       <div class="xp-multipliers-grid">
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-green" id="stakingMultiplier">1.0x</div>
+        <div class="xp-multiplier-card" id="stakingMultiplierCard">
+          <div class="xp-multiplier-value xp-multiplier-value-green" id="stakingMultiplier">🔄</div>
           <div class="xp-multiplier-label">Bonus Program</div>
-          <div class="xp-multiplier-description">Join bonus program for XP boost</div>
+          <div class="xp-multiplier-description" id="stakingMultiplierDesc">Loading bonus data...</div>
+          <div class="xp-multiplier-status" id="stakingMultiplierStatus"></div>
         </div>
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-red" id="battleMultiplier">1.0x</div>
+        <div class="xp-multiplier-card" id="battleMultiplierCard">
+          <div class="xp-multiplier-value xp-multiplier-value-red" id="battleMultiplier">🔄</div>
           <div class="xp-multiplier-label">Battle Streak</div>
-          <div class="xp-multiplier-description">Win battles for bonus XP</div>
+          <div class="xp-multiplier-description" id="battleMultiplierDesc">Loading battle data...</div>
+          <div class="xp-multiplier-status" id="battleMultiplierStatus"></div>
         </div>
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-yellow" id="levelMultiplier">1.0x</div>
+        <div class="xp-multiplier-card" id="levelMultiplierCard">
+          <div class="xp-multiplier-value xp-multiplier-value-yellow" id="levelMultiplier">🔄</div>
           <div class="xp-multiplier-label">Level Bonus</div>
-          <div class="xp-multiplier-description">Higher levels = more XP</div>
+          <div class="xp-multiplier-description" id="levelMultiplierDesc">Loading level data...</div>
+          <div class="xp-multiplier-status" id="levelMultiplierStatus"></div>
         </div>
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-light-green" id="referralMultiplier">1.0x</div>
+        <div class="xp-multiplier-card" id="referralMultiplierCard">
+          <div class="xp-multiplier-value xp-multiplier-value-light-green" id="referralMultiplier">🔄</div>
           <div class="xp-multiplier-label">Referral Bonus</div>
-          <div class="xp-multiplier-description">Invite friends for XP boost</div>
+          <div class="xp-multiplier-description" id="referralMultiplierDesc">Loading referral data...</div>
+          <div class="xp-multiplier-status" id="referralMultiplierStatus"></div>
         </div>
       </div>
       <div class="xp-tips-box">
-        <div class="xp-tips-title">💡 Pro Tips</div>
-        <div class="xp-tips-content">
-          • Join bonus program for permanent XP multiplier<br>
-          • Win battles to build streak bonuses<br>
-          • Higher levels unlock better multipliers
+        <div class="xp-tips-title">💡 How to Maximize Your XP Multipliers</div>
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0; text-align: left;">
+          <div style="background: #1a2f1a; padding: 12px; border-radius: 6px; border-left: 3px solid #25c2a0;">
+            <div style="color: #25c2a0; font-weight: bold; margin-bottom: 5px;">🟢 Bonus Program</div>
+            <div style="font-size: 12px; line-height: 1.4;">
+              <strong>+1% XP per 1,000 WALDO staked</strong><br>
+              Stake tokens for 30+ days. Max 50% bonus.
+            </div>
+          </div>
+          <div style="background: #2f1a1a; padding: 12px; border-radius: 6px; border-left: 3px solid #ff6b6b;">
+            <div style="color: #ff6b6b; font-weight: bold; margin-bottom: 5px;">🔴 Battle Streak</div>
+            <div style="font-size: 12px; line-height: 1.4;">
+              <strong>+10% XP per battle win</strong><br>
+              Win meme battles. Max 200% bonus.
+            </div>
+          </div>
+          <div style="background: #2f2f1a; padding: 12px; border-radius: 6px; border-left: 3px solid #ffd93d;">
+            <div style="color: #ffd93d; font-weight: bold; margin-bottom: 5px;">🟡 Level Bonus</div>
+            <div style="font-size: 12px; line-height: 1.4;">
+              <strong>+20% XP per level</strong><br>
+              Level up automatically. Max 80% at Level 5.
+            </div>
+          </div>
+          <div style="background: #1a2f1f; padding: 12px; border-radius: 6px; border-left: 3px solid #51cf66;">
+            <div style="color: #51cf66; font-weight: bold; margin-bottom: 5px;">🟢 Referral Bonus</div>
+            <div style="font-size: 12px; line-height: 1.4;">
+              <strong>+5% XP per referral</strong><br>
+              Share your link. Unlimited bonus.
+            </div>
+          </div>
+        </div>
+        <div
+          style="background: #222; padding: 10px; border-radius: 6px; margin-top: 10px; text-align: center; font-size: 12px;">
+          <strong style="color: #25c2a0;">🎯 Pro Tip:</strong>
+          <span style="color: #ccc;">All multipliers stack! Max theoretical: 1.5x + 3.0x + 1.8x + unlimited referrals =
+            massive XP gains!</span>
         </div>
       </div>
     </div>
@@ -4911,32 +4987,340 @@
         }
       }
 
-      // Update XP Multipliers display
-      function updateXPMultipliers(stats) {
+      // Update XP Multipliers display with enhanced backend integration
+      async function updateXPMultipliers(stats) {
         try {
-          // Calculate staking multiplier based on staked amount
-          const stakingBonus = (stats.xpBreakdown?.stakingBonus || 0) / 100;
-          const stakingMultiplier = 1 + stakingBonus;
-          $("stakingMultiplier") && ($("stakingMultiplier").textContent = `${stakingMultiplier.toFixed(1)}x`);
+          console.log('🔄 Updating XP multipliers with stats:', stats);
 
-          // Calculate battle streak multiplier
-          const battleWins = stats.battles || 0;
-          const battleMultiplier = Math.min(1 + (battleWins * 0.1), 3.0); // Max 3x multiplier
-          $("battleMultiplier") && ($("battleMultiplier").textContent = `${battleMultiplier.toFixed(1)}x`);
+          // Fetch additional data for more accurate multipliers
+          const wallet = getWallet();
+          const [stakingData, battleData, referralData] = await Promise.all([
+            fetchStakingMultiplierData(wallet).catch(e => ({ error: e.message })),
+            fetchBattleMultiplierData(wallet).catch(e => ({ error: e.message })),
+            fetchReferralMultiplierData(wallet).catch(e => ({ error: e.message }))
+          ]);
 
-          // Calculate level multiplier
-          const level = stats.level || 1;
-          const levelMultiplier = 1 + ((level - 1) * 0.2); // 0.2x per level
-          $("levelMultiplier") && ($("levelMultiplier").textContent = `${levelMultiplier.toFixed(1)}x`);
+          // 1. Bonus Program Multiplier (Staking)
+          await updateStakingMultiplier(stats, stakingData);
 
-          // Calculate referral multiplier
-          const referrals = stats.referrals?.length || 0;
-          const referralMultiplier = 1 + (referrals * 0.05); // 0.05x per referral
-          $("referralMultiplier") && ($("referralMultiplier").textContent = `${referralMultiplier.toFixed(1)}x`);
+          // 2. Battle Streak Multiplier
+          await updateBattleMultiplier(stats, battleData);
+
+          // 3. Level Bonus Multiplier
+          await updateLevelMultiplier(stats);
+
+          // 4. Referral Bonus Multiplier
+          await updateReferralMultiplier(stats, referralData);
+
+          console.log('✅ XP multipliers updated successfully');
 
         } catch (error) {
-          console.warn("Error updating XP multipliers:", error);
+          console.error("❌ Error updating XP multipliers:", error);
+          setMultipliersError();
         }
+      }
+
+      // Individual multiplier update functions
+      async function updateStakingMultiplier(stats, stakingData) {
+        const card = $("stakingMultiplierCard");
+        const value = $("stakingMultiplier");
+        const desc = $("stakingMultiplierDesc");
+        const status = $("stakingMultiplierStatus");
+
+        if (!value) return;
+
+        try {
+          // Try multiple data sources for staking bonus
+          let stakingBonus = 0;
+          let totalStaked = 0;
+
+          if (stakingData && !stakingData.error) {
+            totalStaked = stakingData.totalStaked || 0;
+            stakingBonus = stakingData.xpBonus || 0;
+          } else if (stats.xpBreakdown?.stakingBonus) {
+            stakingBonus = stats.xpBreakdown.stakingBonus;
+          } else if (stats.totalStaked) {
+            totalStaked = stats.totalStaked;
+            // Calculate bonus: 1% XP bonus per 1000 WALDO staked (max 50%)
+            stakingBonus = Math.min(Math.floor(totalStaked / 1000), 50);
+          }
+
+          const multiplier = 1 + (stakingBonus / 100);
+          value.textContent = `${multiplier.toFixed(1)}x`;
+
+          if (multiplier > 1) {
+            card.className = "xp-multiplier-card active";
+            desc.textContent = `${totalStaked.toFixed(0)} WALDO staked (+${stakingBonus}% XP)`;
+            status.textContent = `+${stakingBonus}% XP Bonus`;
+            status.className = "xp-multiplier-status active";
+          } else {
+            card.className = "xp-multiplier-card inactive";
+            desc.textContent = "Stake WALDO tokens to earn XP bonuses";
+            status.textContent = "No Active Bonus";
+            status.className = "xp-multiplier-status inactive";
+          }
+
+        } catch (error) {
+          console.warn("Error updating staking multiplier:", error);
+          value.textContent = "Error";
+          desc.textContent = "Failed to load staking data";
+          status.textContent = "Data Error";
+          status.className = "xp-multiplier-status error";
+        }
+      }
+
+      async function updateBattleMultiplier(stats, battleData) {
+        const card = $("battleMultiplierCard");
+        const value = $("battleMultiplier");
+        const desc = $("battleMultiplierDesc");
+        const status = $("battleMultiplierStatus");
+
+        if (!value) return;
+
+        try {
+          // Try multiple data sources for battle wins
+          let battleWins = 0;
+          let winStreak = 0;
+
+          if (battleData && !battleData.error) {
+            battleWins = battleData.totalWins || 0;
+            winStreak = battleData.currentStreak || 0;
+          } else if (stats.battles) {
+            battleWins = stats.battles;
+          } else if (stats.battleStats) {
+            battleWins = stats.battleStats.wins || 0;
+            winStreak = stats.battleStats.streak || 0;
+          }
+
+          // Calculate multiplier: 0.1x per win, max 3.0x total
+          const multiplier = Math.min(1 + (battleWins * 0.1), 3.0);
+          value.textContent = `${multiplier.toFixed(1)}x`;
+
+          if (multiplier > 1) {
+            card.className = "xp-multiplier-card active";
+            if (winStreak > 0) {
+              desc.textContent = `${battleWins} wins, ${winStreak} streak (+${((multiplier - 1) * 100).toFixed(0)}% XP)`;
+              status.textContent = `🔥 ${winStreak} Win Streak`;
+            } else {
+              desc.textContent = `${battleWins} total wins (+${((multiplier - 1) * 100).toFixed(0)}% XP)`;
+              status.textContent = `${battleWins} Battle Wins`;
+            }
+            status.className = "xp-multiplier-status active";
+          } else {
+            card.className = "xp-multiplier-card inactive";
+            desc.textContent = "Win meme battles to earn XP bonuses";
+            status.textContent = "No Wins Yet";
+            status.className = "xp-multiplier-status inactive";
+          }
+
+        } catch (error) {
+          console.warn("Error updating battle multiplier:", error);
+          value.textContent = "Error";
+          desc.textContent = "Failed to load battle data";
+          status.textContent = "Data Error";
+          status.className = "xp-multiplier-status error";
+        }
+      }
+
+      async function updateLevelMultiplier(stats) {
+        const card = $("levelMultiplierCard");
+        const value = $("levelMultiplier");
+        const desc = $("levelMultiplierDesc");
+        const status = $("levelMultiplierStatus");
+
+        if (!value) return;
+
+        try {
+          const level = stats.level || 1;
+          const xp = stats.xp || 0;
+
+          // Calculate multiplier: 0.2x per level above 1
+          const multiplier = 1 + ((level - 1) * 0.2);
+          value.textContent = `${multiplier.toFixed(1)}x`;
+
+          const levelNames = ["", "Waldo Watcher", "Waldo Scout", "Waldo Agent", "Waldo Commander", "Waldo Legend"];
+          const levelName = levelNames[level] || `Level ${level}`;
+
+          if (level > 1) {
+            card.className = "xp-multiplier-card active";
+            desc.textContent = `${levelName} (${xp} XP) (+${((multiplier - 1) * 100).toFixed(0)}% XP)`;
+            status.textContent = `Level ${level} Bonus`;
+            status.className = "xp-multiplier-status active";
+          } else {
+            card.className = "xp-multiplier-card inactive";
+            desc.textContent = `${levelName} - Level up for XP bonuses`;
+            status.textContent = "Level 1 (No Bonus)";
+            status.className = "xp-multiplier-status inactive";
+          }
+
+        } catch (error) {
+          console.warn("Error updating level multiplier:", error);
+          value.textContent = "Error";
+          desc.textContent = "Failed to load level data";
+          status.textContent = "Data Error";
+          status.className = "xp-multiplier-status error";
+        }
+      }
+
+      async function updateReferralMultiplier(stats, referralData) {
+        const card = $("referralMultiplierCard");
+        const value = $("referralMultiplier");
+        const desc = $("referralMultiplierDesc");
+        const status = $("referralMultiplierStatus");
+
+        if (!value) return;
+
+        try {
+          // Try multiple data sources for referrals
+          let referralCount = 0;
+          let activeReferrals = 0;
+
+          if (referralData && !referralData.error) {
+            referralCount = referralData.totalReferrals || 0;
+            activeReferrals = referralData.activeReferrals || 0;
+          } else if (stats.referrals) {
+            referralCount = Array.isArray(stats.referrals) ? stats.referrals.length : stats.referrals;
+          } else if (stats.referralStats) {
+            referralCount = stats.referralStats.total || 0;
+            activeReferrals = stats.referralStats.active || 0;
+          }
+
+          // Calculate multiplier: 0.05x per referral
+          const multiplier = 1 + (referralCount * 0.05);
+          value.textContent = `${multiplier.toFixed(1)}x`;
+
+          if (referralCount > 0) {
+            card.className = "xp-multiplier-card active";
+            if (activeReferrals > 0) {
+              desc.textContent = `${referralCount} referrals, ${activeReferrals} active (+${((multiplier - 1) * 100).toFixed(0)}% XP)`;
+              status.textContent = `${activeReferrals} Active Referrals`;
+            } else {
+              desc.textContent = `${referralCount} total referrals (+${((multiplier - 1) * 100).toFixed(0)}% XP)`;
+              status.textContent = `${referralCount} Referrals`;
+            }
+            status.className = "xp-multiplier-status active";
+          } else {
+            card.className = "xp-multiplier-card inactive";
+            desc.textContent = "Invite friends with your referral link for XP bonuses";
+            status.textContent = "No Referrals Yet";
+            status.className = "xp-multiplier-status inactive";
+          }
+
+        } catch (error) {
+          console.warn("Error updating referral multiplier:", error);
+          value.textContent = "Error";
+          desc.textContent = "Failed to load referral data";
+          status.textContent = "Data Error";
+          status.className = "xp-multiplier-status error";
+        }
+      }
+
+      // Backend data fetching functions for multipliers
+      async function fetchStakingMultiplierData(wallet) {
+        try {
+          const response = await fetch(`${baseURL}/api/staking/positions/${wallet}`);
+          const data = await response.json();
+
+          if (data.success && data.positions) {
+            const totalStaked = data.positions.reduce((sum, pos) => sum + (pos.amount || 0), 0);
+            const xpBonus = Math.min(Math.floor(totalStaked / 1000), 50); // 1% per 1000 WALDO, max 50%
+
+            return {
+              totalStaked,
+              xpBonus,
+              activePositions: data.positions.filter(p => p.status === 'active').length
+            };
+          }
+
+          return { totalStaked: 0, xpBonus: 0, activePositions: 0 };
+        } catch (error) {
+          console.warn('Failed to fetch staking multiplier data:', error);
+          throw error;
+        }
+      }
+
+      async function fetchBattleMultiplierData(wallet) {
+        try {
+          const response = await fetch(`${baseURL}/api/battle/stats/${wallet}`);
+          const data = await response.json();
+
+          if (data.success) {
+            return {
+              totalWins: data.wins || 0,
+              totalBattles: data.total || 0,
+              currentStreak: data.streak || 0,
+              winRate: data.winRate || 0
+            };
+          }
+
+          return { totalWins: 0, totalBattles: 0, currentStreak: 0, winRate: 0 };
+        } catch (error) {
+          console.warn('Failed to fetch battle multiplier data:', error);
+          throw error;
+        }
+      }
+
+      async function fetchReferralMultiplierData(wallet) {
+        try {
+          const response = await fetch(`${baseURL}/api/referral/stats/${wallet}`);
+          const data = await response.json();
+
+          if (data.success) {
+            return {
+              totalReferrals: data.totalReferrals || 0,
+              activeReferrals: data.activeReferrals || 0,
+              totalEarned: data.totalEarned || 0
+            };
+          }
+
+          return { totalReferrals: 0, activeReferrals: 0, totalEarned: 0 };
+        } catch (error) {
+          console.warn('Failed to fetch referral multiplier data:', error);
+          throw error;
+        }
+      }
+
+      // Error state handler
+      function setMultipliersError() {
+        const multipliers = ['staking', 'battle', 'level', 'referral'];
+
+        multipliers.forEach(type => {
+          const value = $(`${type}Multiplier`);
+          const desc = $(`${type}MultiplierDesc`);
+          const status = $(`${type}MultiplierStatus`);
+          const card = $(`${type}MultiplierCard`);
+
+          if (value) value.textContent = "Error";
+          if (desc) desc.textContent = "Failed to load multiplier data";
+          if (status) {
+            status.textContent = "Connection Error";
+            status.className = "xp-multiplier-status error";
+          }
+          if (card) card.className = "xp-multiplier-card inactive";
+        });
+      }
+
+      // Initialize multipliers with loading state
+      function initializeMultipliers() {
+        const multipliers = [
+          { type: 'staking', label: 'Loading bonus data...' },
+          { type: 'battle', label: 'Loading battle data...' },
+          { type: 'level', label: 'Loading level data...' },
+          { type: 'referral', label: 'Loading referral data...' }
+        ];
+
+        multipliers.forEach(({ type, label }) => {
+          const value = $(`${type}Multiplier`);
+          const desc = $(`${type}MultiplierDesc`);
+          const status = $(`${type}MultiplierStatus`);
+
+          if (value) value.textContent = "🔄";
+          if (desc) desc.textContent = label;
+          if (status) {
+            status.textContent = "Loading...";
+            status.className = "xp-multiplier-status loading";
+          }
+        });
       }
 
       // Update Meme Score Display with Dynamic Background
@@ -6553,6 +6937,9 @@
           const userLevel = getCurrentUserLevel(0);
           console.log('🚀 Starting dashboard, generating reward table for level:', userLevel);
           generateRewardTable(userLevel); // Don't await here to avoid blocking dashboard start
+
+          // Initialize XP multipliers with loading state
+          initializeMultipliers();
 
           const loadPromises = [
             fetchUserStats(wallet).catch(e => console.warn('User stats failed:', e)),
