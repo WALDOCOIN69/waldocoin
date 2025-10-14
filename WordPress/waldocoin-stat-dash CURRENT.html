@@ -3322,16 +3322,16 @@
         </div>
         <div class="referral-benefits">
           <div class="benefit-item">
-            <span class="benefit-icon">🎁</span>
-            <span class="benefit-text">Earn 5% of friend's rewards</span>
-          </div>
-          <div class="benefit-item">
             <span class="benefit-icon">⚡</span>
             <span class="benefit-text">XP multiplier bonus</span>
           </div>
           <div class="benefit-item">
             <span class="benefit-icon">🏆</span>
             <span class="benefit-text">Leaderboard ranking boost</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">🎯</span>
+            <span class="benefit-text">Level progression rewards</span>
           </div>
         </div>
       </div>
@@ -4009,12 +4009,31 @@
 
       /** === COPY REFERRAL === **/
       function copyReferral() {
-        const input = $("referralLink");
-        if (!input) return;
+        // Try main referral card first, then fallback to other referral inputs
+        const input = $("referralLinkMain") || $("referralLink");
+        const status = $("copyStatusMain") || $("copyStatus");
+
+        if (!input) {
+          console.warn('No referral input found');
+          return;
+        }
+
+        if (!input.value) {
+          if (status) status.textContent = "❌ No referral link available";
+          return;
+        }
+
         input.select();
         navigator.clipboard.writeText(input.value)
-          .then(() => $("copyStatus").textContent = "📋 Copied!")
-          .catch(() => $("copyStatus").textContent = "Copy failed.");
+          .then(() => {
+            if (status) status.textContent = "📋 Copied!";
+            setTimeout(() => {
+              if (status) status.textContent = "";
+            }, 3000);
+          })
+          .catch(() => {
+            if (status) status.textContent = "❌ Copy failed.";
+          });
       }
 
       /** === LEVEL-SPECIFIC REWARD TIERS === **/
@@ -4685,7 +4704,10 @@
           const stats = await res.json();
           $("walletAddress") && ($("walletAddress").textContent = `Wallet: ${wallet}`);
           $("refCount") && ($("refCount").textContent = stats.referrals?.length ?? 0);
-          $("referralLink") && ($("referralLink").value = `https://waldocoin.live/?ref=${wallet}`);
+          $("refCountMain") && ($("refCountMain").textContent = stats.referrals?.length ?? 0);
+          const referralUrl = `https://waldocoin.live/?ref=${wallet}`;
+          $("referralLink") && ($("referralLink").value = referralUrl);
+          $("referralLinkMain") && ($("referralLinkMain").value = referralUrl);
           // XP breakdown (match HTML IDs)
           const breakdown = stats.xpBreakdown || {};
           $("likesXP") && ($("likesXP").textContent = `${breakdown.likes ?? 0} XP`);
