@@ -3146,20 +3146,12 @@
       <!-- XP Trends -->
       <div class="card">
         <h2>📊 Meme XP Trends</h2>
-        <canvas height="200" id="xpChart" style="background: rgba(255,255,255,0.05); border-radius: 8px;"></canvas>
+        <canvas width="800" height="300" id="xpChart"
+          style="width: 100%; height: 300px; background: rgba(255,255,255,0.05); border-radius: 8px;"></canvas>
         <div id="xpChartStatus" style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
           Loading chart...
         </div>
-        <div style="text-align: center; margin-top: 10px;">
-          <button onclick="testXPChart()"
-            style="background: #25c2a0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 10px;">
-            🧪 Test Chart.js
-          </button>
-          <button onclick="testSimpleChart()"
-            style="background: #ff6b6b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-            🎨 Test Simple Chart
-          </button>
-        </div>
+
       </div>
       <!-- Social Stats -->
       <div class="card">
@@ -4210,8 +4202,8 @@
         // Clear canvas
         ctx.clearRect(0, 0, width, height);
 
-        // Chart dimensions
-        const padding = 40;
+        // Chart dimensions - larger padding for bigger chart
+        const padding = 60;
         const chartWidth = width - (padding * 2);
         const chartHeight = height - (padding * 2);
 
@@ -4259,24 +4251,39 @@
           const y = padding + chartHeight - (values[i] / maxValue) * chartHeight;
 
           ctx.beginPath();
-          ctx.arc(x, y, 4, 0, 2 * Math.PI);
+          ctx.arc(x, y, 6, 0, 2 * Math.PI);
           ctx.fill();
+
+          // Add white border to points
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Draw Y-axis values
+        ctx.fillStyle = '#999';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= 4; i++) {
+          const value = Math.round((maxValue / 4) * (4 - i));
+          const y = padding + (chartHeight / 4) * i + 4;
+          ctx.fillText(value.toString(), padding - 10, y);
         }
 
         // Draw labels
         ctx.fillStyle = '#ccc';
-        ctx.font = '12px Arial';
+        ctx.font = '14px Arial';
         ctx.textAlign = 'center';
         for (let i = 0; i < labels.length; i++) {
           const x = padding + (chartWidth / (labels.length - 1)) * i;
-          ctx.fillText(labels[i], x, height - 10);
+          ctx.fillText(labels[i], x, height - 15);
         }
 
         // Draw title
         ctx.fillStyle = '#fff';
-        ctx.font = '14px Arial';
+        ctx.font = '18px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Meme XP Progress', width / 2, 20);
+        ctx.fillText('Meme XP Progress', width / 2, 30);
 
         // Update status
         const statusEl = $("xpChartStatus");
@@ -4311,6 +4318,14 @@
           return;
         }
 
+        // Use simple canvas chart by default (Chart.js has animation issues)
+        console.log('✅ Canvas found, rendering simple chart...');
+        if (statusEl) statusEl.textContent = 'Rendering chart...';
+        drawSimpleXPChart(el, xpTrend || generateMockXPTrend(0, 1));
+        return;
+
+        // Chart.js code disabled due to animation issues
+        /*
         if (!window.Chart) {
           console.warn('❌ Chart.js not loaded, using simple canvas chart');
           if (statusEl) statusEl.textContent = 'Using simple chart';
@@ -4319,7 +4334,7 @@
         }
 
         console.log('✅ Chart.js loaded, canvas found, rendering chart...');
-        if (statusEl) statusEl.textContent = 'Rendering chart...';
+        if (statusEl) statusEl.textContent = 'Rendering chart...';*/
 
         const ctx = el.getContext("2d");
         if (xpChartInstance) {
