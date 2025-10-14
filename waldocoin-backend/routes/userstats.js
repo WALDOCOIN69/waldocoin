@@ -131,13 +131,15 @@ router.get("/", async (req, res) => {
           if (activeStakes.length > 0) {
             const totalBonus = activeStakes.reduce((sum, stake) => {
               const duration = stake.duration || 30;
-              let bonus = 10; // Base 10% for 30 days
-              if (duration >= 365) bonus = 35;
-              else if (duration >= 180) bonus = 25;
-              else if (duration >= 90) bonus = 18;
-              else if (duration >= 30) bonus = 12;
+              let bonus = 12; // Base +12% bonus for 30 days
 
-              // Level 5 gets +2% bonus
+              // Staking bonus rates (same as frontend)
+              if (duration >= 365) bonus = 45;      // 365 days: +45% bonus
+              else if (duration >= 180) bonus = 25; // 180 days: +25% bonus
+              else if (duration >= 90) bonus = 18;  // 90 days: +18% bonus
+              else if (duration >= 30) bonus = 12;  // 30 days: +12% bonus
+
+              // Level 5 gets +2% bonus on all durations
               if (enforcedLevel >= 5) bonus += 2;
 
               return sum + bonus;
