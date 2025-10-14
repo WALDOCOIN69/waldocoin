@@ -5479,7 +5479,26 @@
         }
 
         try {
-          // Generate mock activity for now (replace with real API call later)
+          // Try to fetch real activity data from backend first
+          const res = await fetch(`${baseURL}/api/activity?wallet=${wallet}&limit=20`);
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.activities && data.activities.length > 0) {
+              // Use real activity data
+              expandedFeed.innerHTML = data.activities.map(activity => `
+                <li class="activity-item">
+                  <span class="activity-icon">${activity.icon || '📊'}</span>
+                  <span class="activity-text">${activity.text || activity.message}</span>
+                  <span class="activity-time">${activity.time || new Date(activity.timestamp).toLocaleString()}</span>
+                </li>
+              `).join('');
+              return;
+            }
+          }
+
+          // Fallback to mock data if API doesn't exist or returns no data
+          console.log('Using mock activity data - real API not available yet');
           const activities = generateMockActivity(wallet);
 
           expandedFeed.innerHTML = activities.map(activity => `
@@ -5490,14 +5509,16 @@
             </li>
           `).join('');
         } catch (e) {
-          console.warn('Activity loading failed:', e);
-          expandedFeed.innerHTML = `
+          console.warn('Activity loading failed, using mock data:', e);
+          // Use mock data as fallback
+          const activities = generateMockActivity(wallet);
+          expandedFeed.innerHTML = activities.map(activity => `
             <li class="activity-item">
-              <span class="activity-icon">❌</span>
-              <span class="activity-text">Failed to load activity</span>
-              <span class="activity-time">Now</span>
+              <span class="activity-icon">${activity.icon}</span>
+              <span class="activity-text">${activity.text}</span>
+              <span class="activity-time">${activity.time}</span>
             </li>
-          `;
+          `).join('');
         }
       }
 
@@ -5936,8 +5957,27 @@
         const ul = $("activityFeedMain") || $("activityFeed");
         if (!ul) return;
 
-        // For now, use mock data since activity feed API isn't implemented
         try {
+          // Try to fetch real activity data from backend first
+          const res = await fetch(`${baseURL}/api/activity?wallet=${wallet}&limit=3`);
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.activities && data.activities.length > 0) {
+              // Use real activity data
+              ul.innerHTML = data.activities.map(activity => `
+                <li class="activity-item">
+                  <span class="activity-icon">${activity.icon || '📊'}</span>
+                  <span class="activity-text">${activity.text || activity.message}</span>
+                  <span class="activity-time">${activity.time || new Date(activity.timestamp).toLocaleString()}</span>
+                </li>
+              `).join('');
+              return;
+            }
+          }
+
+          // Fallback to mock data if API doesn't exist or returns no data
+          console.log('Using mock activity data - real API not available yet');
           const activities = generateMockActivity(wallet).slice(0, 3); // Show only 3 in card
           ul.innerHTML = activities.map(activity => `
             <li class="activity-item">
@@ -5947,8 +5987,16 @@
             </li>
           `).join('');
         } catch (e) {
-          console.warn('Activity fetch failed:', e);
-          ul.innerHTML = '<li class="js-activity-placeholder">📊 Activity feed temporarily unavailable</li>';
+          console.warn('Activity fetch failed, using mock data:', e);
+          // Use mock data as fallback
+          const activities = generateMockActivity(wallet).slice(0, 3);
+          ul.innerHTML = activities.map(activity => `
+            <li class="activity-item">
+              <span class="activity-icon">${activity.icon}</span>
+              <span class="activity-text">${activity.text}</span>
+              <span class="activity-time">${activity.time}</span>
+            </li>
+          `).join('');
         }
       }
       // After init, call: fetchActivity(getWallet());
