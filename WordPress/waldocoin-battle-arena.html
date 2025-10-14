@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WALDOCOIN Battle Arena - Meme Combat Zone</title>
+  <link rel="icon" type="image/x-icon" href="https://waldocoin.live/wp-content/uploads/2025/07/dollar-sign-favicon.ico">
+
+  <style>
+    /* === BASE STYLES === */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* === HEADER STYLES === */
+    .battle-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 30px 20px;
+      background: linear-gradient(135deg, #25c2a0 0%, #00ff88 100%);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(37, 194, 160, 0.3);
+    }
+
+    .battle-title {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #000;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .battle-subtitle {
+      font-size: 1.2rem;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    /* === NAVIGATION === */
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      padding: 12px 24px;
+      background: #333;
+      color: #25c2a0;
+      border: 2px solid #25c2a0;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .nav-btn:hover {
+      background: #25c2a0;
+      color: #000;
+      transform: translateY(-2px);
+    }
+
+    .nav-btn.active {
+      background: #25c2a0;
+      color: #000;
+    }
+
+    /* === CARD STYLES === */
+    .card {
+      background: #1a1a1a;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      border: 1px solid #333;
+    }
+
+    .card h2 {
+      color: #25c2a0;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .card h3 {
+      color: #25c2a0;
+      margin-bottom: 15px;
+    }
+
+    /* === BATTLE ARENA STYLES === */
+    .battle-arena {
+      background: #111;
+      border-radius: 18px;
+      box-shadow: 0 0 18px #25c2a0;
+      padding: 30px;
+      margin-bottom: 36px;
+    }
+
+    .battle-memes-container {
+      display: flex;
+      justify-content: space-around;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .battle-memes-container .flex-item {
+      flex: 1;
+      min-width: 180px;
+      max-width: 280px;
+      text-align: center;
+    }
+
+    .battle-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin: 0 20px;
+      min-width: 300px;
+    }
+
+    .battle-controls input {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #222;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .battle-controls input:focus {
+      outline: none;
+      border-color: #25c2a0;
+    }
+
+    .battle-controls button {
+      width: 100%;
+      max-width: 300px;
+    }
+
+    /* === BUTTON STYLES === */
+    .button-style {
+      background: linear-gradient(135deg, #25c2a0 0%, #00ff88 100%);
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .button-style:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(37, 194, 160, 0.4);
+    }
+
+    .button-style:disabled {
+      background: #666;
+      color: #999;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* === MEME STYLES === */
+    .meme-thumb {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 3px solid #333;
+      margin-bottom: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .meme-thumb:hover {
+      border-color: #25c2a0;
+      transform: scale(1.05);
+    }
+
+    /* === TIMER STYLES === */
+    .battle-timer {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 2.2rem;
+      text-align: center;
+      color: #25c2a0;
+      text-shadow: 0 0 10px rgba(37, 194, 160, 0.5);
+    }
+
+    .battle-result {
+      font-weight: bold;
+      font-size: 16px;
+      color: gold;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* === STATUS STYLES === */
+    .twitter-link-status {
+      color: #aaa;
+      font-size: 14px;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 900px) {
+      .battle-memes-container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .battle-memes-container .flex-item {
+        max-width: 95vw;
+        margin: 10px 0;
+      }
+
+      .battle-title {
+        font-size: 2rem;
+      }
+
+      .battle-controls {
+        margin: 0 10px;
+        min-width: auto;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .nav-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .nav-btn {
+        width: 200px;
+        text-align: center;
+      }
+    }
+
+    /* === UTILITY CLASSES === */
+    .centered-text {
+      text-align: center;
+    }
+
+    .margin-top-20 {
+      margin-top: 20px;
+    }
+
+    .margin-bottom-10 {
+      margin-bottom: 10px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* === TOAST STYLES === */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .toast.success {
+      background: #25c2a0;
+      color: #000;
+    }
+
+    .toast.error {
+      background: #ff6b6b;
+    }
+
+    .toast.info {
+      background: #4dabf7;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Wallet Connection Screen -->
+  <div id="walletConnectionScreen" class="wallet-connection-screen" style="display: none;">
+    <div class="container">
+      <div class="battle-header">
+        <h1 class="battle-title">⚔️ WALDOCOIN Battle Arena</h1>
+        <p class="battle-subtitle">Connect your wallet to enter the meme combat zone and battle for glory!</p>
+        <button id="connectWalletBtn" class="button-style" style="margin-top: 20px;">
+          Connect XUMM Wallet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Battle Arena -->
+  <div id="battleDashboard" class="container">
+    <!-- Header -->
+    <div class="battle-header">
+      <h1 class="battle-title">⚔️ WALDOCOIN Battle Arena</h1>
+      <p class="battle-subtitle">Enter the ultimate meme combat zone! Battle other memes, vote for winners, and climb
+        the leaderboard.</p>
+
+      <!-- Navigation -->
+      <div class="nav-buttons">
+        <a href="waldocoin-stat-dash CURRENT.html" class="nav-btn">📊 Stats Dashboard</a>
+        <a href="#" class="nav-btn active">⚔️ Battle Arena</a>
+        <a href="#" class="nav-btn">🖼️ NFT Collections</a>
+        <a href="#" class="nav-btn">🏛️ DAO Portal</a>
+      </div>
+    </div>
+
+    <!-- Battle Arena Main -->
+    <div class="card battle-arena">
+      <h2>🔥 Meme Battle Arena</h2>
+      <p style="text-align: center; margin-bottom: 20px;">
+        📢 Welcome to the Meme Battle Arena! Paste a meme tweet link, start a battle, or accept one to begin voting.
+        Voters pay 5 WALDO to participate, and get a share of the pot + XP if they pick the winner!
+      </p>
+
+      <div id="battleStatus" style="text-align: center; font-size: 1.2rem; margin-bottom: 20px; color: #25c2a0;">
+        Loading current battle...
+      </div>
+
+      <div id="battleContent" class="battle-content">
+        <div class="battle-memes-container">
+          <!-- Meme 1 -->
+          <div class="flex-item">
+            <h3>Meme 1</h3>
+            <a id="meme1Link" href="#" target="_blank">
+              <img alt="Meme 1" class="meme-thumb" id="meme1Img"
+                src="https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png">
+            </a>
+            <p id="battleFeeInfo" class="twitter-link-status" style="margin-top:8px;">
+              Loading battle fees…
+            </p>
+            <button type="button" onclick="voteBattle('meme1')" class="button-style" id="voteMeme1Btn">
+              Vote for Meme 1 (5 WALDO)
+            </button>
+          </div>
+
+          <!-- Battle Controls -->
+          <div class="battle-controls" data-tweetid="" data-status="open" data-canaccept="false" id="battle-wrapper">
+            <input id="memeTweetId" onblur="extractTweetId(this.value)"
+              placeholder="Paste Meme Tweet Link (e.g. https://x.com/user/status/1234567890)" class="margin-bottom-10"
+              type="text">
+            <button id="start-battle-btn" type="button" class="button-style">
+              🧠 Start New Battle (100 WALDO)
+            </button>
+            <button id="accept-battle-btn" type="button" class="button-style">
+              🤜 Accept Current Battle (50 WALDO)
+            </button>
+          </div>
+
+          <!-- Meme 2 -->
+          <div class="flex-item">
+            <h3>Meme 2</h3>
+            <a id="meme2Link" href="#" target="_blank">
+              <img alt="Meme 2" class="meme-thumb" id="meme2Img"
+                src="https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png">
+            </a>
+            <button type="button" onclick="voteBattle('meme2')" class="button-style" id="voteMeme2Btn">
+              Vote for Meme 2 (5 WALDO)
+            </button>
+          </div>
+        </div>
+
+        <!-- Battle Timer & Status -->
+        <p id="battleTimer" class="battle-timer" style="display: none;"></p>
+        <p id="battleVoteStatus" class="twitter-link-status"></p>
+
+        <div class="margin-top-20">
+          <p id="battleFinalResult" class="battle-result"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Battle History & Leaderboard Row -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+      <!-- Battle History -->
+      <div class="card">
+        <h2>📜 Past Meme Battles</h2>
+        <div id="battleHistoryStatus" style="text-align: center; color: #666; font-style: italic;">
+          Loading battle history...
+        </div>
+        <div id="battleHistoryTableContainer" style="display: none;">
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #333; color: #25c2a0;">
+                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">🆔</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Winner</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Votes</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Prize</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Ended</th>
+                </tr>
+              </thead>
+              <tbody id="battleHistoryTable" style="color: #ccc;">
+                <!-- Battle history will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Battle Leaderboard -->
+      <div class="card">
+        <h2>🏆 Battle Champions</h2>
+        <div style="overflow-x: auto;">
+          <table id="battleLeaderboardTable" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #333; color: #25c2a0;">
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">#</th>
+                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #25c2a0;">Warrior</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Wins</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Rate</th>
+              </tr>
+            </thead>
+            <tbody style="color: #ccc;">
+              <!-- Leaderboard will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Battle Stats & Info -->
+    <div class="card">
+      <h2>⚔️ Battle Arena Information</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
+          <h3 style="color: #25c2a0; margin-bottom: 10px;">🎯 How to Battle</h3>
+          <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
+            1. Paste a meme tweet link<br>
+            2. Start a battle (100 WALDO)<br>
+            3. Wait for opponent to accept (50 WALDO)<br>
+            4. Community votes for winner (5 WALDO per vote)
+          </p>
+        </div>
+
+        <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
+          <h3 style="color: #25c2a0; margin-bottom: 10px;">💰 Rewards</h3>
+          <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
+            • Winners get 60% of vote pool<br>
+            • Correct voters share 30% of pool<br>
+            • Battle creators get participation XP<br>
+            • Win streaks boost XP multipliers
+          </p>
+        </div>
+
+        <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
+          <h3 style="color: #25c2a0; margin-bottom: 10px;">📈 XP Bonuses</h3>
+          <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
+            • +2% XP per battle win<br>
+            • Max 20% XP bonus (10 wins)<br>
+            • Win streaks show in multipliers<br>
+            • Voting also earns XP
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666;">
+      <p>⚔️ WALDOCOIN Battle Arena - Where Memes Fight for Glory! ⚔️</p>
+      <p style="margin-top: 10px; font-size: 14px;">
+        <a href="https://waldocoin.live" style="color: #25c2a0; text-decoration: none;">waldocoin.live</a> |
+        <a href="https://twitter.com/waldocoin" style="color: #25c2a0; text-decoration: none;">@waldocoin</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // === GLOBAL VARIABLES ===
+    const baseURL = 'https://waldocoin.live';
+    let battleTimerInterval = null;
+
+    // === UTILITY FUNCTIONS ===
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = $('toast');
+      if (!toast) return;
+
+      toast.textContent = message;
+      toast.className = `toast ${type}`;
+      toast.style.display = 'block';
+
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 4000);
+    }
+
+    function getWallet() {
+      return localStorage.getItem('waldoWallet') || '';
+    }
+
+    function setWallet(wallet) {
+      localStorage.setItem('waldoWallet', wallet);
+    }
+
+    // === WALLET CONNECTION ===
+    function showWalletConnection() {
+      $('walletConnectionScreen').style.display = 'block';
+      $('battleDashboard').style.display = 'none';
+    }
+
+    function showBattleDashboard() {
+      $('walletConnectionScreen').style.display = 'none';
+      $('battleDashboard').style.display = 'block';
+    }
+
+    async function connectWallet() {
+      try {
+        showToast('Opening XUMM wallet...', 'info');
+
+        // Create XUMM payload for sign-in
+        const response = await fetch(`${baseURL}/api/xumm/signin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ purpose: 'Battle Arena Access' })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.qr) {
+          // Open XUMM app
+          window.open(data.qr, '_blank');
+
+          // Poll for completion
+          const checkInterval = setInterval(async () => {
+            try {
+              const checkResponse = await fetch(`${baseURL}/api/xumm/check/${data.uuid}`);
+              const checkData = await checkResponse.json();
+
+              if (checkData.success && checkData.wallet) {
+                clearInterval(checkInterval);
+                setWallet(checkData.wallet);
+                showToast('Wallet connected successfully!', 'success');
+                showBattleDashboard();
+                initializeBattleArena();
+              } else if (checkData.expired) {
+                clearInterval(checkInterval);
+                showToast('Connection expired. Please try again.', 'error');
+              }
+            } catch (e) {
+              console.warn('Check failed:', e);
+            }
+          }, 2000);
+
+          // Stop checking after 5 minutes
+          setTimeout(() => clearInterval(checkInterval), 300000);
+
+        } else {
+          showToast('Failed to create wallet connection', 'error');
+        }
+      } catch (error) {
+        console.error('Wallet connection error:', error);
+        showToast('Wallet connection failed', 'error');
+      }
+    }
+
+    // === BATTLE ARENA FUNCTIONS ===
+    async function fetchBattleStatus() {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/current`);
+        const battle = await res.json();
+        const statusDiv = $("battleStatus");
+        const content = $("battleContent");
+
+        // Always show battle content so users can see controls
+        content.style.display = "block";
+
+        if (!battle.active) {
+          statusDiv.textContent = "No current battle. Start one!";
+
+          // Hide meme voting sections when no battle
+          $("voteMeme1Btn").style.display = "none";
+          $("voteMeme2Btn").style.display = "none";
+          $("battleTimer").style.display = "none";
+
+          // Show battle controls
+          $("battle-wrapper").dataset.status = "open";
+          $("accept-battle-btn").disabled = true;
+          $("start-battle-btn").disabled = false;
+
+          // Set battle placeholder image when no active battles
+          $("meme1Img").src = "https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png";
+          $("meme2Img").src = "https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png";
+          $("meme1Link").href = "#";
+          $("meme2Link").href = "#";
+
+          return;
+        }
+
+        // Active battle - show everything
+        statusDiv.textContent = "Current Battle:";
+        $("voteMeme1Btn").style.display = "block";
+        $("voteMeme2Btn").style.display = "block";
+        $("battleTimer").style.display = "block";
+
+        $("meme1Img").src = battle.meme1.image;
+        $("meme2Img").src = battle.meme2.image;
+        $("meme1Link").href = battle.meme1.link;
+        $("meme2Link").href = battle.meme2.link;
+        $("voteMeme1Btn").disabled = false;
+        $("voteMeme2Btn").disabled = false;
+        renderBattleTimer(battle.timerSeconds);
+        $("battle-wrapper").dataset.status = "running";
+        $("accept-battle-btn").disabled = true;
+        $("start-battle-btn").disabled = true;
+
+      } catch (e) {
+        console.error("Battle status error:", e);
+        $("battleStatus").textContent = "Could not load battle info.";
+        // Still show controls so users can try to start battles
+        $("battleContent").style.display = "block";
+      }
+    }
+
+    // === BATTLE TIMER ===
+    function renderBattleTimer(seconds) {
+      clearInterval(battleTimerInterval);
+      const timerEl = $("battleTimer");
+      if (!timerEl) return;
+      if (!seconds || seconds < 1) {
+        timerEl.textContent = "Battle running";
+        return;
+      }
+      function update() {
+        if (seconds < 0) {
+          timerEl.textContent = "Battle ended";
+          clearInterval(battleTimerInterval);
+          return;
+        }
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        seconds--;
+      }
+
+      if (window.battleTimerInterval) {
+        clearInterval(window.battleTimerInterval);
+      }
+
+      update();
+      window.battleTimerInterval = setInterval(update, 1000);
+    }
+
+    // === BATTLE ACTIONS ===
+    async function startBattle() {
+      const tweetId = $("memeTweetId").value.trim();
+      if (!tweetId) return showToast("Paste a meme tweet link!", "error");
+      try {
+        const res = await fetch(`${baseURL}/api/battle/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: getWallet(), tweetId })
+        });
+        const data = await res.json();
+        if (data.success) showToast("Battle started! Waiting for opponent...", "success");
+        else showToast(data.error || "Could not start battle", "error");
+        fetchBattleStatus();
+      } catch (e) { showToast("Battle start error", "error"); }
+    }
+
+    async function acceptBattle() {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/accept`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: getWallet() })
+        });
+        const data = await res.json();
+        if (data.success) showToast("Battle accepted. Battle is ON!", "success");
+        else showToast(data.error || "Accept failed", "error");
+        fetchBattleStatus();
+      } catch (e) { showToast("Battle accept error", "error"); }
+    }
+
+    async function voteBattle(meme) {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: getWallet(), meme })
+        });
+        const data = await res.json();
+        if (data.success) showToast("Vote cast! Check battle results after timer.", "success");
+        else showToast(data.error || "Vote failed", "error");
+        fetchBattleStatus();
+      } catch (e) { showToast("Vote error", "error"); }
+    }
+
+    // === TWEET ID EXTRACTION ===
+    function extractTweetId(url) {
+      if (!url) return '';
+
+      // Handle various Twitter URL formats
+      const patterns = [
+        /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/,
+        /(?:twitter\.com|x\.com)\/i\/web\/status\/(\d+)/,
+        /(?:mobile\.twitter\.com|mobile\.x\.com)\/\w+\/status\/(\d+)/
+      ];
+
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) {
+          const tweetId = match[1];
+          $("memeTweetId").value = tweetId;
+          return tweetId;
+        }
+      }
+
+      // If it's already just a tweet ID
+      if (/^\d+$/.test(url.trim())) {
+        return url.trim();
+      }
+
+      return '';
+    }
+
+    // === BATTLE HISTORY & LEADERBOARD ===
+    async function fetchBattleHistory() {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/history`);
+        const data = await res.json();
+        $("battleHistoryStatus").style.display = "none";
+        $("battleHistoryTableContainer").style.display = "block";
+        const tbody = $("battleHistoryTable");
+        tbody.innerHTML = "";
+        (data.battles || []).forEach(b => {
+          tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid #333;">
+              <td style="padding: 8px; text-align: center;">${b.id}</td>
+              <td style="padding: 8px; text-align: center;">${b.winner}</td>
+              <td style="padding: 8px; text-align: center;">${b.votes}</td>
+              <td style="padding: 8px; text-align: center;">${b.prize} WALDO</td>
+              <td style="padding: 8px; text-align: center;">${new Date(b.endTime).toLocaleDateString()}</td>
+            </tr>`;
+        });
+      } catch (e) {
+        console.warn('Battle history failed:', e.message);
+        $("battleHistoryStatus").textContent = "📜 Battle history temporarily unavailable";
+        $("battleHistoryStatus").style.color = "#666";
+        $("battleHistoryStatus").style.fontStyle = "italic";
+      }
+    }
+
+    async function fetchBattleLeaderboard() {
+      const tbody = document.querySelector("#battleLeaderboardTable tbody");
+
+      try {
+        const res = await fetch(`${baseURL}/api/battle/leaderboard`);
+        const { leaderboard } = await res.json();
+        renderBattleLeaderboard(leaderboard);
+      } catch (e) {
+        console.warn('Battle leaderboard failed:', e.message);
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: #666; font-style: italic;">🏆 Battle leaderboard temporarily unavailable</td></tr>`;
+        }
+      }
+    }
+
+    function renderBattleLeaderboard(leaderboard) {
+      const tbody = document.querySelector("#battleLeaderboardTable tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      if (!leaderboard || leaderboard.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: #666; font-style: italic;">No battle champions yet. Be the first!</td></tr>`;
+        return;
+      }
+
+      leaderboard.forEach((player, index) => {
+        const rank = index + 1;
+        const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+        const winRate = player.totalBattles > 0 ? Math.round((player.wins / player.totalBattles) * 100) : 0;
+
+        tbody.innerHTML += `
+          <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 8px; text-align: center; font-weight: bold;">${rankEmoji}</td>
+            <td style="padding: 8px; color: #25c2a0;">${player.wallet.substring(0, 8)}...${player.wallet.substring(player.wallet.length - 4)}</td>
+            <td style="padding: 8px; text-align: center; font-weight: bold;">${player.wins}</td>
+            <td style="padding: 8px; text-align: center;">${winRate}%</td>
+          </tr>`;
+      });
+    }
+
+    // === BATTLE FEES ===
+    async function loadBattleFeesForUI() {
+      try {
+        const res = await fetch(`${baseURL}/api/config/public`);
+        const data = await res.json();
+        const info = document.getElementById('battleFeeInfo');
+        if (data && data.success && data.config && data.config.battle && info) {
+          const b = data.config.battle;
+          info.textContent = `Fees: Start ${b.startFeeWLO} WLO • Accept ${b.acceptFeeWLO} WLO • Vote ${b.voteFeeWLO} WLO`;
+        } else if (info) {
+          info.textContent = 'Battle fees: Start 100 WLO • Accept 50 WLO • Vote 5 WLO';
+        }
+      } catch (e) {
+        const info = document.getElementById('battleFeeInfo');
+        if (info) info.textContent = 'Battle fees: Start 100 WLO • Accept 50 WLO • Vote 5 WLO';
+      }
+    }
+
+    // === INITIALIZATION ===
+    function initializeBattleArena() {
+      const battleContent = document.getElementById("battleContent");
+      if (battleContent) {
+        battleContent.style.display = "block";
+      }
+
+      // Ensure buttons are properly set up
+      const startBtn = document.getElementById("start-battle-btn");
+      const acceptBtn = document.getElementById("accept-battle-btn");
+
+      if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.onclick = startBattle;
+      }
+
+      if (acceptBtn) {
+        acceptBtn.style.display = "block";
+        acceptBtn.onclick = acceptBattle;
+      }
+
+      // Set initial battle status
+      const statusDiv = document.getElementById("battleStatus");
+      if (statusDiv) {
+        statusDiv.textContent = "Ready to battle! Paste a meme tweet link to start.";
+      }
+
+      // Load initial data
+      fetchBattleStatus();
+      fetchBattleHistory();
+      fetchBattleLeaderboard();
+      loadBattleFeesForUI();
+    }
+
+    // === EVENT LISTENERS ===
+    document.addEventListener('DOMContentLoaded', function () {
+      // Check if wallet is already connected
+      const wallet = getWallet();
+      if (wallet) {
+        showBattleDashboard();
+        initializeBattleArena();
+      } else {
+        showWalletConnection();
+      }
+
+      // Connect wallet button
+      const connectBtn = document.getElementById('connectWalletBtn');
+      if (connectBtn) {
+        connectBtn.onclick = connectWallet;
+      }
+
+      // Make functions globally available
+      window.voteBattle = voteBattle;
+      window.extractTweetId = extractTweetId;
+    });
+
+    // === CLEANUP ===
+    window.addEventListener('beforeunload', function () {
+      if (window.battleTimerInterval) {
+        clearInterval(window.battleTimerInterval);
+      }
+    });
+  </script>
+</body>
+
+</html>
