@@ -60,8 +60,8 @@ import daoArchiveRoute from "./routes/dao/archive.js";
 import presaleRoute from "./routes/presale.js";
 import presaleLookup from "./routes/presaleLookup.js";
 
-// 💼 Careers Route
-import careersRoute from "./routes/careers.js";
+// 💼 Careers Route - TEMPORARILY DISABLED DUE TO NODEMAILER ISSUE
+// import careersRoute from "./routes/careers.js";
 
 // 🔐 Admin Routes
 import adminSendWaldoRoute from "./routes/admin/sendWaldo.js";
@@ -204,8 +204,8 @@ const startServer = async () => {
   app.use("/api/presale", presaleRoute);
   app.use('/api/presale', presaleLookup);
 
-  // 💼 Careers
-  app.use("/api/careers", careersRoute);
+  // 💼 Careers - TEMPORARILY DISABLED DUE TO NODEMAILER ISSUE
+  // app.use("/api/careers", careersRoute);
 
   // Health check endpoint
   app.get("/api/health", (_, res) => {
