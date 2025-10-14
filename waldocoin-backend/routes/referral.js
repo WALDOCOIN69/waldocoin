@@ -79,7 +79,7 @@ router.post('/register', async (req, res) => {
 
     // Register the referral relationship
     await redis.set(`user:${wallet}:referrer`, referrer);
-    
+
     // Add to referrer's referral list
     const referrerStats = await redis.get(`user:${referrer}:stats`);
     let stats = referrerStats ? JSON.parse(referrerStats) : {
@@ -200,9 +200,9 @@ router.get('/stats/:wallet', async (req, res) => {
 // Helper function to award referral bonus
 async function awardReferralBonus(referrerWallet, referredWallet) {
   try {
-    // Award 5000 WALDO to referrer
-    const bonusAmount = 5000;
-    
+    // Award 10000 WALDO to referrer
+    const bonusAmount = 10000;
+
     // This would integrate with your WALDO distribution system
     // For now, just log the event and store it for manual processing
     const bonusEvent = {
@@ -216,12 +216,12 @@ async function awardReferralBonus(referrerWallet, referredWallet) {
     };
 
     await redis.lPush('referral_bonuses', JSON.stringify(bonusEvent));
-    
+
     console.log(`💰 Referral bonus queued: ${bonusAmount} WALDO for ${referrerWallet}`);
-    
+
     // TODO: Integrate with actual WALDO distribution system
     // This could call your existing WALDO distribution functions
-    
+
   } catch (error) {
     console.error('❌ Error awarding referral bonus:', error);
     throw error;
