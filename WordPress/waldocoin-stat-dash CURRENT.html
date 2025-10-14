@@ -1028,6 +1028,132 @@
       margin-bottom: 20px;
     }
 
+    /* === LONG TERM BONUS TABLE FULL WIDTH === */
+    #longTermBonusTable {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: #222;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    #longTermBonusTable th {
+      background: #333;
+      color: #25c2a0;
+      padding: 12px 8px;
+      text-align: center;
+      font-weight: bold;
+      border-bottom: 2px solid #25c2a0;
+    }
+
+    #longTermBonusTable td {
+      padding: 12px 8px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+      color: #ccc;
+    }
+
+    #longTermBonusTable tbody tr:hover {
+      background: #2a2a2a;
+    }
+
+    /* Column width distribution for better spacing */
+    #longTermBonusTable th:nth-child(1) {
+      width: 12%;
+    }
+
+    /* Position ID */
+    #longTermBonusTable th:nth-child(2) {
+      width: 18%;
+    }
+
+    /* Amount */
+    #longTermBonusTable th:nth-child(3) {
+      width: 12%;
+    }
+
+    /* Duration */
+    #longTermBonusTable th:nth-child(4) {
+      width: 12%;
+    }
+
+    /* Bonus % */
+    #longTermBonusTable th:nth-child(5) {
+      width: 18%;
+    }
+
+    /* Current Rewards */
+    #longTermBonusTable th:nth-child(6) {
+      width: 14%;
+    }
+
+    /* Status */
+    #longTermBonusTable th:nth-child(7) {
+      width: 14%;
+    }
+
+    /* Action */
+
+    /* Mobile responsive for Long Term Bonus table */
+    @media (max-width: 768px) {
+      #longTermBonusTable {
+        font-size: 12px;
+      }
+
+      #longTermBonusTable th,
+      #longTermBonusTable td {
+        padding: 8px 4px;
+      }
+
+      /* Adjust column widths for mobile */
+      #longTermBonusTable th:nth-child(1) {
+        width: 10%;
+      }
+
+      /* Position ID - smaller */
+      #longTermBonusTable th:nth-child(2) {
+        width: 20%;
+      }
+
+      /* Amount - bigger */
+      #longTermBonusTable th:nth-child(3) {
+        width: 10%;
+      }
+
+      /* Duration - smaller */
+      #longTermBonusTable th:nth-child(4) {
+        width: 10%;
+      }
+
+      /* Bonus % - smaller */
+      #longTermBonusTable th:nth-child(5) {
+        width: 20%;
+      }
+
+      /* Current Rewards - bigger */
+      #longTermBonusTable th:nth-child(6) {
+        width: 15%;
+      }
+
+      /* Status */
+      #longTermBonusTable th:nth-child(7) {
+        width: 15%;
+      }
+
+      /* Action */
+    }
+
+    /* Empty state styling for Long Term Bonus table */
+    .staking-positions-empty {
+      text-align: center;
+      color: #666;
+      padding: 30px 20px;
+      font-style: italic;
+      background: #1a1a1a;
+    }
+
     /* === ENHANCED STAKING TABLE STYLES === */
     .staking-zone-bar #stakingTable {
       width: 100%;
