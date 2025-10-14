@@ -94,6 +94,62 @@ router.get("/", async (req, res) => {
     // Enforce level with XP thresholds + minimums
     const enforcedLevel = enforceLevel({ xp, mintedCount, battles, referrals });
 
+    // Calculate XP breakdown based on activity
+    const XP_RATES = {
+      LIKE: 1,        // 1 XP per like
+      RETWEET: 2,     // 2 XP per retweet
+      BATTLE_WIN: 10, // 10 XP per battle win
+      REFERRAL: 25,   // 25 XP per referral
+      VOTE: 5         // 5 XP per meme vote
+    };
+
+    // Calculate XP from each activity
+    const likesXP = (likes || 0) * XP_RATES.LIKE;
+    const retweetsXP = (retweets || 0) * XP_RATES.RETWEET;
+    const battlesXP = (battles || 0) * XP_RATES.BATTLE_WIN;
+    const referralsXP = (referrals || 0) * XP_RATES.REFERRAL;
+
+    // Get voting XP (placeholder for now)
+    let votingXP = 0;
+    try {
+      const votingData = await redisClient.get(`user:${wallet}:voting`);
+      const votes = votingData ? JSON.parse(votingData) : [];
+      votingXP = Array.isArray(votes) ? votes.length * XP_RATES.VOTE : 0;
+    } catch (e) {
+      // non-fatal
+    }
+
+    // Calculate staking bonus percentage
+    let stakingBonus = 0;
+    try {
+      const stakingData = await redisClient.get(`user:${wallet}:staking`);
+      if (stakingData) {
+        const stakes = JSON.parse(stakingData);
+        if (Array.isArray(stakes) && stakes.length > 0) {
+          // Calculate average bonus from active stakes
+          const activeStakes = stakes.filter(s => s.status === 'active');
+          if (activeStakes.length > 0) {
+            const totalBonus = activeStakes.reduce((sum, stake) => {
+              const duration = stake.duration || 30;
+              let bonus = 10; // Base 10% for 30 days
+              if (duration >= 365) bonus = 35;
+              else if (duration >= 180) bonus = 25;
+              else if (duration >= 90) bonus = 18;
+              else if (duration >= 30) bonus = 12;
+
+              // Level 5 gets +2% bonus
+              if (enforcedLevel >= 5) bonus += 2;
+
+              return sum + bonus;
+            }, 0);
+            stakingBonus = Math.round(totalBonus / activeStakes.length);
+          }
+        }
+      }
+    } catch (e) {
+      // non-fatal
+    }
+
     res.json({
       wallet,
       xp,
@@ -103,7 +159,15 @@ router.get("/", async (req, res) => {
       retweets,
       memes,
       battles,
-      referrals
+      referrals,
+      xpBreakdown: {
+        likes: likesXP,
+        retweets: retweetsXP,
+        battles: battlesXP,
+        referrals: referralsXP,
+        voting: votingXP,
+        stakingBonus: stakingBonus
+      }
     });
   } catch (err) {
     console.error("❌ Redis fetch failed for userStats:", err);
