@@ -3146,7 +3146,10 @@
       <!-- XP Trends -->
       <div class="card">
         <h2>📊 Meme XP Trends</h2>
-        <canvas height="200" id="xpChart"></canvas>
+        <canvas height="200" id="xpChart" style="background: rgba(255,255,255,0.05); border-radius: 8px;"></canvas>
+        <div id="xpChartStatus" style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
+          Loading chart...
+        </div>
       </div>
       <!-- Social Stats -->
       <div class="card">
@@ -4192,20 +4195,31 @@
       let lastChartData = null; // Store chart data for modal
 
       function renderXPTrendChart(xpTrend) {
+        console.log('🎯 renderXPTrendChart called with:', xpTrend);
         const el = $("xpChart");
+        const statusEl = $("xpChartStatus");
+
         if (!el) {
           console.warn('❌ XP Chart canvas element not found');
+          if (statusEl) statusEl.textContent = 'Chart element not found';
           return;
         }
 
         if (!window.Chart) {
           console.warn('❌ Chart.js not loaded, showing placeholder');
+          if (statusEl) statusEl.textContent = 'Chart.js not loaded';
           showXPChartPlaceholder(el);
           return;
         }
 
+        console.log('✅ Chart.js loaded, canvas found, rendering chart...');
+        if (statusEl) statusEl.textContent = 'Rendering chart...';
+
         const ctx = el.getContext("2d");
-        if (xpChartInstance) xpChartInstance.destroy();
+        if (xpChartInstance) {
+          console.log('🗑️ Destroying previous chart instance');
+          xpChartInstance.destroy();
+        }
 
         // Create default chart data if none provided
         const defaultData = {
@@ -4221,40 +4235,54 @@
           }]
         };
 
-        xpChartInstance = new Chart(ctx, {
-          type: "line",
-          data: xpTrend || defaultData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: {
-                  color: 'rgba(255, 255, 255, 0.1)'
+        try {
+          console.log('📊 Creating Chart.js instance with data:', xpTrend || defaultData);
+
+          xpChartInstance = new Chart(ctx, {
+            type: "line",
+            data: xpTrend || defaultData,
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                  },
+                  ticks: {
+                    color: '#ccc'
+                  }
                 },
-                ticks: {
-                  color: '#ccc'
+                x: {
+                  grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                  },
+                  ticks: {
+                    color: '#ccc'
+                  }
                 }
               },
-              x: {
-                grid: {
-                  color: 'rgba(255, 255, 255, 0.1)'
-                },
-                ticks: {
-                  color: '#ccc'
-                }
-              }
-            },
-            plugins: {
-              legend: {
-                labels: {
-                  color: '#ccc'
+              plugins: {
+                legend: {
+                  labels: {
+                    color: '#ccc'
+                  }
                 }
               }
             }
-          }
-        });
+          });
+
+          console.log('✅ Chart created successfully!');
+          const statusEl = $("xpChartStatus");
+          if (statusEl) statusEl.textContent = 'Chart loaded successfully';
+
+        } catch (error) {
+          console.error('❌ Error creating chart:', error);
+          const statusEl = $("xpChartStatus");
+          if (statusEl) statusEl.textContent = 'Error creating chart: ' + error.message;
+          showXPChartPlaceholder(el);
+        }
       }
 
       // Initialize price charts with real-time data
@@ -5947,6 +5975,13 @@
       let dashboardIntervals = [];
       let isDashboardInitialized = false;
 
+      // Test function to force render XP chart
+      function testXPChart() {
+        console.log('🧪 Testing XP Chart rendering...');
+        const testData = generateMockXPTrend(100, 2);
+        renderXPTrendChart(testData);
+      }
+
       // Fetch policy worth (eligibility check)
       async function fetchPolicyWorth(wallet) {
         try {
@@ -6176,6 +6211,12 @@
         if (stakingZoneSection) {
           stakingZoneSection.style.display = "none";
         }
+
+        // Test XP chart rendering immediately
+        setTimeout(() => {
+          console.log('🧪 Testing XP chart after DOM load...');
+          testXPChart();
+        }, 1000);
 
         initializePage();
       });
