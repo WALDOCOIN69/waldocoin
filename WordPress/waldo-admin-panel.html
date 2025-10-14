@@ -4152,8 +4152,14 @@
     // Users functions - Production Ready with full backend support
     async function loadUsersData() {
       try {
-        // Get user list from backend
-        const usersData = await apiCall('/api/users/list?limit=50');
+        // Get user list from backend (try admin-fixes first, fallback to original)
+        let usersData;
+        try {
+          usersData = await apiCall('/api/admin-fixes/users/list?limit=50');
+        } catch (error) {
+          console.warn('Admin-fixes endpoint not available, trying original:', error.message);
+          usersData = await apiCall('/api/users/list?limit=50');
+        }
         const usersDiv = document.getElementById('usersList');
         let usersHtml = '';
 
@@ -5740,9 +5746,17 @@ This action cannot be undone. Continue?`;
     async function loadRecentViolations() {
       try {
         const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/security/recent-violations?limit=20`, {
-          headers: { 'x-admin-key': adminKey }
-        });
+        // Try admin-fixes endpoint first
+        let response;
+        try {
+          response = await fetch(`${API_BASE}/api/admin-fixes/security/recent-violations?limit=20`, {
+            headers: { 'x-admin-key': adminKey }
+          });
+        } catch (error) {
+          response = await fetch(`${API_BASE}/api/security/recent-violations?limit=20`, {
+            headers: { 'x-admin-key': adminKey }
+          });
+        }
 
         const data = await response.json();
         const violationsDiv = document.getElementById('recentViolations');
@@ -6333,12 +6347,23 @@ This action cannot be undone. Continue?`;
       try {
         showAlert('Loading claimed wallets...', 'info');
 
-        const response = await fetch(`${API_BASE}/api/airdrop/claimed-list`, {
-          method: 'GET',
-          headers: {
-            'x-admin-key': adminKey
-          }
-        });
+        // Try admin-fixes endpoint first
+        let response;
+        try {
+          response = await fetch(`${API_BASE}/api/admin-fixes/airdrop/claimed-list`, {
+            method: 'GET',
+            headers: {
+              'x-admin-key': adminKey
+            }
+          });
+        } catch (error) {
+          response = await fetch(`${API_BASE}/api/airdrop/claimed-list`, {
+            method: 'GET',
+            headers: {
+              'x-admin-key': adminKey
+            }
+          });
+        }
 
         const data = await response.json();
 
