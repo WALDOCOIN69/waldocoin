@@ -4129,6 +4129,7 @@
 
       /** === CHARTS === **/
       let xpChartInstance = null;
+      let lastXPChartData = null; // Store last chart data to prevent unnecessary redraws
 
       // Generate mock XP trend data for display
       function generateMockXPTrend(currentXP, currentLevel) {
@@ -4196,6 +4197,15 @@
 
       function renderXPTrendChart(xpTrend) {
         console.log('🎯 renderXPTrendChart called with:', xpTrend);
+
+        // Check if data has changed to prevent unnecessary redraws
+        const dataString = JSON.stringify(xpTrend);
+        if (lastXPChartData === dataString && xpChartInstance) {
+          console.log('📊 XP Chart data unchanged, skipping redraw');
+          return;
+        }
+        lastXPChartData = dataString;
+
         const el = $("xpChart");
         const statusEl = $("xpChartStatus");
 
@@ -4244,6 +4254,11 @@
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              animation: false,  // Disable animations to prevent loops
+              interaction: {
+                intersect: false,
+                mode: 'index'
+              },
               scales: {
                 y: {
                   beginAtZero: true,
@@ -4275,7 +4290,10 @@
 
           console.log('✅ Chart created successfully!');
           const statusEl = $("xpChartStatus");
-          if (statusEl) statusEl.textContent = 'Chart loaded successfully';
+          if (statusEl) {
+            statusEl.textContent = '';
+            statusEl.style.display = 'none'; // Hide status once chart is loaded
+          }
 
         } catch (error) {
           console.error('❌ Error creating chart:', error);
@@ -6212,11 +6230,11 @@
           stakingZoneSection.style.display = "none";
         }
 
-        // Test XP chart rendering immediately
-        setTimeout(() => {
-          console.log('🧪 Testing XP chart after DOM load...');
-          testXPChart();
-        }, 1000);
+        // Remove automatic test - was causing infinite loop
+        // setTimeout(() => {
+        //   console.log('🧪 Testing XP chart after DOM load...');
+        //   testXPChart();
+        // }, 1000);
 
         initializePage();
       });
