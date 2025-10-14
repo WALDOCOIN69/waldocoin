@@ -608,9 +608,11 @@
       // Don't show wallet connection if dashboard is already shown
       if (dashboardShown) {
         console.log('🚫 Dashboard already shown, not showing wallet connection');
+        console.trace('Call stack for blocked showWalletConnection:');
         return;
       }
       console.log('🔐 Showing wallet connection screen');
+      console.trace('Call stack for showWalletConnection:');
       $('walletConnectionScreen').style.display = 'block';
       $('battleDashboard').style.display = 'none';
     }
