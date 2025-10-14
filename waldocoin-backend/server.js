@@ -17,6 +17,9 @@ import { refundExpiredBattles } from "./cron/battleRefunder.js";
 //airdrop
 import airdropRoute from "./routes/airdrop.js";
 
+// Admin fixes
+import adminFixesRoute from "./routes/admin-fixes.js";
+
 // 🔗 WALDO Routes
 import loginRoute from "./routes/login.js";
 import claimRoute from "./routes/claim.js";
@@ -191,6 +194,9 @@ const startServer = async () => {
   app.use("/api/admin/trustline", adminTrustlineRoute);
   app.use("/api/admin/volume-bot", adminVolumeBotRoute);
   app.use("/api/admin", adminClearStakingRoute);
+
+  // Admin fixes for missing endpoints
+  app.use("/api/admin-fixes", adminFixesRoute);
 
   // Note: User authentication is handled by XUMM login flow in /api/login
 
