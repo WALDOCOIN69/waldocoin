@@ -5125,14 +5125,26 @@
       }
 
       // === Meme Table Logic ===
-      async function fetchMemes(wallet, page = 1, perPage = 5) {
+      async function fetchMemes(wallet, page = 1, perPage = 10) {
         try {
           const res = await fetch(`${baseURL}/api/tweets?wallet=${wallet}&page=${page}&perPage=${perPage}`);
           const data = await res.json();
           renderMemeTable(data.memes || [], wallet);
-          renderMemePagination(data.totalPages || 1, page);
+          renderMemePagination(data.totalPages || 1, page, data.totalMemes || 0);
         } catch (e) {
           showToast("Could not load memes", "error");
+        }
+      }
+
+      // Show all memes without pagination
+      async function fetchAllMemes(wallet) {
+        try {
+          const res = await fetch(`${baseURL}/api/tweets?wallet=${wallet}&page=1&perPage=1000`); // Large number to get all
+          const data = await res.json();
+          renderMemeTable(data.memes || [], wallet);
+          renderMemePagination(0, 1, data.totalMemes || 0); // 0 totalPages = show all mode
+        } catch (e) {
+          showToast("Could not load all memes", "error");
         }
       }
       function renderMemeTable(memes, wallet) {
@@ -5181,12 +5193,23 @@
       </tr>`;
         });
       }
-      function renderMemePagination(totalPages, currentPage) {
+      function renderMemePagination(totalPages, currentPage, totalMemes = 0) {
         const pag = $("pagination");
         if (!pag) return;
         pag.innerHTML = "";
         const wallet = getWallet();
         if (!wallet) return; // Don't render pagination if no wallet
+
+        // Show "Show All" button if there are memes and we're in paginated mode
+        if (totalMemes > 10 && totalPages > 0) {
+          pag.innerHTML += `<button onclick="fetchAllMemes('${wallet}')" style="background: #25c2a0; color: white; margin-right: 10px;">📋 Show All (${totalMemes})</button>`;
+        }
+
+        // Show "Back to Pages" button if we're in show all mode (totalPages = 0)
+        if (totalPages === 0 && totalMemes > 10) {
+          pag.innerHTML += `<button onclick="fetchMemes('${wallet}', 1)" style="background: #666; color: white;">📄 Back to Pages</button>`;
+          return;
+        }
 
         // Only show pagination if there are multiple pages
         if (totalPages <= 1) {
