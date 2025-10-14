@@ -3383,35 +3383,45 @@
 
       <div id="shortTermSection" class="collapsible-content">
 
-        <!-- Payout Examples Card -->
+        <!-- Simple Instructions Card -->
         <div class="card">
-          <h4 class="duplicate-example-title">💰 Per-Meme Bonus (30-Day, 15% Bonus)</h4>
+          <h4 class="duplicate-example-title">💰 How Meme Rewards Work</h4>
 
-
-          <!-- Tier 3 Example -->
-          <div class="duplicate-example-card">
-            <div class="example-title">Tier 3 Meme (5 WALDO base)</div>
-            <div class="duplicate-example-grid">
-              <div>
-                <div class="text-red">❌ <strong>Instant Payout:</strong></div>
-                <div class="text-gray">5 WALDO - 10% fee = <strong>4.5 WALDO</strong></div>
-                <div class="text-light-gray font-small">Max potential: 180 WALDO (x40)</div>
+          <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="color: #25c2a0; margin: 0 0 15px 0;">🎯 When You Claim a Meme Reward:</h3>
+            <div style="font-size: 16px; line-height: 1.6;">
+              <div style="margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 6px;">
+                <strong style="color: #ff6b6b;">❌ Get It Now:</strong> Receive tokens immediately (10% fee)
               </div>
-              <div>
-                <div class="text-green">✅ <strong>30-Day Bonus:</strong></div>
-                <div class="text-gray">5 WALDO - 5% fee = <strong>5.46 WALDO</strong> (15% bonus)</div>
-                <div class="text-light-gray font-small">Max potential: 218.5 WALDO (x40)</div>
+              <div style="margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 6px;">
+                <strong style="color: #51cf66;">✅ Wait 30 Days:</strong> Get 15% bonus + lower fees (5% fee)
               </div>
             </div>
           </div>
 
-          <div class="duplicate-restrictions">
-            <div class="duplicate-restrictions-title">📋 Key Rules</div>
-            <div class="duplicate-restrictions-text">
-              • <strong>Per-Meme Choice:</strong> Decide instant vs bonus for each meme individually<br>
-              • <strong>Unlock Access:</strong> Bonus choice unlocks long-term bonus options<br>
-              • <strong>Lower Fees:</strong> 5% bonus fee vs 10% instant payout fee<br>
-              • <strong>15% Bonus:</strong> All bonus meme rewards get 15% bonus after 30 days
+          <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="color: #25c2a0; margin: 0 0 15px 0;">📊 Example with 5 WALDO Meme:</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 15px;">
+              <div style="padding: 15px; background: #2a2a2a; border-radius: 6px; text-align: center;">
+                <div style="color: #ff6b6b; font-weight: bold; margin-bottom: 8px;">Get It Now</div>
+                <div style="color: #fff; font-size: 18px; font-weight: bold;">4.5 WALDO</div>
+                <div style="color: #888; font-size: 12px;">Right away</div>
+              </div>
+              <div style="padding: 15px; background: #2a2a2a; border-radius: 6px; text-align: center;">
+                <div style="color: #51cf66; font-weight: bold; margin-bottom: 8px;">Wait 30 Days</div>
+                <div style="color: #fff; font-size: 18px; font-weight: bold;">5.46 WALDO</div>
+                <div style="color: #888; font-size: 12px;">After 30 days</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="color: #25c2a0; margin: 0 0 15px 0;">✨ Simple Rules:</h3>
+            <div style="font-size: 15px; line-height: 1.8;">
+              • <strong>Choose for each meme</strong> - no account-wide setting<br>
+              • <strong>Keep claiming new memes</strong> while others are in 30-day bonus<br>
+              • <strong>Choosing bonus unlocks</strong> long-term bonus options<br>
+              • <strong>Mix and match</strong> - some instant, some bonus
             </div>
           </div>
         </div>
@@ -3427,10 +3437,10 @@
                   <th scope="col">Likes Required</th>
                   <th scope="col">Retweets Required</th>
                   <th scope="col">Base Reward</th>
-                  <th scope="col">Instant Payout</th>
-                  <th scope="col">Bonus Payout</th>
-                  <th scope="col">Max No-Bonus (40x)</th>
-                  <th scope="col">Max Bonus (40x)</th>
+                  <th scope="col">Get Now</th>
+                  <th scope="col">Wait 30 Days</th>
+                  <th scope="col">Max Now (40x)</th>
+                  <th scope="col">Max Wait (40x)</th>
                 </tr>
               </thead>
               <tbody id="rewardTierBody"></tbody>
@@ -3456,8 +3466,8 @@
                   <th scope="col">Likes</th>
                   <th scope="col">XP</th>
                   <th scope="col">Tier</th>
-                  <th scope="col">Claim</th>
-                  <th scope="col">Bonus</th>
+                  <th scope="col">Get Now</th>
+                  <th scope="col">Wait 30 Days</th>
                   <th scope="col">Mint</th>
                 </tr>
               </thead>
