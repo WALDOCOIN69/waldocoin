@@ -3556,37 +3556,37 @@
           <div style="background: #1a2f1a; padding: 12px; border-radius: 6px; border-left: 3px solid #25c2a0;">
             <div style="color: #25c2a0; font-weight: bold; margin-bottom: 5px;">🟢 Bonus Program</div>
             <div style="font-size: 12px; line-height: 1.4;">
-              <strong>+1% XP per 1,000 WALDO staked</strong><br>
-              Stake tokens for 30+ days. Max 50% bonus.
+              <strong>+0.1% XP per 1,000 WALDO staked</strong><br>
+              Stake tokens for 30+ days. Max 10% bonus.
             </div>
           </div>
           <div style="background: #2f1a1a; padding: 12px; border-radius: 6px; border-left: 3px solid #ff6b6b;">
             <div style="color: #ff6b6b; font-weight: bold; margin-bottom: 5px;">🔴 Battle Streak</div>
             <div style="font-size: 12px; line-height: 1.4;">
-              <strong>+10% XP per battle win</strong><br>
-              Win meme battles. Max 200% bonus.
+              <strong>+2% XP per battle win</strong><br>
+              Win meme battles. Max 20% bonus (10 wins).
             </div>
           </div>
           <div style="background: #2f2f1a; padding: 12px; border-radius: 6px; border-left: 3px solid #ffd93d;">
             <div style="color: #ffd93d; font-weight: bold; margin-bottom: 5px;">🟡 Level Bonus</div>
             <div style="font-size: 12px; line-height: 1.4;">
-              <strong>+20% XP per level</strong><br>
-              Level up automatically. Max 80% at Level 5.
+              <strong>+5% XP per level</strong><br>
+              Level up automatically. Max 20% at Level 5.
             </div>
           </div>
           <div style="background: #1a2f1f; padding: 12px; border-radius: 6px; border-left: 3px solid #51cf66;">
             <div style="color: #51cf66; font-weight: bold; margin-bottom: 5px;">🟢 Referral Bonus</div>
             <div style="font-size: 12px; line-height: 1.4;">
-              <strong>+5% XP per referral</strong><br>
-              Share your link. Unlimited bonus.
+              <strong>+1% XP per referral</strong><br>
+              Share your link. Max 15% bonus (15 referrals).
             </div>
           </div>
         </div>
         <div
           style="background: #222; padding: 10px; border-radius: 6px; margin-top: 10px; text-align: center; font-size: 12px;">
           <strong style="color: #25c2a0;">🎯 Pro Tip:</strong>
-          <span style="color: #ccc;">All multipliers stack! Max theoretical: 1.5x + 3.0x + 1.8x + unlimited referrals =
-            massive XP gains!</span>
+          <span style="color: #ccc;">All multipliers stack! Max possible: 1.1x + 1.2x + 1.2x + 1.15x = ~1.7x total XP
+            multiplier (balanced for fair gameplay)!</span>
         </div>
       </div>
     </div>
@@ -5041,8 +5041,8 @@
             stakingBonus = stats.xpBreakdown.stakingBonus;
           } else if (stats.totalStaked) {
             totalStaked = stats.totalStaked;
-            // Calculate bonus: 1% XP bonus per 1000 WALDO staked (max 50%)
-            stakingBonus = Math.min(Math.floor(totalStaked / 1000), 50);
+            // Calculate bonus: 0.1% XP bonus per 1000 WALDO staked (max 10%)
+            stakingBonus = Math.min(Math.floor(totalStaked / 1000) * 0.1, 10);
           }
 
           const multiplier = 1 + (stakingBonus / 100);
@@ -5092,8 +5092,8 @@
             winStreak = stats.battleStats.streak || 0;
           }
 
-          // Calculate multiplier: 0.1x per win, max 3.0x total
-          const multiplier = Math.min(1 + (battleWins * 0.1), 3.0);
+          // Calculate multiplier: 2% per win, max 20% total (10 wins max)
+          const multiplier = Math.min(1 + (battleWins * 0.02), 1.2);
           value.textContent = `${multiplier.toFixed(1)}x`;
 
           if (multiplier > 1) {
@@ -5134,8 +5134,8 @@
           const level = stats.level || 1;
           const xp = stats.xp || 0;
 
-          // Calculate multiplier: 0.2x per level above 1
-          const multiplier = 1 + ((level - 1) * 0.2);
+          // Calculate multiplier: 5% per level above 1, max 20% at level 5
+          const multiplier = 1 + ((level - 1) * 0.05);
           value.textContent = `${multiplier.toFixed(1)}x`;
 
           const levelNames = ["", "Waldo Watcher", "Waldo Scout", "Waldo Agent", "Waldo Commander", "Waldo Legend"];
@@ -5185,8 +5185,8 @@
             activeReferrals = stats.referralStats.active || 0;
           }
 
-          // Calculate multiplier: 0.05x per referral
-          const multiplier = 1 + (referralCount * 0.05);
+          // Calculate multiplier: 1% per referral, max 15% (15 referrals max)
+          const multiplier = Math.min(1 + (referralCount * 0.01), 1.15);
           value.textContent = `${multiplier.toFixed(1)}x`;
 
           if (referralCount > 0) {
@@ -5223,7 +5223,7 @@
 
           if (data.success && data.positions) {
             const totalStaked = data.positions.reduce((sum, pos) => sum + (pos.amount || 0), 0);
-            const xpBonus = Math.min(Math.floor(totalStaked / 1000), 50); // 1% per 1000 WALDO, max 50%
+            const xpBonus = Math.min(Math.floor(totalStaked / 1000) * 0.1, 10); // 0.1% per 1000 WALDO, max 10%
 
             return {
               totalStaked,
