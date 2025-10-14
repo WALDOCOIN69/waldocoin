@@ -1458,7 +1458,7 @@
             <div>
               <div class="form-group">
                 <label class="form-label">24h Activity</label>
-                <div id="recentActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
+                <div id="dailyActivity" class="info-display" style="color: #25c2a0; font-weight: bold;">
                   Loading...
                 </div>
                 <small class="help-text">Claims in last 24 hours</small>
@@ -3835,46 +3835,7 @@
       }
     }
 
-    // Production-ready API call wrapper
-    async function apiCall(endpoint, options = {}) {
-      if (!isAuthenticated) {
-        throw new Error('Authentication required');
-      }
-
-      const adminKey = localStorage.getItem('adminKey');
-      if (!adminKey) {
-        throw new Error('Admin key not found');
-      }
-
-      const defaultOptions = {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-key': adminKey,
-          'x-admin-wallet': ADMIN_WALLET,
-          ...options.headers
-        }
-      };
-
-      try {
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-          ...defaultOptions,
-          ...options
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          // If backend returns error details, use them
-          const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`;
-          throw new Error(errorMessage);
-        }
-
-        return data;
-      } catch (error) {
-        console.error(`API Error [${endpoint}]:`, error);
-        throw error;
-      }
-    }
+    // Duplicate apiCall function removed - using enhanced version above
 
     // Load data for specific section with error handling
     async function loadSectionData(section) {
@@ -4004,6 +3965,10 @@
 
     // Dashboard functions - Production Ready with full backend support
     async function loadDashboardData() {
+      if (DEBUG_MODE) {
+        console.log('🔄 Loading dashboard data...');
+      }
+
       // Load trustline count first, independently
       await loadTrustlineCount();
 
@@ -4011,7 +3976,13 @@
 
         // Load tokenomics stats for dashboard with error handling
         try {
+          if (DEBUG_MODE) {
+            console.log('📊 Loading tokenomics stats...');
+          }
           const tokenomicsData = await apiCall('/api/tokenomics/stats');
+          if (DEBUG_MODE) {
+            console.log('📊 Tokenomics data received:', tokenomicsData);
+          }
           if (tokenomicsData.success && tokenomicsData.stats) {
             const stats = tokenomicsData.stats;
             if (stats.airdrop) {
