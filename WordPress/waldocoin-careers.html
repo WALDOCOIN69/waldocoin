@@ -330,6 +330,57 @@
       color: inherit;
     }
 
+    /* Fix WordPress navigation menu items that appear as plain text */
+    .menu,
+    .menu-item,
+    .menu-item a,
+    .wp-nav-menu,
+    .wp-nav-menu li,
+    .wp-nav-menu li a,
+    .main-navigation,
+    .primary-navigation,
+    .site-navigation,
+    .navbar,
+    .nav-menu,
+    .navigation-menu,
+    .wp-nav-menu-items,
+    .menu-items,
+    .nav-items,
+    .navigation-items {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+
+    /* Hide WordPress breadcrumbs and navigation elements */
+    .breadcrumb,
+    .breadcrumbs,
+    .yoast-breadcrumb,
+    .rank-math-breadcrumb,
+    .woocommerce-breadcrumb {
+      display: none !important;
+      visibility: hidden !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+
+    /* Hide any stray navigation text content */
+    .site-header .menu-toggle,
+    .site-header .menu-primary-container,
+    .site-header .menu-primary,
+    .header-navigation,
+    .primary-menu,
+    .secondary-menu {
+      display: none !important;
+      visibility: hidden !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+
     /* Force hide WordPress injected content after body */
     body::after {
       display: none !important;
@@ -555,6 +606,72 @@
   </div>
 
   <script>
+    // Remove any WordPress navigation text that might appear
+    function removeWordPressNavigation() {
+      // List of navigation text that might appear
+      const navTexts = [
+        'WHITEPAPER',
+        'ROADMAP',
+        'MEET THE TEAM',
+        'TERMS AND CONDITIONS',
+        'PRIVACY POLICY',
+        'KYC-VERIFICATION',
+        'CAREERS'
+      ];
+
+      // Remove any text nodes that contain these navigation items
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+
+      const textNodes = [];
+      let node;
+      while (node = walker.nextNode()) {
+        textNodes.push(node);
+      }
+
+      textNodes.forEach(textNode => {
+        const text = textNode.textContent.trim();
+        if (navTexts.some(navText => text.includes(navText))) {
+          // Remove the text node or hide its parent
+          if (textNode.parentNode) {
+            textNode.parentNode.style.display = 'none';
+            textNode.parentNode.style.visibility = 'hidden';
+            textNode.parentNode.style.position = 'absolute';
+            textNode.parentNode.style.left = '-9999px';
+          }
+        }
+      });
+
+      // Also hide any elements that might contain navigation
+      const selectors = [
+        '.menu', '.nav', '.navigation', '.navbar',
+        '.wp-nav-menu', '.main-navigation', '.primary-navigation',
+        '.site-navigation', '.header-navigation', '.menu-primary',
+        '.breadcrumb', '.breadcrumbs'
+      ];
+
+      selectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          el.style.display = 'none';
+          el.style.visibility = 'hidden';
+          el.style.position = 'absolute';
+          el.style.left = '-9999px';
+        });
+      });
+    }
+
+    // Run immediately and after DOM loads
+    removeWordPressNavigation();
+    document.addEventListener('DOMContentLoaded', removeWordPressNavigation);
+
+    // Run again after a short delay in case WordPress injects content later
+    setTimeout(removeWordPressNavigation, 1000);
+
     // Form submission
     document.getElementById('applicationForm').addEventListener('submit', async function (e) {
       e.preventDefault();
