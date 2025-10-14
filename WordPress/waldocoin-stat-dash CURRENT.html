@@ -3244,11 +3244,11 @@
           <a href="https://stats-page.waldocoin.live/" class="button-style"
             style="text-decoration: none; padding: 10px 20px; font-size: 0.9em; background: #25c2a0; color: #000;">📊
             Stats Dashboard</a>
-          <a href="https://battle-arena.waldocoin.live/" class="button-style"
+          <a href="https://battle-arena.waldocoin.live/" target="_blank" class="button-style"
             style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">⚔️ Battle Arena</a>
-          <a href="https://nft-gallery.waldocoin.live/" class="button-style"
+          <a href="https://nft-gallery.waldocoin.live/" target="_blank" class="button-style"
             style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🖼️ NFT Gallery</a>
-          <a href="https://dao-portal.waldocoin.live/" class="button-style"
+          <a href="https://dao-portal.waldocoin.live/" target="_blank" class="button-style"
             style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🏛️ DAO Portal</a>
         </div>
       </div>
@@ -4077,6 +4077,77 @@
       /** === UTILS === **/
       function $(id) { return document.getElementById(id); }
       function getWallet() { return localStorage.getItem("xummWallet") || null; }
+
+      function setWallet(wallet) {
+        localStorage.setItem('xummWallet', wallet);
+        // Broadcast wallet change to other tabs/windows
+        broadcastWalletChange(wallet);
+      }
+
+      // === SHARED AUTHENTICATION ACROSS ECOSYSTEM ===
+      function broadcastWalletChange(wallet) {
+        // Use localStorage event to sync across tabs
+        localStorage.setItem('waldoWalletSync', JSON.stringify({
+          wallet: wallet,
+          timestamp: Date.now()
+        }));
+
+        // Also use BroadcastChannel for same-origin communication
+        if (typeof BroadcastChannel !== 'undefined') {
+          const channel = new BroadcastChannel('waldocoin-auth');
+          channel.postMessage({
+            type: 'WALLET_CHANGED',
+            wallet: wallet,
+            timestamp: Date.now()
+          });
+        }
+      }
+
+      function listenForWalletChanges() {
+        // Listen for localStorage changes (cross-tab sync)
+        window.addEventListener('storage', function (e) {
+          if (e.key === 'waldoWalletSync' && e.newValue) {
+            try {
+              const data = JSON.parse(e.newValue);
+              const currentWallet = getWallet();
+              if (data.wallet !== currentWallet) {
+                localStorage.setItem('xummWallet', data.wallet);
+                // Refresh the page to update with new wallet
+                if (data.wallet) {
+                  showToast('Wallet connected in another tab - refreshing...', 'success');
+                  setTimeout(() => location.reload(), 1500);
+                } else {
+                  showToast('Wallet disconnected in another tab - refreshing...', 'info');
+                  setTimeout(() => location.reload(), 1500);
+                }
+              }
+            } catch (e) {
+              console.warn('Failed to parse wallet sync data:', e);
+            }
+          }
+        });
+
+        // Listen for BroadcastChannel messages
+        if (typeof BroadcastChannel !== 'undefined') {
+          const channel = new BroadcastChannel('waldocoin-auth');
+          channel.onmessage = function (event) {
+            if (event.data.type === 'WALLET_CHANGED') {
+              const currentWallet = getWallet();
+              if (event.data.wallet !== currentWallet) {
+                localStorage.setItem('xummWallet', event.data.wallet);
+                // Refresh the page to update with new wallet
+                if (event.data.wallet) {
+                  showToast('Wallet connected in another tab - refreshing...', 'success');
+                  setTimeout(() => location.reload(), 1500);
+                } else {
+                  showToast('Wallet disconnected in another tab - refreshing...', 'info');
+                  setTimeout(() => location.reload(), 1500);
+                }
+              }
+            }
+          };
+        }
+      }
 
       /** === LEVELS === **/
       const levelTitles = {
@@ -7170,6 +7241,9 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        // Initialize shared authentication listener
+        listenForWalletChanges();
+
         // Initialize staking zone as collapsed
         const stakingZoneSection = document.getElementById("stakingZoneSection");
         if (stakingZoneSection) {
