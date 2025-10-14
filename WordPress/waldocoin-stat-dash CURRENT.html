@@ -3374,227 +3374,10 @@
 
     </div> <!-- End container -->
 
-    <!-- 🔒 COMPREHENSIVE WALDO STAKING ZONE (FULL-WIDTH BAR) -->
-    <div class="staking-zone-bar">
-      <h2 class="staking-zone-header" onclick="toggleStakingZone()">
-        🔒 WALDO Staking Zone (Long Term APY%)
-        <span id="stakingZoneToggleIcon" class="toggle-icon collapsed">►</span>
-      </h2>
-
-      <div id="stakingZoneSection" class="staking-zone-content">
-
-        <!-- Staking Instruction Cards Inside Zone -->
-        <div class="instruction-cards-full-width">
-
-          <!-- Initial Choice -->
-          <div class="instruction-card-full">
-            <h2>🎯 Initial Choice</h2>
-            <div class="instruction-card-content">
-              <div class="text-red font-bold margin-bottom-5">❌ Instant Payout</div>
-              <div class="font-small text-gray">10% fee • No future staking opportunities</div>
-            </div>
-            <div class="instruction-card-content">
-              <div class="text-green font-bold margin-bottom-5">✅ Staking Option</div>
-              <div class="font-small text-gray">5% fee • Tiered re-staking eligible</div>
-            </div>
-            <div class="instruction-card-warning">
-              <div class="text-yellow font-bold font-small">⚠️ Choice made per meme when claiming</div>
-            </div>
-          </div>
-
-          <!-- Auto-Continue Staking System -->
-          <div class="instruction-card-full">
-            <h2>🔄 Auto-Continue Staking System (Only when staking was initially chosen)</h2>
-            <div class="instruction-subtitle">How long-term staking works:</div>
-
-            <div class="auto-continue-explanation">
-              <div class="auto-continue-step">
-                <span class="step-number">1</span>
-                <div class="step-content">
-                  <div class="step-title">Initial Stake Completes</div>
-                  <div class="step-description">Your 30-day stake finishes, you earn +12% bonus</div>
-                </div>
-              </div>
-
-              <div class="auto-continue-step">
-                <span class="step-number">2</span>
-                <div class="step-content">
-                  <div class="step-title">7-Day Decision Window</div>
-                  <div class="step-description">Choose your next move or do nothing</div>
-                </div>
-              </div>
-
-              <div class="auto-continue-step">
-                <span class="step-number">3</span>
-                <div class="step-content">
-                  <div class="step-title">Auto-Continue (Default)</div>
-                  <div class="step-description">Do nothing → Automatically renews for 30 days at +12% bonus</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="tier-grid">
-              <div class="tier-item tier-item-default">
-                <span class="text-green font-bold">Auto-Renew</span>
-                <span class="text-gray">30 days • +12% bonus</span>
-                <span class="text-small">Default if no action</span>
-              </div>
-              <div class="tier-item tier-item-blue">
-                <span class="text-blue font-bold">Upgrade Option</span>
-                <span class="text-gray">90 days • +18% bonus</span>
-                <span class="text-small">Choose during window</span>
-              </div>
-              <div class="tier-item tier-item-yellow">
-                <span class="text-yellow font-bold">Upgrade Option</span>
-                <span class="text-gray">180 days • +25% bonus</span>
-                <span class="text-small">Choose during window</span>
-              </div>
-              <div class="tier-item tier-item-purple">
-                <span class="text-purple font-bold">Upgrade Option</span>
-                <span class="text-gray">365 days • +45% bonus</span>
-                <span class="text-small">Choose during window</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- How It Works -->
-          <div class="instruction-card-full">
-            <h2>🔄 How It Works</h2>
-            <div class="process-grid">
-              <div class="process-step">
-                <div class="process-number">1</div>
-                <span class="text-gray">Lock tokens (30-365 days)</span>
-              </div>
-              <div class="process-step">
-                <div class="process-number">2</div>
-                <span class="text-gray">Daily compounding rewards</span>
-              </div>
-              <div class="process-step">
-                <div class="process-number">3</div>
-                <span class="text-gray">Automatic payout</span>
-              </div>
-              <div class="process-step">
-                <div class="process-number process-number-yellow">4</div>
-                <span class="text-gray">7-day re-staking window</span>
-              </div>
-            </div>
-            <div class="warning-box">
-              <div class="text-red font-bold font-small">⚠️ Early unstaking: 15% penalty</div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Staking Rewards Banner -->
-        <div class="apy-banner">
-          <div class="apy-banner-title">📈 Long-Term Staking Bonuses</div>
-          <div class="apy-banner-rates">
-            <span class="apy-rate-text">30 days: <strong class="apy-rate-green">+12%</strong></span>
-            <span class="apy-rate-text">90 days: <strong class="apy-rate-green">+18%</strong></span>
-            <span class="apy-rate-text">180 days: <strong class="apy-rate-bright-green">+25%</strong></span>
-            <span class="apy-rate-text">365 days: <strong class="apy-rate-bright-green">+45%</strong></span>
-          </div>
-          <div class="apy-warning">
-            💎 Level 5 gets +2% extra • ⚠️ Early unstaking: 15% penalty
-          </div>
-        </div>
-
-        <!-- Staking Summary Stats -->
-        <div class="staking-stats">
-          <div class="staking-stat-item">
-            <div class="staking-stat-value staking-stat-green" id="totalStaked">0 WALDO</div>
-            <div class="staking-stat-label">Total Staked</div>
-          </div>
-          <div class="staking-stat-item">
-            <div class="staking-stat-value staking-stat-bright-green" id="totalRewards">0 WALDO</div>
-            <div class="staking-stat-label">Total Rewards</div>
-          </div>
-          <div class="staking-stat-item">
-            <div class="staking-stat-value staking-stat-green" id="totalStakedDisplay">Loading...</div>
-            <div class="staking-stat-label">Ecosystem Total Staked</div>
-          </div>
-        </div>
-
-        <!-- Long-Term Staking Table -->
-        <div class="staking-table-container">
-          <div class="staking-table-wrapper">
-            <h3>📈 Long-Term Staking Positions</h3>
-            <table id="stakingTable" class="styled-table">
-              <thead>
-                <tr>
-                  <th scope="col">Stake ID</th>
-                  <th scope="col">Amount Staked</th>
-                  <th scope="col">Duration</th>
-                  <th scope="col">APY</th>
-                  <th scope="col">Current Rewards</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody id="stakingPositionsTable">
-                <tr>
-                  <td colspan="7" class="staking-positions-empty">No active stakes</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Next Payout Timer -->
-        <div class="staking-summary-grid">
-          <div class="staking-summary-card">
-            <h3>⏳ Next Staking Payout</h3>
-            <p class="center-text" id="nextPayoutTimer">Calculating...</p>
-          </div>
-        </div>
-
-        <!-- New Stake Button -->
-        <div class="staking-button-container">
-          <button type="button" onclick="showStakingModal()" class="button-style">🏦 New Stake</button>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- XP Multipliers & Bonuses -->
-    <div class="card">
-      <h2>⚡ Active XP Multipliers</h2>
-      <div class="xp-multipliers-grid">
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-green" id="stakingMultiplier">1.0x</div>
-          <div class="xp-multiplier-label">Staking Bonus</div>
-          <div class="xp-multiplier-description">Stake WALDO for XP boost</div>
-        </div>
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-red" id="battleMultiplier">1.0x</div>
-          <div class="xp-multiplier-label">Battle Streak</div>
-          <div class="xp-multiplier-description">Win battles for bonus XP</div>
-        </div>
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-yellow" id="levelMultiplier">1.0x</div>
-          <div class="xp-multiplier-label">Level Bonus</div>
-          <div class="xp-multiplier-description">Higher levels = more XP</div>
-        </div>
-        <div class="xp-multiplier-card">
-          <div class="xp-multiplier-value xp-multiplier-value-light-green" id="referralMultiplier">1.0x</div>
-          <div class="xp-multiplier-label">Referral Bonus</div>
-          <div class="xp-multiplier-description">Invite friends for XP boost</div>
-        </div>
-      </div>
-      <div class="xp-tips-box">
-        <div class="xp-tips-title">💡 Pro Tips</div>
-        <div class="xp-tips-content">
-          • Stake WALDO tokens for permanent XP multiplier<br>
-          • Win battles to build streak bonuses<br>
-          • Higher levels unlock better multipliers
-        </div>
-      </div>
-    </div>
-
-    <!-- Short term Option Collapsible Container -->
+    <!-- Short term Bonus Option Collapsible Container -->
     <div class="collapsible-container">
       <h2 class="collapsible-header" onclick="toggleShortTermOption()">
-        💎 Short Term Option
+        💎 Short Term Bonus Option
         <span id="shortTermToggleIcon" class="toggle-icon collapsed">►</span>
       </h2>
 
@@ -3602,7 +3385,7 @@
 
         <!-- Payout Examples Card -->
         <div class="card">
-          <h4 class="duplicate-example-title">💰 Per-Meme Staking (30-Day, 15% Bonus)</h4>
+          <h4 class="duplicate-example-title">💰 Per-Meme Bonus (30-Day, 15% Bonus)</h4>
 
 
           <!-- Tier 3 Example -->
@@ -3615,7 +3398,7 @@
                 <div class="text-light-gray font-small">Max potential: 180 WALDO (x40)</div>
               </div>
               <div>
-                <div class="text-green">✅ <strong>30-Day Stake:</strong></div>
+                <div class="text-green">✅ <strong>30-Day Bonus:</strong></div>
                 <div class="text-gray">5 WALDO - 5% fee = <strong>5.46 WALDO</strong> (15% bonus)</div>
                 <div class="text-light-gray font-small">Max potential: 218.5 WALDO (x40)</div>
               </div>
@@ -3625,10 +3408,10 @@
           <div class="duplicate-restrictions">
             <div class="duplicate-restrictions-title">📋 Key Rules</div>
             <div class="duplicate-restrictions-text">
-              • <strong>Per-Meme Choice:</strong> Decide instant vs staking for each meme individually<br>
-              • <strong>Unlock Access:</strong> Staking choice unlocks long-term staking options<br>
-              • <strong>Lower Fees:</strong> 5% staking fee vs 10% instant payout fee<br>
-              • <strong>15% Bonus:</strong> All staked meme rewards get 15% bonus after 30 days
+              • <strong>Per-Meme Choice:</strong> Decide instant vs bonus for each meme individually<br>
+              • <strong>Unlock Access:</strong> Bonus choice unlocks long-term bonus options<br>
+              • <strong>Lower Fees:</strong> 5% bonus fee vs 10% instant payout fee<br>
+              • <strong>15% Bonus:</strong> All bonus meme rewards get 15% bonus after 30 days
             </div>
           </div>
         </div>
@@ -3645,9 +3428,9 @@
                   <th scope="col">Retweets Required</th>
                   <th scope="col">Base Reward</th>
                   <th scope="col">Instant Payout</th>
-                  <th scope="col">Staking Payout</th>
-                  <th scope="col">Max No-Stake (40x)</th>
-                  <th scope="col">Max Stake (40x)</th>
+                  <th scope="col">Bonus Payout</th>
+                  <th scope="col">Max No-Bonus (40x)</th>
+                  <th scope="col">Max Bonus (40x)</th>
                 </tr>
               </thead>
               <tbody id="rewardTierBody"></tbody>
@@ -3674,7 +3457,7 @@
                   <th scope="col">XP</th>
                   <th scope="col">Tier</th>
                   <th scope="col">Claim</th>
-                  <th scope="col">Stake</th>
+                  <th scope="col">Bonus</th>
                   <th scope="col">Mint</th>
                 </tr>
               </thead>
@@ -3684,6 +3467,120 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- XP Multipliers & Bonuses -->
+    <div class="card">
+      <h2>⚡ Active XP Multipliers</h2>
+      <div class="xp-multipliers-grid">
+        <div class="xp-multiplier-card">
+          <div class="xp-multiplier-value xp-multiplier-value-green" id="stakingMultiplier">1.0x</div>
+          <div class="xp-multiplier-label">Bonus Program</div>
+          <div class="xp-multiplier-description">Join bonus program for XP boost</div>
+        </div>
+        <div class="xp-multiplier-card">
+          <div class="xp-multiplier-value xp-multiplier-value-red" id="battleMultiplier">1.0x</div>
+          <div class="xp-multiplier-label">Battle Streak</div>
+          <div class="xp-multiplier-description">Win battles for bonus XP</div>
+        </div>
+        <div class="xp-multiplier-card">
+          <div class="xp-multiplier-value xp-multiplier-value-yellow" id="levelMultiplier">1.0x</div>
+          <div class="xp-multiplier-label">Level Bonus</div>
+          <div class="xp-multiplier-description">Higher levels = more XP</div>
+        </div>
+        <div class="xp-multiplier-card">
+          <div class="xp-multiplier-value xp-multiplier-value-light-green" id="referralMultiplier">1.0x</div>
+          <div class="xp-multiplier-label">Referral Bonus</div>
+          <div class="xp-multiplier-description">Invite friends for XP boost</div>
+        </div>
+      </div>
+      <div class="xp-tips-box">
+        <div class="xp-tips-title">💡 Pro Tips</div>
+        <div class="xp-tips-content">
+          • Join bonus program for permanent XP multiplier<br>
+          • Win battles to build streak bonuses<br>
+          • Higher levels unlock better multipliers
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔒 COMPREHENSIVE WALDO LONG TERM BONUS ZONE (FULL-WIDTH BAR) -->
+    <div class="staking-zone-bar">
+      <h2 class="staking-zone-header" onclick="toggleLongTermZone()">
+        🔒 WALDO Long Term Bonus Zone
+        <span id="longTermZoneToggleIcon" class="toggle-icon collapsed">►</span>
+      </h2>
+
+      <div id="longTermZoneSection" class="staking-zone-content">
+
+        <!-- Bonus Summary Stats -->
+        <div class="staking-stats">
+          <div class="staking-stat-item">
+            <div class="staking-stat-value staking-stat-green" id="totalStaked">0 WALDO</div>
+            <div class="staking-stat-label">Total in Bonus</div>
+          </div>
+          <div class="staking-stat-item">
+            <div class="staking-stat-value staking-stat-bright-green" id="totalRewards">0 WALDO</div>
+            <div class="staking-stat-label">Total Rewards</div>
+          </div>
+          <div class="staking-stat-item">
+            <div class="staking-stat-value staking-stat-green" id="totalStakedDisplay">Loading...</div>
+            <div class="staking-stat-label">Ecosystem Total in Bonus</div>
+          </div>
+        </div>
+
+        <!-- Bonus Rewards Banner -->
+        <div class="apy-banner">
+          <div class="apy-banner-title">📈 Long-Term Bonus Rates</div>
+          <div class="apy-banner-rates">
+            <span class="apy-rate-text">30 days: <strong class="apy-rate-green">+12%</strong></span>
+            <span class="apy-rate-text">90 days: <strong class="apy-rate-green">+18%</strong></span>
+            <span class="apy-rate-text">180 days: <strong class="apy-rate-bright-green">+25%</strong></span>
+            <span class="apy-rate-text">365 days: <strong class="apy-rate-bright-green">+45%</strong></span>
+          </div>
+          <div class="apy-warning">
+            💎 Level 5 gets +2% extra • ⚠️ Early unlock: 15% penalty
+          </div>
+        </div>
+
+        <!-- Long-Term Bonus Table -->
+        <div class="staking-table-container">
+          <div class="staking-table-wrapper">
+            <h3>📈 Long-Term Bonus Positions</h3>
+            <table id="longTermBonusTable" class="styled-table">
+              <thead>
+                <tr>
+                  <th scope="col">Position ID</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Duration</th>
+                  <th scope="col">Bonus Rate</th>
+                  <th scope="col">Current Rewards</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody id="longTermBonusPositionsTable">
+                <tr>
+                  <td colspan="7" class="staking-positions-empty">No active bonus positions</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Next Payout Timer -->
+        <div class="staking-summary-grid">
+          <div class="staking-summary-card">
+            <h3>⏳ Next Bonus Payout</h3>
+            <p class="center-text" id="nextPayoutTimer">Calculating...</p>
+          </div>
+        </div>
+
+        <!-- New Bonus Button -->
+        <div class="staking-button-container">
+          <button type="button" onclick="showStakingModal()" class="button-style">🏦 New Bonus Position</button>
+        </div>
       </div>
     </div>
 
@@ -5825,6 +5722,21 @@
         }
       }
 
+      // Long Term Zone Toggle Function
+      function toggleLongTermZone() {
+        const section = document.getElementById("longTermZoneSection");
+        const icon = document.getElementById("longTermZoneToggleIcon");
+        if (section.style.display === "none") {
+          section.style.display = "block";
+          icon.textContent = "▼";
+          icon.classList.remove("collapsed");
+        } else {
+          section.style.display = "none";
+          icon.textContent = "►";
+          icon.classList.add("collapsed");
+        }
+      }
+
       // Make functions globally available
       window.showStakingModal = showStakingModal;
       window.closeStakingModal = closeStakingModal;
@@ -5839,6 +5751,7 @@
       window.unstakePosition = unstakePosition;
       window.linkTwitterAccount = linkTwitterAccount;
       window.toggleStakingZone = toggleStakingZone;
+      window.toggleLongTermZone = toggleLongTermZone;
 
       // === NFT Collection Logic ===
       async function fetchNFTCollection(wallet) {
@@ -6575,6 +6488,12 @@
         const stakingZoneSection = document.getElementById("stakingZoneSection");
         if (stakingZoneSection) {
           stakingZoneSection.style.display = "none";
+        }
+
+        // Initialize long term zone as collapsed
+        const longTermZoneSection = document.getElementById("longTermZoneSection");
+        if (longTermZoneSection) {
+          longTermZoneSection.style.display = "none";
         }
 
         // Remove automatic test - was causing infinite loop
