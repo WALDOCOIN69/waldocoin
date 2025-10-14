@@ -3301,9 +3301,9 @@
       <!-- Per‑Meme Matured Redemptions -->
       <div class="card" id="perMemeRedemptionsCard">
         <h2>🎯 Per‑Meme Matured Redemptions</h2>
-        <p><strong>Count:</strong> <span id="pmRedCount">—</span></p>
-        <p><strong>Total Paid:</strong> <span id="pmRedTotal">—</span></p>
-        <div id="pmRedList"></div>
+        <p style="font-size:18px;margin:12px 0;"><strong>Count:</strong> <span id="pmRedCount">—</span></p>
+        <p style="font-size:18px;margin:12px 0;"><strong>Total Paid:</strong> <span id="pmRedTotal">—</span></p>
+        <div id="pmRedList" style="font-size:16px;margin-top:16px;"></div>
       </div>
     </div> <!-- End container -->
 
@@ -4995,7 +4995,7 @@
 
           if (listEl) {
             if (!s.last10 || s.last10.length === 0) {
-              listEl.innerHTML = '<div class="js-no-stakes">No matured per‑meme redemptions yet</div>';
+              listEl.innerHTML = '<div class="js-no-stakes" style="font-size:16px;color:#888;text-align:center;padding:20px 0;">No matured per‑meme redemptions yet</div>';
             } else {
               listEl.innerHTML = '<ul style="list-style:none;padding:0;margin:0;"></ul>';
               const ul = listEl.querySelector('ul');
