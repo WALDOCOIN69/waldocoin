@@ -2586,7 +2586,7 @@
       }
     }
 
-    // Enhanced API call wrapper with better error handling
+    // Enhanced API call wrapper with better error handling and CORS fallback
     async function apiCall(endpoint, options = {}) {
       const defaultOptions = {
         method: 'GET',
@@ -2616,6 +2616,15 @@
         const data = await response.json();
         return data;
       } catch (error) {
+        // Check if it's a CORS error
+        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+          console.warn(`🚨 CORS Error detected for ${endpoint}. This is likely due to accessing from file:// protocol.`);
+          console.warn(`💡 Solution: Host the admin panel on a web server or use the live version.`);
+
+          // Show user-friendly error
+          showAlert(`CORS Error: Please host admin panel on a web server or use the live version at admin-vip-only-page.waldocoin.live`, 'error');
+        }
+
         logError(`API Call ${endpoint}`, error);
         throw error;
       }
@@ -2689,7 +2698,13 @@
         }
       } catch (error) {
         console.error('❌ Login error:', error);
-        showLoginError(`Connection failed: ${error.message}. Check if backend is running.`);
+
+        if (error.message.includes('Failed to fetch')) {
+          showLoginError(`CORS Error: Please access the admin panel from admin-vip-only-page.waldocoin.live instead of opening the file directly.`);
+        } else {
+          showLoginError(`Connection failed: ${error.message}. Check if backend is running.`);
+        }
+
         logError('Login', error);
       }
     }
