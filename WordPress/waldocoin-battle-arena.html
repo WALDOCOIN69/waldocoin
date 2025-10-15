@@ -323,6 +323,10 @@
         <button id="checkWalletBtn" class="button-style" style="margin-top: 10px; background: #666;">
           🔄 Check for Existing Wallet
         </button>
+        <button id="disconnectWalletBtn" class="button-style"
+          style="margin-top: 10px; background: #d32f2f; display: none;">
+          🚪 Disconnect Wallet
+        </button>
         <p style="margin-top: 15px; font-size: 0.9em; color: #888;">
           Already signed in on another WALDOCOIN page? Click "Check for Existing Wallet"
         </p>
@@ -558,6 +562,51 @@
       broadcastWalletChange(wallet);
     }
 
+    function globalDisconnectWallet() {
+      console.log('🚪 Initiating global disconnect...');
+
+      // Clear local wallet data
+      localStorage.removeItem('xummWallet');
+      localStorage.removeItem('wallet');
+
+      // Send disconnect message to all WALDOCOIN subdomains
+      const waldocoinDomains = [
+        'https://stats-page.waldocoin.live',
+        'https://battle-arena.waldocoin.live',
+        'https://presale.waldocoin.live',
+        'https://staking.waldocoin.live'
+      ];
+
+      // Create hidden iframes to send messages to other domains
+      waldocoinDomains.forEach(domain => {
+        if (window.location.origin === domain) return; // Skip current page
+
+        const iframe = document.createElement('iframe');
+        iframe.src = domain;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        iframe.onload = () => {
+          iframe.contentWindow.postMessage({
+            type: 'GLOBAL_DISCONNECT_REDIRECT',
+            timestamp: Date.now()
+          }, domain);
+
+          // Clean up iframe after message sent
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 1000);
+        };
+      });
+
+      // Redirect current page to homepage after brief delay
+      setTimeout(() => {
+        window.location.href = 'https://waldocoin.live';
+      }, 500);
+    }
+
     // === SHARED AUTHENTICATION ACROSS ECOSYSTEM ===
     function broadcastWalletChange(wallet) {
       // Use localStorage event to sync across tabs
@@ -639,6 +688,10 @@
       console.trace('Call stack for showWalletConnection:');
       $('walletConnectionScreen').style.display = 'block';
       $('battleDashboard').style.display = 'none';
+
+      // Hide disconnect button when not connected
+      const disconnectBtn = $('disconnectWalletBtn');
+      if (disconnectBtn) disconnectBtn.style.display = 'none';
     }
 
     function showBattleDashboard() {
@@ -646,6 +699,10 @@
       dashboardShown = true;
       $('walletConnectionScreen').style.display = 'none';
       $('battleDashboard').style.display = 'block';
+
+      // Show disconnect button when connected
+      const disconnectBtn = $('disconnectWalletBtn');
+      if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
 
       // Force the dashboard to stay visible with a check after 2 seconds
       setTimeout(() => {
@@ -1172,6 +1229,30 @@
       // Make functions globally available
       window.voteBattle = voteBattle;
       window.extractTweetId = extractTweetId;
+    });
+
+    // === GLOBAL DISCONNECT LISTENER ===
+    window.addEventListener('message', function (event) {
+      if (!event.origin.includes('waldocoin.live')) return;
+
+      if (event.data.type === 'GLOBAL_DISCONNECT_REDIRECT') {
+        console.log('🚪 Received global disconnect message - redirecting to homepage');
+        localStorage.removeItem('xummWallet');
+        localStorage.removeItem('wallet');
+        window.location.href = 'https://waldocoin.live';
+      }
+    });
+
+    // === DISCONNECT BUTTON SETUP ===
+    document.addEventListener('DOMContentLoaded', function () {
+      const disconnectBtn = document.getElementById('disconnectWalletBtn');
+      if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', function () {
+          if (confirm('Disconnect wallet from all WALDOCOIN pages and return to homepage?')) {
+            globalDisconnectWallet();
+          }
+        });
+      }
     });
 
     // === CLEANUP ===
