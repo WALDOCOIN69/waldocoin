@@ -11,8 +11,8 @@ import xrpl from "xrpl";
 
 dotenv.config();
 
-// import { connectRedis } from "./redisClient.js"; // Temporarily disabled for debugging
-// import { refundExpiredBattles } from "./cron/battleRefunder.js"; // Temporarily disabled for debugging
+import { connectRedis } from "./redisClient.js";
+import { refundExpiredBattles } from "./cron/battleRefunder.js";
 
 //airdrop
 import airdropRoute from "./routes/airdrop.js";
@@ -72,8 +72,8 @@ import adminClearStakingRoute from "./routes/admin/clearStaking.js";
 
 
 const startServer = async () => {
-  console.log('🚀 Starting server without Redis for debugging...');
-  // await connectRedis(); // Temporarily disabled for debugging
+  console.log('🚀 Starting server with full functionality...');
+  await connectRedis();
 
 
   // inside startServer()

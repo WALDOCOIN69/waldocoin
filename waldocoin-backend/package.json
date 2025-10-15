@@ -5,8 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node minimal-server.js",
-    "start": "node minimal-server.js",
+    "dev": "node server.js",
+    "start": "node server.js",
     "start:worker": "node autodistribute.js",
     "start:all": "node index.js",
     "check:routes": "node checkRoutes.js",
