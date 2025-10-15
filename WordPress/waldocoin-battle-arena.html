@@ -628,6 +628,17 @@
       dashboardShown = true;
       $('walletConnectionScreen').style.display = 'none';
       $('battleDashboard').style.display = 'block';
+
+      // Force the dashboard to stay visible with a check after 2 seconds
+      setTimeout(() => {
+        if ($('battleDashboard').style.display !== 'block') {
+          console.log('🔧 Force-restoring battle dashboard - something tried to hide it!');
+          $('battleDashboard').style.display = 'block';
+          $('walletConnectionScreen').style.display = 'none';
+        } else {
+          console.log('✅ Battle dashboard still visible after 2 seconds');
+        }
+      }, 2000);
     }
 
     async function connectWallet() {
@@ -990,11 +1001,26 @@
         statusDiv.textContent = "Ready to battle! Paste a meme tweet link to start.";
       }
 
-      // Load initial data
-      fetchBattleStatus();
-      fetchBattleHistory();
-      fetchBattleLeaderboard();
-      loadBattleFeesForUI();
+      // Load initial data with error handling
+      console.log('🔄 Loading battle arena data...');
+
+      fetchBattleStatus().catch(e => {
+        console.warn('⚠️ fetchBattleStatus failed:', e);
+      });
+
+      fetchBattleHistory().catch(e => {
+        console.warn('⚠️ fetchBattleHistory failed:', e);
+      });
+
+      fetchBattleLeaderboard().catch(e => {
+        console.warn('⚠️ fetchBattleLeaderboard failed:', e);
+      });
+
+      loadBattleFeesForUI().catch(e => {
+        console.warn('⚠️ loadBattleFeesForUI failed:', e);
+      });
+
+      console.log('✅ Battle arena initialization complete');
     }
 
     function checkWalletAndInitialize() {
