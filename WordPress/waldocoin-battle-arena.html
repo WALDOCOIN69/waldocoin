@@ -633,8 +633,10 @@
         console.warn('Iframe creation failed:', e);
       }
 
-      // 5. Alternative approach: Set a flag and let other pages check it
+      // 5. Alternative approach: Set multiple flags and let other pages check them
       localStorage.setItem('waldoForceLogout', Date.now().toString());
+      localStorage.setItem('waldoLogoutSignal', 'true');
+      localStorage.setItem('waldoLogoutTime', Date.now().toString());
 
       // 6. Try to directly manipulate other tabs (if same origin)
       try {
@@ -656,10 +658,30 @@
 
       console.log('🚪 Global disconnect signals sent, redirecting...');
 
+      // Final attempt: Try to open stats page in a popup to force logout
+      try {
+        const popup = window.open('https://stats-page.waldocoin.live', '_blank', 'width=1,height=1,left=-1000,top=-1000');
+        if (popup) {
+          setTimeout(() => {
+            try {
+              popup.postMessage({
+                type: 'FORCE_LOGOUT_NOW',
+                source: 'battle-arena'
+              }, 'https://stats-page.waldocoin.live');
+              popup.close();
+            } catch (e) {
+              console.warn('Popup messaging failed:', e);
+            }
+          }, 1000);
+        }
+      } catch (e) {
+        console.warn('Popup creation failed:', e);
+      }
+
       // Redirect current page to homepage after brief delay
       setTimeout(() => {
         window.location.href = 'https://waldocoin.live';
-      }, 1500); // Increased delay to ensure messages are sent
+      }, 2000); // Increased delay to ensure all methods are tried
     }
 
     // === SHARED AUTHENTICATION ACROSS ECOSYSTEM ===
