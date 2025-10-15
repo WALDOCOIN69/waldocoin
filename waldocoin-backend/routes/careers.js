@@ -85,22 +85,24 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
       });
     }
 
-    // Create email transporter with improved configuration for Render
+    // Create email transporter for Hostinger email
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // Use Gmail service instead of manual SMTP
+      host: 'smtp.hostinger.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.CAREERS_EMAIL_USER || 'support@waldocoin.live',
         pass: process.env.CAREERS_EMAIL_PASS
       },
-      // Add connection options for better reliability
-      pool: true,
-      maxConnections: 1,
-      rateDelta: 20000,
-      rateLimit: 5,
-      // Timeout settings
+      // Connection options for Hostinger
       connectionTimeout: 60000,
       greetingTimeout: 30000,
-      socketTimeout: 60000
+      socketTimeout: 60000,
+      // Hostinger specific settings
+      requireTLS: true,
+      tls: {
+        ciphers: 'SSLv3'
+      }
     });
 
     // Email content
@@ -162,12 +164,12 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
       console.error('❌ Failed to send email, but application was received:', emailError.message);
       console.error('❌ Email error details:', emailError);
 
-      // Try alternative approach if Gmail service fails
+      // Try alternative approach if Hostinger SMTP fails
       if (emailError.code === 'ETIMEDOUT' || emailError.message.includes('Greeting never received')) {
-        console.log('🔄 Trying alternative SMTP configuration...');
+        console.log('🔄 Trying alternative Hostinger SMTP configuration...');
         try {
           const altTransporter = nodemailer.createTransporter({
-            host: 'smtp.gmail.com',
+            host: 'smtp.hostinger.com',
             port: 465,
             secure: true,
             auth: {
