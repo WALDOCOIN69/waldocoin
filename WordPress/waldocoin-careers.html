@@ -672,6 +672,77 @@
     // Run again after a short delay in case WordPress injects content later
     setTimeout(removeWordPressNavigation, 1000);
 
+    // === FILE UPLOAD HANDLING ===
+    document.addEventListener('DOMContentLoaded', function () {
+      const fileInput = document.getElementById('resume');
+      const fileLabel = document.querySelector('.file-upload-label');
+      const fileName = document.getElementById('fileName');
+      const fileUploadText = document.querySelector('.file-upload-text');
+
+      // Handle file selection
+      fileInput.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+          fileName.textContent = `✅ ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+          fileUploadText.textContent = '📄 Resume attached! Click to change';
+          fileLabel.style.borderColor = '#00ff88';
+          fileLabel.style.background = '#2a4a3a';
+        } else {
+          fileName.textContent = '';
+          fileUploadText.textContent = '📄 Drag & drop or click to upload (PDF, DOC, DOCX)';
+          fileLabel.style.borderColor = '#25c2a0';
+          fileLabel.style.background = '#444';
+        }
+      });
+
+      // Handle drag and drop
+      fileLabel.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        fileLabel.style.borderColor = '#00ff88';
+        fileLabel.style.background = '#2a4a3a';
+        fileUploadText.textContent = '📄 Drop your resume here!';
+      });
+
+      fileLabel.addEventListener('dragleave', function (e) {
+        e.preventDefault();
+        if (!fileInput.files[0]) {
+          fileLabel.style.borderColor = '#25c2a0';
+          fileLabel.style.background = '#444';
+          fileUploadText.textContent = '📄 Drag & drop or click to upload (PDF, DOC, DOCX)';
+        }
+      });
+
+      fileLabel.addEventListener('drop', function (e) {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          const file = files[0];
+          // Check file type
+          const allowedTypes = ['.pdf', '.doc', '.docx'];
+          const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+          if (allowedTypes.includes(fileExtension)) {
+            fileInput.files = files;
+            // Trigger change event
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+          } else {
+            alert('Please upload a PDF, DOC, or DOCX file.');
+            fileLabel.style.borderColor = '#ff5252';
+            fileLabel.style.background = '#4a2a2a';
+            fileUploadText.textContent = '❌ Invalid file type! Please use PDF, DOC, or DOCX';
+            setTimeout(() => {
+              if (!fileInput.files[0]) {
+                fileLabel.style.borderColor = '#25c2a0';
+                fileLabel.style.background = '#444';
+                fileUploadText.textContent = '📄 Drag & drop or click to upload (PDF, DOC, DOCX)';
+              }
+            }, 3000);
+          }
+        }
+      });
+    });
+
     // Form submission
     document.getElementById('applicationForm').addEventListener('submit', async function (e) {
       e.preventDefault();
@@ -681,25 +752,29 @@
       submitBtn.textContent = '⏳ Submitting...';
       submitBtn.disabled = true;
 
-      const formData = {
-        fullName: document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value,
-        email: document.getElementById('email').value,
-        phone: document.getElementById('phone').value,
-        position: document.getElementById('position').value,
-        experience: document.getElementById('experience').value,
-        skills: document.getElementById('skills').value,
-        portfolio: document.getElementById('portfolio').value,
-        coverLetter: document.getElementById('coverLetter').value,
-        availability: document.getElementById('availability').value
-      };
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('fullName', document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value);
+      formData.append('email', document.getElementById('email').value);
+      formData.append('phone', document.getElementById('phone').value);
+      formData.append('position', document.getElementById('position').value);
+      formData.append('experience', document.getElementById('experience').value);
+      formData.append('skills', document.getElementById('skills').value);
+      formData.append('portfolio', document.getElementById('portfolio').value);
+      formData.append('coverLetter', document.getElementById('coverLetter').value);
+      formData.append('availability', document.getElementById('availability').value);
+
+      // Add resume file if selected
+      const resumeFile = document.getElementById('resume').files[0];
+      if (resumeFile) {
+        formData.append('resume', resumeFile);
+      }
 
       try {
         const response = await fetch('https://waldocoin-backend-api.onrender.com/api/careers/apply', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
+          // Don't set Content-Type header - let browser set it with boundary for FormData
+          body: formData
         });
 
         const data = await response.json();
@@ -707,6 +782,16 @@
         if (data.success) {
           alert('🎉 Application submitted successfully! We\'ll be in touch soon!');
           this.reset();
+
+          // Reset file upload display
+          const fileName = document.getElementById('fileName');
+          const fileUploadText = document.querySelector('.file-upload-text');
+          const fileLabel = document.querySelector('.file-upload-label');
+
+          fileName.textContent = '';
+          fileUploadText.textContent = '📄 Drag & drop or click to upload (PDF, DOC, DOCX)';
+          fileLabel.style.borderColor = '#25c2a0';
+          fileLabel.style.background = '#444';
         } else {
           alert('❌ Error: ' + (data.error || 'Failed to submit application'));
         }
