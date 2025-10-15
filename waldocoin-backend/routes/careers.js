@@ -85,15 +85,22 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
       });
     }
 
-    // Create email transporter (using environment variables)
+    // Create email transporter with improved configuration for Render
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false, // true for 465, false for other ports
+      service: 'gmail', // Use Gmail service instead of manual SMTP
       auth: {
         user: process.env.CAREERS_EMAIL_USER || 'support@waldocoin.live',
         pass: process.env.CAREERS_EMAIL_PASS
-      }
+      },
+      // Add connection options for better reliability
+      pool: true,
+      maxConnections: 1,
+      rateDelta: 20000,
+      rateLimit: 5,
+      // Timeout settings
+      connectionTimeout: 60000,
+      greetingTimeout: 30000,
+      socketTimeout: 60000
     });
 
     // Email content
@@ -139,16 +146,43 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
       console.log(`📎 Resume attached: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
     }
 
-    // Send email with error handling
-    console.log(`📧 Attempting to send email to support@waldocoin.live for application from ${fullName}`);
+    // Test connection first, then send email
+    console.log(`📧 Testing SMTP connection...`);
     try {
+      // Verify connection
+      await transporter.verify();
+      console.log('✅ SMTP connection verified successfully');
+
+      // Send email
+      console.log(`📧 Sending email to support@waldocoin.live for application from ${fullName}`);
       const emailResult = await transporter.sendMail(emailOptions);
       console.log(`✅ Career application received from ${fullName} (${email}) for ${position} - Email sent successfully`);
       console.log('📧 Email result:', emailResult.messageId);
     } catch (emailError) {
       console.error('❌ Failed to send email, but application was received:', emailError.message);
       console.error('❌ Email error details:', emailError);
-      // Continue anyway - we don't want to fail the application just because email failed
+
+      // Try alternative approach if Gmail service fails
+      if (emailError.code === 'ETIMEDOUT' || emailError.message.includes('Greeting never received')) {
+        console.log('🔄 Trying alternative SMTP configuration...');
+        try {
+          const altTransporter = nodemailer.createTransporter({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+              user: process.env.CAREERS_EMAIL_USER,
+              pass: process.env.CAREERS_EMAIL_PASS
+            }
+          });
+
+          const altResult = await altTransporter.sendMail(emailOptions);
+          console.log('✅ Email sent successfully using alternative configuration');
+          console.log('📧 Alternative email result:', altResult.messageId);
+        } catch (altError) {
+          console.error('❌ Alternative SMTP also failed:', altError.message);
+        }
+      }
     }
 
     res.json({
