@@ -68,7 +68,30 @@ router.post("/", async (req, res) => {
       (await redis.sCard(`battle:${battleId}:voters:A`)) +
       (await redis.sCard(`battle:${battleId}:voters:B`));
 
-    // WALDO Distribution with new fee structure
+    // Handle no-votes scenario - no fees charged if no one voted
+    if (totalVoters === 0) {
+      console.log(`⚔️ Battle ${battleId} had no votes - no fees charged, no payouts`);
+
+      // Mark battle as completed with no payouts
+      await redis.hset(battleKey, {
+        status: "completed_no_votes",
+        winner: "none",
+        payoutAt: now,
+        voterCount: 0,
+        totalPot: 0,
+        message: "Battle ended with no votes - no fees charged"
+      });
+
+      return res.json({
+        success: true,
+        result: "completed_no_votes",
+        message: "Battle ended with no votes. No fees charged, no payouts made.",
+        totalPot: 0,
+        voterCount: 0
+      });
+    }
+
+    // WALDO Distribution with new fee structure (only if there were votes)
     const pot = 150000 + 75000 + (totalVoters * 30000); // challenger + acceptor + voters
     const burnAmount = Math.floor(pot * 0.005); // 0.5% burned
     const treasuryAmount = Math.floor(pot * 0.025); // 2.5% treasury
