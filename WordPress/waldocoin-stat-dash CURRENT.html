@@ -4021,6 +4021,16 @@
             console.log('🚪 Received global disconnect message - redirecting to homepage');
             localStorage.removeItem('xummWallet');
             localStorage.removeItem('wallet');
+            localStorage.removeItem('waldoWalletSync');
+            window.location.href = 'https://waldocoin.live';
+          }
+
+          // Handle direct force disconnect message
+          if (event.data.type === 'FORCE_DISCONNECT') {
+            console.log(`🚪 Stats Page: Received FORCE_DISCONNECT from ${event.data.source || 'unknown'} - redirecting immediately`);
+            localStorage.removeItem('xummWallet');
+            localStorage.removeItem('wallet');
+            localStorage.removeItem('waldoWalletSync');
             window.location.href = 'https://waldocoin.live';
           }
         });
@@ -4069,6 +4079,16 @@
             } catch (e) {
               console.warn('Failed to parse global disconnect data:', e);
             }
+          }
+
+          // Listen for force logout flag
+          if (e.key === 'waldoForceLogout' && e.newValue) {
+            console.log('🚪 Stats Page: Received force logout signal - redirecting immediately');
+            localStorage.removeItem('xummWallet');
+            localStorage.removeItem('wallet');
+            localStorage.removeItem('waldoWalletSync');
+            localStorage.removeItem('waldoForceLogout'); // Clean up the flag
+            window.location.href = 'https://waldocoin.live';
           }
         });
 
@@ -7152,6 +7172,24 @@
 
       // Initialize cross-subdomain wallet sharing
       setupCrossSubdomainWalletSharing();
+
+      // Add periodic check for logout signals (backup method)
+      setInterval(() => {
+        const forceLogout = localStorage.getItem('waldoForceLogout');
+        if (forceLogout) {
+          const logoutTime = parseInt(forceLogout);
+          const now = Date.now();
+          // If logout signal is recent (within 5 seconds), act on it
+          if (now - logoutTime < 5000) {
+            console.log('🚪 Stats Page: Periodic check found logout signal - redirecting');
+            localStorage.removeItem('xummWallet');
+            localStorage.removeItem('wallet');
+            localStorage.removeItem('waldoWalletSync');
+            localStorage.removeItem('waldoForceLogout');
+            window.location.href = 'https://waldocoin.live';
+          }
+        }
+      }, 1000); // Check every second
     });
 
     // Handle referral link visits

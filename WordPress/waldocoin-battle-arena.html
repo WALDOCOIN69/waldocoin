@@ -575,6 +575,7 @@
       // Clear local wallet data first
       localStorage.removeItem('xummWallet');
       localStorage.removeItem('wallet');
+      localStorage.removeItem('waldoWalletSync');
 
       // 1. Use existing broadcast system to notify all tabs/pages
       broadcastWalletChange(null); // null = disconnected
@@ -602,7 +603,50 @@
         }
       }
 
-      // 4. Force trigger localStorage event manually (some browsers need this)
+      // 4. Direct iframe messaging to stats page (more reliable)
+      try {
+        const statsIframe = document.createElement('iframe');
+        statsIframe.style.display = 'none';
+        statsIframe.src = 'https://stats-page.waldocoin.live';
+        document.body.appendChild(statsIframe);
+
+        statsIframe.onload = () => {
+          try {
+            statsIframe.contentWindow.postMessage({
+              type: 'FORCE_DISCONNECT',
+              source: 'battle-arena',
+              timestamp: Date.now()
+            }, 'https://stats-page.waldocoin.live');
+            console.log('📡 Sent direct message to stats page');
+          } catch (e) {
+            console.warn('Direct iframe messaging failed:', e);
+          }
+
+          // Clean up iframe
+          setTimeout(() => {
+            if (document.body.contains(statsIframe)) {
+              document.body.removeChild(statsIframe);
+            }
+          }, 500);
+        };
+      } catch (e) {
+        console.warn('Iframe creation failed:', e);
+      }
+
+      // 5. Alternative approach: Set a flag and let other pages check it
+      localStorage.setItem('waldoForceLogout', Date.now().toString());
+
+      // 6. Try to directly manipulate other tabs (if same origin)
+      try {
+        // This will work if pages are same origin
+        const allWindows = [];
+        if (window.opener) allWindows.push(window.opener);
+        // Note: Can't access other tabs directly due to security, but localStorage events should work
+      } catch (e) {
+        console.warn('Direct window access failed (expected):', e);
+      }
+
+      // 5. Force trigger localStorage event manually (some browsers need this)
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'waldoGlobalDisconnect',
         newValue: JSON.stringify(disconnectData),
@@ -615,7 +659,7 @@
       // Redirect current page to homepage after brief delay
       setTimeout(() => {
         window.location.href = 'https://waldocoin.live';
-      }, 1000); // Increased delay to ensure messages are sent
+      }, 1500); // Increased delay to ensure messages are sent
     }
 
     // === SHARED AUTHENTICATION ACROSS ECOSYSTEM ===
