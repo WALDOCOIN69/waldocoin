@@ -1026,6 +1026,9 @@
     function checkWalletAndInitialize() {
       console.log('🔍 Checking wallet and initializing...');
 
+      // First test if backend is accessible
+      testBackendConnection();
+
       // Check local wallet first
       let wallet = getWallet();
       console.log('📱 Local wallet check:', wallet);
@@ -1042,6 +1045,19 @@
       // If no local wallet, try to get it from stats page
       console.log('🔄 No local wallet, requesting from stats page...');
       requestWalletFromStatsPage();
+    }
+
+    // Test backend connectivity
+    async function testBackendConnection() {
+      try {
+        console.log('🔍 Testing backend connection...');
+        const response = await fetch(`${baseURL}/api/health`);
+        const data = await response.json();
+        console.log('✅ Backend connection test:', response.status, data);
+      } catch (error) {
+        console.error('❌ Backend connection failed:', error);
+        showToast('Backend connection failed. Please try again later.', 'error');
+      }
     }
 
     // === CROSS-SUBDOMAIN WALLET SYNC ===
