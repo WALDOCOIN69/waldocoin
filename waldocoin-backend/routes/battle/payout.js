@@ -68,69 +68,54 @@ router.post("/", async (req, res) => {
       (await redis.sCard(`battle:${battleId}:voters:A`)) +
       (await redis.sCard(`battle:${battleId}:voters:B`));
 
-    // WALDO Distribution (Whitepaper compliant: 95% distributed, 5% fees)
-    const pot = 100 + 50 + (totalVoters * 5); // challenger + acceptor + voters
-    const distributedAmount = Math.floor(pot * 0.95); // 95% distributed
-    const burnAmount = Math.floor(pot * 0.02); // 2% burned
-    const treasuryAmount = Math.floor(pot * 0.03); // 3% treasury
+    // WALDO Distribution with new fee structure
+    const pot = 150000 + 75000 + (totalVoters * 30000); // challenger + acceptor + voters
+    const burnAmount = Math.floor(pot * 0.005); // 0.5% burned
+    const treasuryAmount = Math.floor(pot * 0.025); // 2.5% treasury
+    const prizePool = pot - burnAmount - treasuryAmount; // 97% for prizes
 
-    // Prize distribution: 65% to winner, 30% to winning voters
-    const posterAmount = Math.floor(distributedAmount * 0.65); // 65% to winner
-    const voterAmount = Math.floor(distributedAmount * 0.30); // 30% to voters
+    // Prize distribution: 55% to winner, 45% to winning voters
+    const posterAmount = Math.floor(prizePool * 0.55); // 55% to winner
+    const voterAmount = Math.floor(prizePool * 0.45); // 45% to voters
     const voterSplit = winningVoters.length ? Math.floor(voterAmount / winningVoters.length) : 0;
 
-    // Payout to meme poster
-    await xummClient.payload.create({
-      txjson: {
-        TransactionType: "Payment",
-        Destination: winnerWallet,
-        Amount: String(posterAmount * 1_000_000),
-        DestinationTag: 881
-      },
-      options: { submit: true }
-    });
+    // Import treasury wallet functionality
+    const { xrpSendWaldo } = await import("../../utils/sendWaldo.js");
 
-    // Payout to voters
-    for (const voter of winningVoters) {
-      await xummClient.payload.create({
-        txjson: {
-          TransactionType: "Payment",
-          Destination: voter,
-          Amount: String(voterSplit * 1_000_000),
-          DestinationTag: 882
-        },
-        options: { submit: true }
-      });
-
-      // Award 2 XP to each voter (whitepaper compliant)
-      await addXP(voter, 2);
+    // Payout to winner from treasury wallet
+    if (posterAmount > 0) {
+      await xrpSendWaldo(winnerWallet, posterAmount);
+      console.log(`💰 Paid ${posterAmount} WLO to winner: ${winnerWallet}`);
     }
 
-    // Burn fee to issuer
-    await xummClient.payload.create({
-      txjson: {
-        TransactionType: "Payment",
-        Destination: process.env.ISSUER_WALLET,
-        Amount: String(burnAmount * 1_000_000),
-        DestinationTag: 999
-      },
-      options: { submit: true }
-    });
+    // Payout to winning voters from treasury wallet
+    for (const voter of winningVoters) {
+      if (voterSplit > 0) {
+        await xrpSendWaldo(voter, voterSplit);
+        console.log(`🗳️ Paid ${voterSplit} WLO to voter: ${voter}`);
+      }
 
-    // Treasury fee to treasury wallet
-    await xummClient.payload.create({
-      txjson: {
-        TransactionType: "Payment",
-        Destination: process.env.TREASURY_WALLET,
-        Amount: String(treasuryAmount * 1_000_000),
-        DestinationTag: 888
-      },
-      options: { submit: true }
-    });
+      // Award XP to each winning voter
+      await addXP(voter, 10); // Increased XP for winning voters
+    }
 
-    // XP rewards (whitepaper compliant)
+    // Burn 0.5% to dead address (black hole)
+    if (burnAmount > 0) {
+      const BURN_ADDRESS = "rrrrrrrrrrrrrrrrrrrrrhoLvTp"; // XRPL black hole address
+      await xrpSendWaldo(BURN_ADDRESS, burnAmount);
+      console.log(`🔥 Burned ${burnAmount} WLO to black hole address`);
+    }
+
+    // Send 2.5% to treasury wallet (r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K)
+    if (treasuryAmount > 0) {
+      const TREASURY_WALLET = "r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K";
+      await xrpSendWaldo(TREASURY_WALLET, treasuryAmount);
+      console.log(`🏦 Sent ${treasuryAmount} WLO to treasury: ${TREASURY_WALLET}`);
+    }
+
+    // XP rewards
     await addXP(winnerWallet, 100); // Winner gets 100 XP
-    await addXP(loserWallet, 25);   // Loser gets 25 XP
+    await addXP(loserWallet, 25);   // Loser gets 25 XP (consolation)
 
     // Mark battle as paid/ended and store results
     await redis.hset(battleKey, {
@@ -138,19 +123,28 @@ router.post("/", async (req, res) => {
       winner,
       payoutAt: now,
       voterCount: winningVoters.length,
-      totalPot: pot
+      totalPot: pot,
+      prizePool,
+      burnAmount,
+      treasuryAmount
     });
+
+    console.log(`⚔️ Battle ${battleId} completed - Winner: ${winner}, Pot: ${pot} WLO`);
 
     return res.json({
       success: true,
       result: "paid",
       winner,
-      pot,
+      winnerWallet,
+      totalPot: pot,
+      prizePool,
       burnAmount,
+      treasuryAmount,
       posterAmount,
       voterAmount,
       voterSplit,
-      votersPaid: winningVoters.length
+      votersPaid: winningVoters.length,
+      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} voters share ${voterAmount} WLO`
     });
 
   } catch (err) {
