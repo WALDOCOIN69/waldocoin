@@ -323,10 +323,6 @@
         <button id="checkWalletBtn" class="button-style" style="margin-top: 10px; background: #666;">
           🔄 Check for Existing Wallet
         </button>
-        <button id="disconnectWalletBtn" class="button-style"
-          style="margin-top: 10px; background: #d32f2f; display: none;">
-          🚪 Disconnect Wallet
-        </button>
         <p style="margin-top: 15px; font-size: 0.9em; color: #888;">
           Already signed in on another WALDOCOIN page? Click "Check for Existing Wallet"
         </p>
@@ -348,6 +344,17 @@
         <a href="https://battle-arena.waldocoin.live/" class="nav-btn active">⚔️ Battle Arena</a>
         <a href="https://nft-gallery.waldocoin.live/" target="_blank" class="nav-btn">🖼️ NFT Collections</a>
         <a href="https://dao-portal.waldocoin.live/" target="_blank" class="nav-btn">🏛️ DAO Portal</a>
+      </div>
+
+      <!-- Wallet Info & Disconnect -->
+      <div style="text-align: center; margin-top: 15px;">
+        <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em; margin-bottom: 10px;">
+          🔗 Wallet: <span id="connectedWallet">Loading...</span>
+        </div>
+        <button id="disconnectWalletBtn" class="button-style"
+          style="background: #d32f2f; font-size: 0.85em; padding: 8px 16px;">
+          🚪 Disconnect Wallet
+        </button>
       </div>
     </div>
 
@@ -690,10 +697,6 @@
       console.trace('Call stack for showWalletConnection:');
       $('walletConnectionScreen').style.display = 'block';
       $('battleDashboard').style.display = 'none';
-
-      // Hide disconnect button when not connected
-      const disconnectBtn = $('disconnectWalletBtn');
-      if (disconnectBtn) disconnectBtn.style.display = 'none';
     }
 
     function showBattleDashboard() {
@@ -702,9 +705,12 @@
       $('walletConnectionScreen').style.display = 'none';
       $('battleDashboard').style.display = 'block';
 
-      // Show disconnect button when connected
-      const disconnectBtn = $('disconnectWalletBtn');
-      if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
+      // Update wallet display
+      const wallet = getWallet();
+      const walletDisplay = $('connectedWallet');
+      if (walletDisplay && wallet) {
+        walletDisplay.textContent = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
+      }
 
       // Force the dashboard to stay visible with a check after 2 seconds
       setTimeout(() => {
