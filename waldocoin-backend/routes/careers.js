@@ -73,7 +73,9 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
 
     // Create email transporter (using environment variables)
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // or your email service
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: process.env.SMTP_PORT || 587,
+      secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.CAREERS_EMAIL_USER || 'support@waldocoin.live',
         pass: process.env.CAREERS_EMAIL_PASS
