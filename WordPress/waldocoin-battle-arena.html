@@ -1026,39 +1026,78 @@
     function checkWalletAndInitialize() {
       console.log('🔍 Checking wallet and initializing...');
 
-      // Check multiple sources for wallet data
+      // Check local wallet first
       let wallet = getWallet();
-      console.log('📱 Direct wallet check:', wallet);
-
-      // Also check if there's recent wallet sync data
-      try {
-        const syncData = localStorage.getItem('waldoWalletSync');
-        console.log('🔄 Sync data:', syncData);
-        if (syncData) {
-          const parsed = JSON.parse(syncData);
-          if (parsed.wallet && !wallet) {
-            console.log('📥 Using sync data wallet:', parsed.wallet);
-            localStorage.setItem('xummWallet', parsed.wallet);
-            wallet = parsed.wallet;
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to parse wallet sync data:', e);
-      }
-
-      console.log('🎯 Final wallet decision:', wallet);
+      console.log('📱 Local wallet check:', wallet);
 
       if (wallet) {
-        console.log('✅ Wallet found, initializing battle arena:', wallet);
+        console.log('✅ Local wallet found:', wallet);
         showBattleDashboard();
-        // Add a small delay before initializing to ensure UI is updated
         setTimeout(() => {
           initializeBattleArena();
         }, 100);
-      } else {
-        console.log('❌ No wallet found, showing connection screen');
-        showWalletConnection();
+        return;
       }
+
+      // If no local wallet, try to get it from stats page
+      console.log('🔄 No local wallet, requesting from stats page...');
+      requestWalletFromStatsPage();
+    }
+
+    // === CROSS-SUBDOMAIN WALLET SYNC ===
+    function requestWalletFromStatsPage() {
+      console.log('📡 Requesting wallet from stats page...');
+
+      // Create hidden iframe to stats page
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://stats-page.waldocoin.live/';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      // Set up message listener
+      const messageHandler = (event) => {
+        if (event.origin !== 'https://stats-page.waldocoin.live') return;
+
+        console.log('📨 Received message from stats page:', event.data);
+
+        if (event.data.type === 'WALLET_RESPONSE') {
+          window.removeEventListener('message', messageHandler);
+          document.body.removeChild(iframe);
+
+          if (event.data.wallet) {
+            console.log('✅ Received wallet from stats page:', event.data.wallet);
+            setWallet(event.data.wallet);
+            showBattleDashboard();
+            setTimeout(() => {
+              initializeBattleArena();
+            }, 100);
+          } else {
+            console.log('❌ No wallet available on stats page');
+            showWalletConnection();
+          }
+        }
+      };
+
+      window.addEventListener('message', messageHandler);
+
+      // Send request after iframe loads
+      iframe.onload = () => {
+        console.log('📤 Sending wallet request to stats page...');
+        iframe.contentWindow.postMessage({
+          type: 'WALLET_REQUEST',
+          origin: 'battle-arena'
+        }, 'https://stats-page.waldocoin.live');
+      };
+
+      // Timeout fallback
+      setTimeout(() => {
+        console.log('⏰ Wallet request timeout, showing connection screen');
+        window.removeEventListener('message', messageHandler);
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+        showWalletConnection();
+      }, 5000);
     }
 
     // === EVENT LISTENERS ===

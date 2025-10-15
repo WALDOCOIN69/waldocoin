@@ -3997,6 +3997,29 @@
         }
       }
 
+      // === CROSS-SUBDOMAIN WALLET SHARING ===
+      function setupCrossSubdomainWalletSharing() {
+        window.addEventListener('message', (event) => {
+          // Only respond to requests from WALDOCOIN subdomains
+          if (!event.origin.includes('waldocoin.live')) return;
+
+          console.log('📨 Received cross-subdomain message:', event.data, 'from:', event.origin);
+
+          if (event.data.type === 'WALLET_REQUEST') {
+            const wallet = getWallet();
+            console.log('📤 Responding with wallet:', wallet, 'to:', event.origin);
+
+            event.source.postMessage({
+              type: 'WALLET_RESPONSE',
+              wallet: wallet,
+              timestamp: Date.now()
+            }, event.origin);
+          }
+        });
+
+        console.log('✅ Cross-subdomain wallet sharing enabled');
+      }
+
       function listenForWalletChanges() {
         // Listen for localStorage changes (cross-tab sync)
         window.addEventListener('storage', function (e) {
@@ -7085,6 +7108,9 @@
       if (referralCode) {
         handleReferralVisit(referralCode);
       }
+
+      // Initialize cross-subdomain wallet sharing
+      setupCrossSubdomainWalletSharing();
     });
 
     // Handle referral link visits
