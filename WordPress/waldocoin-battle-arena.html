@@ -968,15 +968,15 @@
         const res = await fetch(`${baseURL}/api/config/public`);
         const data = await res.json();
         const info = document.getElementById('battleFeeInfo');
-        if (data && data.success && data.config && data.config.battle && info) {
-          const b = data.config.battle;
-          info.textContent = `Fees: Start ${b.startFeeWLO} WLO • Accept ${b.acceptFeeWLO} WLO • Vote ${b.voteFeeWLO} WLO`;
+        if (data && data.success && data.config && info) {
+          const c = data.config;
+          info.textContent = `Fees: Start ${c.battleStartFee.toLocaleString()} WLO • Accept ${c.battleAcceptFee.toLocaleString()} WLO • Vote ${c.battleVoteFee.toLocaleString()} WLO`;
         } else if (info) {
-          info.textContent = 'Battle fees: Start 100 WLO • Accept 50 WLO • Vote 5 WLO';
+          info.textContent = 'Battle fees: Start 150,000 WLO • Accept 75,000 WLO • Vote 30,000 WLO';
         }
       } catch (e) {
         const info = document.getElementById('battleFeeInfo');
-        if (info) info.textContent = 'Battle fees: Start 100 WLO • Accept 50 WLO • Vote 5 WLO';
+        if (info) info.textContent = 'Battle fees: Start 150,000 WLO • Accept 75,000 WLO • Vote 30,000 WLO';
       }
     }
 
