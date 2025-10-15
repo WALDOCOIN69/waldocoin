@@ -54,21 +54,11 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
       });
     }
 
-    // TEMPORARY: Always return success for testing
-    console.log(`✅ TEMP SUCCESS: Application from ${fullName} (${email}) for ${position}`);
-    if (req.file) {
-      console.log(`📎 Resume: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
-    }
-
-    return res.json({
-      success: true,
-      message: 'Application received successfully! (Email functionality temporarily disabled for testing)'
-    });
-
     // Check if email is configured
     console.log('🔍 Email configuration check:');
     console.log('CAREERS_EMAIL_USER:', process.env.CAREERS_EMAIL_USER ? 'SET' : 'NOT SET');
     console.log('CAREERS_EMAIL_PASS:', process.env.CAREERS_EMAIL_PASS ? 'SET' : 'NOT SET');
+    console.log('All env vars:', Object.keys(process.env).filter(key => key.includes('CAREER')));
 
     if (!process.env.CAREERS_EMAIL_PASS) {
       console.log(`📝 Career application received from ${fullName} (${email}) for ${position} - Email not configured, logging only`);
