@@ -45,6 +45,32 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
       });
     }
 
+    // Check if email is configured
+    if (!process.env.CAREERS_EMAIL_PASS) {
+      console.log(`📝 Career application received from ${fullName} (${email}) for ${position} - Email not configured, logging only`);
+
+      // Log the application details
+      console.log('=== CAREER APPLICATION ===');
+      console.log(`Name: ${fullName}`);
+      console.log(`Email: ${email}`);
+      console.log(`Phone: ${phone || 'Not provided'}`);
+      console.log(`Position: ${position}`);
+      console.log(`Experience: ${experience || 'Not provided'}`);
+      console.log(`Skills: ${skills || 'Not provided'}`);
+      console.log(`Portfolio: ${portfolio || 'Not provided'}`);
+      console.log(`Cover Letter: ${coverLetter}`);
+      console.log(`Availability: ${availability || 'Not specified'}`);
+      if (req.file) {
+        console.log(`Resume: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
+      }
+      console.log('========================');
+
+      return res.json({
+        success: true,
+        message: 'Application received successfully! We will review it and get back to you soon.'
+      });
+    }
+
     // Create email transporter (using environment variables)
     const transporter = nodemailer.createTransport({
       service: 'gmail', // or your email service
@@ -97,10 +123,14 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
       console.log(`📎 Resume attached: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
     }
 
-    // Send email
-    await transporter.sendMail(emailOptions);
-
-    console.log(`✅ Career application received from ${fullName} (${email}) for ${position}`);
+    // Send email with error handling
+    try {
+      await transporter.sendMail(emailOptions);
+      console.log(`✅ Career application received from ${fullName} (${email}) for ${position} - Email sent successfully`);
+    } catch (emailError) {
+      console.error('❌ Failed to send email, but application was received:', emailError.message);
+      // Continue anyway - we don't want to fail the application just because email failed
+    }
 
     res.json({
       success: true,
