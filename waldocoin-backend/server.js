@@ -87,20 +87,38 @@ const startServer = async () => {
   // CORS: Allow waldocoin.live and waldo.live domains and subdomains
   const allowedDomains = ["waldocoin.live", "waldo.live", "waldocoin.onrender.com"];
   const corsOriginCheck = (origin) => {
-    if (!origin) return true; // allow curl/local/file://
+    console.log(`🔍 CORS Check: origin="${origin}"`);
+
+    if (!origin) {
+      console.log('✅ CORS: No origin (curl/local) - ALLOWED');
+      return true; // allow curl/local/file://
+    }
 
     // Allow file:// protocol for local development
-    if (origin.startsWith('file://')) return true;
+    if (origin.startsWith('file://')) {
+      console.log('✅ CORS: file:// protocol - ALLOWED');
+      return true;
+    }
 
     // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) return true;
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      console.log('✅ CORS: localhost - ALLOWED');
+      return true;
+    }
 
     try {
       const url = new URL(origin);
-      return allowedDomains.some(domain =>
-        url.hostname === domain || url.hostname.endsWith('.' + domain)
-      );
+      console.log(`🔍 CORS: hostname="${url.hostname}"`);
+      const allowed = allowedDomains.some(domain => {
+        const exactMatch = url.hostname === domain;
+        const subdomainMatch = url.hostname.endsWith('.' + domain);
+        console.log(`🔍 CORS: checking domain="${domain}" exact=${exactMatch} subdomain=${subdomainMatch}`);
+        return exactMatch || subdomainMatch;
+      });
+      console.log(`${allowed ? '✅' : '❌'} CORS: Final decision - ${allowed ? 'ALLOWED' : 'DENIED'}`);
+      return allowed;
     } catch (e) {
+      console.log('❌ CORS: URL parsing error - DENIED', e.message);
       return false;
     }
   };
