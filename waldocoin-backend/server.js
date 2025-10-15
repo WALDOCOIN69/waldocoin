@@ -6,13 +6,13 @@ import rateLimit from "express-rate-limit";
 import './utils/logRedactor.js';
 
 import dotenv from "dotenv";
-import cron from "node-cron";
+// import cron from "node-cron"; // Temporarily disabled for debugging
 import xrpl from "xrpl";
 
 dotenv.config();
 
-import { connectRedis } from "./redisClient.js";
-import { refundExpiredBattles } from "./cron/battleRefunder.js";
+// import { connectRedis } from "./redisClient.js"; // Temporarily disabled for debugging
+// import { refundExpiredBattles } from "./cron/battleRefunder.js"; // Temporarily disabled for debugging
 
 //airdrop
 import airdropRoute from "./routes/airdrop.js";
@@ -72,7 +72,8 @@ import adminClearStakingRoute from "./routes/admin/clearStaking.js";
 
 
 const startServer = async () => {
-  await connectRedis();
+  console.log('🚀 Starting server without Redis for debugging...');
+  // await connectRedis(); // Temporarily disabled for debugging
 
 
   // inside startServer()
@@ -298,15 +299,15 @@ const startServer = async () => {
     }
   });
 
-  app.get("/api/debug/refund", async (_, res) => {
-    await refundExpiredBattles();
-    res.send("✅ Refund logic manually triggered");
-    refundExpiredBattles()
-      .then(() => res.json({ success: true, message: "Manual refund triggered" }))
-      .catch((err) =>
-        res.status(500).json({ success: false, error: err.message })
-      );
-  });
+  // app.get("/api/debug/refund", async (_, res) => {
+  //   await refundExpiredBattles();
+  //   res.send("✅ Refund logic manually triggered");
+  //   refundExpiredBattles()
+  //     .then(() => res.json({ success: true, message: "Manual refund triggered" }))
+  //     .catch((err) =>
+  //       res.status(500).json({ success: false, error: err.message })
+  //     );
+  // }); // Temporarily disabled for debugging
   // Do not log secrets. Only indicate presence and derive public address for validation.
   if (process.env.WALDO_DISTRIBUTOR_SECRET) {
     console.log("Render ENV WALDO_DISTRIBUTOR_SECRET: Loaded");
@@ -386,11 +387,11 @@ const startServer = async () => {
     }
   });
 
-  // ⏱️ Cron Job — Check every 5 min for expired battles
-  cron.schedule("*/5 * * * *", async () => {
-    console.log("🕒 Checking for expired battles...");
-    await refundExpiredBattles();
-  });
+  // ⏱️ Cron Job — Check every 5 min for expired battles - TEMPORARILY DISABLED
+  // cron.schedule("*/5 * * * *", async () => {
+  //   console.log("🕒 Checking for expired battles...");
+  //   await refundExpiredBattles();
+  // });
 
   const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => {
