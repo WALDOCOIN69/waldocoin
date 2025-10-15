@@ -313,7 +313,6 @@
       margin-bottom: 30px;
     }
 
-    .disconnect-btn,
     .connect-btn {
       display: block;
       margin: 0 auto 20px;
@@ -323,10 +322,6 @@
       font-weight: bold;
       cursor: pointer;
       color: white;
-    }
-
-    .disconnect-btn {
-      background: red;
     }
 
     .connect-btn {
@@ -3251,8 +3246,6 @@
       <!-- WELCOME CARD + LINK TWITTER ACCOUNT -->
       <div class="card big-card">
         <div id="walletControls">
-          <button type="button" onclick="logoutWallet()" class="disconnect-btn" id="disconnectBtn"
-            style="display:none;">Disconnect</button>
           <button type="button" onclick="connectWallet()" class="connect-btn" id="connectBtn">Connect Wallet</button>
         </div>
         <p id="walletAddress" class="wallet-address">Wallet: Not Connected</p>
@@ -7009,13 +7002,8 @@
           }
         }
       });
-      function logoutWallet() {
-        localStorage.removeItem("xummWallet");
-        sessionStorage.removeItem("waldoLoginDesktop");
-        updateWalletUI(null);
-        window.location.replace("https://waldocoin.live/?logout=1");
-      }
-      window.logoutWallet = logoutWallet;
+      // === LOGOUT FUNCTION REMOVED ===
+      // No disconnect functionality available
 
       // Connect wallet function
       async function connectWallet() {
@@ -7040,16 +7028,13 @@
       // Update wallet UI based on connection status
       function updateWalletUI(wallet) {
         const connectBtn = document.getElementById('connectBtn');
-        const disconnectBtn = document.getElementById('disconnectBtn');
         const walletAddress = document.getElementById('walletAddress');
 
         if (wallet) {
           connectBtn.style.display = 'none';
-          disconnectBtn.style.display = 'block';
           walletAddress.textContent = `Wallet: ${wallet.slice(0, 6)}...${wallet.slice(-6)}`;
         } else {
           connectBtn.style.display = 'block';
-          disconnectBtn.style.display = 'none';
           walletAddress.textContent = 'Wallet: Not Connected';
         }
       }
