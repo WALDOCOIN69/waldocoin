@@ -22,9 +22,18 @@ const upload = multer({
   }
 });
 
+// Simple test endpoint first
+router.get('/test', (req, res) => {
+  res.json({ success: true, message: 'Careers endpoint is working!' });
+});
+
 // POST /api/careers/apply - Submit job application
 router.post('/apply', upload.single('resume'), async (req, res) => {
   try {
+    console.log('🎯 Careers application received');
+    console.log('Request body:', req.body);
+    console.log('File:', req.file ? `${req.file.originalname} (${req.file.size} bytes)` : 'No file');
+
     const {
       fullName,
       email,
@@ -44,6 +53,17 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
         error: 'Missing required fields'
       });
     }
+
+    // TEMPORARY: Always return success for testing
+    console.log(`✅ TEMP SUCCESS: Application from ${fullName} (${email}) for ${position}`);
+    if (req.file) {
+      console.log(`📎 Resume: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Application received successfully! (Email functionality temporarily disabled for testing)'
+    });
 
     // Check if email is configured
     console.log('🔍 Email configuration check:');
