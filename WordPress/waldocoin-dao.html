@@ -477,44 +477,43 @@
       localStorage.removeItem('xummWallet');
       localStorage.removeItem('wallet');
 
-      // Send disconnect message to all WALDOCOIN subdomains
-      const waldocoinDomains = [
-        'https://stats-page.waldocoin.live',
-        'https://battle-arena.waldocoin.live',
-        'https://presale.waldocoin.live',
-        'https://staking.waldocoin.live',
-        'https://dao.waldocoin.live',
-        'https://marketplace.waldocoin.live'
-      ];
+      // Use localStorage event to notify all tabs/pages (works across all origins)
+      const disconnectData = {
+        action: 'disconnect',
+        source: 'dao',
+        timestamp: Date.now()
+      };
+      localStorage.setItem('waldoGlobalDisconnect', JSON.stringify(disconnectData));
 
-      // Create hidden iframes to send messages to other domains
-      waldocoinDomains.forEach(domain => {
-        if (window.location.origin === domain) return; // Skip current page
-
-        const iframe = document.createElement('iframe');
-        iframe.src = domain;
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-
-        iframe.onload = () => {
-          iframe.contentWindow.postMessage({
-            type: 'GLOBAL_DISCONNECT_REDIRECT',
+      // Use BroadcastChannel for same-origin communication
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const channel = new BroadcastChannel('waldocoin-auth');
+          channel.postMessage({
+            type: 'GLOBAL_DISCONNECT',
+            source: 'dao',
             timestamp: Date.now()
-          }, domain);
+          });
+          console.log('📡 DAO: Sent BroadcastChannel disconnect message');
+        } catch (e) {
+          console.warn('BroadcastChannel failed:', e);
+        }
+      }
 
-          // Clean up iframe after message sent
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 1000);
-        };
-      });
+      // Force trigger localStorage event manually
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'waldoGlobalDisconnect',
+        newValue: JSON.stringify(disconnectData),
+        oldValue: null,
+        storageArea: localStorage
+      }));
 
-      // Redirect current page to homepage after brief delay
+      console.log('🚪 DAO: Global disconnect signals sent, redirecting...');
+
+      // Redirect current page after delay
       setTimeout(() => {
         window.location.href = 'https://waldocoin.live';
-      }, 500);
+      }, 1000);
     }
 
     // Connect wallet function
@@ -743,17 +742,38 @@
       }, 4000);
     }
 
-    // === GLOBAL DISCONNECT LISTENER ===
-    window.addEventListener('message', function (event) {
-      if (!event.origin.includes('waldocoin.live')) return;
-
-      if (event.data.type === 'GLOBAL_DISCONNECT_REDIRECT') {
-        console.log('🚪 DAO: Received global disconnect message - redirecting to homepage');
-        localStorage.removeItem('xummWallet');
-        localStorage.removeItem('wallet');
-        window.location.href = 'https://waldocoin.live';
+    // === GLOBAL DISCONNECT LISTENERS ===
+    // Listen for localStorage events (works across all tabs/origins)
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'waldoGlobalDisconnect' && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data.action === 'disconnect') {
+            console.log(`🚪 DAO: Received global disconnect from ${data.source || 'unknown'} - redirecting to homepage`);
+            localStorage.removeItem('xummWallet');
+            localStorage.removeItem('wallet');
+            localStorage.removeItem('waldoWalletSync');
+            window.location.href = 'https://waldocoin.live';
+          }
+        } catch (e) {
+          console.warn('Failed to parse global disconnect data:', e);
+        }
       }
     });
+
+    // Listen for BroadcastChannel events (same-origin only, but faster)
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('waldocoin-auth');
+      channel.onmessage = function (event) {
+        if (event.data.type === 'GLOBAL_DISCONNECT') {
+          console.log(`🚪 DAO: Received global disconnect via BroadcastChannel from ${event.data.source || 'unknown'} - redirecting to homepage`);
+          localStorage.removeItem('xummWallet');
+          localStorage.removeItem('wallet');
+          localStorage.removeItem('waldoWalletSync');
+          window.location.href = 'https://waldocoin.live';
+        }
+      };
+    }
 
     // === DISCONNECT BUTTON SETUP ===
     document.addEventListener('DOMContentLoaded', function () {

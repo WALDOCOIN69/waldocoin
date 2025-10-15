@@ -4056,9 +4056,14 @@
             try {
               const data = JSON.parse(e.newValue);
               if (data.action === 'disconnect') {
-                console.log('🚪 Stats Page: Received global disconnect - redirecting to homepage');
+                console.log(`🚪 Stats Page: Received global disconnect from ${data.source || 'unknown'} - redirecting to homepage`);
+
+                // Clear all wallet data
                 localStorage.removeItem('xummWallet');
                 localStorage.removeItem('wallet');
+                localStorage.removeItem('waldoWalletSync');
+
+                // Immediate redirect
                 window.location.href = 'https://waldocoin.live';
               }
             } catch (e) {
@@ -4088,9 +4093,14 @@
 
             // Handle global disconnect
             if (event.data.type === 'GLOBAL_DISCONNECT') {
-              console.log('🚪 Stats Page: Received global disconnect via BroadcastChannel - redirecting to homepage');
+              console.log(`🚪 Stats Page: Received global disconnect via BroadcastChannel from ${event.data.source || 'unknown'} - redirecting to homepage`);
+
+              // Clear all wallet data
               localStorage.removeItem('xummWallet');
               localStorage.removeItem('wallet');
+              localStorage.removeItem('waldoWalletSync');
+
+              // Immediate redirect
               window.location.href = 'https://waldocoin.live';
             }
           };

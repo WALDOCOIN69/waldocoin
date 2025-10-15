@@ -570,35 +570,52 @@
     }
 
     function globalDisconnectWallet() {
-      console.log('🚪 Initiating global disconnect...');
+      console.log('🚪 Initiating global disconnect from Battle Arena...');
 
-      // Clear local wallet data
+      // Clear local wallet data first
       localStorage.removeItem('xummWallet');
       localStorage.removeItem('wallet');
 
-      // Use existing broadcast system to notify all tabs/pages
-      // This will trigger the wallet sync listeners on all WALDOCOIN pages
+      // 1. Use existing broadcast system to notify all tabs/pages
       broadcastWalletChange(null); // null = disconnected
 
-      // Also broadcast a specific disconnect message
-      localStorage.setItem('waldoGlobalDisconnect', JSON.stringify({
+      // 2. Send specific disconnect message via localStorage (works across all origins)
+      const disconnectData = {
         action: 'disconnect',
+        source: 'battle-arena',
         timestamp: Date.now()
+      };
+      localStorage.setItem('waldoGlobalDisconnect', JSON.stringify(disconnectData));
+
+      // 3. Use BroadcastChannel for same-origin communication (faster)
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const channel = new BroadcastChannel('waldocoin-auth');
+          channel.postMessage({
+            type: 'GLOBAL_DISCONNECT',
+            source: 'battle-arena',
+            timestamp: Date.now()
+          });
+          console.log('📡 Sent BroadcastChannel disconnect message');
+        } catch (e) {
+          console.warn('BroadcastChannel failed:', e);
+        }
+      }
+
+      // 4. Force trigger localStorage event manually (some browsers need this)
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'waldoGlobalDisconnect',
+        newValue: JSON.stringify(disconnectData),
+        oldValue: null,
+        storageArea: localStorage
       }));
 
-      // Use BroadcastChannel for same-origin communication
-      if (typeof BroadcastChannel !== 'undefined') {
-        const channel = new BroadcastChannel('waldocoin-auth');
-        channel.postMessage({
-          type: 'GLOBAL_DISCONNECT',
-          timestamp: Date.now()
-        });
-      }
+      console.log('🚪 Global disconnect signals sent, redirecting...');
 
       // Redirect current page to homepage after brief delay
       setTimeout(() => {
         window.location.href = 'https://waldocoin.live';
-      }, 500);
+      }, 1000); // Increased delay to ensure messages are sent
     }
 
     // === SHARED AUTHENTICATION ACROSS ECOSYSTEM ===
