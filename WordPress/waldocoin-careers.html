@@ -507,31 +507,31 @@
         <div class="form-row">
           <div class="form-group">
             <label for="firstName">First Name *</label>
-            <input type="text" id="firstName" name="firstName" required>
+            <input type="text" id="firstName" name="firstName" autocomplete="given-name" required>
           </div>
 
           <div class="form-group">
             <label for="lastName">Last Name *</label>
-            <input type="text" id="lastName" name="lastName" required>
+            <input type="text" id="lastName" name="lastName" autocomplete="family-name" required>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="email">Email Address *</label>
-            <input type="email" id="email" name="email" required>
+            <input type="email" id="email" name="email" autocomplete="email" required>
           </div>
 
           <div class="form-group">
             <label for="phone">Phone Number</label>
-            <input type="tel" id="phone" name="phone">
+            <input type="tel" id="phone" name="phone" autocomplete="tel">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="position">Which Meme Role Calls to You? *</label>
-            <select id="position" name="position" required>
+            <select id="position" name="position" autocomplete="organization-title" required>
               <option value="">Pick your destiny...</option>
               <option value="meme-code-wizard">🔥 Meme Code Wizard</option>
               <option value="ui-ux-meme-master">🎨 UI/UX Meme Master</option>
@@ -543,7 +543,7 @@
 
           <div class="form-group">
             <label for="experience">How Long Have You Been Coding/Creating? *</label>
-            <select id="experience" name="experience" required>
+            <select id="experience" name="experience" autocomplete="off" required>
               <option value="">How experienced are you?</option>
               <option value="0-1">🌱 0-1 years (Still Learning)</option>
               <option value="2-3">🚀 2-3 years (Getting Good)</option>
@@ -556,20 +556,20 @@
 
         <div class="form-group">
           <label for="skills">What's Your Superpower? *</label>
-          <textarea id="skills" name="skills"
+          <textarea id="skills" name="skills" autocomplete="off"
             placeholder="Tell us what you're good at! Programming languages, design tools, social media wizardry, etc. Don't be shy! 🚀"
             required></textarea>
         </div>
 
         <div class="form-group">
           <label for="portfolio">Show Us Your Cool Stuff!</label>
-          <textarea id="portfolio" name="portfolio"
+          <textarea id="portfolio" name="portfolio" autocomplete="url"
             placeholder="Drop your GitHub, portfolio, LinkedIn, Twitter, or anything that shows off your work! We love seeing what you've built 🎨"></textarea>
         </div>
 
         <div class="form-group">
           <label for="coverLetter">Why Do You Want to Join Our Meme Empire? *</label>
-          <textarea id="coverLetter" name="coverLetter"
+          <textarea id="coverLetter" name="coverLetter" autocomplete="off"
             placeholder="Tell us your story! Why WALDOCOIN? What gets you excited about memes and crypto? What would you bring to our chaotic but awesome team? �"
             required></textarea>
         </div>
@@ -589,7 +589,7 @@
 
         <div class="form-group">
           <label for="availability">When Can You Start Making Memes With Us?</label>
-          <select id="availability" name="availability">
+          <select id="availability" name="availability" autocomplete="off">
             <option value="">When are you free?</option>
             <option value="immediately">🏃 Right Now! (Let's go!)</option>
             <option value="2-weeks">📅 2 weeks (Need to quit my boring job)</option>
