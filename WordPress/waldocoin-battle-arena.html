@@ -570,118 +570,31 @@
     }
 
     function globalDisconnectWallet() {
-      console.log('🚪 Initiating global disconnect from Battle Arena...');
+      console.log('🚪 SIMPLE APPROACH: Global disconnect from Battle Arena...');
 
-      // Clear local wallet data first
+      // SIMPLE SOLUTION: Just clear wallet and set a simple flag
       localStorage.removeItem('xummWallet');
       localStorage.removeItem('wallet');
       localStorage.removeItem('waldoWalletSync');
 
-      // 1. Use existing broadcast system to notify all tabs/pages
-      broadcastWalletChange(null); // null = disconnected
+      // Set a simple logout flag with current timestamp
+      localStorage.setItem('WALDO_LOGGED_OUT', Date.now().toString());
 
-      // 2. Send specific disconnect message via localStorage (works across all origins)
-      const disconnectData = {
-        action: 'disconnect',
-        source: 'battle-arena',
-        timestamp: Date.now()
-      };
-      localStorage.setItem('waldoGlobalDisconnect', JSON.stringify(disconnectData));
-
-      // 3. Use BroadcastChannel for same-origin communication (faster)
+      // Try simple BroadcastChannel message
       if (typeof BroadcastChannel !== 'undefined') {
         try {
           const channel = new BroadcastChannel('waldocoin-auth');
-          channel.postMessage({
-            type: 'GLOBAL_DISCONNECT',
-            source: 'battle-arena',
-            timestamp: Date.now()
-          });
-          console.log('📡 Sent BroadcastChannel disconnect message');
+          channel.postMessage({ type: 'SIMPLE_LOGOUT' });
+          console.log('📡 Sent simple logout via BroadcastChannel');
         } catch (e) {
           console.warn('BroadcastChannel failed:', e);
         }
       }
 
-      // 4. Direct iframe messaging to stats page (more reliable)
-      try {
-        const statsIframe = document.createElement('iframe');
-        statsIframe.style.display = 'none';
-        statsIframe.src = 'https://stats-page.waldocoin.live';
-        document.body.appendChild(statsIframe);
+      console.log('🚪 Wallet cleared and logout flag set. Redirecting...');
 
-        statsIframe.onload = () => {
-          try {
-            statsIframe.contentWindow.postMessage({
-              type: 'FORCE_DISCONNECT',
-              source: 'battle-arena',
-              timestamp: Date.now()
-            }, 'https://stats-page.waldocoin.live');
-            console.log('📡 Sent direct message to stats page');
-          } catch (e) {
-            console.warn('Direct iframe messaging failed:', e);
-          }
-
-          // Clean up iframe
-          setTimeout(() => {
-            if (document.body.contains(statsIframe)) {
-              document.body.removeChild(statsIframe);
-            }
-          }, 500);
-        };
-      } catch (e) {
-        console.warn('Iframe creation failed:', e);
-      }
-
-      // 5. Alternative approach: Set multiple flags and let other pages check them
-      localStorage.setItem('waldoForceLogout', Date.now().toString());
-      localStorage.setItem('waldoLogoutSignal', 'true');
-      localStorage.setItem('waldoLogoutTime', Date.now().toString());
-
-      // 6. Try to directly manipulate other tabs (if same origin)
-      try {
-        // This will work if pages are same origin
-        const allWindows = [];
-        if (window.opener) allWindows.push(window.opener);
-        // Note: Can't access other tabs directly due to security, but localStorage events should work
-      } catch (e) {
-        console.warn('Direct window access failed (expected):', e);
-      }
-
-      // 5. Force trigger localStorage event manually (some browsers need this)
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'waldoGlobalDisconnect',
-        newValue: JSON.stringify(disconnectData),
-        oldValue: null,
-        storageArea: localStorage
-      }));
-
-      console.log('🚪 Global disconnect signals sent, redirecting...');
-
-      // Final attempt: Try to open stats page in a popup to force logout
-      try {
-        const popup = window.open('https://stats-page.waldocoin.live', '_blank', 'width=1,height=1,left=-1000,top=-1000');
-        if (popup) {
-          setTimeout(() => {
-            try {
-              popup.postMessage({
-                type: 'FORCE_LOGOUT_NOW',
-                source: 'battle-arena'
-              }, 'https://stats-page.waldocoin.live');
-              popup.close();
-            } catch (e) {
-              console.warn('Popup messaging failed:', e);
-            }
-          }, 1000);
-        }
-      } catch (e) {
-        console.warn('Popup creation failed:', e);
-      }
-
-      // Redirect current page to homepage after brief delay
-      setTimeout(() => {
-        window.location.href = 'https://waldocoin.live';
-      }, 2000); // Increased delay to ensure all methods are tried
+      // Redirect to homepage
+      window.location.href = 'https://waldocoin.live';
     }
 
     // === SHARED AUTHENTICATION ACROSS ECOSYSTEM ===

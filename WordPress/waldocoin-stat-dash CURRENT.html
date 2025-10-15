@@ -4073,33 +4073,10 @@
             }
           }
 
-          // Listen for global disconnect messages
-          if (e.key === 'waldoGlobalDisconnect' && e.newValue) {
-            try {
-              const data = JSON.parse(e.newValue);
-              if (data.action === 'disconnect') {
-                console.log(`🚪 Stats Page: Received global disconnect from ${data.source || 'unknown'} - redirecting to homepage`);
-
-                // Clear all wallet data
-                localStorage.removeItem('xummWallet');
-                localStorage.removeItem('wallet');
-                localStorage.removeItem('waldoWalletSync');
-
-                // Immediate redirect
-                window.location.href = 'https://waldocoin.live';
-              }
-            } catch (e) {
-              console.warn('Failed to parse global disconnect data:', e);
-            }
-          }
-
-          // Listen for force logout flag
-          if (e.key === 'waldoForceLogout' && e.newValue) {
-            console.log('🚪 Stats Page: Received force logout signal - redirecting immediately');
-            localStorage.removeItem('xummWallet');
-            localStorage.removeItem('wallet');
-            localStorage.removeItem('waldoWalletSync');
-            localStorage.removeItem('waldoForceLogout'); // Clean up the flag
+          // Simple logout flag detection
+          if (e.key === 'WALDO_LOGGED_OUT' && e.newValue) {
+            console.log('🚪 Stats Page: Detected logout flag via storage event - redirecting');
+            localStorage.removeItem('WALDO_LOGGED_OUT');
             window.location.href = 'https://waldocoin.live';
           }
         });
@@ -4123,16 +4100,9 @@
               }
             }
 
-            // Handle global disconnect
-            if (event.data.type === 'GLOBAL_DISCONNECT') {
-              console.log(`🚪 Stats Page: Received global disconnect via BroadcastChannel from ${event.data.source || 'unknown'} - redirecting to homepage`);
-
-              // Clear all wallet data
-              localStorage.removeItem('xummWallet');
-              localStorage.removeItem('wallet');
-              localStorage.removeItem('waldoWalletSync');
-
-              // Immediate redirect
+            // Simple logout detection via BroadcastChannel
+            if (event.data.type === 'SIMPLE_LOGOUT') {
+              console.log('🚪 Stats Page: Received simple logout via BroadcastChannel - redirecting');
               window.location.href = 'https://waldocoin.live';
             }
           };
@@ -7185,117 +7155,56 @@
       // Initialize cross-subdomain wallet sharing
       setupCrossSubdomainWalletSharing();
 
-      // Add aggressive logout detection methods
+      // SIMPLE SOLUTION: Check for logout flag periodically and on events
 
-      // Method 1: Frequent periodic check for logout signals
-      setInterval(() => {
-        // Check multiple logout signals
-        const forceLogout = localStorage.getItem('waldoForceLogout');
-        const logoutSignal = localStorage.getItem('waldoLogoutSignal');
-        const logoutTime = localStorage.getItem('waldoLogoutTime');
-
-        if (forceLogout || logoutSignal || logoutTime) {
-          let shouldLogout = false;
-
-          if (logoutSignal === 'true') {
-            console.log('🚪 Stats Page: Found logout signal flag - redirecting');
-            shouldLogout = true;
-          }
-
-          if (forceLogout) {
-            const time = parseInt(forceLogout);
-            const now = Date.now();
-            if (now - time < 30000) { // 30 second window
-              console.log('🚪 Stats Page: Found force logout timestamp - redirecting');
-              shouldLogout = true;
-            }
-          }
-
-          if (logoutTime) {
-            const time = parseInt(logoutTime);
-            const now = Date.now();
-            if (now - time < 30000) { // 30 second window
-              console.log('🚪 Stats Page: Found logout time signal - redirecting');
-              shouldLogout = true;
-            }
-          }
-
-          if (shouldLogout) {
-            localStorage.removeItem('xummWallet');
-            localStorage.removeItem('wallet');
-            localStorage.removeItem('waldoWalletSync');
-            localStorage.removeItem('waldoForceLogout');
-            localStorage.removeItem('waldoLogoutSignal');
-            localStorage.removeItem('waldoLogoutTime');
-            window.location.href = 'https://waldocoin.live';
-          }
-        }
-
-        // Method 2: Check if wallet was cleared by another page
+      function checkLogoutStatus() {
+        const logoutFlag = localStorage.getItem('WALDO_LOGGED_OUT');
         const currentWallet = localStorage.getItem('xummWallet');
-        if (!currentWallet && window.walletWasConnected) {
-          console.log('🚪 Stats Page: Wallet was cleared by another page - redirecting');
-          window.location.href = 'https://waldocoin.live';
-        }
-      }, 500); // Check every 500ms for faster detection
 
-      // Method 3: Check when page becomes visible/focused
+        // If logout flag exists and is recent (within 1 minute)
+        if (logoutFlag) {
+          const logoutTime = parseInt(logoutFlag);
+          const now = Date.now();
+          if (now - logoutTime < 60000) { // 1 minute window
+            console.log('🚪 Stats Page: Found logout flag - redirecting to homepage');
+            localStorage.removeItem('WALDO_LOGGED_OUT'); // Clean up flag
+            window.location.href = 'https://waldocoin.live';
+            return;
+          }
+        }
+
+        // If wallet was connected but now it's gone, redirect
+        if (!currentWallet && window.statsPageWalletWasConnected) {
+          console.log('🚪 Stats Page: Wallet was cleared - redirecting to homepage');
+          window.location.href = 'https://waldocoin.live';
+          return;
+        }
+
+        // Track wallet connection state
+        if (currentWallet) {
+          window.statsPageWalletWasConnected = true;
+        }
+      }
+
+      // Check every 2 seconds
+      setInterval(checkLogoutStatus, 2000);
+
+      // Check when page becomes visible
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
-          console.log('🔍 Stats Page: Became visible, checking wallet status...');
-          const forceLogout = localStorage.getItem('waldoForceLogout');
-          const currentWallet = localStorage.getItem('xummWallet');
-
-          if (forceLogout) {
-            const logoutTime = parseInt(forceLogout);
-            const now = Date.now();
-            if (now - logoutTime < 30000) { // 30 second window
-              console.log('🚪 Stats Page: Found logout signal on visibility change - redirecting');
-              localStorage.removeItem('xummWallet');
-              localStorage.removeItem('wallet');
-              localStorage.removeItem('waldoWalletSync');
-              localStorage.removeItem('waldoForceLogout');
-              window.location.href = 'https://waldocoin.live';
-            }
-          }
-
-          if (!currentWallet && window.walletWasConnected) {
-            console.log('🚪 Stats Page: Wallet cleared detected on visibility change - redirecting');
-            window.location.href = 'https://waldocoin.live';
-          }
+          console.log('🔍 Stats Page: Became visible, checking logout status...');
+          checkLogoutStatus();
         }
       });
 
-      // Method 4: Check on window focus
+      // Check when window gets focus
       window.addEventListener('focus', () => {
-        console.log('🔍 Stats Page: Window focused, checking wallet status...');
-        const forceLogout = localStorage.getItem('waldoForceLogout');
-        const currentWallet = localStorage.getItem('xummWallet');
-
-        if (forceLogout) {
-          const logoutTime = parseInt(forceLogout);
-          const now = Date.now();
-          if (now - logoutTime < 30000) {
-            console.log('🚪 Stats Page: Found logout signal on focus - redirecting');
-            localStorage.removeItem('xummWallet');
-            localStorage.removeItem('wallet');
-            localStorage.removeItem('waldoWalletSync');
-            localStorage.removeItem('waldoForceLogout');
-            window.location.href = 'https://waldocoin.live';
-          }
-        }
-
-        if (!currentWallet && window.walletWasConnected) {
-          console.log('🚪 Stats Page: Wallet cleared detected on focus - redirecting');
-          window.location.href = 'https://waldocoin.live';
-        }
+        console.log('🔍 Stats Page: Got focus, checking logout status...');
+        checkLogoutStatus();
       });
 
-      // Track if wallet was connected
-      const initialWallet = localStorage.getItem('xummWallet');
-      if (initialWallet) {
-        window.walletWasConnected = true;
-      }
+      // Initial check
+      checkLogoutStatus();
     });
 
     // Handle referral link visits
