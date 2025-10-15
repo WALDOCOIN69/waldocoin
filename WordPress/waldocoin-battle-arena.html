@@ -368,9 +368,6 @@
               <img alt="Meme 1" class="meme-thumb" id="meme1Img"
                 src="https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png">
             </a>
-            <p id="battleFeeInfo" class="twitter-link-status" style="margin-top:8px;">
-              Loading battle fees…
-            </p>
             <button type="button" onclick="voteBattle('meme1')" class="button-style" id="voteMeme1Btn">
               Vote for Meme 1 (5 WALDO)
             </button>
@@ -381,6 +378,13 @@
             <input id="memeTweetId" onblur="extractTweetId(this.value)"
               placeholder="Paste Meme Tweet Link (e.g. https://x.com/user/status/1234567890)" class="margin-bottom-10"
               type="text">
+
+            <!-- Battle Fees Info - Centered in Controls -->
+            <p id="battleFeeInfo" class="twitter-link-status"
+              style="text-align: center; margin: 10px 0; font-size: 0.9rem; color: #666;">
+              Loading battle fees…
+            </p>
+
             <button id="start-battle-btn" type="button" class="button-style">
               🧠 Start New Battle (100 WALDO)
             </button>
