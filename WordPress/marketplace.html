@@ -607,6 +607,18 @@
       // TODO: Implement favorite functionality
       console.log('Favorited NFT:', listingId);
     }
+
+    // === GLOBAL DISCONNECT LISTENER ===
+    window.addEventListener('message', function (event) {
+      if (!event.origin.includes('waldocoin.live')) return;
+
+      if (event.data.type === 'GLOBAL_DISCONNECT_REDIRECT') {
+        console.log('🚪 Marketplace: Received global disconnect message - redirecting to homepage');
+        localStorage.removeItem('xummWallet');
+        localStorage.removeItem('wallet');
+        window.location.href = 'https://waldocoin.live';
+      }
+    });
   </script>
 
 </body>

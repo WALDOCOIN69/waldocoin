@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title>WALDOcoin DAO - Decentralized Governance</title>
   <style>
-    html, body {
+    html,
+    body {
       font-family: 'Inter', sans-serif;
       background-image: url("https://waldocoin.live/wp-content/uploads/2025/05/1737843965137.jpg") !important;
       background-color: #000 !important;
@@ -224,7 +226,8 @@
       margin-bottom: 8px;
     }
 
-    .form-input, .form-textarea {
+    .form-input,
+    .form-textarea {
       width: 100%;
       padding: 12px;
       background: #222;
@@ -235,7 +238,8 @@
       box-sizing: border-box;
     }
 
-    .form-input:focus, .form-textarea:focus {
+    .form-input:focus,
+    .form-textarea:focus {
       outline: none;
       border-color: #25c2a0;
       box-shadow: 0 0 8px rgba(37, 194, 160, 0.2);
@@ -318,22 +322,22 @@
       .dao-title {
         font-size: 2rem;
       }
-      
+
       .nav-buttons {
         flex-direction: column;
         align-items: center;
       }
-      
+
       .dao-stats {
         grid-template-columns: 1fr;
       }
-      
+
       .proposal-meta {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
       }
-      
+
       .vote-buttons {
         justify-content: center;
       }
@@ -345,7 +349,7 @@
   <div class="dao-header">
     <h1 class="dao-title">🗳️ WALDOcoin DAO</h1>
     <p class="dao-subtitle">Decentralized Governance & Community Voting</p>
-    
+
     <div class="nav-buttons">
       <a href="/" class="nav-btn">🏠 Home</a>
       <a href="/stats" class="nav-btn">📊 Stats</a>
@@ -363,7 +367,7 @@
 
     <!-- DAO Content (hidden until wallet connected) -->
     <div id="daoContent" style="display: none;">
-      
+
       <!-- DAO Statistics -->
       <div class="dao-card">
         <h2>📈 DAO Statistics</h2>
@@ -401,14 +405,16 @@
         <div class="create-proposal-form">
           <div class="form-group">
             <label class="form-label" for="proposalTitle">Proposal Title</label>
-            <input type="text" id="proposalTitle" class="form-input" placeholder="Enter proposal title..." maxlength="100">
+            <input type="text" id="proposalTitle" class="form-input" placeholder="Enter proposal title..."
+              maxlength="100">
           </div>
-          
+
           <div class="form-group">
             <label class="form-label" for="proposalDescription">Description</label>
-            <textarea id="proposalDescription" class="form-textarea" placeholder="Describe your proposal in detail..." maxlength="1000"></textarea>
+            <textarea id="proposalDescription" class="form-textarea" placeholder="Describe your proposal in detail..."
+              maxlength="1000"></textarea>
           </div>
-          
+
           <div class="form-group">
             <label class="form-label" for="proposalDuration">Voting Duration (days)</label>
             <select id="proposalDuration" class="form-input">
@@ -417,7 +423,7 @@
               <option value="30">30 days</option>
             </select>
           </div>
-          
+
           <button class="submit-btn" onclick="createProposal()">🚀 Submit Proposal</button>
         </div>
       </div>
@@ -427,20 +433,20 @@
 
   <script>
     const baseURL = 'https://waldocoin.live';
-    
+
     // Utility functions
     function $(id) { return document.getElementById(id); }
     function getWallet() { return localStorage.getItem("xummWallet") || null; }
-    
+
     // Check wallet connection on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const wallet = getWallet();
       if (wallet) {
         showDAOContent();
         loadDAOData();
       }
     });
-    
+
     // Connect wallet function
     async function connectWallet() {
       // This should integrate with your existing wallet connection system
@@ -448,7 +454,7 @@
       try {
         // In a real implementation, this would trigger XUMM/Xaman connection
         showToast("Please connect your wallet through the main site first", "info");
-        
+
         // Check if wallet is already connected
         const wallet = getWallet();
         if (wallet) {
@@ -459,13 +465,13 @@
         showToast("Failed to connect wallet", "error");
       }
     }
-    
+
     // Show DAO content after wallet connection
     function showDAOContent() {
       $('walletCheck').style.display = 'none';
       $('daoContent').style.display = 'block';
     }
-    
+
     // Load DAO data
     async function loadDAOData() {
       await Promise.all([
@@ -473,13 +479,13 @@
         loadProposals()
       ]);
     }
-    
+
     // Load DAO statistics
     async function loadDAOStats() {
       try {
         const response = await fetch(`${baseURL}/api/dao/stats`);
         const data = await response.json();
-        
+
         if (data.success) {
           $('totalProposals').textContent = data.stats.totalProposals || 0;
           $('activeProposals').textContent = data.stats.activeProposals || 0;
@@ -490,15 +496,15 @@
         console.error('Failed to load DAO stats:', error);
       }
     }
-    
+
     // Load proposals
     async function loadProposals() {
       const container = $('proposalsContainer');
-      
+
       try {
         const response = await fetch(`${baseURL}/api/dao/proposals`);
         const data = await response.json();
-        
+
         if (data.success && data.proposals && data.proposals.length > 0) {
           container.innerHTML = data.proposals.map(proposal => `
             <div class="proposal-card">
@@ -529,7 +535,7 @@
         container.innerHTML = '<div class="error">Failed to load proposals. Please try again later.</div>';
       }
     }
-    
+
     // Vote on proposal
     async function voteOnProposal(proposalId, vote) {
       const wallet = getWallet();
@@ -537,7 +543,7 @@
         showToast("Please connect your wallet first", "error");
         return;
       }
-      
+
       try {
         const response = await fetch(`${baseURL}/api/dao/vote`, {
           method: 'POST',
@@ -550,9 +556,9 @@
             vote: vote
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           showToast("Vote cast successfully!", "success");
           loadProposals(); // Refresh proposals
@@ -565,7 +571,7 @@
         showToast("Failed to cast vote. Please try again.", "error");
       }
     }
-    
+
     // Create new proposal
     async function createProposal() {
       const wallet = getWallet();
@@ -573,16 +579,16 @@
         showToast("Please connect your wallet first", "error");
         return;
       }
-      
+
       const title = $('proposalTitle').value.trim();
       const description = $('proposalDescription').value.trim();
       const duration = parseInt($('proposalDuration').value);
-      
+
       if (!title || !description) {
         showToast("Please fill in all fields", "error");
         return;
       }
-      
+
       try {
         const response = await fetch(`${baseURL}/api/dao/create`, {
           method: 'POST',
@@ -596,17 +602,17 @@
             duration: duration
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           showToast("Proposal created successfully!", "success");
-          
+
           // Clear form
           $('proposalTitle').value = '';
           $('proposalDescription').value = '';
           $('proposalDuration').value = '7';
-          
+
           // Refresh data
           loadProposals();
           loadDAOStats();
@@ -618,7 +624,7 @@
         showToast("Failed to create proposal. Please try again.", "error");
       }
     }
-    
+
     // Toast notification system
     function showToast(message, type = 'info') {
       // Create toast element
@@ -637,9 +643,9 @@
         word-wrap: break-word;
         transition: all 0.3s ease;
       `;
-      
+
       // Set background color based on type
-      switch(type) {
+      switch (type) {
         case 'success':
           toast.style.background = '#28a745';
           break;
@@ -651,10 +657,10 @@
           toast.style.background = '#17a2b8';
           break;
       }
-      
+
       toast.textContent = message;
       document.body.appendChild(toast);
-      
+
       // Remove toast after 4 seconds
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -666,11 +672,24 @@
         }, 300);
       }, 4000);
     }
-    
+
+    // === GLOBAL DISCONNECT LISTENER ===
+    window.addEventListener('message', function (event) {
+      if (!event.origin.includes('waldocoin.live')) return;
+
+      if (event.data.type === 'GLOBAL_DISCONNECT_REDIRECT') {
+        console.log('🚪 DAO: Received global disconnect message - redirecting to homepage');
+        localStorage.removeItem('xummWallet');
+        localStorage.removeItem('wallet');
+        window.location.href = 'https://waldocoin.live';
+      }
+    });
+
     // Make functions globally available
     window.connectWallet = connectWallet;
     window.voteOnProposal = voteOnProposal;
     window.createProposal = createProposal;
   </script>
 </body>
+
 </html>

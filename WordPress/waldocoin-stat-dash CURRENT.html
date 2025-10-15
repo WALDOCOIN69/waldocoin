@@ -4015,6 +4015,14 @@
               timestamp: Date.now()
             }, event.origin);
           }
+
+          // Handle global disconnect message
+          if (event.data.type === 'GLOBAL_DISCONNECT_REDIRECT') {
+            console.log('🚪 Received global disconnect message - redirecting to homepage');
+            localStorage.removeItem('xummWallet');
+            localStorage.removeItem('wallet');
+            window.location.href = 'https://waldocoin.live';
+          }
         });
 
         console.log('✅ Cross-subdomain wallet sharing enabled');
