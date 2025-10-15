@@ -607,70 +607,36 @@
 
   <script>
     // Remove any WordPress navigation text that might appear
+    // Optimized function with performance improvements
     function removeWordPressNavigation() {
-      // List of navigation text that might appear
-      const navTexts = [
-        'WHITEPAPER',
-        'ROADMAP',
-        'MEET THE TEAM',
-        'TERMS AND CONDITIONS',
-        'PRIVACY POLICY',
-        'KYC-VERIFICATION',
-        'CAREERS'
-      ];
+      // Skip if already processed
+      if (document.body.dataset.navCleaned === 'true') return;
 
-      // Remove any text nodes that contain these navigation items
-      const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-      );
-
-      const textNodes = [];
-      let node;
-      while (node = walker.nextNode()) {
-        textNodes.push(node);
-      }
-
-      textNodes.forEach(textNode => {
-        const text = textNode.textContent.trim();
-        if (navTexts.some(navText => text.includes(navText))) {
-          // Remove the text node or hide its parent
-          if (textNode.parentNode) {
-            textNode.parentNode.style.display = 'none';
-            textNode.parentNode.style.visibility = 'hidden';
-            textNode.parentNode.style.position = 'absolute';
-            textNode.parentNode.style.left = '-9999px';
-          }
+      // Use CSS to hide navigation elements efficiently
+      const style = document.createElement('style');
+      style.textContent = `
+        .menu, .nav, .navigation, .navbar,
+        .wp-nav-menu, .main-navigation, .primary-navigation,
+        .site-navigation, .header-navigation, .menu-primary,
+        .breadcrumb, .breadcrumbs {
+          display: none !important;
+          visibility: hidden !important;
+          position: absolute !important;
+          left: -9999px !important;
         }
-      });
+      `;
+      document.head.appendChild(style);
 
-      // Also hide any elements that might contain navigation
-      const selectors = [
-        '.menu', '.nav', '.navigation', '.navbar',
-        '.wp-nav-menu', '.main-navigation', '.primary-navigation',
-        '.site-navigation', '.header-navigation', '.menu-primary',
-        '.breadcrumb', '.breadcrumbs'
-      ];
-
-      selectors.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
-          el.style.display = 'none';
-          el.style.visibility = 'hidden';
-          el.style.position = 'absolute';
-          el.style.left = '-9999px';
-        });
-      });
+      // Mark as processed to avoid repeated execution
+      document.body.dataset.navCleaned = 'true';
     }
 
     // Run immediately and after DOM loads
     removeWordPressNavigation();
     document.addEventListener('DOMContentLoaded', removeWordPressNavigation);
 
-    // Run again after a short delay in case WordPress injects content later
-    setTimeout(removeWordPressNavigation, 1000);
+    // Run again after a shorter delay (optimized)
+    setTimeout(removeWordPressNavigation, 100);
 
     // === FILE UPLOAD HANDLING ===
     document.addEventListener('DOMContentLoaded', function () {
@@ -731,13 +697,16 @@
             fileLabel.style.borderColor = '#ff5252';
             fileLabel.style.background = '#4a2a2a';
             fileUploadText.textContent = '❌ Invalid file type! Please use PDF, DOC, or DOCX';
+            // Use requestAnimationFrame for better performance
             setTimeout(() => {
-              if (!fileInput.files[0]) {
-                fileLabel.style.borderColor = '#25c2a0';
-                fileLabel.style.background = '#444';
-                fileUploadText.textContent = '📄 Drag & drop or click to upload (PDF, DOC, DOCX)';
-              }
-            }, 3000);
+              requestAnimationFrame(() => {
+                if (!fileInput.files[0]) {
+                  fileLabel.style.borderColor = '#25c2a0';
+                  fileLabel.style.background = '#444';
+                  fileUploadText.textContent = '📄 Drag & drop or click to upload (PDF, DOC, DOCX)';
+                }
+              });
+            }, 2000);
           }
         }
       });
