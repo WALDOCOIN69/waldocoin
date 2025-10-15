@@ -13,9 +13,9 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Admin-Key');
-  
+
   console.log(`📡 ${req.method} ${req.path} from ${req.get('origin') || 'unknown'}`);
-  
+
   if (req.method === 'OPTIONS') {
     console.log('✅ Handling OPTIONS preflight');
     res.sendStatus(200);
@@ -81,11 +81,11 @@ app.get("/api/config/public", (req, res) => {
   res.json({
     success: true,
     config: {
-      battleStartFee: 100,
-      battleAcceptFee: 50,
-      battleVoteFee: 5
+      battleStartFee: 150000,  // ~4.5 XRP
+      battleAcceptFee: 75000,  // ~2.25 XRP
+      battleVoteFee: 15000     // ~0.45 XRP
     },
-    message: "Minimal server - mock configuration"
+    message: "Updated battle fees - Start: 150k WLO (~4.5 XRP), Accept: 75k WLO (~2.25 XRP), Vote: 15k WLO (~0.45 XRP)"
   });
 });
 
