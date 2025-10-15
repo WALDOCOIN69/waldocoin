@@ -1105,34 +1105,10 @@
       // Initialize shared authentication listener
       listenForWalletChanges();
 
-      // Check for wallet multiple times to catch cross-tab sync
-      let checkAttempts = 0;
-      const maxAttempts = 10;
+      // Cross-subdomain wallet detection is now handled by checkWalletAndInitialize()
 
-      function checkWalletRepeatedly() {
-        checkAttempts++;
-        console.log(`🔄 Wallet check attempt ${checkAttempts}/${maxAttempts}`);
-
-        const wallet = localStorage.getItem('xummWallet');
-        if (wallet) {
-          console.log('✅ Wallet found on attempt', checkAttempts, ':', wallet);
-          showBattleDashboard();
-          setTimeout(() => {
-            initializeBattleArena();
-          }, 100);
-          return;
-        }
-
-        if (checkAttempts < maxAttempts) {
-          setTimeout(checkWalletRepeatedly, 500);
-        } else {
-          console.log('❌ No wallet found after', maxAttempts, 'attempts');
-          showWalletConnection();
-        }
-      }
-
-      // Start checking immediately, then repeatedly
-      checkWalletRepeatedly();
+      // Start cross-subdomain wallet detection
+      checkWalletAndInitialize();
 
       // Connect wallet button
       const connectBtn = document.getElementById('connectWalletBtn');
