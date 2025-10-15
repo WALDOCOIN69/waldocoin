@@ -83,9 +83,9 @@ app.get("/api/config/public", (req, res) => {
     config: {
       battleStartFee: 150000,  // ~4.5 XRP
       battleAcceptFee: 75000,  // ~2.25 XRP
-      battleVoteFee: 15000     // ~0.45 XRP
+      battleVoteFee: 30000     // ~0.9 XRP (20% of start fee)
     },
-    message: "Updated battle fees - Start: 150k WLO (~4.5 XRP), Accept: 75k WLO (~2.25 XRP), Vote: 15k WLO (~0.45 XRP)"
+    message: "Updated battle fees - Start: 150k WLO (~4.5 XRP), Accept: 75k WLO (~2.25 XRP), Vote: 30k WLO (~0.9 XRP)"
   });
 });
 
