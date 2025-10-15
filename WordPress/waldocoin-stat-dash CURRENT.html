@@ -4050,6 +4050,21 @@
               console.warn('Failed to parse wallet sync data:', e);
             }
           }
+
+          // Listen for global disconnect messages
+          if (e.key === 'waldoGlobalDisconnect' && e.newValue) {
+            try {
+              const data = JSON.parse(e.newValue);
+              if (data.action === 'disconnect') {
+                console.log('🚪 Stats Page: Received global disconnect - redirecting to homepage');
+                localStorage.removeItem('xummWallet');
+                localStorage.removeItem('wallet');
+                window.location.href = 'https://waldocoin.live';
+              }
+            } catch (e) {
+              console.warn('Failed to parse global disconnect data:', e);
+            }
+          }
         });
 
         // Listen for BroadcastChannel messages
@@ -4069,6 +4084,14 @@
                   setTimeout(() => location.reload(), 1500);
                 }
               }
+            }
+
+            // Handle global disconnect
+            if (event.data.type === 'GLOBAL_DISCONNECT') {
+              console.log('🚪 Stats Page: Received global disconnect via BroadcastChannel - redirecting to homepage');
+              localStorage.removeItem('xummWallet');
+              localStorage.removeItem('wallet');
+              window.location.href = 'https://waldocoin.live';
             }
           };
         }
