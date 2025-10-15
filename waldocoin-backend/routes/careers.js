@@ -1,10 +1,29 @@
 import express from 'express';
 import nodemailer from 'nodemailer';
+import multer from 'multer';
 
 const router = express.Router();
 
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Store files in memory
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow PDF, DOC, DOCX files
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOC, and DOCX files are allowed.'), false);
+    }
+  }
+});
+
 // POST /api/careers/apply - Submit job application
-router.post('/apply', async (req, res) => {
+router.post('/apply', upload.single('resume'), async (req, res) => {
   try {
     const {
       fullName,
@@ -60,13 +79,26 @@ router.post('/apply', async (req, res) => {
       <p><em>Application submitted via WALDOCOIN Careers Page</em></p>
     `;
 
-    // Send email
-    await transporter.sendMail({
+    // Prepare email options
+    const emailOptions = {
       from: process.env.CAREERS_EMAIL_USER || 'support@waldocoin.live',
       to: 'support@waldocoin.live',
       subject: `🎯 New Job Application: ${position} - ${fullName}`,
       html: emailContent
-    });
+    };
+
+    // Add resume attachment if file was uploaded
+    if (req.file) {
+      emailOptions.attachments = [{
+        filename: req.file.originalname,
+        content: req.file.buffer,
+        contentType: req.file.mimetype
+      }];
+      console.log(`📎 Resume attached: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
+    }
+
+    // Send email
+    await transporter.sendMail(emailOptions);
 
     console.log(`✅ Career application received from ${fullName} (${email}) for ${position}`);
 
