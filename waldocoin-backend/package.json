@@ -5,8 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
+    "dev": "node test-server.js",
+    "start": "node test-server.js",
     "start:worker": "node autodistribute.js",
     "start:all": "node index.js",
     "check:routes": "node checkRoutes.js",
