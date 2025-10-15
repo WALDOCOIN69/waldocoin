@@ -365,10 +365,9 @@
       <div id="walletDisplay" style="color: var(--primary-color); font-size: 0.9em; margin-top: 15px; display: none;">
         🔗 Connected: <span id="connectedWallet">Loading...</span>
         <br>
-        <button id="disconnectWalletBtn"
-          style="background: #d32f2f; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin-top: 10px; cursor: pointer; font-size: 0.8em;">
-          🚪 Disconnect Wallet
-        </button>
+        <div style="font-size: 0.8em; color: #888; margin-top: 10px;">
+          💡 To disconnect, visit the Stats page
+        </div>
       </div>
     </div>
 
@@ -455,15 +454,8 @@
         updateWalletDisplay(wallet);
       }
 
-      // Setup disconnect button
-      const disconnectBtn = $('disconnectWalletBtn');
-      if (disconnectBtn) {
-        disconnectBtn.addEventListener('click', function () {
-          if (confirm('Disconnect wallet from all WALDOCOIN pages and return to homepage?')) {
-            globalDisconnectWallet();
-          }
-        });
-      }
+      // === DISCONNECT FUNCTIONALITY REMOVED ===
+      // Users can disconnect via the Stats page instead
     });
 
     // Update wallet display
@@ -477,53 +469,8 @@
       }
     }
 
-    // Global disconnect function for marketplace
-    function globalDisconnectWallet() {
-      console.log('🚪 Marketplace: Initiating global disconnect...');
-
-      // Clear local wallet data
-      localStorage.removeItem('xummWallet');
-      localStorage.removeItem('wallet');
-
-      // Send disconnect message to all WALDOCOIN subdomains
-      const waldocoinDomains = [
-        'https://stats-page.waldocoin.live',
-        'https://battle-arena.waldocoin.live',
-        'https://presale.waldocoin.live',
-        'https://staking.waldocoin.live',
-        'https://dao.waldocoin.live',
-        'https://marketplace.waldocoin.live'
-      ];
-
-      // Create hidden iframes to send messages to other domains
-      waldocoinDomains.forEach(domain => {
-        if (window.location.origin === domain) return; // Skip current page
-
-        const iframe = document.createElement('iframe');
-        iframe.src = domain;
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-
-        iframe.onload = () => {
-          iframe.contentWindow.postMessage({
-            type: 'GLOBAL_DISCONNECT_REDIRECT',
-            timestamp: Date.now()
-          }, domain);
-
-          // Clean up iframe after message sent
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 1000);
-        };
-      });
-
-      // Redirect current page to homepage after brief delay
-      setTimeout(() => {
-        window.location.href = 'https://waldocoin.live';
-      }, 500);
-    }
+    // === GLOBAL DISCONNECT FUNCTION REMOVED ===
+    // Users can disconnect via the Stats page instead
 
     // Load marketplace statistics
     async function loadMarketplaceStats() {
@@ -697,17 +644,8 @@
       console.log('Favorited NFT:', listingId);
     }
 
-    // === GLOBAL DISCONNECT LISTENER ===
-    window.addEventListener('message', function (event) {
-      if (!event.origin.includes('waldocoin.live')) return;
-
-      if (event.data.type === 'GLOBAL_DISCONNECT_REDIRECT') {
-        console.log('🚪 Marketplace: Received global disconnect message - redirecting to homepage');
-        localStorage.removeItem('xummWallet');
-        localStorage.removeItem('wallet');
-        window.location.href = 'https://waldocoin.live';
-      }
-    });
+    // === GLOBAL DISCONNECT LISTENER REMOVED ===
+    // Users can disconnect via the Stats page instead
   </script>
 
 </body>

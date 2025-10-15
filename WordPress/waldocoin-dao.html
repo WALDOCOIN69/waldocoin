@@ -360,10 +360,9 @@
     <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em; margin-top: 15px; display: none;">
       🔗 Connected: <span id="connectedWallet">Loading...</span>
       <br>
-      <button id="disconnectWalletBtn" class="nav-btn"
-        style="background: #d32f2f; margin-top: 10px; font-size: 0.8em; padding: 8px 16px;">
-        🚪 Disconnect Wallet
-      </button>
+      <div style="font-size: 0.8em; color: #888; margin-top: 10px;">
+        💡 To disconnect, visit the Stats page
+      </div>
     </div>
   </div>
 
@@ -469,52 +468,8 @@
       }
     }
 
-    // Global disconnect function for DAO
-    function globalDisconnectWallet() {
-      console.log('🚪 DAO: Initiating global disconnect...');
-
-      // Clear local wallet data
-      localStorage.removeItem('xummWallet');
-      localStorage.removeItem('wallet');
-
-      // Use localStorage event to notify all tabs/pages (works across all origins)
-      const disconnectData = {
-        action: 'disconnect',
-        source: 'dao',
-        timestamp: Date.now()
-      };
-      localStorage.setItem('waldoGlobalDisconnect', JSON.stringify(disconnectData));
-
-      // Use BroadcastChannel for same-origin communication
-      if (typeof BroadcastChannel !== 'undefined') {
-        try {
-          const channel = new BroadcastChannel('waldocoin-auth');
-          channel.postMessage({
-            type: 'GLOBAL_DISCONNECT',
-            source: 'dao',
-            timestamp: Date.now()
-          });
-          console.log('📡 DAO: Sent BroadcastChannel disconnect message');
-        } catch (e) {
-          console.warn('BroadcastChannel failed:', e);
-        }
-      }
-
-      // Force trigger localStorage event manually
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'waldoGlobalDisconnect',
-        newValue: JSON.stringify(disconnectData),
-        oldValue: null,
-        storageArea: localStorage
-      }));
-
-      console.log('🚪 DAO: Global disconnect signals sent, redirecting...');
-
-      // Redirect current page after delay
-      setTimeout(() => {
-        window.location.href = 'https://waldocoin.live';
-      }, 1000);
-    }
+    // === GLOBAL DISCONNECT FUNCTION REMOVED ===
+    // Users can disconnect via the Stats page instead
 
     // Connect wallet function
     async function connectWallet() {
@@ -742,50 +697,11 @@
       }, 4000);
     }
 
-    // === GLOBAL DISCONNECT LISTENERS ===
-    // Listen for localStorage events (works across all tabs/origins)
-    window.addEventListener('storage', function (e) {
-      if (e.key === 'waldoGlobalDisconnect' && e.newValue) {
-        try {
-          const data = JSON.parse(e.newValue);
-          if (data.action === 'disconnect') {
-            console.log(`🚪 DAO: Received global disconnect from ${data.source || 'unknown'} - redirecting to homepage`);
-            localStorage.removeItem('xummWallet');
-            localStorage.removeItem('wallet');
-            localStorage.removeItem('waldoWalletSync');
-            window.location.href = 'https://waldocoin.live';
-          }
-        } catch (e) {
-          console.warn('Failed to parse global disconnect data:', e);
-        }
-      }
-    });
+    // === GLOBAL DISCONNECT LISTENERS REMOVED ===
+    // Users can disconnect via the Stats page instead
 
-    // Listen for BroadcastChannel events (same-origin only, but faster)
-    if (typeof BroadcastChannel !== 'undefined') {
-      const channel = new BroadcastChannel('waldocoin-auth');
-      channel.onmessage = function (event) {
-        if (event.data.type === 'GLOBAL_DISCONNECT') {
-          console.log(`🚪 DAO: Received global disconnect via BroadcastChannel from ${event.data.source || 'unknown'} - redirecting to homepage`);
-          localStorage.removeItem('xummWallet');
-          localStorage.removeItem('wallet');
-          localStorage.removeItem('waldoWalletSync');
-          window.location.href = 'https://waldocoin.live';
-        }
-      };
-    }
-
-    // === DISCONNECT BUTTON SETUP ===
-    document.addEventListener('DOMContentLoaded', function () {
-      const disconnectBtn = $('disconnectWalletBtn');
-      if (disconnectBtn) {
-        disconnectBtn.addEventListener('click', function () {
-          if (confirm('Disconnect wallet from all WALDOCOIN pages and return to homepage?')) {
-            globalDisconnectWallet();
-          }
-        });
-      }
-    });
+    // === DISCONNECT FUNCTIONALITY REMOVED ===
+    // Users can disconnect via the Stats page instead
 
     // Make functions globally available
     window.connectWallet = connectWallet;
