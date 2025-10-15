@@ -46,6 +46,10 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
     }
 
     // Check if email is configured
+    console.log('🔍 Email configuration check:');
+    console.log('CAREERS_EMAIL_USER:', process.env.CAREERS_EMAIL_USER ? 'SET' : 'NOT SET');
+    console.log('CAREERS_EMAIL_PASS:', process.env.CAREERS_EMAIL_PASS ? 'SET' : 'NOT SET');
+
     if (!process.env.CAREERS_EMAIL_PASS) {
       console.log(`📝 Career application received from ${fullName} (${email}) for ${position} - Email not configured, logging only`);
 
@@ -126,11 +130,14 @@ router.post('/apply', upload.single('resume'), async (req, res) => {
     }
 
     // Send email with error handling
+    console.log(`📧 Attempting to send email to support@waldocoin.live for application from ${fullName}`);
     try {
-      await transporter.sendMail(emailOptions);
+      const emailResult = await transporter.sendMail(emailOptions);
       console.log(`✅ Career application received from ${fullName} (${email}) for ${position} - Email sent successfully`);
+      console.log('📧 Email result:', emailResult.messageId);
     } catch (emailError) {
       console.error('❌ Failed to send email, but application was received:', emailError.message);
+      console.error('❌ Email error details:', emailError);
       // Continue anyway - we don't want to fail the application just because email failed
     }
 
