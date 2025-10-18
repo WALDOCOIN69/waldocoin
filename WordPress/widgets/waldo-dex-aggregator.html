@@ -239,6 +239,8 @@
     transition: all 0.3s ease;
     position: relative;
     box-shadow: 0 2px 8px rgba(37, 194, 160, 0.3);
+    z-index: 1000;
+    outline: none;
   }
 
   .toggle:hover {
@@ -596,28 +598,61 @@
     const toggle = el('widgetToggle');
     let collapsed = true;
 
+    console.log('🔧 DEX Aggregator Debug:', {
+      root: root,
+      toggle: toggle,
+      rootExists: !!root,
+      toggleExists: !!toggle
+    });
+
     const applyCollapsed = () => {
       if (root) {
         if (collapsed) {
           root.classList.add('collapsed');
+          console.log('📦 Widget collapsed');
         } else {
           root.classList.remove('collapsed');
+          console.log('📖 Widget expanded');
         }
+      } else {
+        console.error('❌ Root element not found!');
       }
     };
 
     if (toggle) {
-      toggle.addEventListener('click', () => {
+      // Add multiple event listeners for better compatibility
+      const handleToggle = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🖱️ Toggle button clicked!');
         collapsed = !collapsed;
+        console.log('🔄 New collapsed state:', collapsed);
         applyCollapsed();
         if (!collapsed) {
           console.log('🔍 Widget opened, loading prices...');
           loadAllPrices();
         }
+      };
+
+      toggle.addEventListener('click', handleToggle);
+      toggle.addEventListener('touchstart', handleToggle);
+
+      // Add visual feedback
+      toggle.addEventListener('mousedown', () => {
+        toggle.style.transform = 'scale(0.95)';
       });
+
+      toggle.addEventListener('mouseup', () => {
+        toggle.style.transform = '';
+      });
+
+      console.log('✅ Toggle event listeners added');
+    } else {
+      console.error('❌ Toggle button not found!');
     }
 
     // Initialize collapsed state
+    console.log('🚀 Initializing collapsed state...');
     applyCollapsed();
 
     // Tab switching
