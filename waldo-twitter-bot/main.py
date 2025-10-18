@@ -151,6 +151,17 @@ def store_meme_tweet(tweet):
 
     wallet = wallet.decode()
 
+    # Check AI violation status before processing
+    violation_status = check_ai_violation_status(wallet)
+    if violation_status["status"] in ["BANNED", "BLACKLISTED"]:
+        print(f"🚫 @{handle} is {violation_status['status']} - Tweet {tweet['id']} rejected")
+        print(f"📋 Reason: {violation_status.get('reason', 'Unknown')}")
+        return False
+    elif violation_status["status"] == "REQUIRES_VERIFICATION":
+        print(f"⚠️ @{handle} requires manual verification - Tweet {tweet['id']} rejected")
+        print(f"📋 Reason: {violation_status.get('reason', 'Unknown')}")
+        return False
+
     # Check daily meme limit
     can_post, current_count, daily_limit, tier = check_daily_meme_limit(handle, wallet)
     if not can_post:
@@ -162,6 +173,10 @@ def store_meme_tweet(tweet):
     # Check AI verification threshold
     if AI_VERIFICATION_ENABLED and ai_verification["confidence"] < AI_CONFIDENCE_THRESHOLD:
         print(f"🤖 Tweet {tweet['id']} failed AI verification ({ai_verification['confidence']}% < {AI_CONFIDENCE_THRESHOLD}%)")
+
+        # Log AI verification failure as violation
+        asyncio.run(log_ai_violation(handle, wallet, tweet['id'], ai_verification))
+
         return False
 
     metrics = tweet["public_metrics"]
@@ -670,6 +685,253 @@ def analyze_profile_picture_free(profile_image_url):
 
     except Exception as e:
         return {"is_suspicious": False, "error": str(e)}
+
+async def log_ai_violation(handle, wallet, tweet_id, ai_verification):
+    """Log AI verification failure and apply escalating consequences"""
+    try:
+        from datetime import datetime
+        print(f"🚨 Logging AI violation for @{handle} (wallet: {wallet})")
+
+        # Determine violation type based on AI checks
+        violation_type = determine_violation_type(ai_verification)
+
+        # Get current violation count
+        violation_key = f"ai_violations:{wallet}"
+        current_violations = r.get(violation_key)
+        violation_count = int(current_violations) if current_violations else 0
+        violation_count += 1
+
+        # Store violation details
+        violation_data = {
+            "wallet": wallet,
+            "handle": handle,
+            "tweet_id": tweet_id,
+            "violation_type": violation_type,
+            "confidence": ai_verification.get("confidence", 0),
+            "checks": ai_verification.get("checks", {}),
+            "timestamp": datetime.now().isoformat(),
+            "violation_number": violation_count
+        }
+
+        # Store violation record
+        violation_record_key = f"ai_violation:{wallet}:{tweet_id}"
+        r.set(violation_record_key, json.dumps(violation_data), ex=60*60*24*30)  # 30 days
+
+        # Update violation count
+        r.set(violation_key, violation_count, ex=60*60*24*7)  # 7 days expiry
+
+        # Apply escalating consequences
+        consequences = await apply_ai_violation_consequences(wallet, handle, violation_count, violation_type)
+
+        print(f"🚨 AI Violation #{violation_count} logged for @{handle}: {violation_type}")
+        print(f"📋 Consequences: {consequences}")
+
+        # Store in security events for admin monitoring
+        security_event = {
+            "type": "AI_VERIFICATION_FAILURE",
+            "wallet": wallet,
+            "handle": handle,
+            "violation_type": violation_type,
+            "violation_count": violation_count,
+            "consequences": consequences,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        r.lpush("security:events", json.dumps(security_event))
+        r.ltrim("security:events", 0, 99)  # Keep last 100 events
+
+        return consequences
+
+    except Exception as e:
+        print(f"❌ Error logging AI violation: {e}")
+        return "ERROR_LOGGING_VIOLATION"
+
+def determine_violation_type(ai_verification):
+    """Determine the primary violation type from AI verification results"""
+    checks = ai_verification.get("checks", {})
+
+    # Priority order: Profile > Content > Engagement > Originality
+    if not checks.get("profile", {}).get("is_legitimate", True):
+        profile_indicators = checks.get("profile", {}).get("suspicious_indicators", [])
+        if "NEW_ACCOUNT" in profile_indicators:
+            return "FAKE_PROFILE_NEW_ACCOUNT"
+        elif "SUSPICIOUS_USERNAME" in profile_indicators:
+            return "FAKE_PROFILE_BOT_USERNAME"
+        elif "SUSPICIOUS_FOLLOWER_RATIO" in profile_indicators:
+            return "FAKE_PROFILE_FOLLOWER_MANIPULATION"
+        else:
+            return "FAKE_PROFILE_GENERAL"
+
+    elif not checks.get("content", {}).get("is_appropriate", True):
+        content_issues = checks.get("content", {}).get("issues", [])
+        if "INAPPROPRIATE" in content_issues:
+            return "INAPPROPRIATE_CONTENT"
+        elif "HIGH_SPAM" in content_issues:
+            return "SPAM_CONTENT"
+        else:
+            return "CONTENT_VIOLATION"
+
+    elif not checks.get("engagement", {}).get("is_legitimate", True):
+        engagement_patterns = checks.get("engagement", {}).get("suspicious_patterns", [])
+        if "ENGAGEMENT_SPIKE" in engagement_patterns:
+            return "ENGAGEMENT_MANIPULATION"
+        else:
+            return "SUSPICIOUS_ENGAGEMENT"
+
+    elif not checks.get("originality", {}).get("is_original", True):
+        return "DUPLICATE_CONTENT"
+
+    else:
+        return "LOW_CONFIDENCE_SCORE"
+
+async def apply_ai_violation_consequences(wallet, handle, violation_count, violation_type):
+    """Apply escalating consequences based on violation count and type"""
+    try:
+        from datetime import datetime
+        consequences = []
+
+        # Violation 1: Warning + Temporary Rate Limit
+        if violation_count == 1:
+            consequences.append("WARNING_ISSUED")
+            consequences.append("RATE_LIMITED_1_HOUR")
+
+            # Set 1-hour rate limit
+            rate_limit_key = f"rate_limit:{wallet}:ai_violation"
+            r.set(rate_limit_key, "1", ex=60*60)  # 1 hour
+
+        # Violation 2: Stricter Rate Limit + Daily Limit Reduction
+        elif violation_count == 2:
+            consequences.append("FINAL_WARNING")
+            consequences.append("RATE_LIMITED_6_HOURS")
+            consequences.append("DAILY_LIMIT_REDUCED")
+
+            # Set 6-hour rate limit
+            rate_limit_key = f"rate_limit:{wallet}:ai_violation"
+            r.set(rate_limit_key, "2", ex=60*60*6)  # 6 hours
+
+            # Reduce daily meme limit by 50%
+            daily_limit_key = f"daily_limit_reduction:{wallet}"
+            r.set(daily_limit_key, "50", ex=60*60*24*7)  # 7 days
+
+        # Violation 3: Temporary Ban
+        elif violation_count == 3:
+            consequences.append("TEMPORARY_BAN_24_HOURS")
+
+            # Set 24-hour ban
+            ban_key = f"banned:{wallet}"
+            r.set(ban_key, json.dumps({
+                "reason": f"AI_VIOLATIONS_{violation_type}",
+                "violation_count": violation_count,
+                "banned_at": datetime.now().isoformat(),
+                "ban_duration": "24_HOURS"
+            }), ex=60*60*24)  # 24 hours
+
+        # Violation 4: Extended Ban
+        elif violation_count == 4:
+            consequences.append("EXTENDED_BAN_7_DAYS")
+
+            # Set 7-day ban
+            ban_key = f"banned:{wallet}"
+            r.set(ban_key, json.dumps({
+                "reason": f"REPEATED_AI_VIOLATIONS_{violation_type}",
+                "violation_count": violation_count,
+                "banned_at": datetime.now().isoformat(),
+                "ban_duration": "7_DAYS"
+            }), ex=60*60*24*7)  # 7 days
+
+        # Violation 5+: Permanent Ban
+        elif violation_count >= 5:
+            consequences.append("PERMANENT_BAN")
+
+            # Set permanent ban (1 year expiry for safety)
+            ban_key = f"banned:{wallet}"
+            r.set(ban_key, json.dumps({
+                "reason": f"PERSISTENT_AI_VIOLATIONS_{violation_type}",
+                "violation_count": violation_count,
+                "banned_at": datetime.now().isoformat(),
+                "ban_duration": "PERMANENT"
+            }), ex=60*60*24*365)  # 1 year
+
+            # Add to permanent blacklist
+            blacklist_key = f"blacklist:{wallet}"
+            r.set(blacklist_key, json.dumps({
+                "reason": f"PERSISTENT_AI_VIOLATIONS_{violation_type}",
+                "blacklisted_at": datetime.now().isoformat(),
+                "handle": handle
+            }))
+
+        # Special handling for severe violations (fake profiles)
+        if violation_type.startswith("FAKE_PROFILE"):
+            if violation_count == 1:
+                consequences.append("PROFILE_FLAGGED_FOR_REVIEW")
+            elif violation_count >= 2:
+                consequences.append("PROFILE_VERIFICATION_REQUIRED")
+
+                # Require manual verification
+                verification_key = f"requires_verification:{wallet}"
+                r.set(verification_key, json.dumps({
+                    "reason": "FAKE_PROFILE_DETECTED",
+                    "violation_count": violation_count,
+                    "flagged_at": datetime.now().isoformat()
+                }))
+
+        return consequences
+
+    except Exception as e:
+        print(f"❌ Error applying AI violation consequences: {e}")
+        return ["ERROR_APPLYING_CONSEQUENCES"]
+
+def check_ai_violation_status(wallet):
+    """Check if wallet has AI violation restrictions"""
+    try:
+        # Check if banned
+        ban_key = f"banned:{wallet}"
+        ban_data = r.get(ban_key)
+        if ban_data:
+            ban_info = json.loads(ban_data)
+            return {
+                "status": "BANNED",
+                "reason": ban_info.get("reason"),
+                "duration": ban_info.get("ban_duration"),
+                "banned_at": ban_info.get("banned_at")
+            }
+
+        # Check if blacklisted
+        blacklist_key = f"blacklist:{wallet}"
+        blacklist_data = r.get(blacklist_key)
+        if blacklist_data:
+            blacklist_info = json.loads(blacklist_data)
+            return {
+                "status": "BLACKLISTED",
+                "reason": blacklist_info.get("reason"),
+                "blacklisted_at": blacklist_info.get("blacklisted_at")
+            }
+
+        # Check if rate limited
+        rate_limit_key = f"rate_limit:{wallet}:ai_violation"
+        rate_limited = r.get(rate_limit_key)
+        if rate_limited:
+            return {
+                "status": "RATE_LIMITED",
+                "level": rate_limited.decode() if isinstance(rate_limited, bytes) else rate_limited
+            }
+
+        # Check if requires verification
+        verification_key = f"requires_verification:{wallet}"
+        verification_data = r.get(verification_key)
+        if verification_data:
+            verification_info = json.loads(verification_data)
+            return {
+                "status": "REQUIRES_VERIFICATION",
+                "reason": verification_info.get("reason"),
+                "flagged_at": verification_info.get("flagged_at")
+            }
+
+        return {"status": "CLEAR"}
+
+    except Exception as e:
+        print(f"❌ Error checking AI violation status: {e}")
+        return {"status": "ERROR"}
 
 async def send_waldo(wallet, amount):
     client = JsonRpcClient(XRPL_NODE)
