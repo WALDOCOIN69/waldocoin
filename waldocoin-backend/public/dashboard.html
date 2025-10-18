@@ -1100,6 +1100,117 @@
       border-top: 1px solid #333;
     }
 
+    /* DAO Awareness Section */
+    .dao-awareness {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      border: 2px solid #ffcc00;
+    }
+
+    .dao-subtitle {
+      color: #ccc;
+      font-size: 1rem;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    .proposals-preview {
+      margin-bottom: 25px;
+    }
+
+    .proposals-preview h3 {
+      color: #ffcc00;
+      margin-bottom: 15px;
+      font-size: 1.2rem;
+    }
+
+    .proposals-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .proposal-preview-item {
+      background: #222;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #333;
+      transition: all 0.3s ease;
+    }
+
+    .proposal-preview-item:hover {
+      border-color: #ffcc00;
+      transform: translateY(-1px);
+    }
+
+    .proposal-preview-title {
+      font-weight: bold;
+      color: white;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .proposal-preview-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .proposal-status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .status-active {
+      background: #25c2a0;
+      color: white;
+    }
+
+    .dao-action {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #333;
+    }
+
+    .dao-vote-button {
+      display: inline-block;
+      background: #ffcc00;
+      color: #000;
+      padding: 15px 30px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      margin-bottom: 10px;
+    }
+
+    .dao-vote-button:hover {
+      background: #e6b800;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 204, 0, 0.3);
+    }
+
+    .dao-stats-mini {
+      color: #ccc;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+
+    .no-proposals {
+      text-align: center;
+      padding: 30px;
+      color: #666;
+    }
+
+    .no-proposals h4 {
+      margin-bottom: 10px;
+      color: #888;
+    }
+
     @media (min-width: 768px) {
       .container {
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -1483,6 +1594,30 @@
       <div class="eligible-memes-section" id="eligibleMemesSection" style="display: none;">
         <h3>⚡ Ready to Mint (60+ XP)</h3>
         <div id="eligibleMemesGrid" class="meme-grid">Loading eligible memes...</div>
+      </div>
+    </div>
+
+    <!-- DAO Governance Awareness -->
+    <div class="card big-card dao-awareness">
+      <h2>🗳️ WALDOcoin DAO Governance</h2>
+      <p class="dao-subtitle">Participate in decentralized governance and community voting</p>
+
+      <!-- Active Proposals Preview -->
+      <div class="proposals-preview">
+        <h3>📋 Active Proposals</h3>
+        <div id="proposalsPreview" class="proposals-list">
+          Loading active proposals...
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="dao-action">
+        <a href="dao.html" class="dao-vote-button">
+          🗳️ View All Proposals & Vote
+        </a>
+        <div class="dao-stats-mini">
+          <span id="activeProposalsCount">0</span> active proposals
+        </div>
       </div>
     </div>
   </div>
@@ -1959,6 +2094,57 @@
       }
     }
 
+    // DAO Awareness Functions
+    async function loadDAOProposalsPreview() {
+      try {
+        const res = await fetch(`${baseURL}/api/dao/proposals?status=active&limit=3`);
+        const data = await res.json();
+
+        const container = document.getElementById('proposalsPreview');
+        const countElement = document.getElementById('activeProposalsCount');
+
+        if (data.success && data.proposals.length > 0) {
+          // Update count
+          countElement.textContent = data.totalProposals;
+
+          // Display proposals
+          container.innerHTML = data.proposals.map(proposal => {
+            const timeRemaining = proposal.timeRemaining > 0 ?
+              Math.ceil(proposal.timeRemaining / (1000 * 60 * 60 * 24)) + ' days left' :
+              'Ending soon';
+
+            return `
+              <div class="proposal-preview-item">
+                <div class="proposal-preview-title">${proposal.title}</div>
+                <div class="proposal-preview-meta">
+                  <span>${timeRemaining}</span>
+                  <span class="proposal-status-badge status-active">ACTIVE</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          // No active proposals
+          countElement.textContent = '0';
+          container.innerHTML = `
+            <div class="no-proposals">
+              <h4>No Active Proposals</h4>
+              <p>Check back later for new governance proposals!</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error("❌ Error loading DAO proposals preview:", error);
+        document.getElementById('proposalsPreview').innerHTML = `
+          <div class="no-proposals">
+            <h4>Unable to Load Proposals</h4>
+            <p>Please try again later</p>
+          </div>
+        `;
+        document.getElementById('activeProposalsCount').textContent = '0';
+      }
+    }
+
     // Enhanced Battle System Functions
     async function loadBattleStats() {
       try {
@@ -2372,12 +2558,14 @@
         loadBattleStats();
         loadActiveBattles();
         loadNFTStats();
+        loadDAOProposalsPreview();
         updateNavWallet();
 
         // Refresh intervals
         setInterval(refreshXPStats, 60000);
         setInterval(loadBattleStats, 30000);
         setInterval(loadNFTStats, 120000); // Refresh NFT stats every 2 minutes
+        setInterval(loadDAOProposalsPreview, 300000); // Refresh DAO proposals every 5 minutes
         setInterval(() => {
           const activeTab = document.querySelector('.battle-tab.active');
           if (activeTab && activeTab.textContent.includes('Active')) {
