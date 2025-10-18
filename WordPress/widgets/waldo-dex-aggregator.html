@@ -1,8 +1,8 @@
 <!-- WALDO DEX Aggregator: Find Best Prices Across Exchanges -->
 <div class="waldo-aggregator collapsed" id="waldoAggregator">
   <div class="aggregator-head">
-    <div class="title"><span class="accent">🔍</span> $WLO PRICE AGGREGATOR</div>
-    <div class="sub">Find the best WLO prices across all DEXs</div>
+    <div class="title"><span class="accent">�</span> WHERE TO BUY $WLO</div>
+    <div class="sub">Referral links to exchanges selling WALDOCOIN</div>
     <div class="tabs">
       <button id="widgetToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
       <button class="tab active" data-tab="prices">Live Prices</button>
@@ -16,15 +16,16 @@
       <div class="price-grid">
         <div class="dex-card best" id="bestDex">
           <div class="dex-header">
-            <span class="dex-name">🥇 Best Price</span>
-            <span class="badge">RECOMMENDED</span>
+            <span class="dex-name">🔥 WHERE TO BUY WLO</span>
+            <span class="badge" style="background: #ff4444; animation: pulse 2s infinite;">REFERRAL</span>
           </div>
           <div class="price-display">
             <span class="price" id="bestPrice">Loading...</span>
             <span class="currency">XRP per WLO</span>
           </div>
-          <button class="trade-btn" id="bestTradeBtn" onclick="openBestDEX()">
-            Trade Here
+          <button class="trade-btn primary" id="bestTradeBtn" onclick="openBestDEX()"
+            style="background: #ff4444; font-weight: bold; font-size: 16px; animation: pulse 2s infinite;">
+            � GO TO EXCHANGE �
           </button>
         </div>
 
@@ -38,7 +39,7 @@
             <span class="currency">XRP per WLO</span>
           </div>
           <button class="trade-btn" onclick="openFirstLedger()">
-            Trade on FL
+            🔗 Buy on First Ledger
           </button>
         </div>
 
@@ -52,7 +53,7 @@
             <span class="currency">XRP per WLO</span>
           </div>
           <button class="trade-btn" onclick="openXRPLTo()">
-            Trade on XRPL.to
+            🔗 Buy on XRPL.to
           </button>
         </div>
 
@@ -66,7 +67,7 @@
             <span class="currency">XRP per WLO</span>
           </div>
           <button class="trade-btn" onclick="openXMagnetic()">
-            Trade on XMag
+            🔗 Buy on XMagnetic
           </button>
         </div>
       </div>
@@ -125,7 +126,7 @@
         </div>
 
         <button class="trade-btn primary" id="calcTradeBtn" onclick="openCalcBestExchange()" style="display:none;">
-          Trade on Best Exchange
+          🔗 Buy on Best Exchange
         </button>
 
         <div class="calc-note">
