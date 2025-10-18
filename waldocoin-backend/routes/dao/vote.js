@@ -50,9 +50,12 @@ router.post("/", async (req, res) => {
     if (waldoBalance < requiredWaldo) {
       return res.status(403).json({
         success: false,
-        error: `You need at least ${requiredWaldo.toLocaleString()} WALDO to vote (≈${REQUIRED_XRP} XRP)`
+        error: `You need at least ${requiredWaldo.toLocaleString()} WALDO to vote (1 vote per 50k WALDO)`
       });
     }
+
+    // Calculate voting power: 1 vote per 50k WALDO
+    const votingPower = Math.floor(waldoBalance / requiredWaldo);
 
     // ⛔ Prevent duplicate voting
     const existing = await redis.hGet(`proposalVotes:${proposalId}`, wallet);
@@ -62,12 +65,25 @@ router.post("/", async (req, res) => {
         error: "You already voted on this proposal."
       });
     }
-    await addXP(wallet, 1);
 
-    // ✅ Save vote to Redis
-    await redis.hSet(`proposalVotes:${proposalId}`, wallet, choice);
+    // Award XP based on voting power (1 XP per vote)
+    await addXP(wallet, votingPower);
 
-    return res.json({ success: true });
+    // ✅ Save vote to Redis with voting power
+    const voteData = {
+      choice,
+      votingPower,
+      waldoBalance,
+      timestamp: new Date().toISOString()
+    };
+    await redis.hSet(`proposalVotes:${proposalId}`, wallet, JSON.stringify(voteData));
+
+    return res.json({
+      success: true,
+      votingPower,
+      waldoBalance,
+      message: `Vote recorded with ${votingPower} voting power (${waldoBalance.toLocaleString()} WALDO)`
+    });
   } catch (err) {
     console.error("❌ Voting error:", err);
     return res.status(500).json({ success: false, error: "Server error" });

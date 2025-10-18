@@ -10,22 +10,22 @@ router.get('/proposals', async (req, res) => {
   try {
     const status = req.query.status || 'active';
     const limit = parseInt(req.query.limit) || 20;
-    
+
     // Get proposal keys based on status
     const proposalKeys = await redis.keys(`dao:proposal:*`);
     const proposals = [];
 
     for (const key of proposalKeys) {
       const proposalData = await redis.hGetAll(key);
-      
+
       if (proposalData && Object.keys(proposalData).length > 0) {
         const proposalId = key.split(':')[2];
-        
+
         // Get vote counts
         const yesVotes = await redis.get(`dao:proposal:${proposalId}:yes`) || 0;
         const noVotes = await redis.get(`dao:proposal:${proposalId}:no`) || 0;
         const totalVotes = parseInt(yesVotes) + parseInt(noVotes);
-        
+
         // Check if proposal matches status filter
         if (status === 'all' || proposalData.status === status) {
           proposals.push({
@@ -46,7 +46,7 @@ router.get('/proposals', async (req, res) => {
             quorumMet: totalVotes >= (parseInt(proposalData.quorum) || 100),
             passingThreshold: parseFloat(proposalData.threshold) || 0.6,
             currentSupport: totalVotes > 0 ? (parseInt(yesVotes) / totalVotes) : 0,
-            timeRemaining: proposalData.expiresAt ? 
+            timeRemaining: proposalData.expiresAt ?
               Math.max(0, new Date(proposalData.expiresAt) - new Date()) : 0
           });
         }
@@ -165,13 +165,13 @@ router.get('/stats', async (req, res) => {
 router.post('/create-proposal', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const { title, description, type, duration, quorum, threshold } = req.body;
-    
+
     if (!title || !description) {
       return res.status(400).json({
         success: false,
@@ -197,7 +197,7 @@ router.post('/create-proposal', async (req, res) => {
     };
 
     await redis.hSet(`dao:proposal:${proposalId}`, proposalData);
-    
+
     // Initialize vote counters
     await redis.set(`dao:proposal:${proposalId}:yes`, 0);
     await redis.set(`dao:proposal:${proposalId}:no`, 0);
@@ -228,13 +228,13 @@ router.post('/create-proposal', async (req, res) => {
 router.post('/close-proposal', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const { proposalId, reason } = req.body;
-    
+
     if (!proposalId) {
       return res.status(400).json({
         success: false,
@@ -244,7 +244,7 @@ router.post('/close-proposal', async (req, res) => {
 
     // Check if proposal exists
     const proposalExists = await redis.exists(`dao:proposal:${proposalId}`);
-    
+
     if (!proposalExists) {
       return res.status(404).json({
         success: false,
@@ -307,9 +307,9 @@ router.post('/close-proposal', async (req, res) => {
 router.get('/proposal/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const proposalData = await redis.hGetAll(`dao:proposal:${id}`);
-    
+
     if (!proposalData || Object.keys(proposalData).length === 0) {
       return res.status(404).json({
         success: false,
@@ -341,7 +341,7 @@ router.get('/proposal/:id', async (req, res) => {
       quorumMet: totalVotes >= (parseInt(proposalData.quorum) || 100),
       passingThreshold: parseFloat(proposalData.threshold) || 0.6,
       currentSupport: totalVotes > 0 ? (parseInt(yesVotes) / totalVotes) : 0,
-      timeRemaining: proposalData.expiresAt ? 
+      timeRemaining: proposalData.expiresAt ?
         Math.max(0, new Date(proposalData.expiresAt) - new Date()) : 0
     };
 
@@ -411,23 +411,46 @@ router.post('/vote', async (req, res) => {
       });
     }
 
-    // Get user's WALDO balance (simplified - in production would check actual balance)
-    const userData = await redis.hGetAll(`user:${wallet}`);
-    const waldoBalance = parseInt(userData.waldoBalance) || 0;
+    // Get user's WALDO balance from XRPL
+    const response = await fetch("https://s1.ripple.com:51234", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "account_lines",
+        params: [{ account: wallet }]
+      })
+    });
 
-    if (waldoBalance < 100) {
+    const data = await response.json();
+    const lines = data?.result?.lines || [];
+
+    const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY";
+    const WALDO_CURRENCY = "WLO";
+    const REQUIRED_WALDO = 50000; // 1 vote per 50k WALDO
+
+    const waldoLine = lines.find(
+      l => l.currency === WALDO_CURRENCY && l.account === WALDO_ISSUER
+    );
+
+    const waldoBalance = parseFloat(waldoLine?.balance || "0");
+
+    if (waldoBalance < REQUIRED_WALDO) {
       return res.status(400).json({
         success: false,
-        error: "Minimum 100 WALDO required to vote"
+        error: `Minimum ${REQUIRED_WALDO.toLocaleString()} WALDO required to vote (1 vote per 50k WALDO)`
       });
     }
+
+    // Calculate voting power: 1 vote per 50k WALDO
+    const votingPower = Math.floor(waldoBalance / REQUIRED_WALDO);
 
     // Record vote
     await redis.set(voteKey, JSON.stringify({
       wallet,
       proposalId,
       vote,
-      votingPower: waldoBalance,
+      votingPower,
+      waldoBalance,
       votedAt: new Date().toISOString()
     }), { EX: 30 * 24 * 60 * 60 }); // 30 day expiry
 
@@ -435,22 +458,26 @@ router.post('/vote', async (req, res) => {
     const voteField = vote ? 'yesVotes' : 'noVotes';
     const powerField = vote ? 'yesVotingPower' : 'noVotingPower';
 
-    await redis.hIncrBy(`dao:proposal:${proposalId}`, voteField, 1);
-    await redis.hIncrBy(`dao:proposal:${proposalId}`, powerField, waldoBalance);
-    await redis.hIncrBy(`dao:proposal:${proposalId}`, 'totalVotes', 1);
-    await redis.hIncrBy(`dao:proposal:${proposalId}`, 'totalVotingPower', waldoBalance);
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, voteField, votingPower);
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, powerField, votingPower);
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, 'totalVotes', votingPower);
+    await redis.hIncrBy(`dao:proposal:${proposalId}`, 'totalVotingPower', votingPower);
 
     // Update user stats
-    await redis.hIncrBy(`user:${wallet}`, 'daoVotes', 1);
-    await redis.hIncrBy(`user:${wallet}`, 'daoVotingPower', waldoBalance);
+    await redis.hIncrBy(`user:${wallet}`, 'daoVotes', votingPower);
+    await redis.hIncrBy(`user:${wallet}`, 'daoVotingPower', votingPower);
 
-    console.log(`🗳️ DAO vote recorded: ${wallet} voted ${vote ? 'YES' : 'NO'} on ${proposalId} with ${waldoBalance} voting power`);
+    console.log(`🗳️ DAO vote recorded: ${wallet} voted ${vote ? 'YES' : 'NO'} on ${proposalId} with ${votingPower} voting power (${waldoBalance.toLocaleString()} WALDO)`);
 
     return res.json({
       success: true,
-      message: `Vote recorded: ${vote ? 'YES' : 'NO'}`,
-      vote,
-      votingPower: waldoBalance
+      message: `Vote recorded with ${votingPower} voting power (${waldoBalance.toLocaleString()} WALDO)`,
+      vote: {
+        proposalId,
+        choice: vote ? 'YES' : 'NO',
+        votingPower,
+        waldoBalance
+      }
     });
 
   } catch (error) {

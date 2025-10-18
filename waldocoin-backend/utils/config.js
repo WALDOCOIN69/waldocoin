@@ -19,7 +19,7 @@ const DEFAULTS = {
     useDefaults: true
   },
   dao: {
-    votingRequirementWLO: 10000,
+    votingRequirementWLO: 50000, // 1 vote per 50k WALDO
     useDefaults: true
   },
   staking: {
