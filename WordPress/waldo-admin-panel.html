@@ -5701,41 +5701,85 @@ This action cannot be undone. Continue?`;
     async function loadFraudAnalytics() {
       try {
         const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/security/fraud-analytics`, {
-          headers: { 'x-admin-key': adminKey }
-        });
 
-        const data = await response.json();
+        // Load both fraud analytics and AI stats
+        const [fraudResponse, aiResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/security/fraud-analytics`, {
+            headers: { 'x-admin-key': adminKey }
+          }),
+          fetch(`${API_BASE}/api/security/ai-stats`, {
+            headers: { 'x-admin-key': adminKey }
+          })
+        ]);
+
+        const fraudData = await fraudResponse.json();
+        const aiData = await aiResponse.json();
         const analyticsDiv = document.getElementById('fraudAnalytics');
 
-        if (data.success) {
-          const stats = data.analytics;
+        if (fraudData.success && aiData.success) {
+          const stats = fraudData.analytics;
+          const aiStats = aiData.aiStats;
+
           analyticsDiv.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #e74c3c;">
-                <div style="color: #e74c3c; font-weight: bold;">Total Violations</div>
-                <div style="color: #fff; font-size: 1.5em;">${stats.totalViolations || 0}</div>
-                <div style="color: #666; font-size: 0.9em;">Last 24 hours</div>
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #9b59b6; margin-bottom: 15px;">🛡️ Fraud Prevention Stats</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+                  <div style="color: #e74c3c; font-weight: bold;">Total Violations</div>
+                  <div style="color: #fff; font-size: 1.5em;">${stats.totalViolations || 0}</div>
+                  <div style="color: #666; font-size: 0.9em;">Last 24 hours</div>
+                </div>
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12;">
+                  <div style="color: #f39c12; font-weight: bold;">Blocked Wallets</div>
+                  <div style="color: #fff; font-size: 1.5em;">${stats.blockedWallets || 0}</div>
+                  <div style="color: #666; font-size: 0.9em;">Currently blocked</div>
+                </div>
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #9b59b6;">
+                  <div style="color: #9b59b6; font-weight: bold;">Bot Detections</div>
+                  <div style="color: #fff; font-size: 1.5em;">${stats.botDetections || 0}</div>
+                  <div style="color: #666; font-size: 0.9em;">AI-detected bots</div>
+                </div>
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60;">
+                  <div style="color: #27ae60; font-weight: bold;">Clean Requests</div>
+                  <div style="color: #fff; font-size: 1.5em;">${stats.cleanRequests || 0}</div>
+                  <div style="color: #666; font-size: 0.9em;">Legitimate traffic</div>
+                </div>
               </div>
-              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12;">
-                <div style="color: #f39c12; font-weight: bold;">Blocked Wallets</div>
-                <div style="color: #fff; font-size: 1.5em;">${stats.blockedWallets || 0}</div>
-                <div style="color: #666; font-size: 0.9em;">Currently blocked</div>
-              </div>
-              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #9b59b6;">
-                <div style="color: #9b59b6; font-weight: bold;">Bot Detections</div>
-                <div style="color: #fff; font-size: 1.5em;">${stats.botDetections || 0}</div>
-                <div style="color: #666; font-size: 0.9em;">AI-detected bots</div>
-              </div>
-              <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60;">
-                <div style="color: #27ae60; font-weight: bold;">Clean Requests</div>
-                <div style="color: #fff; font-size: 1.5em;">${stats.cleanRequests || 0}</div>
-                <div style="color: #666; font-size: 0.9em;">Legitimate traffic</div>
+            </div>
+
+            <div>
+              <h4 style="color: #25c2a0; margin-bottom: 15px;">🤖 AI Content Verification</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #25c2a0;">
+                  <div style="color: #25c2a0; font-weight: bold;">Total Verifications</div>
+                  <div style="color: #fff; font-size: 1.5em;">${aiStats.totalVerifications || 0}</div>
+                  <div style="color: #666; font-size: 0.9em;">Content checked</div>
+                </div>
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60;">
+                  <div style="color: #27ae60; font-weight: bold;">Pass Rate</div>
+                  <div style="color: #fff; font-size: 1.5em;">${aiStats.passRate || '0%'}</div>
+                  <div style="color: #666; font-size: 0.9em;">Content approved</div>
+                </div>
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #3498db;">
+                  <div style="color: #3498db; font-weight: bold;">Avg Confidence</div>
+                  <div style="color: #fff; font-size: 1.5em;">${aiStats.averageConfidence || 0}%</div>
+                  <div style="color: #666; font-size: 0.9em;">AI certainty</div>
+                </div>
+                <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f1c40f;">
+                  <div style="color: #f1c40f; font-weight: bold;">Method</div>
+                  <div style="color: #fff; font-size: 1.2em;">${aiStats.verificationMethod || 'NONE'}</div>
+                  <div style="color: #666; font-size: 0.9em;">
+                    ${aiStats.verificationMethod === 'FREE' ?
+              `💰 Saving $${aiStats.monthlyCostSavings}/mo` :
+              'Premium AI active'
+            }
+                  </div>
+                </div>
               </div>
             </div>
           `;
         } else {
-          analyticsDiv.innerHTML = '<div style="color: #e74c3c;">Error loading fraud analytics</div>';
+          analyticsDiv.innerHTML = '<div style="color: #e74c3c;">Error loading fraud analytics or AI stats</div>';
         }
       } catch (error) {
         console.error('Error loading fraud analytics:', error);

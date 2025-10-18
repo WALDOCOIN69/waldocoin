@@ -78,13 +78,13 @@ router.get('/overview', async (req, res) => {
 router.get('/check/:wallet', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const { wallet } = req.params;
-    
+
     if (!wallet || wallet.length < 25) {
       return res.status(400).json({
         success: false,
@@ -171,13 +171,13 @@ router.get('/check/:wallet', async (req, res) => {
 router.post('/block', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const { wallet, reason } = req.body;
-    
+
     if (!wallet || !reason) {
       return res.status(400).json({
         success: false,
@@ -187,7 +187,7 @@ router.post('/block', async (req, res) => {
 
     // Block the user
     await redis.set(`security:blocked:${wallet}`, reason);
-    
+
     // Log security event
     const event = {
       type: 'user_blocked',
@@ -196,7 +196,7 @@ router.post('/block', async (req, res) => {
       admin: true,
       timestamp: new Date().toISOString()
     };
-    
+
     await redis.lPush("security:events", JSON.stringify(event));
     await redis.lTrim("security:events", 0, 99); // Keep last 100 events
 
@@ -222,13 +222,13 @@ router.post('/block', async (req, res) => {
 router.post('/unblock', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const { wallet, reason } = req.body;
-    
+
     if (!wallet) {
       return res.status(400).json({
         success: false,
@@ -238,7 +238,7 @@ router.post('/unblock', async (req, res) => {
 
     // Check if user is blocked
     const isBlocked = await redis.exists(`security:blocked:${wallet}`);
-    
+
     if (!isBlocked) {
       return res.json({
         success: false,
@@ -249,7 +249,7 @@ router.post('/unblock', async (req, res) => {
     // Unblock the user
     await redis.del(`security:blocked:${wallet}`);
     await redis.del(`security:suspicious:${wallet}`); // Also remove suspicious flag
-    
+
     // Log security event
     const event = {
       type: 'user_unblocked',
@@ -258,7 +258,7 @@ router.post('/unblock', async (req, res) => {
       admin: true,
       timestamp: new Date().toISOString()
     };
-    
+
     await redis.lPush("security:events", JSON.stringify(event));
     await redis.lTrim("security:events", 0, 99);
 
@@ -284,14 +284,14 @@ router.post('/unblock', async (req, res) => {
 router.get('/events', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const limit = parseInt(req.query.limit) || 50;
     const eventStrings = await redis.lRange("security:events", 0, limit - 1);
-    
+
     const events = [];
     for (const eventStr of eventStrings) {
       try {
@@ -463,6 +463,136 @@ router.get('/suspicious-activity', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: "Failed to get suspicious activity"
+    });
+  }
+});
+
+// GET /api/security/ai-stats - Get AI verification statistics
+router.get('/ai-stats', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Get AI verification stats from Redis
+    const aiKeys = await redis.keys('ai:*:*');
+    const freeAiKeys = await redis.keys('ai:free:*');
+    const premiumAiKeys = await redis.keys('ai:verification:*');
+
+    let totalVerifications = 0;
+    let passedVerifications = 0;
+    let failedVerifications = 0;
+    let totalConfidence = 0;
+    let freeVerifications = 0;
+    let premiumVerifications = 0;
+
+    // Analyze AI verification results
+    for (const key of aiKeys) {
+      try {
+        const result = await redis.get(key);
+        if (result) {
+          const data = JSON.parse(result);
+          totalVerifications++;
+
+          if (data.ai_verified || data.aiVerified) {
+            passedVerifications++;
+          } else {
+            failedVerifications++;
+          }
+
+          if (data.confidence || data.overallConfidence) {
+            totalConfidence += (data.confidence || data.overallConfidence);
+          }
+
+          if (data.method === 'FREE_VERIFICATION' || key.includes('ai:free:')) {
+            freeVerifications++;
+          } else {
+            premiumVerifications++;
+          }
+        }
+      } catch (e) {
+        // Skip invalid JSON
+      }
+    }
+
+    const averageConfidence = totalVerifications > 0 ? (totalConfidence / totalVerifications).toFixed(1) : 0;
+    const passRate = totalVerifications > 0 ? ((passedVerifications / totalVerifications) * 100).toFixed(1) : 0;
+
+    // Calculate cost savings (if using FREE AI)
+    const monthlyCostSavings = freeVerifications > 0 ? 370 : 0; // $370/month for premium AI
+
+    return res.json({
+      success: true,
+      aiStats: {
+        totalVerifications,
+        passedVerifications,
+        failedVerifications,
+        passRate: `${passRate}%`,
+        averageConfidence: parseFloat(averageConfidence),
+        freeVerifications,
+        premiumVerifications,
+        verificationMethod: freeVerifications > premiumVerifications ? 'FREE' : 'PREMIUM',
+        monthlyCostSavings,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting AI stats:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get AI statistics"
+    });
+  }
+});
+
+// GET /api/security/ai-details/:tweetId - Get detailed AI verification for specific tweet
+router.get('/ai-details/:tweetId', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const { tweetId } = req.params;
+
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: "Unauthorized access" });
+    }
+
+    // Try both FREE and premium AI result keys
+    const freeResult = await redis.get(`ai:free:${tweetId}`);
+    const premiumResult = await redis.get(`ai:verification:${tweetId}`);
+
+    let aiResult = null;
+    let method = 'NONE';
+
+    if (freeResult) {
+      aiResult = JSON.parse(freeResult);
+      method = 'FREE';
+    } else if (premiumResult) {
+      aiResult = JSON.parse(premiumResult);
+      method = 'PREMIUM';
+    }
+
+    if (!aiResult) {
+      return res.status(404).json({
+        success: false,
+        error: "AI verification result not found for this tweet"
+      });
+    }
+
+    return res.json({
+      success: true,
+      tweetId,
+      method,
+      aiResult,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting AI details:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get AI verification details"
     });
   }
 });
