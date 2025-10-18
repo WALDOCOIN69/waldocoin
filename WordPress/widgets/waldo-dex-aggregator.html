@@ -998,8 +998,6 @@
     }
 
     // Calculator functionality
-    el('calcAmount').addEventListener('input', calculateTrade);
-
     function calculateTrade() {
       const amount = parseFloat(el('calcAmount').value);
       const fromCurrency = el('fromCurrencyLabel').textContent;
@@ -1049,6 +1047,11 @@
       const tradeBtn = el('calcTradeBtn');
       tradeBtn.textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
       tradeBtn.style.display = 'block';
+    }
+
+    // Add calculator event listener after function is defined
+    if (el('calcAmount')) {
+      el('calcAmount').addEventListener('input', calculateTrade);
     }
 
     window.flipCalculator = function () {
