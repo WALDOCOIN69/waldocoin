@@ -232,40 +232,232 @@ def fetch_and_store():
     print(f"✅ Stored {stored} tweet(s)")
 
 async def verify_content_with_ai(tweet_data):
-    """AI-powered content verification"""
+    """FREE AI-powered content verification"""
     if not AI_VERIFICATION_ENABLED:
         return {"ai_verified": True, "confidence": 0, "reason": "AI_DISABLED"}
 
     try:
-        print(f"🤖 Running AI verification for tweet {tweet_data['id']}")
+        print(f"🆓 Running FREE AI verification for tweet {tweet_data['id']}")
 
-        # Extract image URL from tweet (if available)
-        image_url = None
-        if 'attachments' in tweet_data and 'media_keys' in tweet_data['attachments']:
-            # This would need media expansion in the Twitter API call
-            # For now, we'll simulate AI verification
-            pass
-
-        # Simulate AI checks (replace with actual AI API calls)
-        ai_result = {
-            "ai_verified": True,
-            "confidence": 85,
-            "checks": {
-                "originality": {"is_original": True, "confidence": 90},
-                "engagement": {"is_legitimate": True, "confidence": 85},
-                "content": {"is_appropriate": True, "confidence": 80}
-            }
-        }
+        # FREE Content Verification
+        ai_result = await run_free_ai_verification(tweet_data)
 
         # Store AI verification result
-        r.set(f"ai:verification:{tweet_data['id']}", json.dumps(ai_result), ex=60*60*24*7)
+        r.set(f"ai:free:{tweet_data['id']}", json.dumps(ai_result), ex=60*60*24*7)
 
-        print(f"🤖 AI verification complete: {ai_result['confidence']}% confidence")
+        print(f"🆓 FREE AI verification complete: {ai_result['confidence']}% confidence")
         return ai_result
 
     except Exception as e:
-        print(f"❌ AI verification failed: {str(e)}")
+        print(f"❌ FREE AI verification failed: {str(e)}")
         return {"ai_verified": True, "confidence": 0, "error": str(e)}
+
+async def run_free_ai_verification(tweet_data):
+    """Run FREE AI verification checks"""
+    try:
+        results = {
+            "ai_verified": True,
+            "confidence": 0,
+            "method": "FREE_VERIFICATION",
+            "checks": {}
+        }
+
+        # 1. FREE Engagement Analysis
+        engagement_check = analyze_engagement_patterns_free(tweet_data)
+        results["checks"]["engagement"] = engagement_check
+
+        # 2. FREE Content Analysis
+        content_check = analyze_content_free(tweet_data.get("text", ""))
+        results["checks"]["content"] = content_check
+
+        # 3. FREE Originality Check (basic)
+        originality_check = await check_originality_free(tweet_data)
+        results["checks"]["originality"] = originality_check
+
+        # Calculate overall confidence
+        confidence_scores = [
+            engagement_check.get("confidence", 0),
+            content_check.get("confidence", 0),
+            originality_check.get("confidence", 0)
+        ]
+
+        valid_scores = [s for s in confidence_scores if s > 0]
+        results["confidence"] = sum(valid_scores) / len(valid_scores) if valid_scores else 0
+
+        # Determine verification status
+        results["ai_verified"] = (
+            engagement_check.get("is_legitimate", True) and
+            content_check.get("is_appropriate", True) and
+            originality_check.get("is_original", True)
+        )
+
+        return results
+
+    except Exception as e:
+        return {
+            "ai_verified": True,
+            "confidence": 0,
+            "error": str(e),
+            "method": "FREE_VERIFICATION"
+        }
+
+def analyze_engagement_patterns_free(tweet_data):
+    """FREE engagement pattern analysis"""
+    try:
+        metrics = tweet_data.get("public_metrics", {})
+        likes = metrics.get("like_count", 0)
+        retweets = metrics.get("retweet_count", 0)
+
+        suspicious_patterns = []
+        confidence = 100
+
+        # Check engagement ratio
+        ratio = likes / max(retweets, 1)
+        if ratio > 100 or ratio < 1:
+            suspicious_patterns.append("EXTREME_RATIO")
+            confidence -= 30
+
+        # Check for round numbers (bot indicator)
+        if likes > 0 and likes % 10 == 0 and retweets > 0 and retweets % 10 == 0:
+            suspicious_patterns.append("ROUND_NUMBERS")
+            confidence -= 20
+
+        # Check for unrealistic engagement
+        total_engagement = likes + retweets
+        if total_engagement > 10000:  # Very high engagement
+            suspicious_patterns.append("HIGH_ENGAGEMENT")
+            confidence -= 15
+
+        is_legitimate = confidence >= 60
+
+        return {
+            "is_legitimate": is_legitimate,
+            "confidence": max(confidence, 0),
+            "suspicious_patterns": suspicious_patterns,
+            "engagement_ratio": ratio
+        }
+
+    except Exception as e:
+        return {
+            "is_legitimate": True,
+            "confidence": 0,
+            "error": str(e)
+        }
+
+def analyze_content_free(text):
+    """FREE content analysis"""
+    try:
+        confidence = 100
+        issues = []
+
+        # Check spam indicators
+        spam_score = calculate_spam_score_free(text)
+        if spam_score > 70:
+            issues.append("HIGH_SPAM")
+            confidence -= 40
+
+        # Check WALDO relevance
+        waldo_score = check_waldo_relevance_free(text)
+        if waldo_score < 20:
+            issues.append("LOW_RELEVANCE")
+            confidence -= 20
+
+        # Check inappropriate content
+        if has_inappropriate_content_free(text):
+            issues.append("INAPPROPRIATE")
+            confidence -= 50
+
+        is_appropriate = confidence >= 50
+
+        return {
+            "is_appropriate": is_appropriate,
+            "confidence": max(confidence, 0),
+            "issues": issues,
+            "spam_score": spam_score,
+            "waldo_score": waldo_score
+        }
+
+    except Exception as e:
+        return {
+            "is_appropriate": True,
+            "confidence": 0,
+            "error": str(e)
+        }
+
+async def check_originality_free(tweet_data):
+    """FREE originality check using text hashing"""
+    try:
+        text = tweet_data.get("text", "")
+        tweet_id = tweet_data["id"]
+
+        # Generate text hash for duplicate detection
+        text_hash = hash(text.lower().strip())
+        hash_key = f"text_hash:{text_hash}"
+
+        # Check if we've seen this text before
+        existing_tweet = r.get(hash_key)
+        if existing_tweet and existing_tweet.decode() != tweet_id:
+            return {
+                "is_original": False,
+                "confidence": 95,
+                "reason": "DUPLICATE_TEXT",
+                "original_tweet": existing_tweet.decode()
+            }
+
+        # Store hash for future checks
+        r.set(hash_key, tweet_id, ex=60*60*24*30)  # 30 days
+
+        return {
+            "is_original": True,
+            "confidence": 85,
+            "reason": "APPEARS_ORIGINAL"
+        }
+
+    except Exception as e:
+        return {
+            "is_original": True,
+            "confidence": 0,
+            "error": str(e)
+        }
+
+def calculate_spam_score_free(text):
+    """Calculate spam score using FREE methods"""
+    score = 0
+
+    # Excessive caps
+    caps_ratio = sum(1 for c in text if c.isupper()) / max(len(text), 1)
+    if caps_ratio > 0.5:
+        score += 30
+
+    # Excessive punctuation
+    punct_count = sum(1 for c in text if c in "!?.,;:")
+    if punct_count > len(text) * 0.2:
+        score += 20
+
+    # Repeated characters
+    if any(text.count(char * 4) > 0 for char in "abcdefghijklmnopqrstuvwxyz"):
+        score += 25
+
+    # Too short
+    if len(text.strip()) < 10:
+        score += 15
+
+    return min(score, 100)
+
+def check_waldo_relevance_free(text):
+    """Check WALDO relevance using FREE methods"""
+    waldo_keywords = ["waldo", "waldocoin", "wlo", "$wlo", "#waldomeme", "meme"]
+    text_lower = text.lower()
+
+    matches = sum(1 for keyword in waldo_keywords if keyword in text_lower)
+    return (matches / len(waldo_keywords)) * 100
+
+def has_inappropriate_content_free(text):
+    """Check for inappropriate content using FREE methods"""
+    inappropriate_words = ["scam", "fraud", "steal", "hack", "illegal", "fake"]
+    text_lower = text.lower()
+
+    return any(word in text_lower for word in inappropriate_words)
 
 async def send_waldo(wallet, amount):
     client = JsonRpcClient(XRPL_NODE)
