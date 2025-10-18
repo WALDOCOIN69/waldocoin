@@ -526,9 +526,7 @@
       box-shadow: 0 0 20px #fb2f2f;
     }
 
-    .dao-voting-card {
-      box-shadow: 0 0 12px #ffcc00;
-    }
+
 
     /* Enhanced Stats Dashboard Styles */
     .level-card {
@@ -850,6 +848,189 @@
     .vote-button:disabled {
       background: #666;
       cursor: not-allowed;
+    }
+
+    /* NFT Collection Styles */
+    .nft-collection {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      border: 2px solid #25c2a0;
+    }
+
+    .nft-user-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+      padding: 20px;
+      background: #1a1a1a;
+      border-radius: 8px;
+    }
+
+    .nft-stat {
+      text-align: center;
+      padding: 15px;
+      background: #222;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+
+    .nft-stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #25c2a0;
+      margin-bottom: 5px;
+    }
+
+    .nft-stat-label {
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .nft-quick-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .action-button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .action-button.primary {
+      background: #25c2a0;
+      color: white;
+    }
+
+    .action-button.primary:hover {
+      background: #1ea085;
+      transform: translateY(-2px);
+    }
+
+    .action-button.secondary {
+      background: transparent;
+      border: 2px solid #25c2a0;
+      color: #25c2a0;
+    }
+
+    .action-button.secondary:hover {
+      background: #25c2a0;
+      color: white;
+    }
+
+    .action-button.mint {
+      background: #ffcc00;
+      color: #000;
+    }
+
+    .action-button.mint:hover {
+      background: #e6b800;
+      transform: translateY(-2px);
+    }
+
+    .nft-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 15px;
+    }
+
+    .nft-card {
+      background: #222;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #333;
+      transition: all 0.3s ease;
+    }
+
+    .nft-card:hover {
+      border-color: #25c2a0;
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(37, 194, 160, 0.2);
+    }
+
+    .nft-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+
+    .nft-content {
+      padding: 15px;
+    }
+
+    .nft-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: white;
+      font-size: 0.9rem;
+      line-height: 1.3;
+    }
+
+    .nft-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #ccc;
+      margin-bottom: 10px;
+    }
+
+    .meme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 15px;
+    }
+
+    .meme-card {
+      background: #222;
+      border-radius: 12px;
+      padding: 15px;
+      border: 1px solid #333;
+      transition: all 0.3s ease;
+    }
+
+    .meme-card:hover {
+      border-color: #ffcc00;
+      transform: translateY(-2px);
+    }
+
+    .meme-xp {
+      color: #ffcc00;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .mint-button {
+      width: 100%;
+      padding: 10px;
+      background: #ffcc00;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+
+    .mint-button:hover {
+      background: #e6b800;
+    }
+
+    .my-nfts-section,
+    .eligible-memes-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #333;
     }
 
     @media (min-width: 768px) {
@@ -1177,6 +1358,56 @@
         <div id="battleLeaderboard">Loading leaderboard...</div>
       </div>
     </div>
+
+    <!-- My NFT Collection -->
+    <div class="card big-card nft-collection">
+      <h2>🖼️ My NFT Collection</h2>
+
+      <!-- NFT Stats -->
+      <div class="nft-user-stats">
+        <div class="nft-stat">
+          <div class="nft-stat-number" id="userNFTCount">0</div>
+          <div class="nft-stat-label">NFTs Owned</div>
+        </div>
+        <div class="nft-stat">
+          <div class="nft-stat-number" id="userMintedCount">0</div>
+          <div class="nft-stat-label">Minted by Me</div>
+        </div>
+        <div class="nft-stat">
+          <div class="nft-stat-number" id="eligibleToMint">0</div>
+          <div class="nft-stat-label">Ready to Mint</div>
+        </div>
+        <div class="nft-stat">
+          <div class="nft-stat-number" id="totalNFTValue">0</div>
+          <div class="nft-stat-label">Collection Value</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="nft-quick-actions">
+        <button class="action-button primary" onclick="window.open('/marketplace.html', '_blank')">
+          🏪 Browse Marketplace
+        </button>
+        <button class="action-button secondary" onclick="window.open('/my-nfts.html', '_blank')">
+          📋 Manage My NFTs
+        </button>
+        <button class="action-button mint" onclick="showMintableNFTs()">
+          ⚡ Mint New NFT
+        </button>
+      </div>
+
+      <!-- My NFTs Grid -->
+      <div class="my-nfts-section">
+        <h3>🖼️ My Minted NFTs</h3>
+        <div id="myNFTsGrid" class="nft-grid">Loading your NFTs...</div>
+      </div>
+
+      <!-- Eligible to Mint -->
+      <div class="eligible-memes-section" id="eligibleMemesSection" style="display: none;">
+        <h3>⚡ Ready to Mint (60+ XP)</h3>
+        <div id="eligibleMemesGrid" class="meme-grid">Loading eligible memes...</div>
+      </div>
+    </div>
   </div>
   <!-- NFT Modal -->
   <div id="nftModal" class="nft-modal">
@@ -1184,11 +1415,7 @@
     <img id="nftModalImg" src="https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg" alt="NFT Preview"
       class="nft-modal-image">
   </div>
-  <!-- WALDO DAO Voting Card -->
-  <div class="card big-card dao-voting-card" id="daoVotingCard">
-    <h2>🗳 WALDOcoin DAO Voting</h2>
-    <div id="proposalContainer">Loading proposal...</div>
-  </div>
+
 
   <script>
     function getWallet() {
@@ -1496,7 +1723,6 @@
       });
       await refreshXPStats()
       loadWaldoChart();
-      loadDAOProposal();
       setInterval(refreshXPStats, 60000);
     } catch (err) {
       console.error("❌ Dashboard load failed:", err);
@@ -1513,40 +1739,138 @@
     setTimeout(sendHeightToParent, 1000);
   </script>
   <script>
-    async function loadDAOProposal() {
-      const res = await fetch(`${baseURL}/api/proposals`);
-      const data = await res.json();
-      if (!data.length) {
-        document.getElementById("proposalContainer").textContent = "No active proposals.";
-        return;
+    // NFT Collection Functions
+    async function loadNFTStats() {
+      try {
+        const wallet = getWallet();
+        if (!wallet) return;
+
+        // Get user's tweets to check for NFTs
+        const tweetsRes = await fetch(`${baseURL}/api/tweets?wallet=${wallet}`);
+        const tweets = await tweetsRes.json();
+        const userTweets = tweets.filter(t => t.wallet === wallet);
+
+        // Count minted NFTs
+        const mintedNFTs = userTweets.filter(t => t.nft_minted);
+        const eligibleMemes = userTweets.filter(t => {
+          const xp = Math.floor(t.likes / 10) + Math.floor(t.retweets / 15);
+          return xp >= 60 && !t.nft_minted;
+        });
+
+        // Update stats
+        document.getElementById("userNFTCount").textContent = mintedNFTs.length;
+        document.getElementById("userMintedCount").textContent = mintedNFTs.length;
+        document.getElementById("eligibleToMint").textContent = eligibleMemes.length;
+
+        // Calculate collection value (placeholder)
+        const totalValue = mintedNFTs.length * 100; // Estimate 100 WALDO per NFT
+        document.getElementById("totalNFTValue").textContent = `${totalValue.toLocaleString()} WALDO`;
+
+        // Load NFT grid
+        loadMyNFTs(mintedNFTs);
+        loadEligibleMemes(eligibleMemes);
+
+      } catch (error) {
+        console.error("❌ Error loading NFT stats:", error);
       }
-      const proposal = data[0];
-      const wallet = getWallet();
-      const hasVoted = proposal.votes && proposal.votes[wallet];
-      const voteHTML = hasVoted
-        ? `<p>✅ You voted: ${proposal.votes[wallet]}</p>`
-        : proposal.choices.map(c =>
-          `<button onclick="voteDAO('${proposal.id}', '${c}')">${c}</button>`
-        ).join(" ");
-      document.getElementById("proposalContainer").innerHTML = `
-    <h3>${proposal.title}</h3>
-    ${voteHTML}
-  `;
     }
 
-    async function voteDAO(id, choice) {
-      const wallet = getWallet();
-      const res = await fetch(`${baseURL}/api/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet, proposalId: id, choice })
-      });
-      const data = await res.json();
-      if (data.success) {
-        showWaldoNotification("🗳 Vote submitted successfully!");
-        loadDAOProposal();
+    function loadMyNFTs(nfts) {
+      const container = document.getElementById("myNFTsGrid");
+
+      if (nfts.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: #ccc;">No NFTs minted yet. Create some memes with 60+ XP to mint!</div>';
+        return;
+      }
+
+      container.innerHTML = nfts.map(nft => {
+        const xp = Math.floor(nft.likes / 10) + Math.floor(nft.retweets / 15);
+        return `
+          <div class="nft-card">
+            <img src="${nft.image_url || '/placeholder.jpg'}" alt="NFT" class="nft-image"
+                 onerror="this.src='https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg'">
+            <div class="nft-content">
+              <div class="nft-title">${nft.text.substring(0, 80)}...</div>
+              <div class="nft-stats">
+                <span>❤️ ${nft.likes}</span>
+                <span>🔁 ${nft.retweets}</span>
+                <span>⭐ ${xp} XP</span>
+              </div>
+              <div style="margin-top: 10px;">
+                <span style="color: #25c2a0; font-weight: bold;">✅ Minted</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function loadEligibleMemes(memes) {
+      const container = document.getElementById("eligibleMemesGrid");
+
+      if (memes.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">No memes eligible for minting. Get 60+ XP on your memes!</div>';
+        return;
+      }
+
+      container.innerHTML = memes.map(meme => {
+        const xp = Math.floor(meme.likes / 10) + Math.floor(meme.retweets / 15);
+        return `
+          <div class="meme-card">
+            <div class="nft-title">${meme.text.substring(0, 100)}...</div>
+            <div class="nft-stats">
+              <span>❤️ ${meme.likes}</span>
+              <span>🔁 ${meme.retweets}</span>
+              <span class="meme-xp">⭐ ${xp} XP</span>
+            </div>
+            <button class="mint-button" onclick="mintNFT('${meme.tweet_id}')">
+              ⚡ Mint NFT (60 WALDO)
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showMintableNFTs() {
+      const section = document.getElementById("eligibleMemesSection");
+      if (section.style.display === "none") {
+        section.style.display = "block";
+        section.scrollIntoView({ behavior: 'smooth' });
       } else {
-        showWaldoNotification(`❌ Vote failed: ${data.error}`);
+        section.style.display = "none";
+      }
+    }
+
+    async function mintNFT(tweetId) {
+      try {
+        const wallet = getWallet();
+        if (!wallet) {
+          showWaldoNotification("❌ Please connect your wallet first");
+          return;
+        }
+
+        const res = await fetch(`${baseURL}/api/mint`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet, tweetId })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showWaldoNotification("⚡ NFT minting started! Check XUMM to pay fee.");
+          if (data.next && data.next.always) {
+            window.open(data.next.always, '_blank');
+          }
+
+          // Refresh NFT stats after a delay
+          setTimeout(loadNFTStats, 5000);
+        } else {
+          showWaldoNotification(`❌ Mint failed: ${data.error}`);
+        }
+      } catch (error) {
+        console.error("❌ Error minting NFT:", error);
+        showWaldoNotification("❌ Error starting NFT mint");
       }
     }
 
@@ -1958,15 +2282,16 @@
         });
 
         loadWaldoChart();
-        loadDAOProposal();
 
-        // Initialize enhanced battle system
+        // Initialize enhanced systems
         loadBattleStats();
         loadActiveBattles();
+        loadNFTStats();
 
         // Refresh intervals
         setInterval(refreshXPStats, 60000);
         setInterval(loadBattleStats, 30000);
+        setInterval(loadNFTStats, 120000); // Refresh NFT stats every 2 minutes
         setInterval(() => {
           const activeTab = document.querySelector('.battle-tab.active');
           if (activeTab && activeTab.textContent.includes('Active')) {
