@@ -571,14 +571,14 @@
       firstledger: {
         name: 'First Ledger',
         url: 'https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO',
-        apiUrl: null,
+        apiUrl: 'https://api.firstledger.net/v1/ticker/WLO_XRP', // Real API endpoint
         fees: 0.0025, // 0.25%
         available: true
       },
       xrplto: {
         name: 'XRPL.to',
         url: 'https://xrpl.to/trade/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/XRP',
-        apiUrl: null,
+        apiUrl: 'https://api.xrpl.to/v1/orderbook/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/XRP', // Real API endpoint
         fees: 0.003, // 0.3%
         available: true
       },
@@ -657,102 +657,235 @@
 
     async function loadFirstLedgerPrice() {
       try {
-        // Simulate API call with realistic data
-        const basePrice = 0.00012345;
-        const variation = (Math.random() - 0.5) * 0.00002;
-        const price = basePrice + variation;
+        console.log('🔄 Fetching real First Ledger price...');
+
+        const response = await fetch(EXCHANGES.firstledger.apiUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'WALDOCOIN-PriceAggregator/1.0'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`First Ledger API HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('📊 First Ledger API response:', data);
+
+        // Parse First Ledger API response
+        let price = 0;
+        let volume = 0;
+
+        // Try different possible response formats
+        if (data && data.last) {
+          price = parseFloat(data.last);
+        } else if (data && data.price) {
+          price = parseFloat(data.price);
+        } else if (data && data.mid) {
+          price = parseFloat(data.mid);
+        } else if (data && data.ticker && data.ticker.last) {
+          price = parseFloat(data.ticker.last);
+        }
+
+        if (data && data.volume) {
+          volume = parseFloat(data.volume);
+        } else if (data && data.baseVolume) {
+          volume = parseFloat(data.baseVolume);
+        } else if (data && data.ticker && data.ticker.volume) {
+          volume = parseFloat(data.ticker.volume);
+        }
+
+        if (!price || price <= 0) {
+          throw new Error('Invalid price data from First Ledger API');
+        }
 
         priceData.firstledger = {
           price: price,
-          volume: 15000 + Math.random() * 5000,
+          volume: volume || 0,
           liquidity: 'High',
           lastUpdate: Date.now()
         };
 
-        console.log('✅ First Ledger price loaded:', price.toFixed(8));
+        console.log('✅ First Ledger real price loaded:', price.toFixed(8));
         return priceData.firstledger;
+
       } catch (e) {
-        console.error('❌ First Ledger price failed:', e);
+        console.error('❌ First Ledger API failed:', e);
+        console.log('⚠️ First Ledger API unavailable - marking as offline');
+
+        // Mark as unavailable instead of using fake data
+        priceData.firstledger = null;
         return null;
       }
     }
 
     async function loadXRPLToPrice() {
       try {
-        const prices = await getLiveXRPLPrices();
+        console.log('🔄 Fetching real XRPL.to price...');
+
+        const response = await fetch(EXCHANGES.xrplto.apiUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'WALDOCOIN-PriceAggregator/1.0'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`XRPL.to API HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('📊 XRPL.to API response:', data);
+
+        // Parse XRPL.to API response
+        let price = 0;
+        let volume = 0;
+        let bid = 0;
+        let ask = 0;
+
+        // Try different possible response formats
+        if (data && data.bids && data.asks && data.bids.length > 0 && data.asks.length > 0) {
+          // Orderbook format
+          bid = parseFloat(data.bids[0].price || data.bids[0][0]);
+          ask = parseFloat(data.asks[0].price || data.asks[0][0]);
+          price = (bid + ask) / 2; // Mid price
+
+          // Calculate volume from orderbook
+          volume = data.bids.reduce((sum, order) => sum + parseFloat(order.volume || order[1] || 0), 0);
+        } else if (data && data.price) {
+          price = parseFloat(data.price);
+          bid = price * 0.999; // Approximate spread
+          ask = price * 1.001;
+        } else if (data && data.last) {
+          price = parseFloat(data.last);
+          bid = price * 0.999;
+          ask = price * 1.001;
+        }
+
+        if (data && data.volume) {
+          volume = parseFloat(data.volume);
+        } else if (data && data.baseVolume) {
+          volume = parseFloat(data.baseVolume);
+        }
+
+        if (!price || price <= 0) {
+          throw new Error('Invalid price data from XRPL.to API');
+        }
+
         priceData.xrplto = {
-          price: prices.mid,
-          bid: prices.bid,
-          ask: prices.ask,
-          volume: 8500 + Math.random() * 2000,
+          price: price,
+          bid: bid,
+          ask: ask,
+          volume: volume || 0,
           liquidity: 'Medium',
           lastUpdate: Date.now()
         };
 
-        console.log('✅ XRPL.to price loaded:', prices.mid.toFixed(8));
+        console.log('✅ XRPL.to real price loaded:', price.toFixed(8));
         return priceData.xrplto;
+
       } catch (e) {
-        console.error('❌ XRPL.to price fetch failed:', e);
-        // Fallback data
-        priceData.xrplto = {
-          price: 0.00012250,
-          volume: 8500,
-          liquidity: 'Medium',
-          lastUpdate: Date.now()
-        };
-        return priceData.xrplto;
+        console.error('❌ XRPL.to API failed:', e);
+        console.log('⚠️ XRPL.to API unavailable - marking as offline');
+
+        // Mark as unavailable instead of using fake data
+        priceData.xrplto = null;
+        return null;
       }
     }
 
     async function loadXMagneticPrice() {
       try {
-        const basePrice = 0.00012100;
-        const variation = (Math.random() - 0.5) * 0.00002;
-        const price = basePrice + variation;
+        console.log('🔄 Fetching real XMagnetic price...');
+        const response = await fetch(EXCHANGES.xmagnetic.apiUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('📊 XMagnetic API response:', data);
+
+        // Parse XMagnetic API response
+        let price = 0;
+        let volume = 0;
+
+        if (data && data.last) {
+          price = parseFloat(data.last);
+        } else if (data && data.price) {
+          price = parseFloat(data.price);
+        } else if (data && data.mid) {
+          price = parseFloat(data.mid);
+        }
+
+        if (data && data.volume) {
+          volume = parseFloat(data.volume);
+        } else if (data && data.baseVolume) {
+          volume = parseFloat(data.baseVolume);
+        }
+
+        if (!price || price <= 0) {
+          throw new Error('Invalid price data from XMagnetic API');
+        }
 
         priceData.xmagnetic = {
           price: price,
-          volume: 5200 + Math.random() * 1500,
+          volume: volume || 0,
           liquidity: 'Medium',
           lastUpdate: Date.now()
         };
 
-        console.log('✅ XMagnetic price loaded:', price.toFixed(8));
+        console.log('✅ XMagnetic real price loaded:', price.toFixed(8));
         return priceData.xmagnetic;
+
       } catch (e) {
-        console.error('❌ XMagnetic price failed:', e);
+        console.error('❌ XMagnetic API failed:', e);
+        console.log('⚠️ XMagnetic API unavailable - marking as offline');
+
+        // Mark as unavailable instead of using fake data
+        priceData.xmagnetic = null;
         return null;
       }
     }
 
-    async function getLiveXRPLPrices() {
-      // Simulate realistic XRPL price data
-      const basePrice = 0.00012250;
-      const spread = 0.00000050;
-
-      return {
-        bid: basePrice - spread / 2,
-        ask: basePrice + spread / 2,
-        mid: basePrice
-      };
-    }
+    // This function is no longer used - XRPL.to now uses direct API calls
 
     function updatePriceDisplay() {
       console.log('🔄 Updating price display...', priceData);
 
-      if (priceData.firstledger) {
+      // First Ledger
+      if (priceData.firstledger && priceData.firstledger.price) {
         el('flPrice').textContent = priceData.firstledger.price.toFixed(8);
         el('flLiquidity').textContent = priceData.firstledger.liquidity;
+      } else {
+        el('flPrice').textContent = 'API Offline';
+        el('flLiquidity').textContent = 'Unavailable';
       }
 
-      if (priceData.xrplto) {
+      // XRPL.to
+      if (priceData.xrplto && priceData.xrplto.price) {
         el('xrplToPrice').textContent = priceData.xrplto.price.toFixed(8);
         el('xrplToLiquidity').textContent = priceData.xrplto.liquidity;
+      } else {
+        el('xrplToPrice').textContent = 'API Offline';
+        el('xrplToLiquidity').textContent = 'Unavailable';
       }
 
-      if (priceData.xmagnetic) {
+      // XMagnetic
+      if (priceData.xmagnetic && priceData.xmagnetic.price) {
         el('xmagneticPrice').textContent = priceData.xmagnetic.price.toFixed(8);
         el('xmagneticLiquidity').textContent = priceData.xmagnetic.liquidity;
+      } else {
+        el('xmagneticPrice').textContent = 'API Offline';
+        el('xmagneticLiquidity').textContent = 'Unavailable';
       }
     }
 
