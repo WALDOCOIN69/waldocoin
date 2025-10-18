@@ -20,6 +20,73 @@
       padding: 0;
     }
 
+    /* Navigation Header */
+    .nav-header {
+      background: #1a1a1a;
+      border-bottom: 2px solid #25c2a0;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .nav-logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #25c2a0;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .nav-link:hover {
+      background: #25c2a0;
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .wallet-display {
+      background: #333;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: #25c2a0;
+    }
+
+    @media (max-width: 768px) {
+      .nav-header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+      }
+
+      .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .nav-logo {
+        font-size: 1.2rem;
+      }
+    }
+
     .container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -1042,6 +1109,16 @@
 </head>
 
 <body>
+  <!-- Navigation Header -->
+  <div class="nav-header">
+    <div class="nav-logo">💰 WALDOCOIN Dashboard</div>
+    <div class="nav-links">
+      <a href="dao.html" class="nav-link">🗳️ DAO</a>
+      <a href="marketplace.html" class="nav-link">🏪 Marketplace</a>
+      <div class="wallet-display" id="navWalletDisplay">Not Connected</div>
+    </div>
+  </div>
+
   <div id="waldoNotification">
     <span id="waldoMessage"></span>
     <button type="button" onclick="dismissWaldoNotification()" class="dismiss-btn">Dismiss</button>
@@ -1385,12 +1462,12 @@
 
       <!-- Quick Actions -->
       <div class="nft-quick-actions">
-        <button class="action-button primary" onclick="window.open('/marketplace.html', '_blank')">
+        <a href="marketplace.html" class="action-button primary">
           🏪 Browse Marketplace
-        </button>
-        <button class="action-button secondary" onclick="window.open('/my-nfts.html', '_blank')">
+        </a>
+        <a href="my-nfts.html" class="action-button secondary">
           📋 Manage My NFTs
-        </button>
+        </a>
         <button class="action-button mint" onclick="showMintableNFTs()">
           ⚡ Mint New NFT
         </button>
@@ -1420,6 +1497,14 @@
   <script>
     function getWallet() {
       return localStorage.getItem("xummWallet") || "rnWfL48YCknW6PYewFLKfMKUymHCfj3aww";
+    }
+
+    function updateNavWallet() {
+      const wallet = getWallet();
+      const navDisplay = document.getElementById('navWalletDisplay');
+      if (wallet && navDisplay) {
+        navDisplay.textContent = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
+      }
     }
     const baseURL = "https://waldocoin-backend-api.onrender.com";
     const rewardTiers = [
@@ -2287,6 +2372,7 @@
         loadBattleStats();
         loadActiveBattles();
         loadNFTStats();
+        updateNavWallet();
 
         // Refresh intervals
         setInterval(refreshXPStats, 60000);
