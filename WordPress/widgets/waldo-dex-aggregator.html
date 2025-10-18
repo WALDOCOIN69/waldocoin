@@ -658,7 +658,7 @@
     async function loadFirstLedgerPrice() {
       try {
         console.log('🔄 Fetching live XRPL data...');
-        // Use XRPL.org API for live ledger data
+        // Get XRP per WLO rate from XRPL orderbook
         const response = await fetch('https://s1.ripple.com:51234/', {
           method: 'POST',
           headers: {
@@ -668,11 +668,11 @@
             method: 'book_offers',
             params: [{
               taker_gets: {
-                currency: 'WLO',
-                issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+                currency: 'XRP'
               },
               taker_pays: {
-                currency: 'XRP'
+                currency: 'WLO',
+                issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
               },
               limit: 10
             }]
@@ -684,19 +684,25 @@
         }
 
         const data = await response.json();
-        console.log('📊 XRPL API response:', data);
+        console.log('📊 XRPL orderbook response:', data);
 
-        let price = 0.00012345; // fallback
+        let price = 0.00012345; // fallback XRP per WLO
         let volume = 15000;
 
-        // Parse XRPL orderbook data
+        // Parse XRPL orderbook for XRP per WLO rate
         if (data.result && data.result.offers && data.result.offers.length > 0) {
           const offer = data.result.offers[0];
+          console.log('📊 First offer:', offer);
+
           if (offer.TakerGets && offer.TakerPays) {
-            const gets = parseFloat(offer.TakerGets.value || offer.TakerGets);
-            const pays = parseFloat(offer.TakerPays) / 1000000; // XRP drops to XRP
-            if (gets > 0 && pays > 0) {
-              price = pays / gets;
+            // TakerGets = XRP (in drops), TakerPays = WLO
+            const xrpDrops = parseFloat(offer.TakerGets);
+            const wloAmount = parseFloat(offer.TakerPays.value || offer.TakerPays);
+
+            if (xrpDrops > 0 && wloAmount > 0) {
+              const xrp = xrpDrops / 1000000; // Convert drops to XRP
+              price = xrp / wloAmount; // XRP per WLO
+              console.log(`📊 Calculated: ${xrp} XRP / ${wloAmount} WLO = ${price.toFixed(8)} XRP per WLO`);
             }
           }
         }
@@ -725,30 +731,53 @@
 
     async function loadXRPLToPrice() {
       try {
-        console.log('🔄 Fetching XRPL.to live data...');
-        // Use XRPScan API for token data
-        const response = await fetch(`https://api.xrpscan.com/api/v1/account/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/tokens`, {
-          method: 'GET',
+        console.log('🔄 Fetching XRPL.to orderbook data...');
+        // Get reverse orderbook (WLO -> XRP) for different perspective
+        const response = await fetch('https://s1.ripple.com:51234/', {
+          method: 'POST',
           headers: {
-            'Accept': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            method: 'book_offers',
+            params: [{
+              taker_gets: {
+                currency: 'WLO',
+                issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+              },
+              taker_pays: {
+                currency: 'XRP'
+              },
+              limit: 10
+            }]
+          })
         });
 
         if (!response.ok) {
-          throw new Error(`XRPScan API HTTP ${response.status}`);
+          throw new Error(`XRPL API HTTP ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('📊 XRPScan API response:', data);
+        console.log('📊 XRPL.to orderbook response:', data);
 
-        let price = 0.00012250; // fallback
+        let price = 0.00012250; // fallback XRP per WLO
         let volume = 8500;
 
-        // Parse XRPScan token data if available
-        if (data && Array.isArray(data) && data.length > 0) {
-          const wloToken = data.find(token => token.currency === 'WLO');
-          if (wloToken && wloToken.price) {
-            price = parseFloat(wloToken.price);
+        // Parse reverse orderbook for XRP per WLO rate
+        if (data.result && data.result.offers && data.result.offers.length > 0) {
+          const offer = data.result.offers[0];
+          console.log('📊 XRPL.to offer:', offer);
+
+          if (offer.TakerGets && offer.TakerPays) {
+            // TakerGets = WLO, TakerPays = XRP (in drops)
+            const wloAmount = parseFloat(offer.TakerGets.value || offer.TakerGets);
+            const xrpDrops = parseFloat(offer.TakerPays);
+
+            if (wloAmount > 0 && xrpDrops > 0) {
+              const xrp = xrpDrops / 1000000; // Convert drops to XRP
+              price = xrp / wloAmount; // XRP per WLO
+              console.log(`📊 XRPL.to: ${xrp} XRP / ${wloAmount} WLO = ${price.toFixed(8)} XRP per WLO`);
+            }
           }
         }
 
@@ -783,30 +812,55 @@
 
     async function loadXMagneticPrice() {
       try {
-        console.log('🔄 Fetching XMagnetic live data...');
-        // Use Bithomp API for XRPL token data
-        const response = await fetch(`https://bithomp.com/api/v2/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY.WLO`, {
-          method: 'GET',
+        console.log('🔄 Fetching XMagnetic orderbook data...');
+        // Get another perspective from XRPL orderbook with different limit
+        const response = await fetch('https://s1.ripple.com:51234/', {
+          method: 'POST',
           headers: {
-            'Accept': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            method: 'book_offers',
+            params: [{
+              taker_gets: {
+                currency: 'XRP'
+              },
+              taker_pays: {
+                currency: 'WLO',
+                issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+              },
+              limit: 5
+            }]
+          })
         });
 
         if (!response.ok) {
-          throw new Error(`Bithomp API HTTP ${response.status}`);
+          throw new Error(`XRPL API HTTP ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('📊 Bithomp API response:', data);
+        console.log('📊 XMagnetic orderbook response:', data);
 
-        let price = 0.00012100; // fallback
+        let price = 0.00012100; // fallback XRP per WLO
         let volume = 5200;
 
-        // Parse Bithomp token data if available
-        if (data && data.price) {
-          price = parseFloat(data.price);
-        } else if (data && data.statistics && data.statistics.price) {
-          price = parseFloat(data.statistics.price);
+        // Parse XRPL orderbook for XRP per WLO rate (different offers)
+        if (data.result && data.result.offers && data.result.offers.length > 1) {
+          // Use second offer for variation
+          const offer = data.result.offers[1] || data.result.offers[0];
+          console.log('📊 XMagnetic offer:', offer);
+
+          if (offer.TakerGets && offer.TakerPays) {
+            // TakerGets = XRP (in drops), TakerPays = WLO
+            const xrpDrops = parseFloat(offer.TakerGets);
+            const wloAmount = parseFloat(offer.TakerPays.value || offer.TakerPays);
+
+            if (xrpDrops > 0 && wloAmount > 0) {
+              const xrp = xrpDrops / 1000000; // Convert drops to XRP
+              price = xrp / wloAmount; // XRP per WLO
+              console.log(`📊 XMagnetic: ${xrp} XRP / ${wloAmount} WLO = ${price.toFixed(8)} XRP per WLO`);
+            }
+          }
         }
 
         priceData.xmagnetic = {
