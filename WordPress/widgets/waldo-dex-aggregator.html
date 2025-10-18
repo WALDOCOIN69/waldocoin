@@ -567,579 +567,585 @@
 </style>
 
 <script>
-  (function () {
-    'use strict'; // Enable strict mode to catch more errors
-    const el = (id) => document.getElementById(id);
-    const priceData = {};
-    let bestExchange = null;
+  // WordPress-compatible DEX Aggregator Script
+  console.log('DEX Aggregator script loading...');
 
-    const EXCHANGES = {
-      firstledger: {
-        name: 'First Ledger',
-        url: 'https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO',
-        apiUrl: 'https://api.firstledger.net/v1/ticker/WLO_XRP', // Real API endpoint
-        fees: 0.0025, // 0.25%
-        available: true
-      },
-      xrplto: {
-        name: 'XRPL.to',
-        url: 'https://xrpl.to/trade/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/XRP',
-        apiUrl: 'https://api.xrpl.to/v1/orderbook/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/XRP', // Real API endpoint
-        fees: 0.003, // 0.3%
-        available: true
-      },
-      xmagnetic: {
-        name: 'XMagnetic',
-        url: 'https://xmagnetic.org/dex/WLO+rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP+XRP?network=mainnet',
-        apiUrl: 'https://api.xmagnetic.org/v1/ticker/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP',
-        fees: 0.003, // 0.3%
-        available: true
+  // Global helper function
+  function el(id) {
+    return document.getElementById(id);
+  }
+
+  // Global variables for DEX aggregator
+  var priceData = {};
+  var bestExchange = null;
+  var collapsed = true;
+
+  var EXCHANGES = {
+    firstledger: {
+      name: 'First Ledger',
+      url: 'https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO',
+      apiUrl: 'https://api.firstledger.net/v1/ticker/WLO_XRP', // Real API endpoint
+      fees: 0.0025, // 0.25%
+      available: true
+    },
+    xrplto: {
+      name: 'XRPL.to',
+      url: 'https://xrpl.to/trade/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/XRP',
+      apiUrl: 'https://api.xrpl.to/v1/orderbook/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/XRP', // Real API endpoint
+      fees: 0.003, // 0.3%
+      available: true
+    },
+    xmagnetic: {
+      name: 'XMagnetic',
+      url: 'https://xmagnetic.org/dex/WLO+rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP+XRP?network=mainnet',
+      apiUrl: 'https://api.xmagnetic.org/v1/ticker/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP',
+      fees: 0.003, // 0.3%
+      available: true
+    }
+  };
+
+  // Collapsible functionality
+  var root = el('waldoAggregator');
+  var toggle = el('widgetToggle');
+
+  console.log('DEX Aggregator Debug:', {
+    root: root,
+    toggle: toggle,
+    rootExists: !!root,
+    toggleExists: !!toggle
+  });
+
+  const applyCollapsed = () => {
+    if (root) {
+      if (collapsed) {
+        root.classList.add('collapsed');
+        console.log('Widget collapsed');
+      } else {
+        root.classList.remove('collapsed');
+        console.log('Widget expanded');
+      }
+    } else {
+      console.error('❌ Root element not found!');
+    }
+  };
+
+  if (toggle) {
+    // Add multiple event listeners for better compatibility
+    const handleToggle = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🖱️ Toggle button clicked!');
+      collapsed = !collapsed;
+      console.log('🔄 New collapsed state:', collapsed);
+      applyCollapsed();
+      if (!collapsed) {
+        console.log('🔍 Widget opened, loading prices...');
+        loadAllPrices();
       }
     };
 
-    // Collapsible functionality
-    const root = el('waldoAggregator');
-    const toggle = el('widgetToggle');
-    let collapsed = true;
+    toggle.addEventListener('click', handleToggle);
+    toggle.addEventListener('touchstart', handleToggle);
 
-    console.log('DEX Aggregator Debug:', {
-      root: root,
-      toggle: toggle,
-      rootExists: !!root,
-      toggleExists: !!toggle
+    // Add visual feedback
+    toggle.addEventListener('mousedown', () => {
+      toggle.style.transform = 'scale(0.95)';
     });
 
-    const applyCollapsed = () => {
-      if (root) {
-        if (collapsed) {
-          root.classList.add('collapsed');
-          console.log('Widget collapsed');
-        } else {
-          root.classList.remove('collapsed');
-          console.log('Widget expanded');
-        }
-      } else {
-        console.error('❌ Root element not found!');
-      }
-    };
+    toggle.addEventListener('mouseup', () => {
+      toggle.style.transform = '';
+    });
 
-    if (toggle) {
-      // Add multiple event listeners for better compatibility
-      const handleToggle = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('🖱️ Toggle button clicked!');
-        collapsed = !collapsed;
-        console.log('🔄 New collapsed state:', collapsed);
-        applyCollapsed();
-        if (!collapsed) {
-          console.log('🔍 Widget opened, loading prices...');
-          loadAllPrices();
+    console.log('✅ Toggle event listeners added');
+  } else {
+    console.error('❌ Toggle button not found!');
+  }
+
+  // Initialize collapsed state
+  console.log('🚀 Initializing collapsed state...');
+  applyCollapsed();
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      const tabName = tab.dataset.tab;
+      el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
+      el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
+
+      if (!collapsed && tabName === 'prices') loadAllPrices();
+    });
+  });
+
+  // Load prices from all exchanges
+  async function loadAllPrices() {
+    console.log('📊 Loading prices from all DEXs...');
+
+    try {
+      // Load all prices concurrently
+      await Promise.all([
+        loadFirstLedgerPrice(),
+        loadXRPLToPrice(),
+        loadXMagneticPrice()
+      ]);
+
+      updatePriceDisplay();
+      findBestExchange();
+      updateMarketStats();
+
+    } catch (e) {
+      console.error('❌ Failed to load prices:', e);
+    }
+  }
+
+  async function loadFirstLedgerPrice() {
+    try {
+      console.log('🔄 Fetching real First Ledger price...');
+
+      const response = await fetch(EXCHANGES.firstledger.apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'WALDOCOIN-PriceAggregator/1.0'
         }
+      });
+
+      if (!response.ok) {
+        throw new Error(`First Ledger API HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 First Ledger API response:', data);
+
+      // Parse First Ledger API response
+      let price = 0;
+      let volume = 0;
+
+      // Try different possible response formats
+      if (data && data.last) {
+        price = parseFloat(data.last);
+      } else if (data && data.price) {
+        price = parseFloat(data.price);
+      } else if (data && data.mid) {
+        price = parseFloat(data.mid);
+      } else if (data && data.ticker && data.ticker.last) {
+        price = parseFloat(data.ticker.last);
+      }
+
+      if (data && data.volume) {
+        volume = parseFloat(data.volume);
+      } else if (data && data.baseVolume) {
+        volume = parseFloat(data.baseVolume);
+      } else if (data && data.ticker && data.ticker.volume) {
+        volume = parseFloat(data.ticker.volume);
+      }
+
+      if (!price || price <= 0) {
+        throw new Error('Invalid price data from First Ledger API');
+      }
+
+      priceData.firstledger = {
+        price: price,
+        volume: volume || 0,
+        liquidity: 'High',
+        lastUpdate: Date.now()
       };
 
-      toggle.addEventListener('click', handleToggle);
-      toggle.addEventListener('touchstart', handleToggle);
+      console.log('✅ First Ledger real price loaded:', price.toFixed(8));
+      return priceData.firstledger;
 
-      // Add visual feedback
-      toggle.addEventListener('mousedown', () => {
-        toggle.style.transform = 'scale(0.95)';
+    } catch (e) {
+      console.error('❌ First Ledger API failed:', e);
+      console.log('⚠️ First Ledger API unavailable - marking as offline');
+
+      // Mark as unavailable instead of using fake data
+      priceData.firstledger = null;
+      return null;
+    }
+  }
+
+  async function loadXRPLToPrice() {
+    try {
+      console.log('🔄 Fetching real XRPL.to price...');
+
+      const response = await fetch(EXCHANGES.xrplto.apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'WALDOCOIN-PriceAggregator/1.0'
+        }
       });
 
-      toggle.addEventListener('mouseup', () => {
-        toggle.style.transform = '';
+      if (!response.ok) {
+        throw new Error(`XRPL.to API HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 XRPL.to API response:', data);
+
+      // Parse XRPL.to API response
+      let price = 0;
+      let volume = 0;
+      let bid = 0;
+      let ask = 0;
+
+      // Try different possible response formats
+      if (data && data.bids && data.asks && data.bids.length > 0 && data.asks.length > 0) {
+        // Orderbook format
+        bid = parseFloat(data.bids[0].price || data.bids[0][0]);
+        ask = parseFloat(data.asks[0].price || data.asks[0][0]);
+        price = (bid + ask) / 2; // Mid price
+
+        // Calculate volume from orderbook
+        volume = data.bids.reduce((sum, order) => sum + parseFloat(order.volume || order[1] || 0), 0);
+      } else if (data && data.price) {
+        price = parseFloat(data.price);
+        bid = price * 0.999; // Approximate spread
+        ask = price * 1.001;
+      } else if (data && data.last) {
+        price = parseFloat(data.last);
+        bid = price * 0.999;
+        ask = price * 1.001;
+      }
+
+      if (data && data.volume) {
+        volume = parseFloat(data.volume);
+      } else if (data && data.baseVolume) {
+        volume = parseFloat(data.baseVolume);
+      }
+
+      if (!price || price <= 0) {
+        throw new Error('Invalid price data from XRPL.to API');
+      }
+
+      priceData.xrplto = {
+        price: price,
+        bid: bid,
+        ask: ask,
+        volume: volume || 0,
+        liquidity: 'Medium',
+        lastUpdate: Date.now()
+      };
+
+      console.log('✅ XRPL.to real price loaded:', price.toFixed(8));
+      return priceData.xrplto;
+
+    } catch (e) {
+      console.error('❌ XRPL.to API failed:', e);
+      console.log('⚠️ XRPL.to API unavailable - marking as offline');
+
+      // Mark as unavailable instead of using fake data
+      priceData.xrplto = null;
+      return null;
+    }
+  }
+
+  async function loadXMagneticPrice() {
+    try {
+      console.log('🔄 Fetching real XMagnetic price...');
+      const response = await fetch(EXCHANGES.xmagnetic.apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
       });
 
-      console.log('✅ Toggle event listeners added');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 XMagnetic API response:', data);
+
+      // Parse XMagnetic API response
+      let price = 0;
+      let volume = 0;
+
+      if (data && data.last) {
+        price = parseFloat(data.last);
+      } else if (data && data.price) {
+        price = parseFloat(data.price);
+      } else if (data && data.mid) {
+        price = parseFloat(data.mid);
+      }
+
+      if (data && data.volume) {
+        volume = parseFloat(data.volume);
+      } else if (data && data.baseVolume) {
+        volume = parseFloat(data.baseVolume);
+      }
+
+      if (!price || price <= 0) {
+        throw new Error('Invalid price data from XMagnetic API');
+      }
+
+      priceData.xmagnetic = {
+        price: price,
+        volume: volume || 0,
+        liquidity: 'Medium',
+        lastUpdate: Date.now()
+      };
+
+      console.log('✅ XMagnetic real price loaded:', price.toFixed(8));
+      return priceData.xmagnetic;
+
+    } catch (e) {
+      console.error('❌ XMagnetic API failed:', e);
+      console.log('⚠️ XMagnetic API unavailable - marking as offline');
+
+      // Mark as unavailable instead of using fake data
+      priceData.xmagnetic = null;
+      return null;
+    }
+  }
+
+  // This function is no longer used - XRPL.to now uses direct API calls
+
+  function updatePriceDisplay() {
+    console.log('🔄 Updating price display...', priceData);
+
+    // First Ledger
+    if (priceData.firstledger && priceData.firstledger.price) {
+      el('flPrice').textContent = priceData.firstledger.price.toFixed(8);
+      el('flLiquidity').textContent = priceData.firstledger.liquidity;
     } else {
-      console.error('❌ Toggle button not found!');
+      el('flPrice').textContent = 'API Offline';
+      el('flLiquidity').textContent = 'Unavailable';
     }
 
-    // Initialize collapsed state
-    console.log('🚀 Initializing collapsed state...');
-    applyCollapsed();
+    // XRPL.to
+    if (priceData.xrplto && priceData.xrplto.price) {
+      el('xrplToPrice').textContent = priceData.xrplto.price.toFixed(8);
+      el('xrplToLiquidity').textContent = priceData.xrplto.liquidity;
+    } else {
+      el('xrplToPrice').textContent = 'API Offline';
+      el('xrplToLiquidity').textContent = 'Unavailable';
+    }
 
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+    // XMagnetic
+    if (priceData.xmagnetic && priceData.xmagnetic.price) {
+      el('xmagneticPrice').textContent = priceData.xmagnetic.price.toFixed(8);
+      el('xmagneticLiquidity').textContent = priceData.xmagnetic.liquidity;
+    } else {
+      el('xmagneticPrice').textContent = 'API Offline';
+      el('xmagneticLiquidity').textContent = 'Unavailable';
+    }
+  }
 
-        const tabName = tab.dataset.tab;
-        el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
-        el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
+  function findBestExchange() {
+    console.log('🔍 Finding best exchange...', priceData);
 
-        if (!collapsed && tabName === 'prices') loadAllPrices();
-      });
+    const exchanges = Object.entries(priceData).filter(([key, data]) => data && data.price);
+
+    if (exchanges.length === 0) {
+      console.log('⚠️ No price data available for best exchange');
+      return;
+    }
+
+    // Find highest price (best for selling WLO)
+    let bestPrice = 0;
+    let bestKey = null;
+
+    exchanges.forEach(([key, data]) => {
+      if (data.price > bestPrice) {
+        bestPrice = data.price;
+        bestKey = key;
+      }
     });
 
-    // Load prices from all exchanges
-    async function loadAllPrices() {
-      console.log('📊 Loading prices from all DEXs...');
+    bestExchange = bestKey;
 
-      try {
-        // Load all prices concurrently
-        await Promise.all([
-          loadFirstLedgerPrice(),
-          loadXRPLToPrice(),
-          loadXMagneticPrice()
-        ]);
+    // Update best price card
+    if (bestExchange && priceData[bestExchange]) {
+      el('bestPrice').textContent = priceData[bestExchange].price.toFixed(8);
+      el('bestTradeBtn').textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
 
-        updatePriceDisplay();
-        findBestExchange();
-        updateMarketStats();
-
-      } catch (e) {
-        console.error('❌ Failed to load prices:', e);
+      // Add visual indicator to the best exchange card
+      document.querySelectorAll('.dex-card').forEach(card => card.classList.remove('best-highlight'));
+      const bestCard = document.getElementById(bestExchange + 'Card');
+      if (bestCard) {
+        bestCard.classList.add('best-highlight');
       }
     }
 
-    async function loadFirstLedgerPrice() {
-      try {
-        console.log('🔄 Fetching real First Ledger price...');
+    console.log('✅ Best exchange found:', bestExchange, 'Price:', bestPrice.toFixed(8));
+    return bestExchange;
+  }
 
-        const response = await fetch(EXCHANGES.firstledger.apiUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'WALDOCOIN-PriceAggregator/1.0'
-          }
-        });
+  function updateMarketStats() {
+    console.log('📊 Updating market stats...', priceData);
 
-        if (!response.ok) {
-          throw new Error(`First Ledger API HTTP ${response.status}: ${response.statusText}`);
-        }
+    const exchanges = Object.values(priceData).filter(d => d && d.price);
 
-        const data = await response.json();
-        console.log('📊 First Ledger API response:', data);
-
-        // Parse First Ledger API response
-        let price = 0;
-        let volume = 0;
-
-        // Try different possible response formats
-        if (data && data.last) {
-          price = parseFloat(data.last);
-        } else if (data && data.price) {
-          price = parseFloat(data.price);
-        } else if (data && data.mid) {
-          price = parseFloat(data.mid);
-        } else if (data && data.ticker && data.ticker.last) {
-          price = parseFloat(data.ticker.last);
-        }
-
-        if (data && data.volume) {
-          volume = parseFloat(data.volume);
-        } else if (data && data.baseVolume) {
-          volume = parseFloat(data.baseVolume);
-        } else if (data && data.ticker && data.ticker.volume) {
-          volume = parseFloat(data.ticker.volume);
-        }
-
-        if (!price || price <= 0) {
-          throw new Error('Invalid price data from First Ledger API');
-        }
-
-        priceData.firstledger = {
-          price: price,
-          volume: volume || 0,
-          liquidity: 'High',
-          lastUpdate: Date.now()
-        };
-
-        console.log('✅ First Ledger real price loaded:', price.toFixed(8));
-        return priceData.firstledger;
-
-      } catch (e) {
-        console.error('❌ First Ledger API failed:', e);
-        console.log('⚠️ First Ledger API unavailable - marking as offline');
-
-        // Mark as unavailable instead of using fake data
-        priceData.firstledger = null;
-        return null;
-      }
+    if (exchanges.length === 0) {
+      console.log('⚠️ No price data available for stats');
+      return;
     }
 
-    async function loadXRPLToPrice() {
-      try {
-        console.log('🔄 Fetching real XRPL.to price...');
-
-        const response = await fetch(EXCHANGES.xrplto.apiUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'WALDOCOIN-PriceAggregator/1.0'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`XRPL.to API HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('📊 XRPL.to API response:', data);
-
-        // Parse XRPL.to API response
-        let price = 0;
-        let volume = 0;
-        let bid = 0;
-        let ask = 0;
-
-        // Try different possible response formats
-        if (data && data.bids && data.asks && data.bids.length > 0 && data.asks.length > 0) {
-          // Orderbook format
-          bid = parseFloat(data.bids[0].price || data.bids[0][0]);
-          ask = parseFloat(data.asks[0].price || data.asks[0][0]);
-          price = (bid + ask) / 2; // Mid price
-
-          // Calculate volume from orderbook
-          volume = data.bids.reduce((sum, order) => sum + parseFloat(order.volume || order[1] || 0), 0);
-        } else if (data && data.price) {
-          price = parseFloat(data.price);
-          bid = price * 0.999; // Approximate spread
-          ask = price * 1.001;
-        } else if (data && data.last) {
-          price = parseFloat(data.last);
-          bid = price * 0.999;
-          ask = price * 1.001;
-        }
-
-        if (data && data.volume) {
-          volume = parseFloat(data.volume);
-        } else if (data && data.baseVolume) {
-          volume = parseFloat(data.baseVolume);
-        }
-
-        if (!price || price <= 0) {
-          throw new Error('Invalid price data from XRPL.to API');
-        }
-
-        priceData.xrplto = {
-          price: price,
-          bid: bid,
-          ask: ask,
-          volume: volume || 0,
-          liquidity: 'Medium',
-          lastUpdate: Date.now()
-        };
-
-        console.log('✅ XRPL.to real price loaded:', price.toFixed(8));
-        return priceData.xrplto;
-
-      } catch (e) {
-        console.error('❌ XRPL.to API failed:', e);
-        console.log('⚠️ XRPL.to API unavailable - marking as offline');
-
-        // Mark as unavailable instead of using fake data
-        priceData.xrplto = null;
-        return null;
-      }
-    }
-
-    async function loadXMagneticPrice() {
-      try {
-        console.log('🔄 Fetching real XMagnetic price...');
-        const response = await fetch(EXCHANGES.xmagnetic.apiUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('📊 XMagnetic API response:', data);
-
-        // Parse XMagnetic API response
-        let price = 0;
-        let volume = 0;
-
-        if (data && data.last) {
-          price = parseFloat(data.last);
-        } else if (data && data.price) {
-          price = parseFloat(data.price);
-        } else if (data && data.mid) {
-          price = parseFloat(data.mid);
-        }
-
-        if (data && data.volume) {
-          volume = parseFloat(data.volume);
-        } else if (data && data.baseVolume) {
-          volume = parseFloat(data.baseVolume);
-        }
-
-        if (!price || price <= 0) {
-          throw new Error('Invalid price data from XMagnetic API');
-        }
-
-        priceData.xmagnetic = {
-          price: price,
-          volume: volume || 0,
-          liquidity: 'Medium',
-          lastUpdate: Date.now()
-        };
-
-        console.log('✅ XMagnetic real price loaded:', price.toFixed(8));
-        return priceData.xmagnetic;
-
-      } catch (e) {
-        console.error('❌ XMagnetic API failed:', e);
-        console.log('⚠️ XMagnetic API unavailable - marking as offline');
-
-        // Mark as unavailable instead of using fake data
-        priceData.xmagnetic = null;
-        return null;
-      }
-    }
-
-    // This function is no longer used - XRPL.to now uses direct API calls
-
-    function updatePriceDisplay() {
-      console.log('🔄 Updating price display...', priceData);
-
-      // First Ledger
-      if (priceData.firstledger && priceData.firstledger.price) {
-        el('flPrice').textContent = priceData.firstledger.price.toFixed(8);
-        el('flLiquidity').textContent = priceData.firstledger.liquidity;
-      } else {
-        el('flPrice').textContent = 'API Offline';
-        el('flLiquidity').textContent = 'Unavailable';
-      }
-
-      // XRPL.to
-      if (priceData.xrplto && priceData.xrplto.price) {
-        el('xrplToPrice').textContent = priceData.xrplto.price.toFixed(8);
-        el('xrplToLiquidity').textContent = priceData.xrplto.liquidity;
-      } else {
-        el('xrplToPrice').textContent = 'API Offline';
-        el('xrplToLiquidity').textContent = 'Unavailable';
-      }
-
-      // XMagnetic
-      if (priceData.xmagnetic && priceData.xmagnetic.price) {
-        el('xmagneticPrice').textContent = priceData.xmagnetic.price.toFixed(8);
-        el('xmagneticLiquidity').textContent = priceData.xmagnetic.liquidity;
-      } else {
-        el('xmagneticPrice').textContent = 'API Offline';
-        el('xmagneticLiquidity').textContent = 'Unavailable';
-      }
-    }
-
-    function findBestExchange() {
-      console.log('🔍 Finding best exchange...', priceData);
-
-      const exchanges = Object.entries(priceData).filter(([key, data]) => data && data.price);
-
-      if (exchanges.length === 0) {
-        console.log('⚠️ No price data available for best exchange');
-        return;
-      }
-
-      // Find highest price (best for selling WLO)
-      let bestPrice = 0;
-      let bestKey = null;
-
-      exchanges.forEach(([key, data]) => {
-        if (data.price > bestPrice) {
-          bestPrice = data.price;
-          bestKey = key;
-        }
-      });
-
-      bestExchange = bestKey;
-
-      // Update best price card
-      if (bestExchange && priceData[bestExchange]) {
-        el('bestPrice').textContent = priceData[bestExchange].price.toFixed(8);
-        el('bestTradeBtn').textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
-
-        // Add visual indicator to the best exchange card
-        document.querySelectorAll('.dex-card').forEach(card => card.classList.remove('best-highlight'));
-        const bestCard = document.getElementById(bestExchange + 'Card');
-        if (bestCard) {
-          bestCard.classList.add('best-highlight');
-        }
-      }
-
-      console.log('✅ Best exchange found:', bestExchange, 'Price:', bestPrice.toFixed(8));
-      return bestExchange;
-    }
-
-    function updateMarketStats() {
-      console.log('📊 Updating market stats...', priceData);
-
-      const exchanges = Object.values(priceData).filter(d => d && d.price);
-
-      if (exchanges.length === 0) {
-        console.log('⚠️ No price data available for stats');
-        return;
-      }
-
-      // Calculate total volume
-      const totalVol = exchanges.reduce((sum, d) => sum + (d.volume || 0), 0);
-
-      // Calculate price range
-      const prices = exchanges.map(d => d.price).filter(p => p > 0);
-      const minPrice = Math.min(...prices);
-      const maxPrice = Math.max(...prices);
-
-      // Calculate spread
-      const spread = prices.length > 1 ? ((maxPrice - minPrice) / minPrice * 100) : 0;
-
-      // Update DOM
-      el('totalVolume').textContent = totalVol.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' XRP';
-      el('priceRange').textContent = `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`;
-      el('bestSpread').textContent = spread.toFixed(2) + '%';
-
-      console.log('✅ Market stats updated:', {
-        volume: totalVol,
-        range: `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`,
-        spread: spread.toFixed(2) + '%'
-      });
-    }
-
-    // Calculator functionality
-    function calculateTrade() {
-      const amount = parseFloat(el('calcAmount').value);
-      const fromCurrency = el('fromCurrencyLabel').textContent;
-      const toCurrency = el('toCurrencyLabel').textContent;
-
-      if (!amount || !bestExchange || !priceData[bestExchange]) {
-        el('calcResult').value = '';
-        el('calcBestExchange').textContent = '—';
-        el('calcSavings').textContent = '—';
-        el('calcFees').textContent = '—';
-        el('calcTradeBtn').style.display = 'none';
-        return;
-      }
-
-      const bestPrice = priceData[bestExchange].price;
-      const fees = EXCHANGES[bestExchange].fees;
-
-      let result, savings;
-
-      // Handle all conversion combinations
-      if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
-        result = (amount / bestPrice) * (1 - fees);
-      } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
-        result = (amount * bestPrice) * (1 - fees);
-      } else if (fromCurrency === toCurrency) {
-        result = amount;
-      } else {
-        result = 0;
-      }
-
-      el('calcResult').value = result.toFixed(6);
-      el('calcBestExchange').textContent = EXCHANGES[bestExchange].name;
-      el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : (fees * 100).toFixed(2) + '%';
-
-      // Calculate savings vs worst exchange
-      if (fromCurrency !== toCurrency) {
-        const prices = Object.values(priceData).map(d => d.price).filter(p => p > 0);
-        const worstPrice = fromCurrency === 'XRP' ? Math.max(...prices) : Math.min(...prices);
-        const worstResult = fromCurrency === 'XRP' ? (amount / worstPrice) * (1 - fees) : (amount * worstPrice) * (1 - fees);
-        savings = Math.abs(result - worstResult);
-        el('calcSavings').textContent = `${savings.toFixed(6)} ${toCurrency}`;
-      } else {
-        el('calcSavings').textContent = '0.000000 ' + toCurrency;
-      }
-
-      // Show trade button
-      const tradeBtn = el('calcTradeBtn');
-      tradeBtn.textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
-      tradeBtn.style.display = 'block';
-    }
-
-    // Add calculator event listener after function is defined
-    if (el('calcAmount')) {
-      el('calcAmount').addEventListener('input', calculateTrade);
-    }
-
-    // flipCalculator moved to global functions section below
-
-    // Trading functions (redirect to exchanges) - Expose to global scope
-    window.openBestDEX = function () {
-      console.log('Opening best DEX:', bestExchange);
-      if (bestExchange && EXCHANGES[bestExchange]) {
-        window.open(EXCHANGES[bestExchange].url, '_blank');
-      } else {
-        console.error('No best exchange available');
-      }
-    };
-
-    window.openFirstLedger = function () {
-      console.log('Opening First Ledger');
-      window.open(EXCHANGES.firstledger.url, '_blank');
-    };
-
-    window.openXRPLTo = function () {
-      console.log('Opening XRPL.to WLO token page...');
-      window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank', 'noopener,noreferrer');
-    };
-
-    window.openXMagnetic = function () {
-      console.log('Opening XMagnetic');
-      window.open(EXCHANGES.xmagnetic.url, '_blank');
-    };
-
-    window.openCalcBestExchange = function () {
-      console.log('Opening calc best exchange:', bestExchange);
-      if (bestExchange && EXCHANGES[bestExchange]) {
-        console.log('Opening best exchange:', EXCHANGES[bestExchange].name);
-        window.open(EXCHANGES[bestExchange].url, '_blank', 'noopener,noreferrer');
-      } else {
-        console.error('No best exchange available for calculator');
-      }
-    };
-
-    // Ensure flipCalculator is also properly exposed
-    window.flipCalculator = function () {
-      console.log('Flipping calculator currencies');
-      const fromLabel = el('fromCurrencyLabel');
-      const toLabel = el('toCurrencyLabel');
-      if (fromLabel && toLabel) {
-        const temp = fromLabel.textContent;
-        fromLabel.textContent = toLabel.textContent;
-        toLabel.textContent = temp;
-        calculateTrade();
-      } else {
-        console.error('Currency labels not found');
-      }
-    };
-
-    // Calculator is for reference only - no trading functionality
-
-    // Force initial load when widget opens (removed duplicate event listener)
-
-    // Auto-refresh prices every 30 seconds
-    setInterval(() => {
-      if (!collapsed) {
-        loadAllPrices();
-      }
-    }, 30000);
-
-    // Initial load after 1 second (only if not collapsed)
-    setTimeout(() => {
-      if (!collapsed) {
-        console.log('Initial price load...');
-        loadAllPrices();
-      }
-    }, 1000);
-
-    // Debug: Log all global functions to verify they're available
-    console.log('Global functions available:', {
-      openBestDEX: typeof window.openBestDEX,
-      openFirstLedger: typeof window.openFirstLedger,
-      openXRPLTo: typeof window.openXRPLTo,
-      openXMagnetic: typeof window.openXMagnetic,
-      openCalcBestExchange: typeof window.openCalcBestExchange,
-      flipCalculator: typeof window.flipCalculator
+    // Calculate total volume
+    const totalVol = exchanges.reduce((sum, d) => sum + (d.volume || 0), 0);
+
+    // Calculate price range
+    const prices = exchanges.map(d => d.price).filter(p => p > 0);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    // Calculate spread
+    const spread = prices.length > 1 ? ((maxPrice - minPrice) / minPrice * 100) : 0;
+
+    // Update DOM
+    el('totalVolume').textContent = totalVol.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' XRP';
+    el('priceRange').textContent = `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`;
+    el('bestSpread').textContent = spread.toFixed(2) + '%';
+
+    console.log('✅ Market stats updated:', {
+      volume: totalVol,
+      range: `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`,
+      spread: spread.toFixed(2) + '%'
     });
+  }
 
-  })();
+  // Calculator functionality
+  function calculateTrade() {
+    const amount = parseFloat(el('calcAmount').value);
+    const fromCurrency = el('fromCurrencyLabel').textContent;
+    const toCurrency = el('toCurrencyLabel').textContent;
+
+    if (!amount || !bestExchange || !priceData[bestExchange]) {
+      el('calcResult').value = '';
+      el('calcBestExchange').textContent = '—';
+      el('calcSavings').textContent = '—';
+      el('calcFees').textContent = '—';
+      el('calcTradeBtn').style.display = 'none';
+      return;
+    }
+
+    const bestPrice = priceData[bestExchange].price;
+    const fees = EXCHANGES[bestExchange].fees;
+
+    let result, savings;
+
+    // Handle all conversion combinations
+    if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
+      result = (amount / bestPrice) * (1 - fees);
+    } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
+      result = (amount * bestPrice) * (1 - fees);
+    } else if (fromCurrency === toCurrency) {
+      result = amount;
+    } else {
+      result = 0;
+    }
+
+    el('calcResult').value = result.toFixed(6);
+    el('calcBestExchange').textContent = EXCHANGES[bestExchange].name;
+    el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : (fees * 100).toFixed(2) + '%';
+
+    // Calculate savings vs worst exchange
+    if (fromCurrency !== toCurrency) {
+      const prices = Object.values(priceData).map(d => d.price).filter(p => p > 0);
+      const worstPrice = fromCurrency === 'XRP' ? Math.max(...prices) : Math.min(...prices);
+      const worstResult = fromCurrency === 'XRP' ? (amount / worstPrice) * (1 - fees) : (amount * worstPrice) * (1 - fees);
+      savings = Math.abs(result - worstResult);
+      el('calcSavings').textContent = `${savings.toFixed(6)} ${toCurrency}`;
+    } else {
+      el('calcSavings').textContent = '0.000000 ' + toCurrency;
+    }
+
+    // Show trade button
+    const tradeBtn = el('calcTradeBtn');
+    tradeBtn.textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
+    tradeBtn.style.display = 'block';
+  }
+
+  // Add calculator event listener after function is defined
+  if (el('calcAmount')) {
+    el('calcAmount').addEventListener('input', calculateTrade);
+  }
+
+  // flipCalculator moved to global functions section below
+
+  // Trading functions (redirect to exchanges) - Expose to global scope
+  window.openBestDEX = function () {
+    console.log('Opening best DEX:', bestExchange);
+    if (bestExchange && EXCHANGES[bestExchange]) {
+      window.open(EXCHANGES[bestExchange].url, '_blank');
+    } else {
+      console.error('No best exchange available');
+    }
+  };
+
+  window.openFirstLedger = function () {
+    console.log('Opening First Ledger');
+    window.open(EXCHANGES.firstledger.url, '_blank');
+  };
+
+  window.openXRPLTo = function () {
+    console.log('Opening XRPL.to WLO token page...');
+    window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank', 'noopener,noreferrer');
+  };
+
+  window.openXMagnetic = function () {
+    console.log('Opening XMagnetic');
+    window.open(EXCHANGES.xmagnetic.url, '_blank');
+  };
+
+  window.openCalcBestExchange = function () {
+    console.log('Opening calc best exchange:', bestExchange);
+    if (bestExchange && EXCHANGES[bestExchange]) {
+      console.log('Opening best exchange:', EXCHANGES[bestExchange].name);
+      window.open(EXCHANGES[bestExchange].url, '_blank', 'noopener,noreferrer');
+    } else {
+      console.error('No best exchange available for calculator');
+    }
+  };
+
+  // Ensure flipCalculator is also properly exposed
+  window.flipCalculator = function () {
+    console.log('Flipping calculator currencies');
+    const fromLabel = el('fromCurrencyLabel');
+    const toLabel = el('toCurrencyLabel');
+    if (fromLabel && toLabel) {
+      const temp = fromLabel.textContent;
+      fromLabel.textContent = toLabel.textContent;
+      toLabel.textContent = temp;
+      calculateTrade();
+    } else {
+      console.error('Currency labels not found');
+    }
+  };
+
+  // Calculator is for reference only - no trading functionality
+
+  // Force initial load when widget opens (removed duplicate event listener)
+
+  // Auto-refresh prices every 30 seconds
+  setInterval(() => {
+    if (!collapsed) {
+      loadAllPrices();
+    }
+  }, 30000);
+
+  // Initial load after 1 second (only if not collapsed)
+  setTimeout(() => {
+    if (!collapsed) {
+      console.log('Initial price load...');
+      loadAllPrices();
+    }
+  }, 1000);
+
+  // Debug: Log all global functions to verify they're available
+  console.log('Global functions available:', {
+    openBestDEX: typeof window.openBestDEX,
+    openFirstLedger: typeof window.openFirstLedger,
+    openXRPLTo: typeof window.openXRPLTo,
+    openXMagnetic: typeof window.openXMagnetic,
+    openCalcBestExchange: typeof window.openCalcBestExchange,
+    flipCalculator: typeof window.flipCalculator
+  });
+
+  console.log('DEX Aggregator script loaded successfully!');
 </script>
 
 <!-- DEX Aggregator Widget End -->
