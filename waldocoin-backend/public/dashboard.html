@@ -530,6 +530,328 @@
       box-shadow: 0 0 12px #ffcc00;
     }
 
+    /* Enhanced Stats Dashboard Styles */
+    .level-card {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      border: 2px solid #fb2f2f;
+    }
+
+    .level-display {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .level-number {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #fb2f2f;
+      text-shadow: 0 0 10px #fb2f2f;
+    }
+
+    .level-title {
+      font-size: 1.2rem;
+      color: #ffcc00;
+      margin: 10px 0;
+      font-weight: bold;
+    }
+
+    .xp-display {
+      font-size: 1.1rem;
+      margin: 15px 0;
+    }
+
+    .level-progress-bar {
+      width: 100%;
+      height: 20px;
+      border-radius: 10px;
+      background: #333;
+      border: none;
+      overflow: hidden;
+    }
+
+    .level-progress-bar::-webkit-progress-bar {
+      background: #333;
+      border-radius: 10px;
+    }
+
+    .level-progress-bar::-webkit-progress-value {
+      background: linear-gradient(90deg, #fb2f2f 0%, #ffcc00 100%);
+      border-radius: 10px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 15px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      border: 1px solid #333;
+      transition: all 0.3s ease;
+    }
+
+    .stat-item:hover {
+      border-color: #fb2f2f;
+      transform: translateY(-2px);
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fb2f2f;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .xp-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .xp-source {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      border-left: 4px solid #fb2f2f;
+    }
+
+    .xp-icon {
+      font-size: 1.2rem;
+      margin-right: 10px;
+    }
+
+    .xp-label {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .xp-value {
+      font-weight: bold;
+      color: #ffcc00;
+    }
+
+    .balance-breakdown {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    /* Enhanced Battle Arena Styles */
+    .battle-stats-overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+      padding: 20px;
+      background: #1a1a1a;
+      border-radius: 8px;
+    }
+
+    .battle-stat {
+      text-align: center;
+      padding: 15px;
+      background: #222;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+
+    .battle-stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fb2f2f;
+      margin-bottom: 5px;
+    }
+
+    .battle-stat-label {
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .battle-tabs {
+      display: flex;
+      gap: 5px;
+      margin: 20px 0;
+      border-bottom: 2px solid #333;
+    }
+
+    .battle-tab {
+      padding: 12px 20px;
+      background: #222;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.3s ease;
+    }
+
+    .battle-tab:hover {
+      background: #333;
+      color: white;
+    }
+
+    .battle-tab.active {
+      background: #fb2f2f;
+      color: white;
+      border-bottom: 2px solid #fb2f2f;
+    }
+
+    .battle-tab-content {
+      display: none;
+      padding: 20px 0;
+      min-height: 300px;
+    }
+
+    .battle-tab-content.active {
+      display: block;
+    }
+
+    .create-battle-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .battle-type-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: #222;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .radio-option:hover {
+      background: #333;
+    }
+
+    .radio-option input[type="radio"] {
+      margin: 0;
+    }
+
+    .battle-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .button-style.primary {
+      background: #fb2f2f;
+      border: 2px solid #fb2f2f;
+    }
+
+    .button-style.secondary {
+      background: transparent;
+      border: 2px solid #fb2f2f;
+      color: #fb2f2f;
+    }
+
+    .button-style.secondary:hover {
+      background: #fb2f2f;
+      color: white;
+    }
+
+    .battle-leaderboard {
+      margin-top: 30px;
+      padding: 20px;
+      background: #1a1a1a;
+      border-radius: 8px;
+    }
+
+    .battle-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      margin: 10px 0;
+      background: #222;
+      border-radius: 8px;
+      border-left: 4px solid #fb2f2f;
+    }
+
+    .battle-memes {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .battle-meme {
+      text-align: center;
+    }
+
+    .battle-meme img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 5px;
+    }
+
+    .battle-votes {
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .vote-count {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #fb2f2f;
+    }
+
+    .vote-button {
+      padding: 8px 16px;
+      background: #fb2f2f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.3s ease;
+    }
+
+    .vote-button:hover {
+      background: #d42626;
+    }
+
+    .vote-button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
     @media (min-width: 768px) {
       .container {
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -582,18 +904,86 @@
       <p><a id="topMemeLink" href="#" target="_blank" class="xrpl-link-green">🔗 View Meme</a></p>
     </div>
 
-    <!-- WALDO XP Stats Card -->
-    <div class="card xp-stats-card">
-      <h3>🧠 WALDO XP Stats</h3>
-      <p><strong>Level:</strong> <span id="waldoLevel">Loading...</span></p>
-      <p><strong>Title:</strong> <span id="waldoTitle">Loading...</span></p>
-      <p><strong>XP:</strong> <span id="waldoXP">Loading...</span></p>
-      <p><strong>Likes:</strong> <span id="waldoLikes">Loading...</span></p>
-      <p><strong>Retweets:</strong> <span id="waldoRetweets">Loading...</span></p>
-      <p><strong>Minted Memes:</strong> <span id="waldoMemes">Loading...</span></p>
-      <p><strong>Battles Won:</strong> <span id="waldoBattles">Loading...</span></p>
-      <p><strong>Referrals:</strong> <span id="waldoReferrals">Loading...</span></p>
-      <p><strong>Next Level In:</strong> <span id="xpToNextLevel">Loading...</span></p>
+    <!-- Enhanced Level & Progress Card -->
+    <div class="card level-card">
+      <h2>⭐ Level & Progress</h2>
+      <div class="level-display">
+        <div class="level-number" id="waldoLevel">Loading...</div>
+        <div class="level-title" id="waldoTitle">Loading...</div>
+        <div class="xp-display">
+          <span id="waldoXP">0</span> XP
+          <small>(<span id="xpToNextLevel">—</span> to next level)</small>
+        </div>
+        <progress id="levelProgressEnhanced" max="100" class="level-progress-bar" value="0"></progress>
+      </div>
+    </div>
+
+    <!-- Activity Stats Grid Card -->
+    <div class="card">
+      <h2>📊 Activity Stats</h2>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-number" id="waldoLikes">0</div>
+          <div class="stat-label">❤️ Likes</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="waldoRetweets">0</div>
+          <div class="stat-label">🔁 Retweets</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="waldoMemes">0</div>
+          <div class="stat-label">🎭 Memes</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="waldoBattles">0</div>
+          <div class="stat-label">⚔️ Battles</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="waldoReferrals">0</div>
+          <div class="stat-label">📣 Referrals</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="waldoNFTs">0</div>
+          <div class="stat-label">🖼️ NFTs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- XP Breakdown Card -->
+    <div class="card">
+      <h2>🎯 XP Breakdown</h2>
+      <div class="xp-breakdown">
+        <div class="xp-source">
+          <span class="xp-icon">❤️</span>
+          <span class="xp-label">Likes</span>
+          <span class="xp-value" id="xpFromLikes">0 XP</span>
+        </div>
+        <div class="xp-source">
+          <span class="xp-icon">🔁</span>
+          <span class="xp-label">Retweets</span>
+          <span class="xp-value" id="xpFromRetweets">0 XP</span>
+        </div>
+        <div class="xp-source">
+          <span class="xp-icon">⚔️</span>
+          <span class="xp-label">Battle Wins</span>
+          <span class="xp-value" id="xpFromBattles">0 XP</span>
+        </div>
+        <div class="xp-source">
+          <span class="xp-icon">📣</span>
+          <span class="xp-label">Referrals</span>
+          <span class="xp-value" id="xpFromReferrals">0 XP</span>
+        </div>
+        <div class="xp-source">
+          <span class="xp-icon">🗳️</span>
+          <span class="xp-label">Voting</span>
+          <span class="xp-value" id="xpFromVoting">0 XP</span>
+        </div>
+        <div class="xp-source">
+          <span class="xp-icon">⏳</span>
+          <span class="xp-label">Staking Bonus</span>
+          <span class="xp-value" id="xpFromStaking">0 XP</span>
+        </div>
+      </div>
     </div>
     <!-- Total WALDO Earned Card -->
     <div class="card">
@@ -694,48 +1084,97 @@
         <div class="pagination" id="pagination"></div>
       </div>
     </div>
-    <!-- WALDOcoin Battle Arena -->
+    <!-- Enhanced Battle Arena -->
     <div id="battleNotification" class="battle-notification">
       ⚔️ Battle has started! Join now and vote for your favorite meme!
     </div>
     <div class="card big-card battle-arena">
-      <h2>🔥 Meme Battle Arena</h2>
-      <div id="battleStatus">Loading current battle...</div>
-      <div id="battleContent" style="display: none;">
-        <div class="battle-memes-container">
-          <div class="flex-item">
-            <h3>Meme 1</h3>
-            <a id="meme1Link" href="#" target="_blank">
-              <img alt="Meme 1" class="meme-thumb" id="meme1Img"
-                src="https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg">
-            </a>
-            <button type="button" onclick="voteBattle('meme1')">Vote for Meme 1</button>
+      <h2>🔥 Enhanced Battle Arena</h2>
+
+      <!-- Battle Stats Overview -->
+      <div class="battle-stats-overview">
+        <div class="battle-stat">
+          <div class="battle-stat-number" id="totalBattles">0</div>
+          <div class="battle-stat-label">Total Battles</div>
+        </div>
+        <div class="battle-stat">
+          <div class="battle-stat-number" id="activeBattles">0</div>
+          <div class="battle-stat-label">Active Now</div>
+        </div>
+        <div class="battle-stat">
+          <div class="battle-stat-number" id="totalVotes">0</div>
+          <div class="battle-stat-label">Total Votes</div>
+        </div>
+        <div class="battle-stat">
+          <div class="battle-stat-number" id="totalPrizePool">0</div>
+          <div class="battle-stat-label">WALDO Distributed</div>
+        </div>
+      </div>
+
+      <!-- Battle Tabs -->
+      <div class="battle-tabs">
+        <button class="battle-tab active" onclick="showBattleTab('active')">🔥 Active Battles</button>
+        <button class="battle-tab" onclick="showBattleTab('pending')">⏳ Pending</button>
+        <button class="battle-tab" onclick="showBattleTab('completed')">🏆 Completed</button>
+        <button class="battle-tab" onclick="showBattleTab('create')">⚔️ Create Battle</button>
+      </div>
+
+      <!-- Active Battles Tab -->
+      <div id="activeBattlesTab" class="battle-tab-content active">
+        <div id="activeBattlesList">Loading active battles...</div>
+      </div>
+
+      <!-- Pending Battles Tab -->
+      <div id="pendingBattlesTab" class="battle-tab-content">
+        <div id="pendingBattlesList">Loading pending battles...</div>
+      </div>
+
+      <!-- Completed Battles Tab -->
+      <div id="completedBattlesTab" class="battle-tab-content">
+        <div id="completedBattlesList">Loading completed battles...</div>
+      </div>
+
+      <!-- Create Battle Tab -->
+      <div id="createBattleTab" class="battle-tab-content">
+        <div class="create-battle-form">
+          <h3>🚀 Start a New Battle</h3>
+          <div class="form-group">
+            <label>Your Meme Tweet URL:</label>
+            <input id="memeTweetId" type="text" class="input-style" placeholder="https://x.com/user/status/1234567890"
+              onblur="extractTweetId(this.value)">
           </div>
-          <div class="flex-item">
-            <h3>Meme 2</h3>
-            <a id="meme2Link" href="#" target="_blank">
-              <img alt="Meme 2" class="meme-thumb" id="meme2Img"
-                src="https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg">
-            </a>
-            <button type="button" onclick="voteBattle('meme2')">Vote for Meme 2</button>
+          <div class="form-group">
+            <label>Challenge Type:</label>
+            <div class="battle-type-options">
+              <label class="radio-option">
+                <input type="radio" name="battleType" value="open" checked>
+                <span>Open Challenge (Anyone can accept)</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="battleType" value="specific">
+                <span>Specific Challenge</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group" id="specificChallengeGroup" style="display: none;">
+            <label>Challenge Twitter Handle:</label>
+            <input id="challengeHandle" type="text" class="input-style" placeholder="@username">
+          </div>
+          <div class="battle-actions">
+            <button type="button" onclick="startNewBattle()" class="button-style primary">
+              🧠 Start Battle (150 WALDO)
+            </button>
+            <button type="button" onclick="startOpenBattle()" class="button-style secondary">
+              🌍 Open Challenge (100 WALDO)
+            </button>
           </div>
         </div>
-        <p id="battleTimer" class="battle-timer"></p>
-        <p id="battleVoteStatus" class="twitter-link-status"></p>
-        <div class="margin-top-20">
-          <p id="battleFinalResult" class="battle-result"></p>
-        </div>
-        <div class="margin-top-20">
-          <h3 class="centered-text">🚀 Launch or Accept a Battle</h3>
-          <div class="centered-column">
-            <input id="memeTweetId" onblur="extractTweetId(this.value)"
-              placeholder="Paste Meme Tweet Link(e.g.https://x.com/user/status/1234567890)" class="input-style"
-              type="text">
-            <button type="button" onclick="startBattle()" class="button-style">🧠 Start New Battle (100 WALDO)</button>
-            <button type="button" onclick="acceptBattle()" class="button-style">🤜 Accept Current Battle (50
-              WALDO)</button>
-          </div>
-        </div>
+      </div>
+
+      <!-- Battle Leaderboard -->
+      <div class="battle-leaderboard">
+        <h3>🏆 Battle Champions</h3>
+        <div id="battleLeaderboard">Loading leaderboard...</div>
       </div>
     </div>
   </div>
@@ -903,8 +1342,44 @@
     async function refreshXPStats() {
       const res = await fetch(`${baseURL}/api/userStats?wallet=${getWallet()}`);
       const data = await res.json();
+
+      // Update basic stats
       document.getElementById("waldoXP").textContent = data.xp;
       document.getElementById("xpToNextLevel").textContent = `${calculateXPToNextLevel(data.xp)} XP`;
+      document.getElementById("waldoLevel").textContent = `Level ${data.level}`;
+      document.getElementById("waldoTitle").textContent = data.title;
+
+      // Update activity stats
+      document.getElementById("waldoLikes").textContent = data.likes || 0;
+      document.getElementById("waldoRetweets").textContent = data.retweets || 0;
+      document.getElementById("waldoMemes").textContent = data.memes || 0;
+      document.getElementById("waldoBattles").textContent = data.battles || 0;
+      document.getElementById("waldoReferrals").textContent = Array.isArray(data.referrals) ? data.referrals.length : 0;
+
+      // Update XP breakdown if available
+      if (data.xpBreakdown) {
+        document.getElementById("xpFromLikes").textContent = `${data.xpBreakdown.likes || 0} XP`;
+        document.getElementById("xpFromRetweets").textContent = `${data.xpBreakdown.retweets || 0} XP`;
+        document.getElementById("xpFromBattles").textContent = `${data.xpBreakdown.battles || 0} XP`;
+        document.getElementById("xpFromReferrals").textContent = `${data.xpBreakdown.referrals || 0} XP`;
+        document.getElementById("xpFromVoting").textContent = `${data.xpBreakdown.voting || 0} XP`;
+        document.getElementById("xpFromStaking").textContent = `${data.xpBreakdown.stakingBonus || 0} XP`;
+      }
+
+      // Update progress bars
+      const progress = Math.min(100, (data.xp % 250));
+      document.getElementById("levelProgress").value = progress;
+      document.getElementById("levelProgressEnhanced").value = progress;
+
+      // Update NFT count
+      try {
+        const nftRes = await fetch(`${baseURL}/api/tweets?wallet=${getWallet()}`);
+        const tweets = await nftRes.json();
+        const nftCount = tweets.filter(t => t.wallet === getWallet() && t.nft_minted).length;
+        document.getElementById("waldoNFTs").textContent = nftCount;
+      } catch (e) {
+        document.getElementById("waldoNFTs").textContent = "0";
+      }
     }
 
     async function loadWaldoChart() {
@@ -1074,6 +1549,321 @@
         showWaldoNotification(`❌ Vote failed: ${data.error}`);
       }
     }
+
+    // Enhanced Battle System Functions
+    async function loadBattleStats() {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/management/stats`);
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById("totalBattles").textContent = data.stats.totalBattles;
+          document.getElementById("activeBattles").textContent = data.stats.activeBattles;
+          document.getElementById("totalVotes").textContent = data.stats.totalVotes;
+          document.getElementById("totalPrizePool").textContent = `${data.stats.totalPrizePool.toLocaleString()} WALDO`;
+        }
+      } catch (error) {
+        console.error("❌ Error loading battle stats:", error);
+      }
+    }
+
+    function showBattleTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.battle-tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.battle-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(`${tabName}BattlesTab`).classList.add('active');
+      document.querySelector(`[onclick="showBattleTab('${tabName}')"]`).classList.add('active');
+
+      // Load content for the tab
+      if (tabName === 'active') {
+        loadActiveBattles();
+      } else if (tabName === 'pending') {
+        loadPendingBattles();
+      } else if (tabName === 'completed') {
+        loadCompletedBattles();
+      }
+    }
+
+    async function loadActiveBattles() {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/management/active`);
+        const data = await res.json();
+
+        const container = document.getElementById("activeBattlesList");
+
+        if (data.success && data.battles.length > 0) {
+          container.innerHTML = data.battles.map(battle => `
+            <div class="battle-item">
+              <div class="battle-memes">
+                <div class="battle-meme">
+                  <img src="${battle.challengerTweet.image || '/placeholder.jpg'}" alt="Challenger Meme">
+                  <div>@${battle.challengerHandle || 'Unknown'}</div>
+                </div>
+                <div style="font-size: 2rem; margin: 0 20px;">⚔️</div>
+                <div class="battle-meme">
+                  <img src="${battle.acceptorTweet.image || '/placeholder.jpg'}" alt="Acceptor Meme">
+                  <div>@${battle.acceptorHandle || 'Unknown'}</div>
+                </div>
+              </div>
+              <div class="battle-votes">
+                <div class="vote-count">${battle.votes.A} vs ${battle.votes.B}</div>
+                <div style="margin: 10px 0;">
+                  <button class="vote-button" onclick="voteBattle('${battle.battleId}', 'A')">
+                    Vote A
+                  </button>
+                  <button class="vote-button" onclick="voteBattle('${battle.battleId}', 'B')">
+                    Vote B
+                  </button>
+                </div>
+                <div style="font-size: 0.8rem; color: #ccc;">
+                  ${Math.floor(battle.timeRemaining / (1000 * 60 * 60))}h remaining
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: #ccc;">No active battles right now. Start one!</div>';
+        }
+      } catch (error) {
+        console.error("❌ Error loading active battles:", error);
+        document.getElementById("activeBattlesList").innerHTML = '<div style="color: #fb2f2f;">Error loading battles</div>';
+      }
+    }
+
+    async function loadPendingBattles() {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/management/pending`);
+        const data = await res.json();
+
+        const container = document.getElementById("pendingBattlesList");
+
+        if (data.success && data.battles.length > 0) {
+          container.innerHTML = data.battles.map(battle => `
+            <div class="battle-item">
+              <div class="battle-memes">
+                <div class="battle-meme">
+                  <img src="${battle.challengerTweet.image || '/placeholder.jpg'}" alt="Challenger Meme">
+                  <div>@${battle.challengerHandle || 'Unknown'}</div>
+                  <div style="font-size: 0.8rem; color: #ccc;">${battle.challengerTweet.likes} ❤️ ${battle.challengerTweet.retweets} 🔁</div>
+                </div>
+                <div style="font-size: 2rem; margin: 0 20px;">⏳</div>
+                <div style="text-align: center;">
+                  ${battle.openInvite ?
+              '<div style="color: #ffcc00;">Open Challenge</div>' :
+              `<div>vs @${battle.challengedHandle || 'Specific User'}</div>`
+            }
+                </div>
+              </div>
+              <div class="battle-votes">
+                ${battle.openInvite ?
+              `<button class="vote-button" onclick="acceptBattle('${battle.battleId}')">Accept Challenge</button>` :
+              '<div style="color: #ccc;">Waiting for acceptance</div>'
+            }
+                <div style="font-size: 0.8rem; color: #ccc; margin-top: 5px;">
+                  ${Math.floor(battle.timeRemaining / (1000 * 60 * 60))}h to accept
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: #ccc;">No pending battles</div>';
+        }
+      } catch (error) {
+        console.error("❌ Error loading pending battles:", error);
+        document.getElementById("pendingBattlesList").innerHTML = '<div style="color: #fb2f2f;">Error loading battles</div>';
+      }
+    }
+
+    async function loadCompletedBattles() {
+      try {
+        const res = await fetch(`${baseURL}/api/battle/management/completed?limit=10`);
+        const data = await res.json();
+
+        const container = document.getElementById("completedBattlesList");
+
+        if (data.success && data.battles.length > 0) {
+          container.innerHTML = data.battles.map(battle => `
+            <div class="battle-item">
+              <div class="battle-memes">
+                <div class="battle-meme">
+                  <img src="${battle.challengerTweet.image || '/placeholder.jpg'}" alt="Challenger Meme">
+                  <div>@${battle.challengerHandle || 'Unknown'}</div>
+                </div>
+                <div style="font-size: 2rem; margin: 0 20px;">
+                  ${battle.winner === 'A' ? '🏆' : battle.winner === 'B' ? '💀' : '🤝'}
+                </div>
+                <div class="battle-meme">
+                  <img src="${battle.acceptorTweet.image || '/placeholder.jpg'}" alt="Acceptor Meme">
+                  <div>@${battle.acceptorHandle || 'Unknown'}</div>
+                </div>
+              </div>
+              <div class="battle-votes">
+                <div class="vote-count">${battle.votes.A} vs ${battle.votes.B}</div>
+                <div style="color: ${battle.winner === 'tie' ? '#ffcc00' : '#25c2a0'}; font-weight: bold;">
+                  ${battle.winner === 'tie' ? 'TIE' : `Winner: ${battle.winner}`}
+                </div>
+                <div style="font-size: 0.8rem; color: #ccc;">
+                  Prize: ${battle.prizePool.toLocaleString()} WALDO
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: #ccc;">No completed battles yet</div>';
+        }
+      } catch (error) {
+        console.error("❌ Error loading completed battles:", error);
+        document.getElementById("completedBattlesList").innerHTML = '<div style="color: #fb2f2f;">Error loading battles</div>';
+      }
+    }
+
+    async function voteBattle(battleId, choice) {
+      try {
+        const wallet = getWallet();
+        if (!wallet) {
+          showWaldoNotification("❌ Please connect your wallet first");
+          return;
+        }
+
+        const res = await fetch(`${baseURL}/api/battle/vote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet, battleId, vote: choice })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showWaldoNotification("🗳️ Vote submitted! Check XUMM to sign.");
+          if (data.next && data.next.always) {
+            window.open(data.next.always, '_blank');
+          }
+
+          // Refresh active battles after a delay
+          setTimeout(loadActiveBattles, 3000);
+        } else {
+          showWaldoNotification(`❌ Vote failed: ${data.error}`);
+        }
+      } catch (error) {
+        console.error("❌ Error voting in battle:", error);
+        showWaldoNotification("❌ Error submitting vote");
+      }
+    }
+
+    async function acceptBattle(battleId) {
+      try {
+        const wallet = getWallet();
+        const tweetId = document.getElementById("memeTweetId").value;
+
+        if (!wallet) {
+          showWaldoNotification("❌ Please connect your wallet first");
+          return;
+        }
+
+        if (!tweetId) {
+          showWaldoNotification("❌ Please enter your meme tweet URL first");
+          return;
+        }
+
+        const res = await fetch(`${baseURL}/api/battle/accept`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet, tweetId, battleId })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showWaldoNotification("⚔️ Battle accepted! Check XUMM to pay fee.");
+          if (data.next && data.next.always) {
+            window.open(data.next.always, '_blank');
+          }
+
+          // Refresh pending battles
+          setTimeout(loadPendingBattles, 3000);
+        } else {
+          showWaldoNotification(`❌ Accept failed: ${data.error}`);
+        }
+      } catch (error) {
+        console.error("❌ Error accepting battle:", error);
+        showWaldoNotification("❌ Error accepting battle");
+      }
+    }
+
+    async function startNewBattle() {
+      try {
+        const wallet = getWallet();
+        const tweetId = document.getElementById("memeTweetId").value;
+        const battleType = document.querySelector('input[name="battleType"]:checked').value;
+        const challengeHandle = document.getElementById("challengeHandle").value;
+
+        if (!wallet) {
+          showWaldoNotification("❌ Please connect your wallet first");
+          return;
+        }
+
+        if (!tweetId) {
+          showWaldoNotification("❌ Please enter your meme tweet URL");
+          return;
+        }
+
+        if (battleType === 'specific' && !challengeHandle) {
+          showWaldoNotification("❌ Please enter the Twitter handle to challenge");
+          return;
+        }
+
+        const endpoint = battleType === 'specific' ? '/api/battle/start' : '/api/battle/open-start';
+        const body = battleType === 'specific'
+          ? { wallet, tweetId, twitterHandle: challengeHandle.replace('@', '') }
+          : { wallet, tweetId };
+
+        const res = await fetch(`${baseURL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showWaldoNotification("🚀 Battle started! Check XUMM to pay fee.");
+          if (data.next && data.next.always) {
+            window.open(data.next.always, '_blank');
+          }
+
+          // Clear form and switch to pending tab
+          document.getElementById("memeTweetId").value = '';
+          document.getElementById("challengeHandle").value = '';
+          setTimeout(() => {
+            showBattleTab('pending');
+          }, 3000);
+        } else {
+          showWaldoNotification(`❌ Battle start failed: ${data.error}`);
+        }
+      } catch (error) {
+        console.error("❌ Error starting battle:", error);
+        showWaldoNotification("❌ Error starting battle");
+      }
+    }
+
+    // Handle battle type radio button changes
+    document.addEventListener('change', function (e) {
+      if (e.target.name === 'battleType') {
+        const specificGroup = document.getElementById('specificChallengeGroup');
+        if (e.target.value === 'specific') {
+          specificGroup.style.display = 'block';
+        } else {
+          specificGroup.style.display = 'none';
+        }
+      }
+    });
+
     document.addEventListener("DOMContentLoaded", async () => {
       const wallet = localStorage.getItem("xummWallet");
 
@@ -1169,7 +1959,20 @@
 
         loadWaldoChart();
         loadDAOProposal();
+
+        // Initialize enhanced battle system
+        loadBattleStats();
+        loadActiveBattles();
+
+        // Refresh intervals
         setInterval(refreshXPStats, 60000);
+        setInterval(loadBattleStats, 30000);
+        setInterval(() => {
+          const activeTab = document.querySelector('.battle-tab.active');
+          if (activeTab && activeTab.textContent.includes('Active')) {
+            loadActiveBattles();
+          }
+        }, 15000);
 
       } catch (err) {
         console.error("❌ Dashboard load failed:", err);

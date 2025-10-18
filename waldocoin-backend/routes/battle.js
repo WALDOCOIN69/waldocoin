@@ -1,16 +1,36 @@
 import express from 'express';
 import { redis } from '../redisClient.js';
 
+// Import battle sub-routes
+import managementRouter from './battle/management.js';
+import startRouter from './battle/start.js';
+import acceptRouter from './battle/accept.js';
+import voteRouter from './battle/vote.js';
+import resultsRouter from './battle/results.js';
+import payoutRouter from './battle/payout.js';
+import leaderboardRouter from './battle/leaderboard.js';
+import openStartRouter from './battle/open-start.js';
+
 const router = express.Router();
 
 console.log("⚔️ Loaded: routes/battle.js");
+
+// Mount sub-routes
+router.use('/management', managementRouter);
+router.use('/start', startRouter);
+router.use('/accept', acceptRouter);
+router.use('/vote', voteRouter);
+router.use('/results', resultsRouter);
+router.use('/payout', payoutRouter);
+router.use('/leaderboard', leaderboardRouter);
+router.use('/open-start', openStartRouter);
 
 // GET /api/battle/current - Get current active battle
 router.get('/current', async (req, res) => {
   try {
     // Get current battle ID
     const currentBattleId = await redis.get("battle:current");
-    
+
     if (!currentBattleId) {
       return res.json({
         success: true,
@@ -21,7 +41,7 @@ router.get('/current', async (req, res) => {
 
     // Get battle details
     const battleData = await redis.hGetAll(`battle:${currentBattleId}`);
-    
+
     if (!battleData || Object.keys(battleData).length === 0) {
       return res.json({
         success: true,
@@ -77,7 +97,7 @@ router.get('/current', async (req, res) => {
 router.get('/leaderboard', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    
+
     // Get user battle stats
     const userKeys = await redis.keys("user:*:battles");
     const leaderboard = [];
@@ -85,10 +105,10 @@ router.get('/leaderboard', async (req, res) => {
     for (const key of userKeys.slice(0, limit)) {
       const walletAddress = key.split(':')[1];
       const battleStats = await redis.hGetAll(key);
-      
+
       if (battleStats && Object.keys(battleStats).length > 0) {
         const userData = await redis.hGetAll(`user:${walletAddress}`);
-        
+
         leaderboard.push({
           walletAddress: walletAddress,
           username: userData.username || `User_${walletAddress.slice(-6)}`,
@@ -131,7 +151,7 @@ router.get('/leaderboard', async (req, res) => {
 router.get('/history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
-    
+
     // Get completed battles
     const battleKeys = await redis.keys("battle:*");
     const completedBattles = [];
@@ -140,11 +160,11 @@ router.get('/history', async (req, res) => {
       if (key.includes(':') && !key.includes('current')) {
         const battleId = key.split(':')[1];
         const battleData = await redis.hGetAll(key);
-        
+
         if (battleData && battleData.status === 'completed') {
           const meme1Votes = await redis.get(`battle:${battleId}:meme1:votes`) || 0;
           const meme2Votes = await redis.get(`battle:${battleId}:meme2:votes`) || 0;
-          
+
           completedBattles.push({
             id: battleId,
             startTime: battleData.startTime,
@@ -159,7 +179,7 @@ router.get('/history', async (req, res) => {
               votes: parseInt(meme2Votes)
             },
             totalVotes: parseInt(meme1Votes) + parseInt(meme2Votes),
-            duration: battleData.endTime && battleData.startTime ? 
+            duration: battleData.endTime && battleData.startTime ?
               new Date(battleData.endTime) - new Date(battleData.startTime) : 0
           });
         }
@@ -191,13 +211,13 @@ router.get('/history', async (req, res) => {
 router.post('/force-end', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const currentBattleId = await redis.get("battle:current");
-    
+
     if (!currentBattleId) {
       return res.json({
         success: false,
@@ -242,13 +262,13 @@ router.post('/force-end', async (req, res) => {
 router.post('/cancel', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
     const currentBattleId = await redis.get("battle:current");
-    
+
     if (!currentBattleId) {
       return res.json({
         success: false,
