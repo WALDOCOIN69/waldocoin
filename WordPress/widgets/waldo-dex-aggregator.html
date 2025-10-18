@@ -1,7 +1,7 @@
 <!-- WALDO DEX Aggregator: Find Best Prices Across Exchanges -->
 <div class="waldo-aggregator collapsed" id="waldoAggregator">
   <div class="aggregator-head">
-    <div class="title"><span class="accent">🔍</span> $WLO PRICE AGGREGATOR</div>
+    <div class="title"><span class="accent">&#128269;</span> $WLO PRICE AGGREGATOR</div>
     <div class="sub">Find the best WLO prices across all DEXs</div>
     <div class="tabs">
       <button id="widgetToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
@@ -16,7 +16,7 @@
       <div class="price-grid">
         <div class="dex-card best" id="bestDex">
           <div class="dex-header">
-            <span class="dex-name">🥇 Best Price</span>
+            <span class="dex-name">&#129351; Best Price</span>
             <span class="badge">RECOMMENDED</span>
           </div>
           <div class="price-display">
@@ -30,7 +30,7 @@
 
         <div class="dex-card" id="firstLedgerCard">
           <div class="dex-header">
-            <span class="dex-name">🏦 First Ledger</span>
+            <span class="dex-name">&#127974; First Ledger</span>
             <span class="liquidity" id="flLiquidity">High Liquidity</span>
           </div>
           <div class="price-display">
@@ -44,7 +44,7 @@
 
         <div class="dex-card" id="xrplToCard">
           <div class="dex-header">
-            <span class="dex-name">⚡ XRPL.to</span>
+            <span class="dex-name">&#9889; XRPL.to</span>
             <span class="liquidity" id="xrplToLiquidity">Direct</span>
           </div>
           <div class="price-display">
@@ -58,7 +58,7 @@
 
         <div class="dex-card" id="xmagneticCard">
           <div class="dex-header">
-            <span class="dex-name">🧲 XMagnetic</span>
+            <span class="dex-name">&#129522; XMagnetic</span>
             <span class="liquidity" id="xmagneticLiquidity">Medium</span>
           </div>
           <div class="price-display">
@@ -90,7 +90,7 @@
     <!-- Calculator Panel -->
     <div class="panel" id="panelCalculator" style="display:none;">
       <div class="calc-card">
-        <h3>💰 Trade Calculator</h3>
+        <h3>&#128176; Trade Calculator</h3>
         <div class="calc-row">
           <div class="input-group">
             <label>I want to spend</label>
@@ -99,7 +99,7 @@
               <span class="currency-label" id="fromCurrencyLabel">XRP</span>
             </div>
           </div>
-          <button class="flip-btn" onclick="flipCalculator()">⇅</button>
+          <button class="flip-btn" onclick="flipCalculator()">&#8645;</button>
           <div class="input-group">
             <label>I will receive</label>
             <div class="input-box">
@@ -129,7 +129,8 @@
         </button>
 
         <div class="calc-note">
-          <p>💡 <strong>Live Calculator:</strong> Shows real-time best prices and takes you directly to the optimal
+          <p>&#128161; <strong>Live Calculator:</strong> Shows real-time best prices and takes you directly to the
+            optimal
             exchange.</p>
         </div>
       </div>
@@ -250,7 +251,8 @@
   }
 
   .toggle::before {
-    content: '▼';
+    content: '\25BC';
+    /* Unicode for ▼ */
     color: #000;
     font-size: 18px;
     font-weight: bold;
@@ -258,7 +260,8 @@
   }
 
   .waldo-aggregator.collapsed .toggle::before {
-    content: '▶';
+    content: '\25B6';
+    /* Unicode for ▶ */
     transform: none;
   }
 
@@ -599,7 +602,7 @@
     const toggle = el('widgetToggle');
     let collapsed = true;
 
-    console.log('🔧 DEX Aggregator Debug:', {
+    console.log('DEX Aggregator Debug:', {
       root: root,
       toggle: toggle,
       rootExists: !!root,
@@ -610,10 +613,10 @@
       if (root) {
         if (collapsed) {
           root.classList.add('collapsed');
-          console.log('📦 Widget collapsed');
+          console.log('Widget collapsed');
         } else {
           root.classList.remove('collapsed');
-          console.log('📖 Widget expanded');
+          console.log('Widget expanded');
         }
       } else {
         console.error('❌ Root element not found!');
