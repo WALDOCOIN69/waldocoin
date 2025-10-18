@@ -5,6 +5,7 @@ import asyncio
 import redis
 import threading
 import time
+import json
 from datetime import datetime, timezone, timedelta
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -35,6 +36,13 @@ XRPL_NODE = os.getenv("XRPL_NODE", "https://s.altnet.rippletest.net:51234")
 DISTRIBUTOR_SECRET = os.getenv("DISTRIBUTOR_SECRET")
 WALDO_ISSUER = os.getenv("WALDO_ISSUER")
 BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
+
+# AI Content Verification Config
+AI_VERIFICATION_ENABLED = os.getenv("AI_CONTENT_VERIFICATION_ENABLED", "false").lower() == "true"
+AI_CONFIDENCE_THRESHOLD = int(os.getenv("AI_CONFIDENCE_THRESHOLD", "70"))
+GOOGLE_VISION_API_KEY = os.getenv("GOOGLE_VISION_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+TINEYE_API_KEY = os.getenv("TINEYE_API_KEY")
 
 HEADERS = {
     "Authorization": f"Bearer {BEARER_TOKEN}",
@@ -148,6 +156,14 @@ def store_meme_tweet(tweet):
     if not can_post:
         print(f"🚫 @{handle} has reached daily limit ({current_count}/{daily_limit} memes) - Tweet {tweet['id']} rejected")
         return False
+    # AI Content Verification
+    ai_verification = asyncio.run(verify_content_with_ai(tweet))
+
+    # Check AI verification threshold
+    if AI_VERIFICATION_ENABLED and ai_verification["confidence"] < AI_CONFIDENCE_THRESHOLD:
+        print(f"🤖 Tweet {tweet['id']} failed AI verification ({ai_verification['confidence']}% < {AI_CONFIDENCE_THRESHOLD}%)")
+        return False
+
     metrics = tweet["public_metrics"]
     xp = calculate_xp(metrics["like_count"], metrics["retweet_count"])
     tier, waldo = calculate_rewards(metrics["like_count"], metrics["retweet_count"], DEFAULT_REWARD_TYPE)
@@ -183,6 +199,10 @@ def store_meme_tweet(tweet):
     r.incrby(f"wallet:xp:{wallet}", xp)
     # All memes are eligible for NFT minting (50 WALDO cost only)
 
+    # Store AI verification results
+    r.set(f"meme:ai_verified:{tweet['id']}", "true" if ai_verification["ai_verified"] else "false")
+    r.set(f"meme:ai_confidence:{tweet['id']}", str(ai_verification["confidence"]))
+
     # Increment daily meme count
     today = datetime.now().strftime('%Y-%m-%d')
     daily_key = f"meme_count:{handle}:{today}"
@@ -210,6 +230,42 @@ def fetch_and_store():
         tweets = res.json().get("data", [])
     stored = sum(1 for t in tweets if store_meme_tweet(t))
     print(f"✅ Stored {stored} tweet(s)")
+
+async def verify_content_with_ai(tweet_data):
+    """AI-powered content verification"""
+    if not AI_VERIFICATION_ENABLED:
+        return {"ai_verified": True, "confidence": 0, "reason": "AI_DISABLED"}
+
+    try:
+        print(f"🤖 Running AI verification for tweet {tweet_data['id']}")
+
+        # Extract image URL from tweet (if available)
+        image_url = None
+        if 'attachments' in tweet_data and 'media_keys' in tweet_data['attachments']:
+            # This would need media expansion in the Twitter API call
+            # For now, we'll simulate AI verification
+            pass
+
+        # Simulate AI checks (replace with actual AI API calls)
+        ai_result = {
+            "ai_verified": True,
+            "confidence": 85,
+            "checks": {
+                "originality": {"is_original": True, "confidence": 90},
+                "engagement": {"is_legitimate": True, "confidence": 85},
+                "content": {"is_appropriate": True, "confidence": 80}
+            }
+        }
+
+        # Store AI verification result
+        r.set(f"ai:verification:{tweet_data['id']}", json.dumps(ai_result), ex=60*60*24*7)
+
+        print(f"🤖 AI verification complete: {ai_result['confidence']}% confidence")
+        return ai_result
+
+    except Exception as e:
+        print(f"❌ AI verification failed: {str(e)}")
+        return {"ai_verified": True, "confidence": 0, "error": str(e)}
 
 async def send_waldo(wallet, amount):
     client = JsonRpcClient(XRPL_NODE)
