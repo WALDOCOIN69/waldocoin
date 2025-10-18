@@ -274,21 +274,27 @@ async def run_free_ai_verification(tweet_data):
         originality_check = await check_originality_free(tweet_data)
         results["checks"]["originality"] = originality_check
 
+        # 4. FREE Profile Analysis (NEW!)
+        profile_check = analyze_twitter_profile_free(tweet_data)
+        results["checks"]["profile"] = profile_check
+
         # Calculate overall confidence
         confidence_scores = [
             engagement_check.get("confidence", 0),
             content_check.get("confidence", 0),
-            originality_check.get("confidence", 0)
+            originality_check.get("confidence", 0),
+            profile_check.get("confidence", 0)
         ]
 
         valid_scores = [s for s in confidence_scores if s > 0]
         results["confidence"] = sum(valid_scores) / len(valid_scores) if valid_scores else 0
 
-        # Determine verification status
+        # Determine verification status (now includes profile check)
         results["ai_verified"] = (
             engagement_check.get("is_legitimate", True) and
             content_check.get("is_appropriate", True) and
-            originality_check.get("is_original", True)
+            originality_check.get("is_original", True) and
+            profile_check.get("is_legitimate", True)
         )
 
         return results
@@ -458,6 +464,212 @@ def has_inappropriate_content_free(text):
     text_lower = text.lower()
 
     return any(word in text_lower for word in inappropriate_words)
+
+def analyze_twitter_profile_free(tweet_data):
+    """FREE Twitter profile analysis for fake account detection"""
+    try:
+        author_id = tweet_data.get("author_id")
+        if not author_id:
+            return {
+                "is_legitimate": True,
+                "confidence": 0,
+                "reason": "NO_AUTHOR_ID"
+            }
+
+        confidence = 100
+        suspicious_indicators = []
+
+        # Get cached profile data (if available)
+        profile_data = get_cached_profile_data(author_id)
+
+        if not profile_data:
+            # No profile data available, use basic checks
+            return {
+                "is_legitimate": True,
+                "confidence": 50,
+                "reason": "PROFILE_DATA_UNAVAILABLE"
+            }
+
+        # 1. Account Age Analysis
+        if "created_at" in profile_data:
+            account_age = analyze_account_age_free(profile_data["created_at"])
+            if account_age["is_suspicious"]:
+                suspicious_indicators.append("NEW_ACCOUNT")
+                confidence -= 25
+
+        # 2. Username Pattern Analysis
+        if "username" in profile_data:
+            username_analysis = analyze_username_pattern_free(profile_data["username"])
+            if username_analysis["is_suspicious"]:
+                suspicious_indicators.append("SUSPICIOUS_USERNAME")
+                confidence -= 15
+
+        # 3. Follower Ratio Analysis
+        if "public_metrics" in profile_data:
+            follower_analysis = analyze_follower_ratio_free(profile_data["public_metrics"])
+            if follower_analysis["is_suspicious"]:
+                suspicious_indicators.append("SUSPICIOUS_FOLLOWER_RATIO")
+                confidence -= 30
+
+        # 4. Profile Picture Analysis
+        if "profile_image_url" in profile_data:
+            pic_analysis = analyze_profile_picture_free(profile_data["profile_image_url"])
+            if pic_analysis["is_suspicious"]:
+                suspicious_indicators.append("SUSPICIOUS_PROFILE_PIC")
+                confidence -= 20
+
+        is_legitimate = confidence >= 60
+
+        return {
+            "is_legitimate": is_legitimate,
+            "confidence": max(confidence, 0),
+            "suspicious_indicators": suspicious_indicators,
+            "profile_checks": len(suspicious_indicators) == 0
+        }
+
+    except Exception as e:
+        return {
+            "is_legitimate": True,
+            "confidence": 0,
+            "error": str(e)
+        }
+
+def get_cached_profile_data(author_id):
+    """Get cached profile data from Redis"""
+    try:
+        cache_key = f"profile:{author_id}"
+        cached_data = r.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+        return None
+    except Exception as e:
+        print(f"Error getting cached profile data: {e}")
+        return None
+
+def analyze_account_age_free(created_at):
+    """Analyze account age for suspicious patterns"""
+    try:
+        from datetime import datetime, timezone
+
+        # Parse Twitter date format
+        account_date = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+        account_date = account_date.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+
+        age_days = (now - account_date).days
+
+        # Accounts less than 30 days old are suspicious
+        is_suspicious = age_days < 30
+
+        return {
+            "is_suspicious": is_suspicious,
+            "age_days": age_days,
+            "reason": "ACCOUNT_TOO_NEW" if is_suspicious else "ACCOUNT_AGE_OK"
+        }
+
+    except Exception as e:
+        return {"is_suspicious": False, "error": str(e)}
+
+def analyze_username_pattern_free(username):
+    """Analyze username for bot-like patterns"""
+    try:
+        import re
+
+        suspicious_reasons = []
+
+        # 1. Letters followed by many numbers (bot pattern)
+        if re.match(r'^[a-zA-Z]+\d{4,}$', username):
+            suspicious_reasons.append("LETTERS_PLUS_NUMBERS")
+
+        # 2. Excessive numbers
+        number_count = len(re.findall(r'\d', username))
+        if number_count > len(username) * 0.5:
+            suspicious_reasons.append("EXCESSIVE_NUMBERS")
+
+        # 3. Bot keywords
+        bot_keywords = ['bot', 'auto', 'gen', 'fake', 'temp', 'test']
+        if any(keyword in username.lower() for keyword in bot_keywords):
+            suspicious_reasons.append("BOT_KEYWORDS")
+
+        # 4. Very long username
+        if len(username) > 15:
+            suspicious_reasons.append("VERY_LONG_USERNAME")
+
+        return {
+            "is_suspicious": len(suspicious_reasons) > 0,
+            "reasons": suspicious_reasons,
+            "username": username
+        }
+
+    except Exception as e:
+        return {"is_suspicious": False, "error": str(e)}
+
+def analyze_follower_ratio_free(public_metrics):
+    """Analyze follower/following ratios for suspicious patterns"""
+    try:
+        followers = public_metrics.get("followers_count", 0)
+        following = public_metrics.get("following_count", 0)
+
+        suspicious_reasons = []
+
+        # 1. Following way more than followers
+        if following > 100 and followers > 0:
+            ratio = following / followers
+            if ratio > 10:
+                suspicious_reasons.append("HIGH_FOLLOWING_RATIO")
+
+        # 2. Very low followers but high following
+        if followers < 10 and following > 500:
+            suspicious_reasons.append("LOW_FOLLOWERS_HIGH_FOLLOWING")
+
+        # 3. Identical counts (bot pattern)
+        if followers == following and followers > 0:
+            suspicious_reasons.append("IDENTICAL_COUNTS")
+
+        # 4. Round numbers (bot indicator)
+        if (followers > 0 and followers % 100 == 0 and
+            following > 0 and following % 100 == 0):
+            suspicious_reasons.append("ROUND_NUMBERS")
+
+        return {
+            "is_suspicious": len(suspicious_reasons) > 0,
+            "reasons": suspicious_reasons,
+            "followers": followers,
+            "following": following
+        }
+
+    except Exception as e:
+        return {"is_suspicious": False, "error": str(e)}
+
+def analyze_profile_picture_free(profile_image_url):
+    """Analyze profile picture for default/suspicious patterns"""
+    try:
+        suspicious_reasons = []
+
+        # Check for default Twitter profile pictures
+        default_patterns = [
+            'default_profile_images',
+            'default_profile',
+            'sticky/default_profile',
+            '_normal.jpg'
+        ]
+
+        if any(pattern in profile_image_url for pattern in default_patterns):
+            suspicious_reasons.append("DEFAULT_PROFILE_PIC")
+
+        # Check for suspicious URL patterns
+        suspicious_patterns = ['temp', 'generated', 'fake', 'bot', 'auto']
+        if any(pattern in profile_image_url.lower() for pattern in suspicious_patterns):
+            suspicious_reasons.append("SUSPICIOUS_PIC_URL")
+
+        return {
+            "is_suspicious": len(suspicious_reasons) > 0,
+            "reasons": suspicious_reasons,
+            "profile_image_url": profile_image_url
+        }
+
+    except Exception as e:
+        return {"is_suspicious": False, "error": str(e)}
 
 async def send_waldo(wallet, amount):
     client = JsonRpcClient(XRPL_NODE)
