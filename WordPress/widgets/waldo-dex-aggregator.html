@@ -1058,39 +1058,55 @@
       el('calcAmount').addEventListener('input', calculateTrade);
     }
 
-    window.flipCalculator = function () {
-      const fromLabel = el('fromCurrencyLabel');
-      const toLabel = el('toCurrencyLabel');
-      const temp = fromLabel.textContent;
-      fromLabel.textContent = toLabel.textContent;
-      toLabel.textContent = temp;
-      calculateTrade();
-    }
+    // flipCalculator moved to global functions section below
 
-    // Trading functions (redirect to exchanges)
+    // Trading functions (redirect to exchanges) - Expose to global scope
     window.openBestDEX = function () {
-      if (bestExchange) {
+      console.log('Opening best DEX:', bestExchange);
+      if (bestExchange && EXCHANGES[bestExchange]) {
         window.open(EXCHANGES[bestExchange].url, '_blank');
+      } else {
+        console.error('No best exchange available');
       }
     };
 
     window.openFirstLedger = function () {
+      console.log('Opening First Ledger');
       window.open(EXCHANGES.firstledger.url, '_blank');
     };
 
     window.openXRPLTo = function () {
-      console.log('⚡ Opening XRPL.to WLO token page...');
+      console.log('Opening XRPL.to WLO token page...');
       window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank', 'noopener,noreferrer');
     };
 
     window.openXMagnetic = function () {
+      console.log('Opening XMagnetic');
       window.open(EXCHANGES.xmagnetic.url, '_blank');
     };
 
     window.openCalcBestExchange = function () {
+      console.log('Opening calc best exchange:', bestExchange);
       if (bestExchange && EXCHANGES[bestExchange]) {
-        console.log(`🚀 Opening best exchange: ${EXCHANGES[bestExchange].name}`);
+        console.log('Opening best exchange:', EXCHANGES[bestExchange].name);
         window.open(EXCHANGES[bestExchange].url, '_blank', 'noopener,noreferrer');
+      } else {
+        console.error('No best exchange available for calculator');
+      }
+    };
+
+    // Ensure flipCalculator is also properly exposed
+    window.flipCalculator = function () {
+      console.log('Flipping calculator currencies');
+      const fromLabel = el('fromCurrencyLabel');
+      const toLabel = el('toCurrencyLabel');
+      if (fromLabel && toLabel) {
+        const temp = fromLabel.textContent;
+        fromLabel.textContent = toLabel.textContent;
+        toLabel.textContent = temp;
+        calculateTrade();
+      } else {
+        console.error('Currency labels not found');
       }
     };
 
@@ -1108,10 +1124,20 @@
     // Initial load after 1 second (only if not collapsed)
     setTimeout(() => {
       if (!collapsed) {
-        console.log('🚀 Initial price load...');
+        console.log('Initial price load...');
         loadAllPrices();
       }
     }, 1000);
+
+    // Debug: Log all global functions to verify they're available
+    console.log('Global functions available:', {
+      openBestDEX: typeof window.openBestDEX,
+      openFirstLedger: typeof window.openFirstLedger,
+      openXRPLTo: typeof window.openXRPLTo,
+      openXMagnetic: typeof window.openXMagnetic,
+      openCalcBestExchange: typeof window.openCalcBestExchange,
+      flipCalculator: typeof window.flipCalculator
+    });
 
   })();
 </script>
