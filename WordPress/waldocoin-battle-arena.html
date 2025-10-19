@@ -737,35 +737,32 @@
 
     async function connectWallet() {
       try {
-        showToast('Opening XUMM wallet...', 'info');
+        showToast('Creating XUMM connection...', 'info');
 
         // Create XUMM payload for sign-in
-        const response = await fetch(`${baseURL}/api/xumm/signin`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ purpose: 'Battle Arena Access' })
-        });
-
+        const response = await fetch(`${baseURL}/api/login`);
         const data = await response.json();
 
-        if (data.success && data.qr) {
-          // Open XUMM app
-          window.open(data.qr, '_blank');
+        if (data.success && data.uuid) {
+          // Show QR code modal with mobile link
+          showXummModal(data.qr, data.next?.always, data.uuid);
 
           // Poll for completion
           const checkInterval = setInterval(async () => {
             try {
-              const checkResponse = await fetch(`${baseURL}/api/xumm/check/${data.uuid}`);
+              const checkResponse = await fetch(`${baseURL}/api/login/status/${data.uuid}`);
               const checkData = await checkResponse.json();
 
               if (checkData.success && checkData.wallet) {
                 clearInterval(checkInterval);
+                closeXummModal();
                 setWallet(checkData.wallet);
                 showToast('Wallet connected successfully!', 'success');
                 showBattleDashboard();
                 initializeBattleArena();
               } else if (checkData.expired) {
                 clearInterval(checkInterval);
+                closeXummModal();
                 showToast('Connection expired. Please try again.', 'error');
               }
             } catch (e) {
@@ -774,7 +771,10 @@
           }, 2000);
 
           // Stop checking after 5 minutes
-          setTimeout(() => clearInterval(checkInterval), 300000);
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            closeXummModal();
+          }, 300000);
 
         } else {
           showToast('Failed to create wallet connection', 'error');
@@ -782,6 +782,50 @@
       } catch (error) {
         console.error('Wallet connection error:', error);
         showToast('Wallet connection failed', 'error');
+      }
+    }
+
+    // Show XUMM QR code modal
+    function showXummModal(qrCode, mobileLink, uuid) {
+      const modal = document.createElement('div');
+      modal.id = 'xummModal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      `;
+
+      modal.innerHTML = `
+        <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; border: 2px solid #25c2a0;">
+          <h3 style="color: #25c2a0; margin-bottom: 20px;">⚔️ Connect for Battle Arena</h3>
+          <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <img src="${qrCode}" alt="XUMM QR Code" style="width: 200px; height: 200px;">
+          </div>
+          <p style="color: #ccc; margin-bottom: 15px;">Scan with Xaman app or click the link below</p>
+          <a href="${mobileLink}" target="_blank" style="display: inline-block; background: #25c2a0; color: #000; padding: 12px 24px; border-radius: 25px; text-decoration: none; font-weight: bold; margin-bottom: 15px;">📱 Open in Xaman</a>
+          <br>
+          <button onclick="closeXummModal()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer;">Cancel</button>
+          <div style="margin-top: 15px; font-size: 0.9em; color: #888;">
+            Waiting for wallet connection...
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+    }
+
+    // Close XUMM modal
+    function closeXummModal() {
+      const modal = document.getElementById('xummModal');
+      if (modal) {
+        modal.remove();
       }
     }
 
@@ -1292,6 +1336,7 @@
 
     // Make disconnect function globally available
     window.disconnectWallet = disconnectWallet;
+    window.closeXummModal = closeXummModal;
 
     // === CLEANUP ===
     window.addEventListener('beforeunload', function () {
