@@ -7234,6 +7234,7 @@
               setWallet(status.account);
               sessionStorage.setItem('waldoLoginDesktop', 'true');
               updateWalletUI(status.account);
+              updateNavWallet(); // Update navigation bar with wallet info
               hideXummModal();
               showToast('✅ Wallet connected successfully!', 'success');
 
