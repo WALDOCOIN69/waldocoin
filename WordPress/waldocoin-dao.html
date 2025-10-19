@@ -361,15 +361,28 @@
       style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px;">
       <a href="https://stats-page.waldocoin.live"
         style="color: #25c2a0; text-decoration: none; padding: 8px 16px; background: #333; border-radius: 20px; font-size: 0.9em;">←
-        Back to Dashboard</a>
+        Dashboard</a>
 
-      <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em; display: none;">
-        🔗 Connected: <span id="connectedWallet">Loading...</span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="https://battle-arena.waldocoin.live"
+          style="color: #25c2a0; text-decoration: none; padding: 6px 12px; background: #444; border-radius: 15px; font-size: 0.8em;">⚔️
+          Battles</a>
+        <a href="https://staking.waldocoin.live"
+          style="color: #25c2a0; text-decoration: none; padding: 6px 12px; background: #444; border-radius: 15px; font-size: 0.8em;">💰
+          Staking</a>
+        <a href="https://nft-marketplace.waldocoin.live"
+          style="color: #25c2a0; text-decoration: none; padding: 6px 12px; background: #444; border-radius: 15px; font-size: 0.8em;">🏪
+          NFTs</a>
       </div>
 
-      <button onclick="disconnectWallet()" id="disconnectBtn"
-        style="display: none; background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9em; cursor: pointer;">🔌
-        Disconnect</button>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em; display: none;">
+          🔗 <span id="connectedWallet">Loading...</span>
+        </div>
+        <button onclick="disconnectWallet()" id="disconnectBtn"
+          style="display: none; background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 15px; font-size: 0.8em; cursor: pointer;">🔌
+          Disconnect</button>
+      </div>
     </div>
   </div>
 
@@ -453,8 +466,12 @@
     // Utility functions
     function $(id) { return document.getElementById(id); }
     function getWallet() {
-      // Check multiple possible wallet storage keys
-      const wallet = localStorage.getItem("xummWallet") ||
+      // Check sessionStorage first (current session), then localStorage (cross-session)
+      const wallet = sessionStorage.getItem("xummWallet") ||
+        sessionStorage.getItem("walletAddress") ||
+        sessionStorage.getItem("wallet") ||
+        sessionStorage.getItem("connectedWallet") ||
+        localStorage.getItem("xummWallet") ||
         localStorage.getItem("walletAddress") ||
         localStorage.getItem("wallet") ||
         localStorage.getItem("connectedWallet") ||
@@ -462,10 +479,18 @@
 
       // Debug logging
       console.log('🔍 DAO Wallet Check:', {
-        xummWallet: localStorage.getItem("xummWallet"),
-        walletAddress: localStorage.getItem("walletAddress"),
-        wallet: localStorage.getItem("wallet"),
-        connectedWallet: localStorage.getItem("connectedWallet"),
+        sessionStorage: {
+          xummWallet: sessionStorage.getItem("xummWallet"),
+          walletAddress: sessionStorage.getItem("walletAddress"),
+          wallet: sessionStorage.getItem("wallet"),
+          connectedWallet: sessionStorage.getItem("connectedWallet")
+        },
+        localStorage: {
+          xummWallet: localStorage.getItem("xummWallet"),
+          walletAddress: localStorage.getItem("walletAddress"),
+          wallet: localStorage.getItem("wallet"),
+          connectedWallet: localStorage.getItem("connectedWallet")
+        },
         finalWallet: wallet,
         domain: window.location.hostname
       });
@@ -496,6 +521,8 @@
 
       if (walletFromUrl) {
         console.log('✅ DAO: Wallet found in URL:', walletFromUrl);
+        // Store in both sessionStorage and localStorage
+        sessionStorage.setItem('xummWallet', walletFromUrl);
         localStorage.setItem('xummWallet', walletFromUrl);
         showDAOContent();
         loadDAOData();
@@ -527,11 +554,18 @@
 
     // Disconnect wallet function
     function disconnectWallet() {
+      // Clear both sessionStorage and localStorage
+      sessionStorage.removeItem("xummWallet");
+      sessionStorage.removeItem("wallet");
+      sessionStorage.removeItem("walletAddress");
+      sessionStorage.removeItem("connectedWallet");
+      sessionStorage.removeItem("waldoLoginDesktop");
+
       localStorage.removeItem("xummWallet");
       localStorage.removeItem("wallet");
       localStorage.removeItem("walletAddress");
       localStorage.removeItem("connectedWallet");
-      sessionStorage.removeItem("waldoLoginDesktop");
+      localStorage.removeItem("waldoWalletSync");
 
       // Sync disconnection to other subdomains
       localStorage.setItem('waldoWalletSync', JSON.stringify({
@@ -598,7 +632,10 @@
             clearInterval(pollInterval);
             console.log('✅ DAO: Wallet connected:', data.wallet);
 
-            // Store wallet in localStorage
+            // Store wallet in sessionStorage (clears when browser closes)
+            sessionStorage.setItem('xummWallet', data.wallet);
+
+            // Also store in localStorage for cross-subdomain sync
             localStorage.setItem('xummWallet', data.wallet);
 
             // Sync wallet to other subdomains
@@ -867,12 +904,16 @@
             console.log('📡 DAO: Received wallet sync from', data.source, ':', data.wallet);
 
             if (data.wallet) {
+              // Store in both sessionStorage and localStorage
+              sessionStorage.setItem('xummWallet', data.wallet);
               localStorage.setItem('xummWallet', data.wallet);
               showDAOContent();
               loadDAOData();
               updateWalletDisplay(data.wallet);
               showToast('✅ Wallet connected from another tab', 'success');
             } else {
+              // Clear both sessionStorage and localStorage
+              sessionStorage.removeItem('xummWallet');
               localStorage.removeItem('xummWallet');
               $('walletCheck').style.display = 'block';
               $('daoContent').style.display = 'none';
