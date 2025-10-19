@@ -3712,7 +3712,7 @@
         </div>
         <div class="xp-multiplier-card" id="levelMultiplierCard">
           <div class="xp-multiplier-value xp-multiplier-value-yellow" id="levelMultiplier">🔄</div>
-          <div class="xp-multiplier-label">Level Bonus</div>
+          <div class="xp-multiplier-label">Member Level XP Boost</div>
           <div class="xp-multiplier-description" id="levelMultiplierDesc">Loading level data...</div>
           <div class="xp-multiplier-status" id="levelMultiplierStatus"></div>
         </div>
@@ -3742,10 +3742,10 @@
             </div>
           </div>
           <div style="background: #2f2f1a; padding: 12px; border-radius: 6px; border-left: 3px solid #ffd93d;">
-            <div style="color: #ffd93d; font-weight: bold; margin-bottom: 5px;">🟡 Level Bonus</div>
+            <div style="color: #ffd93d; font-weight: bold; margin-bottom: 5px;">🟡 Member Level XP Boost</div>
             <div style="font-size: 12px; line-height: 1.4;">
-              <strong>+5% XP per level</strong><br>
-              Level up automatically. Max 20% at Level 5.
+              <strong>+5% XP per level above Level 1</strong><br>
+              Higher levels = more XP from all activities.
             </div>
           </div>
           <div style="background: #1a2f1f; padding: 12px; border-radius: 6px; border-left: 3px solid #51cf66;">
@@ -5276,7 +5276,7 @@
           // 2. Battle Streak Multiplier (from stats data)
           await updateBattleMultiplier(stats);
 
-          // 3. Level Bonus Multiplier
+          // 3. Member Level XP Boost Multiplier
           await updateLevelMultiplier(stats);
 
           // 4. Referral Bonus Multiplier
