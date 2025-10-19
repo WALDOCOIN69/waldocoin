@@ -4110,12 +4110,18 @@
               const data = JSON.parse(e.newValue);
               const currentWallet = getWallet();
               if (data.wallet !== currentWallet) {
-                localStorage.setItem('xummWallet', data.wallet);
-                // Refresh the page to update with new wallet
+                // Properly handle wallet sync - remove if null, set if valid
                 if (data.wallet) {
+                  localStorage.setItem('xummWallet', data.wallet);
                   showToast('Wallet connected in another tab - refreshing...', 'success');
                   setTimeout(() => location.reload(), 1500);
                 } else {
+                  // Properly clear wallet storage when disconnected
+                  localStorage.removeItem('xummWallet');
+                  localStorage.removeItem('wallet');
+                  localStorage.removeItem('walletAddress');
+                  localStorage.removeItem('connectedWallet');
+                  localStorage.removeItem('waldoWalletSync');
                   showToast('Wallet disconnected in another tab - refreshing...', 'info');
                   setTimeout(() => location.reload(), 1500);
                 }
@@ -4136,12 +4142,18 @@
             if (event.data.type === 'WALLET_CHANGED') {
               const currentWallet = getWallet();
               if (event.data.wallet !== currentWallet) {
-                localStorage.setItem('xummWallet', event.data.wallet);
-                // Refresh the page to update with new wallet
+                // Properly handle wallet sync - remove if null, set if valid
                 if (event.data.wallet) {
+                  localStorage.setItem('xummWallet', event.data.wallet);
                   showToast('Wallet connected in another tab - refreshing...', 'success');
                   setTimeout(() => location.reload(), 1500);
                 } else {
+                  // Properly clear wallet storage when disconnected
+                  localStorage.removeItem('xummWallet');
+                  localStorage.removeItem('wallet');
+                  localStorage.removeItem('walletAddress');
+                  localStorage.removeItem('connectedWallet');
+                  localStorage.removeItem('waldoWalletSync');
                   showToast('Wallet disconnected in another tab - refreshing...', 'info');
                   setTimeout(() => location.reload(), 1500);
                 }
