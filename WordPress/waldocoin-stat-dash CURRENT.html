@@ -7201,11 +7201,21 @@
         const modal = document.getElementById('xummModal');
         const titleEl = document.getElementById('xummTitle');
         const qrEl = document.getElementById('xummQr');
+        const mobileLinkEl = document.getElementById('xummMobileLink');
         const qrContainer = document.getElementById('xummQrContainer');
         const loader = document.getElementById('xummLoader');
 
         titleEl.textContent = title;
         qrEl.src = data.qr || data.refs?.qr_png;
+
+        // Set mobile deep link if available
+        if (data.next?.always || data.next?.app) {
+          const mobileLink = data.next?.always || data.next?.app;
+          mobileLinkEl.href = mobileLink;
+          mobileLinkEl.style.display = 'inline-block';
+        } else {
+          mobileLinkEl.style.display = 'none';
+        }
 
         qrContainer.style.display = 'block';
         loader.style.display = 'none';
@@ -7360,7 +7370,10 @@
       <h3 id="xummTitle">Connect Wallet</h3>
       <div id="xummQrContainer">
         <img id="xummQr" alt="Scan with XUMM" style="max-width: 280px; border-radius: 10px;" />
-        <p class="xumm-hint">Scan the QR code with your XUMM app</p>
+        <p class="xumm-hint">Scan the QR code with your Xaman app</p>
+        <a id="xummMobileLink" href="#" target="_blank"
+          style="display: inline-block; background: #25c2a0; color: #000; padding: 12px 24px; border-radius: 25px; text-decoration: none; font-weight: bold; margin: 15px 0;">📱
+          Open in Xaman</a>
       </div>
       <div id="xummLoader" class="xumm-loader" style="display:none;">
         <div class="spinner"></div>
