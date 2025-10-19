@@ -6314,6 +6314,9 @@
             document.getElementById("totalStaked").textContent = `${totalStaked.toFixed(2)} WALDO`;
             document.getElementById("totalRewards").textContent = `${totalRewards.toFixed(2)} WALDO`;
 
+            // Update next payout timer
+            updateNextPayoutTimer(data.positions);
+
             // Update positions display
             const positionsTable = document.getElementById("stakingPositionsTable");
             if (!positionsTable) {
@@ -6371,6 +6374,12 @@
               }).join('');
             } else {
               positionsTable.innerHTML = '<tr><td colspan="7" class="staking-positions-empty">No active stakes yet. Create your first stake above!</td></tr>';
+              // Update timer for no positions
+              const timerElement = document.getElementById("nextPayoutTimer");
+              if (timerElement) {
+                timerElement.textContent = "No active stakes";
+                timerElement.style.color = "#888";
+              }
             }
           }
         } catch (error) {
@@ -6380,6 +6389,67 @@
           if (positionsTable) {
             positionsTable.innerHTML = '<tr><td colspan="7" class="staking-positions-empty">Error loading stakes. Please refresh.</td></tr>';
           }
+        }
+      }
+
+      // Update next payout timer based on staking positions
+      function updateNextPayoutTimer(positions) {
+        const timerElement = document.getElementById("nextPayoutTimer");
+        if (!timerElement) return;
+
+        try {
+          // Find the next stake that will mature
+          const activeStakes = positions.filter(p => p.status === 'active');
+
+          if (activeStakes.length === 0) {
+            timerElement.textContent = "No active stakes";
+            timerElement.style.color = "#888";
+            return;
+          }
+
+          // Find the earliest unlock date
+          const now = new Date();
+          let nextUnlock = null;
+          let nextStake = null;
+
+          for (const stake of activeStakes) {
+            const unlockDate = new Date(stake.endDate);
+            if (unlockDate > now && (!nextUnlock || unlockDate < nextUnlock)) {
+              nextUnlock = unlockDate;
+              nextStake = stake;
+            }
+          }
+
+          if (!nextUnlock || !nextStake) {
+            // All stakes are already matured
+            timerElement.textContent = "Stakes ready to redeem!";
+            timerElement.style.color = "#25c2a0";
+            return;
+          }
+
+          // Calculate time remaining
+          const timeRemaining = nextUnlock - now;
+          const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+
+          let timeText = "";
+          if (days > 0) {
+            timeText = `${days}d ${hours}h ${minutes}m`;
+          } else if (hours > 0) {
+            timeText = `${hours}h ${minutes}m`;
+          } else {
+            timeText = `${minutes}m`;
+          }
+
+          const rewardAmount = parseFloat(nextStake.expectedReward || 0).toFixed(2);
+          timerElement.innerHTML = `${timeText}<br><small style="color: #25c2a0;">+${rewardAmount} WALDO</small>`;
+          timerElement.style.color = "#fff";
+
+        } catch (error) {
+          console.warn("Error updating next payout timer:", error);
+          timerElement.textContent = "Unable to calculate";
+          timerElement.style.color = "#888";
         }
       }
 
