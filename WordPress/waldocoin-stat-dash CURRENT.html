@@ -107,6 +107,26 @@
       padding-right: 8px;
     }
 
+    /* Navigation responsive */
+    @media (max-width: 768px) {
+      .nav-header {
+        flex-direction: column !important;
+        gap: 15px !important;
+        padding: 15px !important;
+      }
+
+      .nav-links {
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 10px !important;
+      }
+
+      .disconnect-button {
+        padding: 6px 12px !important;
+        font-size: 0.8rem !important;
+      }
+    }
+
     .twitter-link-container {
       max-width: 96vw;
     }
@@ -3193,6 +3213,26 @@
 </head>
 
 <body>
+  <!-- Navigation Header -->
+  <div class="nav-header"
+    style="background: #000; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #25c2a0; position: sticky; top: 0; z-index: 1000;">
+    <div class="nav-logo" style="color: #25c2a0; font-size: 1.5rem; font-weight: bold;">💰 WALDOCOIN Dashboard</div>
+    <div class="nav-links" style="display: flex; align-items: center; gap: 20px;">
+      <a href="dao.html" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🗳️
+        DAO</a>
+      <a href="marketplace.html" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🏪
+        Marketplace</a>
+      <div class="wallet-display" id="navWalletDisplay"
+        style="background: #333; padding: 8px 16px; border-radius: 20px; font-family: monospace; font-size: 0.9rem; color: #25c2a0;">
+        Not Connected</div>
+      <button class="disconnect-button" onclick="disconnectWallet()" id="navDisconnectBtn"
+        style="display: none; background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;">🔌
+        Disconnect</button>
+    </div>
+  </div>
+
   <!-- Wallet Connection Screen -->
   <div id="walletConnectionScreen" class="wallet-connection-screen">
     <div class="dashboard-title-card">
@@ -3222,12 +3262,12 @@
           <a href="https://stats-page.waldocoin.live/" class="button-style"
             style="text-decoration: none; padding: 10px 20px; font-size: 0.9em; background: #25c2a0; color: #000;">📊
             Stats Dashboard</a>
-          <a href="https://battle-arena.waldocoin.live/" target="_blank" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">⚔️ Battle Arena</a>
-          <a href="https://nft-gallery.waldocoin.live/" target="_blank" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🖼️ NFT Gallery</a>
-          <a href="https://dao-portal.waldocoin.live/" target="_blank" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🏛️ DAO Portal</a>
+          <a href="dao.html" class="button-style"
+            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🗳️ DAO</a>
+          <a href="marketplace.html" class="button-style"
+            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🏪 Marketplace</a>
+          <a href="my-nfts.html" class="button-style"
+            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🖼️ My NFTs</a>
         </div>
       </div>
       <!-- Instructions Card -->
@@ -3792,12 +3832,13 @@
         <div class="loading-spinner">Loading your NFT collection...</div>
       </div>
       <div class="nft-collection-actions">
-        <button onclick="window.open('/marketplace.html', '_blank')" class="button-style marketplace-btn">
+        <a href="marketplace.html" class="button-style marketplace-btn"
+          style="text-decoration: none; display: inline-block;">
           🏪 Browse Marketplace
-        </button>
-        <button onclick="window.open('/my-nfts.html', '_blank')" class="button-style manage-btn">
+        </a>
+        <a href="my-nfts.html" class="button-style manage-btn" style="text-decoration: none; display: inline-block;">
           ⚙️ Manage Collection
-        </button>
+        </a>
       </div>
     </div>
 
@@ -7015,7 +7056,26 @@
         localStorage.removeItem("waldoWalletSync");
         sessionStorage.removeItem("waldoLoginDesktop");
         updateWalletUI(null);
+        updateNavWallet();
         window.location.replace("https://waldocoin.live/?logout=1");
+      }
+
+      function updateNavWallet() {
+        const wallet = getWallet();
+        const navDisplay = document.getElementById('navWalletDisplay');
+        const disconnectBtn = document.getElementById('navDisconnectBtn');
+
+        if (wallet && navDisplay) {
+          navDisplay.textContent = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
+          if (disconnectBtn) disconnectBtn.style.display = 'block';
+        } else {
+          navDisplay.textContent = 'Not Connected';
+          if (disconnectBtn) disconnectBtn.style.display = 'none';
+        }
+      }
+
+      function disconnectWallet() {
+        logoutWallet(); // Use existing logout function
       }
       window.logoutWallet = logoutWallet;
 
@@ -7054,6 +7114,9 @@
           disconnectBtn.style.display = 'none';
           walletAddress.textContent = 'Wallet: Not Connected';
         }
+
+        // Also update navigation wallet display
+        updateNavWallet();
       }
 
       // Poll login status
