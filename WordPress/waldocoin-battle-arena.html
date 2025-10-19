@@ -54,13 +54,6 @@
     }
 
     /* === NAVIGATION === */
-    .nav-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 30px;
-      flex-wrap: wrap;
-    }
 
     .nav-btn {
       padding: 12px 24px;
@@ -251,10 +244,7 @@
     }
 
     @media (max-width: 600px) {
-      .nav-buttons {
-        flex-direction: column;
-        align-items: center;
-      }
+
 
       .nav-btn {
         width: 200px;
@@ -384,222 +374,199 @@
       <p class="battle-subtitle">Enter the ultimate meme combat zone! Battle other memes, vote for winners, and climb
         the leaderboard.</p>
 
-      <!-- Navigation -->
-      <div class="nav-buttons">
-        <a href="https://stats-page.waldocoin.live/" target="_blank" class="nav-btn">📊 Stats Dashboard</a>
-        <a href="https://battle-arena.waldocoin.live/" class="nav-btn active">⚔️ Battle Arena</a>
-        <a href="https://nft-gallery.waldocoin.live/" target="_blank" class="nav-btn">🖼️ NFT Collections</a>
-        <a href="https://dao-portal.waldocoin.live/" target="_blank" class="nav-btn">🏛️ DAO Portal</a>
-      </div>
+
 
       <!-- Wallet Info -->
       <div style="text-align: center; margin-top: 15px;">
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 10px;">
-          <a href="https://stats-page.waldocoin.live"
-            style="color: #25c2a0; text-decoration: none; padding: 6px 12px; background: #333; border-radius: 15px; font-size: 0.8em;">←
-            Dashboard</a>
 
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="https://dao-portal.waldocoin.live"
-              style="color: #25c2a0; text-decoration: none; padding: 6px 12px; background: #444; border-radius: 15px; font-size: 0.8em;">🗳️
-              DAO</a>
-            <a href="https://staking.waldocoin.live"
-              style="color: #25c2a0; text-decoration: none; padding: 6px 12px; background: #444; border-radius: 15px; font-size: 0.8em;">💰
-              Staking</a>
-            <a href="https://nft-marketplace.waldocoin.live"
-              style="color: #25c2a0; text-decoration: none; padding: 6px 12px; background: #444; border-radius: 15px; font-size: 0.8em;">🏪
-              NFTs</a>
-          </div>
 
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em;">
-              🔗 <span id="connectedWallet">Loading...</span>
-            </div>
-            <button onclick="disconnectWallet()" id="disconnectBtn"
-              style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 15px; font-size: 0.8em; cursor: pointer;">🔌
-              Disconnect</button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em;">
+            🔗 <span id="connectedWallet">Loading...</span>
           </div>
+          <button onclick="disconnectWallet()" id="disconnectBtn"
+            style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 15px; font-size: 0.8em; cursor: pointer;">🔌
+            Disconnect</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Battle Arena Main -->
-    <div class="card battle-arena">
-      <h2>🔥 Meme Battle Arena</h2>
-      <p style="text-align: center; margin-bottom: 20px;">
-        📢 Welcome to the Meme Battle Arena! Paste a meme tweet link, start a battle, or accept one to begin voting.
-        Voters pay 30,000 WALDO to participate, and get a share of the pot + XP if they pick the winner!
-      </p>
+  <!-- Battle Arena Main -->
+  <div class="card battle-arena">
+    <h2>🔥 Meme Battle Arena</h2>
+    <p style="text-align: center; margin-bottom: 20px;">
+      📢 Welcome to the Meme Battle Arena! Paste a meme tweet link, start a battle, or accept one to begin voting.
+      Voters pay 30,000 WALDO to participate, and get a share of the pot + XP if they pick the winner!
+    </p>
 
-      <div id="battleStatus" style="text-align: center; font-size: 1.2rem; margin-bottom: 20px; color: #25c2a0;">
-        Loading current battle...
-      </div>
-
-      <div id="battleContent" class="battle-content">
-        <div class="battle-memes-container">
-          <!-- Meme 1 -->
-          <div class="flex-item">
-            <h3>Meme 1</h3>
-            <a id="meme1Link" href="#" target="_blank">
-              <img alt="Meme 1" class="meme-thumb" id="meme1Img"
-                src="https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png">
-            </a>
-            <button type="button" onclick="voteBattle('meme1')" class="button-style" id="voteMeme1Btn"
-              style="display: block; margin: 15px auto 0 auto;">
-              Vote for Meme 1 (30,000 WALDO)
-            </button>
-          </div>
-
-          <!-- Battle Controls -->
-          <div class="battle-controls" data-tweetid="" data-status="open" data-canaccept="false" id="battle-wrapper">
-            <input id="memeTweetId" onblur="extractTweetId(this.value)"
-              placeholder="Paste Meme Tweet Link (e.g. https://x.com/user/status/1234567890)" class="margin-bottom-10"
-              type="text">
-
-            <!-- Battle Fees Info - Centered in Controls -->
-            <p id="battleFeeInfo" class="twitter-link-status"
-              style="text-align: center; margin: 10px 0; font-size: 0.9rem; color: #666;">
-              Loading battle fees…
-            </p>
-
-            <button id="start-battle-btn" type="button" class="button-style">
-              🧠 Start New Battle (150,000 WALDO)
-            </button>
-            <button id="accept-battle-btn" type="button" class="button-style">
-              🤜 Accept Current Battle (75,000 WALDO)
-            </button>
-          </div>
-
-          <!-- Meme 2 -->
-          <div class="flex-item">
-            <h3>Meme 2</h3>
-            <a id="meme2Link" href="#" target="_blank">
-              <img alt="Meme 2" class="meme-thumb" id="meme2Img"
-                src="https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png">
-            </a>
-            <button type="button" onclick="voteBattle('meme2')" class="button-style" id="voteMeme2Btn"
-              style="display: block; margin: 15px auto 0 auto;">
-              Vote for Meme 2 (30,000 WALDO)
-            </button>
-          </div>
-        </div>
-
-        <!-- Battle Timer & Status -->
-        <p id="battleTimer" class="battle-timer" style="display: none;"></p>
-        <p id="battleVoteStatus" class="twitter-link-status"></p>
-
-        <div class="margin-top-20">
-          <p id="battleFinalResult" class="battle-result"></p>
-        </div>
-      </div>
+    <div id="battleStatus" style="text-align: center; font-size: 1.2rem; margin-bottom: 20px; color: #25c2a0;">
+      Loading current battle...
     </div>
 
-    <!-- Battle History & Leaderboard Row -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-      <!-- Battle History -->
-      <div class="card">
-        <h2>📜 Past Meme Battles</h2>
-        <div id="battleHistoryStatus" style="text-align: center; color: #666; font-style: italic;">
-          Loading battle history...
+    <div id="battleContent" class="battle-content">
+      <div class="battle-memes-container">
+        <!-- Meme 1 -->
+        <div class="flex-item">
+          <h3>Meme 1</h3>
+          <a id="meme1Link" href="#" target="_blank">
+            <img alt="Meme 1" class="meme-thumb" id="meme1Img"
+              src="https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png">
+          </a>
+          <button type="button" onclick="voteBattle('meme1')" class="button-style" id="voteMeme1Btn"
+            style="display: block; margin: 15px auto 0 auto;">
+            Vote for Meme 1 (30,000 WALDO)
+          </button>
         </div>
-        <div id="battleHistoryTableContainer" style="display: none;">
-          <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background: #333; color: #25c2a0;">
-                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">🆔</th>
-                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Winner</th>
-                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Votes</th>
-                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Prize</th>
-                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Ended</th>
-                </tr>
-              </thead>
-              <tbody id="battleHistoryTable" style="color: #ccc;">
-                <!-- Battle history will be populated here -->
-              </tbody>
-            </table>
-          </div>
+
+        <!-- Battle Controls -->
+        <div class="battle-controls" data-tweetid="" data-status="open" data-canaccept="false" id="battle-wrapper">
+          <input id="memeTweetId" onblur="extractTweetId(this.value)"
+            placeholder="Paste Meme Tweet Link (e.g. https://x.com/user/status/1234567890)" class="margin-bottom-10"
+            type="text">
+
+          <!-- Battle Fees Info - Centered in Controls -->
+          <p id="battleFeeInfo" class="twitter-link-status"
+            style="text-align: center; margin: 10px 0; font-size: 0.9rem; color: #666;">
+            Loading battle fees…
+          </p>
+
+          <button id="start-battle-btn" type="button" class="button-style">
+            🧠 Start New Battle (150,000 WALDO)
+          </button>
+          <button id="accept-battle-btn" type="button" class="button-style">
+            🤜 Accept Current Battle (75,000 WALDO)
+          </button>
+        </div>
+
+        <!-- Meme 2 -->
+        <div class="flex-item">
+          <h3>Meme 2</h3>
+          <a id="meme2Link" href="#" target="_blank">
+            <img alt="Meme 2" class="meme-thumb" id="meme2Img"
+              src="https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png">
+          </a>
+          <button type="button" onclick="voteBattle('meme2')" class="button-style" id="voteMeme2Btn"
+            style="display: block; margin: 15px auto 0 auto;">
+            Vote for Meme 2 (30,000 WALDO)
+          </button>
         </div>
       </div>
 
-      <!-- Battle Leaderboard -->
-      <div class="card">
-        <h2>🏆 Battle Champions</h2>
+      <!-- Battle Timer & Status -->
+      <p id="battleTimer" class="battle-timer" style="display: none;"></p>
+      <p id="battleVoteStatus" class="twitter-link-status"></p>
+
+      <div class="margin-top-20">
+        <p id="battleFinalResult" class="battle-result"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Battle History & Leaderboard Row -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+    <!-- Battle History -->
+    <div class="card">
+      <h2>📜 Past Meme Battles</h2>
+      <div id="battleHistoryStatus" style="text-align: center; color: #666; font-style: italic;">
+        Loading battle history...
+      </div>
+      <div id="battleHistoryTableContainer" style="display: none;">
         <div style="overflow-x: auto;">
-          <table id="battleLeaderboardTable" style="width: 100%; border-collapse: collapse;">
+          <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="background: #333; color: #25c2a0;">
-                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">#</th>
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #25c2a0;">Warrior</th>
-                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Wins</th>
-                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Rate</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">🆔</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Winner</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Votes</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Prize</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Ended</th>
               </tr>
             </thead>
-            <tbody style="color: #ccc;">
-              <!-- Leaderboard will be populated here -->
+            <tbody id="battleHistoryTable" style="color: #ccc;">
+              <!-- Battle history will be populated here -->
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- Battle Stats & Info -->
+    <!-- Battle Leaderboard -->
     <div class="card">
-      <h2>⚔️ Battle Arena Information</h2>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-        <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
-          <h3 style="color: #25c2a0; margin-bottom: 10px;">🎯 How to Battle</h3>
-          <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
-            1. Paste a meme tweet link<br>
-            2. Start a battle (150,000 WALDO)<br>
-            3. Wait for opponent to accept (75,000 WALDO)<br>
-            4. Community votes for winner (30,000 WALDO per vote)
-          </p>
-        </div>
-
-        <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
-          <h3 style="color: #25c2a0; margin-bottom: 10px;">💰 Rewards & Fees</h3>
-          <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
-            • Winners get 55% of prize pool<br>
-            • Correct voters share 45% of pool<br>
-            • Losers get 0 WLO (XP only)<br>
-            • 3% house fee: 0.5% burned, 2.5% to treasury<br>
-            • Battle creators get participation XP
-          </p>
-        </div>
-
-        <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
-          <h3 style="color: #25c2a0; margin-bottom: 10px;">🏦 Battle Economics</h3>
-          <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
-            • Total pot = Start + Accept + All votes<br>
-            • 3% house fee: 0.5% burned forever<br>
-            • 2.5% goes to treasury for operations<br>
-            • 97% distributed as prizes<br>
-            • No votes = No fees charged!
-          </p>
-        </div>
-
-        <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
-          <h3 style="color: #25c2a0; margin-bottom: 10px;">📈 XP Bonuses</h3>
-          <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
-            • Winners: +100 XP<br>
-            • Losers: +25 XP (consolation)<br>
-            • Winning voters: +10 XP each<br>
-            • XP boosts your WALDOCOIN level
-          </p>
-        </div>
+      <h2>🏆 Battle Champions</h2>
+      <div style="overflow-x: auto;">
+        <table id="battleLeaderboardTable" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #333; color: #25c2a0;">
+              <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">#</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 2px solid #25c2a0;">Warrior</th>
+              <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Wins</th>
+              <th style="padding: 10px; text-align: center; border-bottom: 2px solid #25c2a0;">Rate</th>
+            </tr>
+          </thead>
+          <tbody style="color: #ccc;">
+            <!-- Leaderboard will be populated here -->
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
 
-    <!-- Footer -->
-    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666;">
-      <p>⚔️ WALDOCOIN Battle Arena - Where Memes Fight for Glory! ⚔️</p>
-      <p style="margin-top: 10px; font-size: 14px;">
-        <a href="https://waldocoin.live" style="color: #25c2a0; text-decoration: none;">waldocoin.live</a> |
-        <a href="https://twitter.com/waldocoin" style="color: #25c2a0; text-decoration: none;">@waldocoin</a>
-      </p>
+  <!-- Battle Stats & Info -->
+  <div class="card">
+    <h2>⚔️ Battle Arena Information</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+      <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
+        <h3 style="color: #25c2a0; margin-bottom: 10px;">🎯 How to Battle</h3>
+        <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
+          1. Paste a meme tweet link<br>
+          2. Start a battle (150,000 WALDO)<br>
+          3. Wait for opponent to accept (75,000 WALDO)<br>
+          4. Community votes for winner (30,000 WALDO per vote)
+        </p>
+      </div>
+
+      <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
+        <h3 style="color: #25c2a0; margin-bottom: 10px;">💰 Rewards & Fees</h3>
+        <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
+          • Winners get 55% of prize pool<br>
+          • Correct voters share 45% of pool<br>
+          • Losers get 0 WLO (XP only)<br>
+          • 3% house fee: 0.5% burned, 2.5% to treasury<br>
+          • Battle creators get participation XP
+        </p>
+      </div>
+
+      <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
+        <h3 style="color: #25c2a0; margin-bottom: 10px;">🏦 Battle Economics</h3>
+        <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
+          • Total pot = Start + Accept + All votes<br>
+          • 3% house fee: 0.5% burned forever<br>
+          • 2.5% goes to treasury for operations<br>
+          • 97% distributed as prizes<br>
+          • No votes = No fees charged!
+        </p>
+      </div>
+
+      <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center;">
+        <h3 style="color: #25c2a0; margin-bottom: 10px;">📈 XP Bonuses</h3>
+        <p style="color: #ccc; font-size: 14px; line-height: 1.5;">
+          • Winners: +100 XP<br>
+          • Losers: +25 XP (consolation)<br>
+          • Winning voters: +10 XP each<br>
+          • XP boosts your WALDOCOIN level
+        </p>
+      </div>
     </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666;">
+    <p>⚔️ WALDOCOIN Battle Arena - Where Memes Fight for Glory! ⚔️</p>
+    <p style="margin-top: 10px; font-size: 14px;">
+      <a href="https://waldocoin.live" style="color: #25c2a0; text-decoration: none;">waldocoin.live</a> |
+      <a href="https://twitter.com/waldocoin" style="color: #25c2a0; text-decoration: none;">@waldocoin</a>
+    </p>
   </div>
 
   <script>
