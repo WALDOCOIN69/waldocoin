@@ -399,21 +399,7 @@
       border: 1px solid #25c2a0;
     }
 
-    .xumm-close {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 24px;
-      cursor: pointer;
-      padding: 5px;
-    }
 
-    .xumm-close:hover {
-      color: #25c2a0;
-    }
 
     #xummTitle {
       color: #25c2a0;
@@ -7364,9 +7350,8 @@
 
   <!-- XUMM Connection Modal -->
   <div id="xummModal" class="xumm-modal" style="display:none;">
-    <div class="xumm-backdrop" onclick="hideXummModal()"></div>
+    <div class="xumm-backdrop"></div>
     <div class="xumm-content">
-      <button class="xumm-close" onclick="hideXummModal()">✕</button>
       <h3 id="xummTitle">Connect Wallet</h3>
       <div id="xummQrContainer">
         <img id="xummQr" alt="Scan with XUMM" style="max-width: 280px; border-radius: 10px;" />
