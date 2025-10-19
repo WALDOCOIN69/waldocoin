@@ -1390,6 +1390,11 @@
       showWalletConnection();
 
       showToast("🔌 Wallet disconnected successfully", "success");
+
+      // Redirect to main waldocoin.live page after disconnect
+      setTimeout(() => {
+        window.location.href = 'https://waldocoin.live';
+      }, 1500);
     }
 
     // Make disconnect function globally available

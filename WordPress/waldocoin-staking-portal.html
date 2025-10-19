@@ -600,6 +600,11 @@
       $('stakingContent').style.display = 'none';
 
       showToast("🔌 Wallet disconnected successfully", "success");
+
+      // Redirect to main waldocoin.live page after disconnect
+      setTimeout(() => {
+        window.location.href = 'https://waldocoin.live';
+      }, 1500);
     }
 
     // Sync wallet to other subdomains
