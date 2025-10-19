@@ -4097,6 +4097,28 @@
       function listenForWalletChanges() {
         // Listen for localStorage changes (cross-tab sync)
         window.addEventListener('storage', function (e) {
+          // Handle wallet requests from other tabs
+          if (e.key === 'waldoWalletRequest' && e.newValue) {
+            try {
+              const request = JSON.parse(e.newValue);
+              const currentWallet = getWallet();
+
+              if (currentWallet && request.action === 'request_wallet') {
+                console.log('📤 Stats: Responding to wallet request from', request.source);
+
+                // Send wallet info to requesting tab
+                localStorage.setItem('waldoWalletSync', JSON.stringify({
+                  wallet: currentWallet,
+                  timestamp: Date.now(),
+                  source: 'stats-page',
+                  responseToRequest: true
+                }));
+              }
+            } catch (e) {
+              console.warn('Failed to handle wallet request:', e);
+            }
+          }
+
           if (e.key === 'waldoWalletSync' && e.newValue) {
             try {
               const data = JSON.parse(e.newValue);

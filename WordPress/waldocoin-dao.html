@@ -566,6 +566,11 @@
         console.log('❌ DAO: No wallet found locally, trying cross-domain check...');
         // Try to get wallet from stats page via URL parameters or postMessage
         tryGetWalletFromStatsPage();
+
+        // Also try requesting wallet from stats page if it's open in another tab
+        setTimeout(() => {
+          requestWalletFromOtherTabs();
+        }, 1000);
       }
     });
 
@@ -590,6 +595,23 @@
       console.log('❌ DAO: No wallet found, showing connection screen');
       $('walletCheck').style.display = 'block';
       $('daoContent').style.display = 'none';
+    }
+
+    // Request wallet from other tabs (like stats page)
+    function requestWalletFromOtherTabs() {
+      console.log('📡 DAO: Requesting wallet from other tabs...');
+
+      // Broadcast request for wallet info
+      localStorage.setItem('waldoWalletRequest', JSON.stringify({
+        timestamp: Date.now(),
+        source: 'dao-portal',
+        action: 'request_wallet'
+      }));
+
+      // Clean up the request after a short time
+      setTimeout(() => {
+        localStorage.removeItem('waldoWalletRequest');
+      }, 2000);
     }
 
     // Update wallet display
