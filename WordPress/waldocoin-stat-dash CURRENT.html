@@ -7002,10 +7002,7 @@
           setupConnectWalletButton();
           // Automatically trigger connect wallet to show QR
           setTimeout(() => {
-            const connectBtn = document.getElementById('connectWalletBtn');
-            if (connectBtn) {
-              connectBtn.click();
-            }
+            handleWalletConnection();
           }, 500);
         } else {
           // Always show wallet connection screen first
