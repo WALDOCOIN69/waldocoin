@@ -69,6 +69,22 @@
       color: #25c2a0;
     }
 
+    .disconnect-button {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .disconnect-button:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
     @media (max-width: 768px) {
       .nav-header {
         flex-direction: column;
@@ -79,7 +95,12 @@
       .nav-links {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 15px;
+        gap: 10px;
+      }
+
+      .disconnect-button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
       }
 
       .nav-logo {
@@ -1227,6 +1248,9 @@
       <a href="dao.html" class="nav-link">🗳️ DAO</a>
       <a href="marketplace.html" class="nav-link">🏪 Marketplace</a>
       <div class="wallet-display" id="navWalletDisplay">Not Connected</div>
+      <button class="disconnect-button" onclick="disconnectWallet()" id="disconnectBtn" style="display: none;">
+        🔌 Disconnect
+      </button>
     </div>
   </div>
 
@@ -1637,9 +1661,32 @@
     function updateNavWallet() {
       const wallet = getWallet();
       const navDisplay = document.getElementById('navWalletDisplay');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+
       if (wallet && navDisplay) {
         navDisplay.textContent = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
+        if (disconnectBtn) disconnectBtn.style.display = 'block';
+      } else {
+        navDisplay.textContent = 'Not Connected';
+        if (disconnectBtn) disconnectBtn.style.display = 'none';
       }
+    }
+
+    function disconnectWallet() {
+      // Clear wallet from localStorage
+      localStorage.removeItem('xummWallet');
+      localStorage.removeItem('connectedWallet');
+
+      // Show notification
+      showWaldoNotification('🔌 Wallet disconnected successfully');
+
+      // Update UI
+      updateNavWallet();
+
+      // Optionally reload page to reset all data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     }
     const baseURL = "https://waldocoin-backend-api.onrender.com";
     const rewardTiers = [

@@ -67,6 +67,22 @@
       font-size: 0.9rem;
     }
 
+    .disconnect-button {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .disconnect-button:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
     .back-button {
       background: #25c2a0;
       color: white;
@@ -437,8 +453,21 @@
     }
 
     @media (max-width: 768px) {
-      .header h1 {
-        font-size: 2rem;
+      .header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+      }
+
+      .wallet-info {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .disconnect-button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
       }
 
       .dao-stats {
@@ -465,6 +494,9 @@
       <div class="voting-power-display" id="votingPowerDisplay" style="display: none;">
         <span id="votingPowerText">0 votes</span>
       </div>
+      <button class="disconnect-button" onclick="disconnectWallet()" id="disconnectBtn">
+        🔌 Disconnect
+      </button>
       <a href="dashboard.html" class="back-button">← Back to Dashboard</a>
     </div>
   </div>
@@ -648,6 +680,20 @@
       setTimeout(() => {
         notification.classList.remove('show');
       }, 4000);
+    }
+
+    function disconnectWallet() {
+      // Clear wallet from localStorage
+      localStorage.removeItem('xummWallet');
+      localStorage.removeItem('connectedWallet');
+
+      // Show notification
+      showNotification('🔌 Wallet disconnected successfully');
+
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 1500);
     }
 
     // Vote on a proposal
