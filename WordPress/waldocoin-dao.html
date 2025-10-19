@@ -452,17 +452,62 @@
 
     // Utility functions
     function $(id) { return document.getElementById(id); }
-    function getWallet() { return localStorage.getItem("xummWallet") || null; }
+    function getWallet() {
+      // Check multiple possible wallet storage keys
+      const wallet = localStorage.getItem("xummWallet") ||
+        localStorage.getItem("walletAddress") ||
+        localStorage.getItem("wallet") ||
+        localStorage.getItem("connectedWallet") ||
+        null;
+
+      // Debug logging
+      console.log('🔍 DAO Wallet Check:', {
+        xummWallet: localStorage.getItem("xummWallet"),
+        walletAddress: localStorage.getItem("walletAddress"),
+        wallet: localStorage.getItem("wallet"),
+        connectedWallet: localStorage.getItem("connectedWallet"),
+        finalWallet: wallet,
+        domain: window.location.hostname
+      });
+
+      return wallet;
+    }
 
     // Check wallet connection on page load
     document.addEventListener('DOMContentLoaded', function () {
       const wallet = getWallet();
       if (wallet) {
+        console.log('✅ DAO: Wallet found locally:', wallet);
         showDAOContent();
         loadDAOData();
         updateWalletDisplay(wallet);
+      } else {
+        console.log('❌ DAO: No wallet found locally, trying cross-domain check...');
+        // Try to get wallet from stats page via URL parameters or postMessage
+        tryGetWalletFromStatsPage();
       }
     });
+
+    // Try to get wallet from stats page
+    function tryGetWalletFromStatsPage() {
+      // Check URL parameters first (in case stats page redirected with wallet info)
+      const urlParams = new URLSearchParams(window.location.search);
+      const walletFromUrl = urlParams.get('wallet');
+
+      if (walletFromUrl) {
+        console.log('✅ DAO: Wallet found in URL:', walletFromUrl);
+        localStorage.setItem('xummWallet', walletFromUrl);
+        showDAOContent();
+        loadDAOData();
+        updateWalletDisplay(walletFromUrl);
+        return;
+      }
+
+      // If no wallet found anywhere, show connection screen
+      console.log('❌ DAO: No wallet found, showing connection screen');
+      $('walletCheck').style.display = 'block';
+      $('daoContent').style.display = 'none';
+    }
 
     // Update wallet display
     function updateWalletDisplay(wallet) {
@@ -500,20 +545,17 @@
 
     // Connect wallet function
     async function connectWallet() {
-      // This should integrate with your existing wallet connection system
-      // For now, we'll simulate the connection
       try {
-        // In a real implementation, this would trigger XUMM/Xaman connection
-        showToast("Please connect your wallet through the main site first", "info");
+        // Redirect to stats page for wallet connection
+        showToast("Redirecting to stats page for wallet connection...", "info");
 
-        // Check if wallet is already connected
-        const wallet = getWallet();
-        if (wallet) {
-          showDAOContent();
-          loadDAOData();
-        }
+        setTimeout(() => {
+          window.location.href = 'https://stats-page.waldocoin.live';
+        }, 2000);
+
       } catch (error) {
-        showToast("Failed to connect wallet", "error");
+        console.error('❌ Connect wallet error:', error);
+        showToast("Failed to redirect to wallet connection", "error");
       }
     }
 

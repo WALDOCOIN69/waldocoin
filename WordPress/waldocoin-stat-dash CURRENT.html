@@ -6912,6 +6912,7 @@
         dashboardStarted = true;
         $("walletAddress") && ($("walletAddress").innerText = `Wallet: ${wallet}`);
         showWaldoNotification("✅ WALDO wallet connected");
+        updateNavWallet(); // Update navigation with wallet info
         initWaldoDashboard().finally(() => {
           const loader = document.getElementById("waldoLoader");
           if (loader) loader.style.display = "none";
@@ -7079,10 +7080,22 @@
         if (wallet && navDisplay) {
           navDisplay.textContent = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
           if (disconnectBtn) disconnectBtn.style.display = 'block';
+
+          // Update DAO links to include wallet parameter
+          updateDAOLinks(wallet);
         } else {
           navDisplay.textContent = 'Not Connected';
           if (disconnectBtn) disconnectBtn.style.display = 'none';
         }
+      }
+
+      function updateDAOLinks(wallet) {
+        // Update all DAO links to include wallet parameter
+        const daoLinks = document.querySelectorAll('a[href*="dao-portal.waldocoin.live"]');
+        daoLinks.forEach(link => {
+          const baseUrl = 'https://dao-portal.waldocoin.live';
+          link.href = `${baseUrl}?wallet=${encodeURIComponent(wallet)}`;
+        });
       }
 
       function disconnectWallet() {
