@@ -6997,7 +6997,19 @@
         const fromDisconnect = urlParams.get('disconnect') === '1';
 
         if (fromDisconnect) {
-          console.log("🔌 Coming from disconnect - showing QR modal immediately");
+          console.log("🔌 Coming from disconnect - clearing wallet and showing QR modal");
+
+          // Force clear all wallet storage
+          sessionStorage.clear();
+          localStorage.removeItem('xummWallet');
+          localStorage.removeItem('wallet');
+          localStorage.removeItem('walletAddress');
+          localStorage.removeItem('connectedWallet');
+          localStorage.removeItem('waldoWalletSync');
+
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+
           showWalletConnectionScreen();
           setupConnectWalletButton();
           // Automatically trigger connect wallet to show QR

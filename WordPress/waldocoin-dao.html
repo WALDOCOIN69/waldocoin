@@ -522,15 +522,15 @@
     // Utility functions
     function $(id) { return document.getElementById(id); }
     function getWallet() {
-      // Check sessionStorage first (current session), then localStorage (cross-session)
-      const wallet = sessionStorage.getItem("xummWallet") ||
-        sessionStorage.getItem("walletAddress") ||
-        sessionStorage.getItem("wallet") ||
-        sessionStorage.getItem("connectedWallet") ||
-        localStorage.getItem("xummWallet") ||
+      // Check localStorage first for cross-subdomain sync, then sessionStorage
+      const wallet = localStorage.getItem("xummWallet") ||
+        sessionStorage.getItem("xummWallet") ||
         localStorage.getItem("walletAddress") ||
+        sessionStorage.getItem("walletAddress") ||
         localStorage.getItem("wallet") ||
+        sessionStorage.getItem("wallet") ||
         localStorage.getItem("connectedWallet") ||
+        sessionStorage.getItem("connectedWallet") ||
         null;
 
       // Debug logging
