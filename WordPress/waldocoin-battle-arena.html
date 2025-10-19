@@ -348,11 +348,17 @@
 
       <!-- Wallet Info -->
       <div style="text-align: center; margin-top: 15px;">
-        <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em; margin-bottom: 10px;">
-          🔗 Wallet: <span id="connectedWallet">Loading...</span>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+          <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em;">
+            🔗 Wallet: <span id="connectedWallet">Loading...</span>
+          </div>
+          <button onclick="disconnectWallet()" id="disconnectBtn"
+            style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 15px; font-size: 0.8em; cursor: pointer;">🔌
+            Disconnect</button>
         </div>
         <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
-          💡 To disconnect, visit the Stats page
+          <a href="https://stats-page.waldocoin.live" style="color: #25c2a0; text-decoration: none;">← Back to
+            Dashboard</a>
         </div>
       </div>
     </div>
@@ -1229,8 +1235,29 @@
       }
     });
 
-    // === DISCONNECT FUNCTIONALITY REMOVED ===
-    // Users can disconnect via the Stats page instead
+    // Disconnect wallet function
+    function disconnectWallet() {
+      localStorage.removeItem("xummWallet");
+      localStorage.removeItem("wallet");
+      localStorage.removeItem("walletAddress");
+      localStorage.removeItem("connectedWallet");
+      sessionStorage.removeItem("waldoLoginDesktop");
+
+      // Sync disconnection to other subdomains
+      localStorage.setItem('waldoWalletSync', JSON.stringify({
+        wallet: null,
+        timestamp: Date.now(),
+        source: 'battle-arena'
+      }));
+
+      // Update UI
+      showWalletConnection();
+
+      showToast("🔌 Wallet disconnected successfully", "success");
+    }
+
+    // Make disconnect function globally available
+    window.disconnectWallet = disconnectWallet;
 
     // === CLEANUP ===
     window.addEventListener('beforeunload', function () {

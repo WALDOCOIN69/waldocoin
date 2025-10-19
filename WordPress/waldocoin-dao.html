@@ -529,34 +529,118 @@
     function disconnectWallet() {
       localStorage.removeItem("xummWallet");
       localStorage.removeItem("wallet");
-      localStorage.removeItem("waldoWalletSync");
+      localStorage.removeItem("walletAddress");
+      localStorage.removeItem("connectedWallet");
       sessionStorage.removeItem("waldoLoginDesktop");
 
-      showToast("🔌 Wallet disconnected successfully", "success");
+      // Sync disconnection to other subdomains
+      localStorage.setItem('waldoWalletSync', JSON.stringify({
+        wallet: null,
+        timestamp: Date.now(),
+        source: 'dao-portal'
+      }));
 
-      // Redirect to stats page after short delay
-      setTimeout(() => {
-        window.location.href = 'https://stats-page.waldocoin.live';
-      }, 1500);
+      // Update UI
+      updateWalletDisplay(null);
+      $('walletCheck').style.display = 'block';
+      $('daoContent').style.display = 'none';
+
+      showToast("🔌 Wallet disconnected successfully", "success");
     }
 
     // === GLOBAL DISCONNECT FUNCTION REMOVED ===
     // Users can disconnect via the Stats page instead
 
-    // Connect wallet function
+    // Connect wallet function with direct XUMM integration
     async function connectWallet() {
       try {
-        // Redirect to stats page for wallet connection
-        showToast("Redirecting to stats page for wallet connection...", "info");
+        console.log('🔗 DAO: Starting wallet connection...');
+        showToast("Connecting to XUMM wallet...", "info");
 
-        setTimeout(() => {
-          window.location.href = 'https://stats-page.waldocoin.live';
-        }, 2000);
+        // Call the backend login endpoint
+        const response = await fetch(`${baseURL}/api/login`);
+        const data = await response.json();
+
+        if (data.success && data.uuid) {
+          console.log('✅ DAO: XUMM payload created:', data.uuid);
+
+          // Open XUMM in new window/tab
+          if (data.next && data.next.always) {
+            window.open(data.next.always, '_blank');
+          }
+
+          // Start polling for wallet connection
+          pollForWalletConnection(data.uuid);
+
+        } else {
+          throw new Error(data.error || 'Failed to create XUMM payload');
+        }
 
       } catch (error) {
-        console.error('❌ Connect wallet error:', error);
-        showToast("Failed to redirect to wallet connection", "error");
+        console.error('❌ DAO Connect wallet error:', error);
+        showToast("Failed to connect wallet: " + error.message, "error");
       }
+    }
+
+    // Poll for wallet connection status
+    async function pollForWalletConnection(uuid) {
+      const maxAttempts = 60; // 5 minutes max
+      let attempts = 0;
+
+      const pollInterval = setInterval(async () => {
+        attempts++;
+
+        try {
+          const response = await fetch(`${baseURL}/api/login/status/${uuid}`);
+          const data = await response.json();
+
+          if (data.success && data.wallet) {
+            clearInterval(pollInterval);
+            console.log('✅ DAO: Wallet connected:', data.wallet);
+
+            // Store wallet in localStorage
+            localStorage.setItem('xummWallet', data.wallet);
+
+            // Sync wallet to other subdomains
+            syncWalletToSubdomains(data.wallet);
+
+            // Show DAO content
+            showDAOContent();
+            loadDAOData();
+            updateWalletDisplay(data.wallet);
+
+            showToast("✅ Wallet connected successfully!", "success");
+
+          } else if (data.error) {
+            clearInterval(pollInterval);
+            console.error('❌ DAO: Wallet connection failed:', data.error);
+            showToast("Wallet connection failed: " + data.error, "error");
+          } else if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            console.log('⏰ DAO: Wallet connection timeout');
+            showToast("Wallet connection timeout. Please try again.", "error");
+          }
+
+        } catch (error) {
+          console.error('❌ DAO: Polling error:', error);
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            showToast("Connection polling failed. Please try again.", "error");
+          }
+        }
+      }, 5000); // Poll every 5 seconds
+    }
+
+    // Sync wallet to other subdomains via localStorage events
+    function syncWalletToSubdomains(wallet) {
+      // Use localStorage event to sync across subdomains
+      localStorage.setItem('waldoWalletSync', JSON.stringify({
+        wallet: wallet,
+        timestamp: Date.now(),
+        source: 'dao-portal'
+      }));
+
+      console.log('📡 DAO: Wallet synced to other subdomains:', wallet);
     }
 
     // Show DAO content after wallet connection
@@ -771,6 +855,36 @@
 
     // === DISCONNECT FUNCTIONALITY REMOVED ===
     // Users can disconnect via the Stats page instead
+
+    // Listen for wallet sync from other subdomains
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'waldoWalletSync' && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          const currentWallet = getWallet();
+
+          if (data.wallet !== currentWallet && data.source !== 'dao-portal') {
+            console.log('📡 DAO: Received wallet sync from', data.source, ':', data.wallet);
+
+            if (data.wallet) {
+              localStorage.setItem('xummWallet', data.wallet);
+              showDAOContent();
+              loadDAOData();
+              updateWalletDisplay(data.wallet);
+              showToast('✅ Wallet connected from another tab', 'success');
+            } else {
+              localStorage.removeItem('xummWallet');
+              $('walletCheck').style.display = 'block';
+              $('daoContent').style.display = 'none';
+              updateWalletDisplay(null);
+              showToast('🔌 Wallet disconnected from another tab', 'info');
+            }
+          }
+        } catch (error) {
+          console.error('❌ DAO: Wallet sync error:', error);
+        }
+      }
+    });
 
     // Make functions globally available
     window.connectWallet = connectWallet;
