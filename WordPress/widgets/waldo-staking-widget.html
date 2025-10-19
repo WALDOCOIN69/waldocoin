@@ -28,10 +28,6 @@
         <label for="stakeWallet">Wallet (XRPL r…)</label>
         <input id="stakeWallet" type="text" placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXX" />
       </div>
-      <div class="col small">
-        <div style="height: 1.2em;">&nbsp;</div>
-
-      </div>
     </div>
 
     <!-- Long-term panel -->
@@ -105,7 +101,7 @@
         <button id="xummMobileBtnStake" class="btn" type="button"
           style="background:#25c2a0;color:white;border:none;padding:15px 20px;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;width:100%;">📱
           Open Xaman App</button>
-        <small class="hint" style="color:#9adbcf; opacity:.9;">If the app doesn't open, copy the link and paste into
+        <small class="hint" style="color:#9adbcf; opacity:.9;">If the app doesn’t open, copy the link and paste into
           Xaman.</small>
       </div>
     </div>
@@ -576,7 +572,7 @@
   // Map to parent fallbacks when embedded via iframe and local handlers are missing
   try {
     const p = window.parent;
-    const names = ['stakeConnect', 'stakeTrustline', 'createLongTermStake', 'stakeDisconnect', 'ltSetMax', 'stakeRedeem', 'stakeUnstake', 'xummOpenStake', 'xummCloseStake'];
+    const names = ['stakeConnect', 'stakeTrustline', 'createLongTermStake', 'stakeDisconnect', 'stakeLoadInfo', 'ltSetMax', 'stakeRedeem', 'stakeUnstake', 'xummOpenStake', 'xummCloseStake'];
     for (const n of names) {
       if (typeof window[n] !== 'function' && p && typeof p[n] === 'function') {
         window[n] = p[n].bind(p);
@@ -716,3 +712,1264 @@
       }
     }
     window.xummCloseStake = () => { document.getElementById('xummModalStake').style.display = 'none'; };
+
+    // Connect/Disconnect (display only — wallet still editable)
+    window.stakeConnect = async function () {
+      try {
+        const r = await fetch(`${API}/api/login`);
+        const j = await r.json();
+        try { if (j?.uuid) localStorage.setItem('waldo_login_uuid', j.uuid); } catch (_) { }
+        xummOpenStake('Connect Xaman', j);
+        startLoginStatusPoll(j.uuid, async (s) => {
+          try { localStorage.removeItem('waldo_login_uuid'); } catch (_) { }
+          WALLET = s?.account || WALLET;
+          const status = document.getElementById('stakeConnStatus');
+          if (status) status.textContent = WALLET ? `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}` : 'Connected';
+          const btn = document.getElementById('btnStakeDisconnect'); if (btn) btn.style.display = 'inline-block';
+          try { await stakeLoadInfo(); } catch (_) { }
+        });
+      } catch (e) {
+        // Fallback to manual
+        document.getElementById('stakeConnStatus').textContent = 'Connected (manual)';
+        (function () { const el = document.getElementById('btnStakeDisconnect'); if (el) el.style.display = 'inline-block'; })();
+        const w = document.getElementById('stakeWallet').value.trim();
+        if (w) { WALLET = w; await stakeLoadInfo(); }
+      }
+    }
+
+    function startLoginStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/login/status?uuid=${encodeURIComponent(uuid)}&_t=${Date.now()}`);
+          const j = await s.json();
+          if (j?.signed) {
+            clearInterval(iv);
+            try { onDone && onDone(j); } catch (_) { }
+            xummCloseStake();
+          }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (_) { /* ignore transient errors to keep polling */ }
+
+
+
+      }, 1000);
+    }
+
+    // Resume login if user returns from Xaman and the page was backgrounded/reloaded
+    async function resumeLoginIfNeeded() {
+      try {
+        const uuid = localStorage.getItem('waldo_login_uuid');
+        if (!uuid) return;
+        const s = await fetch(`${API}/api/login/status?uuid=${encodeURIComponent(uuid)}&_t=${Date.now()}`);
+        const j = await s.json();
+        if (j?.signed) {
+          try { localStorage.removeItem('waldo_login_uuid'); } catch (_) { }
+          WALLET = j?.account || WALLET;
+          const status = document.getElementById('stakeConnStatus');
+          if (status) status.textContent = WALLET ? `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}` : 'Connected';
+          const btn = document.getElementById('btnStakeDisconnect'); if (btn) btn.style.display = 'inline-block';
+          try { await stakeLoadInfo(); } catch (_) { }
+          try { xummCloseStake(); } catch (_) { }
+        }
+      } catch (_) { /* ignore */ }
+    }
+
+    // When tab becomes visible again, attempt to resume
+    try { document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resumeLoginIfNeeded(); }); } catch (_) { }
+    // One-time check shortly after load in case the browser killed background timers
+    try { setTimeout(resumeLoginIfNeeded, 1200); } catch (_) { }
+
+
+    // Resume Xaman operations (trustline, lock, redeem, early unlock) when returning from the app
+    async function resumeXummOpsIfNeeded() {
+      if (window._resumeOpsRunning) return;
+      window._resumeOpsRunning = true;
+      try {
+        const msg = document.getElementById('ltMsg');
+
+        // Long-term lock
+        try {
+          const lockUuid = localStorage.getItem('waldo_lock_uuid');
+          if (lockUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Resuming lock confirmation...';
+            startStakeStatusPoll(lockUuid, async () => {
+              try { localStorage.removeItem('waldo_lock_uuid'); } catch (_) { }
+              if (msg) msg.textContent = 'Lock confirmed on‑ledger ✔';
+              try { await stakeLoadInfo(); } catch (_) { }
+              try { xummCloseStake(); } catch (_) { }
+            });
+          }
+        } catch (_) { }
+
+        // Early unlock
+        try {
+          const unstakeUuid = localStorage.getItem('waldo_unstake_uuid');
+          if (unstakeUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Resuming unlock...';
+            startUnstakeStatusPoll(unstakeUuid, async () => {
+              try { localStorage.removeItem('waldo_unstake_uuid'); } catch (_) { }
+              if (msg) msg.textContent = 'Unlocked ✔ — WALDO sent back';
+              try { xummCloseStake(); } catch (_) { }
+              try { await stakeLoadInfo(); } catch (_) { }
+            });
+          }
+        } catch (_) { }
+
+        // Redeem
+        try {
+          const redeemUuid = localStorage.getItem('waldo_redeem_uuid');
+          if (redeemUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Resuming redemption...';
+            startRedeemStatusPoll(redeemUuid, async () => {
+              try { localStorage.removeItem('waldo_redeem_uuid'); } catch (_) { }
+              if (msg) msg.textContent = 'Redeemed ✔ — WALDO sent back';
+              try { xummCloseStake(); } catch (_) { }
+              try { await stakeLoadInfo(); } catch (_) { }
+            });
+          }
+        } catch (_) { }
+
+        // Trustline (no UUID status poll; refresh account state)
+        try {
+          const trustUuid = localStorage.getItem('waldo_trust_uuid');
+          if (trustUuid) {
+            if (msg && !msg.textContent) msg.textContent = 'Checking trustline...';
+            try { await stakeLoadInfo(); } catch (_) { }
+            try { localStorage.removeItem('waldo_trust_uuid'); } catch (_) { }
+            try { xummCloseStake(); } catch (_) { }
+          }
+        } catch (_) { }
+      } finally {
+        window._resumeOpsRunning = false;
+      }
+    }
+
+    // Hook resume handler on visibility change and shortly after load
+    try { document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resumeXummOpsIfNeeded(); }); } catch (_) { }
+    try { setTimeout(resumeXummOpsIfNeeded, 1500); } catch (_) { }
+
+    window.stakeDisconnect = function () {
+      WALLET = ''; CURRENT_BAL = 0;
+      const w = document.getElementById('stakeWallet'); if (w) w.value = '';
+      const s = document.getElementById('stakeConnStatus'); if (s) s.textContent = 'Not connected';
+      const b = document.getElementById('btnStakeDisconnect'); if (b) b.style.display = 'none';
+      const tl = document.getElementById('stakeTlStatus'); if (tl) tl.textContent = 'Trustline: —';
+      // Clear LT UI
+      const ltBal = document.getElementById('ltBal'); if (ltBal) ltBal.textContent = '—';
+      const ltList = document.getElementById('ltList'); if (ltList) ltList.innerHTML = '<div class="subline">No active long‑term locks</div>';
+      const ltAmt = document.getElementById('ltAmount'); if (ltAmt) ltAmt.value = '';
+      const ltDur = document.getElementById('ltDuration'); if (ltDur) ltDur.value = '';
+      const ltMsg = document.getElementById('ltMsg'); if (ltMsg) ltMsg.textContent = '';
+
+      // Clear Ready to Redeem section
+      const ltReadyBlock = document.getElementById('ltReadyBlock'); if (ltReadyBlock) ltReadyBlock.style.display = 'none';
+      const ltReadyList = document.getElementById('ltReadyList'); if (ltReadyList) ltReadyList.innerHTML = '';
+
+      // Clear Recently Redeemed section
+      const ltRedeemedBlock = document.getElementById('ltRedeemedBlock'); if (ltRedeemedBlock) ltRedeemedBlock.style.display = 'none';
+      const ltRedeemedList = document.getElementById('ltRedeemedList'); if (ltRedeemedList) ltRedeemedList.innerHTML = '';
+
+      // Clear Early Claimed section
+      const ltEarlyClaimedBlock = document.getElementById('ltEarlyClaimedBlock'); if (ltEarlyClaimedBlock) ltEarlyClaimedBlock.style.display = 'none';
+      const ltEarlyClaimedList = document.getElementById('ltEarlyClaimedList'); if (ltEarlyClaimedList) ltEarlyClaimedList.innerHTML = '';
+
+    }
+
+    // Trustline
+    window.stakeTrustline = async function () {
+      try {
+        const r = await fetch(`${API}/api/xrpl/trustline/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error || 'Trustline failed');
+        try { if (j?.uuid) localStorage.setItem('waldo_trust_uuid', j.uuid); } catch (_) { }
+        xummOpenStake('Add WALDO Trustline', j);
+      } catch (e) { alert('Trustline error: ' + e.message); }
+    }
+
+    // Load user info + lock durations
+    window.stakeLoadInfo = async function () {
+      try {
+        const field = document.getElementById('stakeWallet');
+        const inputVal = (field?.value || '').trim();
+        const w = WALLET || inputVal;
+        const isValid = window.StakingUtils?.isValidWallet || ((wallet) => wallet && wallet.startsWith('r') && wallet.length >= 25);
+        if (!isValid(w)) return alert('Enter a valid XRPL wallet');
+        WALLET = w;
+        const r = await fetch(`${API}/api/staking/info/${encodeURIComponent(WALLET)}`);
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error || 'Failed to load user info');
+
+        // Also get positions (including redeemed stakes)
+        const positionsR = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
+        const positionsJ = await positionsR.json();
+        const allPositions = positionsJ.success ? positionsJ.positions : [];
+        // Update TL status with error handling
+        try {
+          const tl = await fetch(`${API}/api/xrpl/trustline/status?account=${encodeURIComponent(WALLET)}`);
+          if (tl.ok) {
+            const tlj = await tl.json();
+            document.getElementById('stakeTlStatus').textContent = `Trustline: ${tlj.trustline ? 'Yes' : 'No'}`;
+          } else {
+            console.warn('[TRUSTLINE] Status check failed:', tl.status, tl.statusText);
+            document.getElementById('stakeTlStatus').textContent = 'Trustline: Check failed';
+          }
+        } catch (trustlineError) {
+          console.warn('[TRUSTLINE] Status check error:', trustlineError.message);
+          document.getElementById('stakeTlStatus').textContent = 'Trustline: —';
+        }
+        // Update duration options based on user level
+        const sel = document.getElementById('ltDuration');
+        const userLevel = j.userInfo?.level || 1;
+        const availableDurations = j.userInfo?.availableDurations || [30, 90];
+
+        Array.from(sel.options).forEach(op => {
+          if (!op.value) return; // Skip "Select duration" option
+          const duration = parseInt(op.value);
+          const isAvailable = availableDurations.includes(duration);
+
+          if (isAvailable) {
+            op.disabled = false;
+            // Reset to original text
+            const bonusText = {
+              30: '30 days — +12% bonus',
+              90: '90 days — +18% bonus',
+              180: '180 days — +25% bonus',
+              365: '365 days — +45% bonus'
+            };
+            op.textContent = bonusText[duration] || op.textContent;
+          } else {
+            op.disabled = true;
+            const bonusText = {
+              30: '+12% bonus',
+              90: '+18% bonus',
+              180: '+25% bonus',
+              365: '+45% bonus'
+            };
+            op.textContent = op.textContent.split(' —')[0] + ` — ${bonusText[duration]} — Not available for your level`;
+          }
+        });
+        // Update WALDO balance and show in UI
+        CURRENT_BAL = (j.userInfo && typeof j.userInfo.currentBalance === 'number') ? j.userInfo.currentBalance : 0;
+        const balStr = Math.floor(CURRENT_BAL).toLocaleString();
+        (function () { const el = document.getElementById('ltBal'); if (el) el.textContent = balStr; })();
+
+        // SIMPLE APPROACH: Check if any countdown shows READY to determine section
+        const now = Date.now();
+        const bufferMs = 60 * 1000; // 60-second buffer to match backend
+
+        const activeStakes = [];
+        const readyStakes = [];
+
+        allPositions.forEach(s => {
+          if (s.status !== 'active') return;
+
+          const endMs = +new Date(s.endDate || Date.now());
+          const timeRemaining = Math.max(0, endMs - now);
+          const isTimeReady = timeRemaining <= bufferMs;
+
+          // Check if this stake's countdown would show READY
+          const wouldShowReady = timeRemaining <= bufferMs;
+
+          console.log(`[SECTION-FILTER] Stake ${s.stakeId}:`, {
+            endDate: s.endDate,
+            timeRemaining: timeRemaining,
+            wouldShowReady: wouldShowReady,
+            section: wouldShowReady ? 'READY' : 'ACTIVE'
+          });
+
+          if (wouldShowReady) {
+            readyStakes.push(s);
+          } else {
+            activeStakes.push(s);
+          }
+        });
+        const redeemedStakes = allPositions.filter(s => s.status === 'redeemed' || s.status === 'completed');
+
+
+
+
+        // Separate mature redemptions from early claims
+        // SIMPLE FIX: Use status to determine type
+        // 'completed' = early unlock (with penalty)
+        // 'redeemed' = mature redemption (with rewards)
+        const earlyClaims = redeemedStakes.filter(s => s.status === 'completed');
+        const matureRedemptions = redeemedStakes.filter(s => s.status === 'redeemed');
+
+        // Sort both lists by most recent first (newest at top)
+        const sortByMostRecent = (a, b) => {
+          const timeA = new Date(a.unstakedAt || a.redeemedAt || a.processedAt || 0).getTime();
+          const timeB = new Date(b.unstakedAt || b.redeemedAt || b.processedAt || 0).getTime();
+          return timeB - timeA; // Descending order (newest first)
+        };
+
+        earlyClaims.sort(sortByMostRecent);
+        matureRedemptions.sort(sortByMostRecent);
+
+        console.log(`[STAKING] Found ${earlyClaims.length} early unlocks, ${matureRedemptions.length} mature redemptions`);
+
+
+
+        renderLongTerm(activeStakes);
+        renderReady(readyStakes);
+        renderRedeemed(matureRedemptions);
+        renderEarlyClaimed(earlyClaims);
+
+        document.getElementById('stakeConnStatus').textContent = `Wallet: ${WALLET.slice(0, 6)}…${WALLET.slice(-4)}`;
+      } catch (e) {
+        console.log('Load info failed silently (likely CORS issue):', e.message);
+        // Don't show alert to user - they can manually refresh if needed
+      }
+    }
+    // Quick actions
+    window.ltSetMax = function () {
+      if (typeof CURRENT_BAL === 'number') {
+        const v = Math.floor(CURRENT_BAL);
+        document.getElementById('ltAmount').value = v > 0 ? v : 0;
+      }
+    }
+
+
+
+    // Load shared utilities if available, otherwise define locally
+    const fmtDate = window.StakingUtils?.formatDate || function (s) {
+      try { const d = new Date(s); return d.toLocaleDateString(); } catch (_) { return s || '' }
+    };
+    const fmtTime = window.StakingUtils?.formatTime || function (s) {
+      try { const d = new Date(s); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch (_) { return '' }
+    };
+    const calcAccrued = window.StakingUtils?.calculateAccrued || function (amount, apy, startDate, endDate) {
+      const now = Date.now();
+      const st = +new Date(startDate || 0);
+      const ed = +new Date(endDate || 0);
+      if (!isFinite(st) || !isFinite(ed) || st <= 0 || ed <= 0) return 0;
+
+      // Calculate progress-based accrual of the flat bonus
+      const totalDuration = ed - st;
+      const elapsed = Math.min(now - st, totalDuration);
+      const progress = totalDuration > 0 ? Math.max(0, Math.min(1, elapsed / totalDuration)) : 0;
+
+      // Full reward is flat bonus percentage
+      const fullReward = amount * (parseFloat(String(apy).replace('%', '')) / 100);
+      const accruedReward = fullReward * progress;
+
+      return Math.floor(accruedReward * 100) / 100; // Match backend rounding
+    };
+    function ensureCountdownTick() {
+      // Use shared utility if available, otherwise use local implementation
+      if (window.StakingUtils?.setupCountdownTimer) {
+        window.StakingUtils.setupCountdownTimer('.waldo-stake .countdown[data-end]');
+      } else {
+        // Local fallback implementation
+        if (window._stakeCountdownTimer) return;
+        window._stakeCountdownTimer = setInterval(() => {
+          document.querySelectorAll('.waldo-stake .countdown[data-end]').forEach(el => {
+            const end = Number(el.dataset.end || 0);
+            const totalDuration = Number(el.dataset.duration || 30);
+            if (!end) return;
+            const diff = Math.max(0, end - Date.now());
+            const daysLeft = Math.ceil(diff / (24 * 60 * 60 * 1000));
+
+            el.classList.remove('danger', 'warning', 'ready');
+
+            const percentRemaining = (daysLeft / totalDuration) * 100;
+            const bufferMs = 60 * 1000;
+            if (diff <= bufferMs) {
+              el.classList.add('ready');
+              el.textContent = 'READY!';
+
+              // TRIGGER COMPLETE RE-FILTERING when countdown becomes ready
+              if (!el.classList.contains('refilter-triggered')) {
+                el.classList.add('refilter-triggered');
+                console.log(`[COUNTDOWN] ✅ Countdown became READY! Triggering complete re-filter...`);
+
+                // Trigger complete refresh to move stake to correct section
+                setTimeout(() => {
+                  console.log('[COUNTDOWN] Calling stakeLoadInfo() to re-filter sections...');
+                  if (typeof stakeLoadInfo === 'function') {
+                    stakeLoadInfo().catch(e => console.warn('Auto re-filter failed:', e));
+                  }
+                }, 500);
+              }
+            } else if (percentRemaining <= 25) {
+              el.classList.add('danger');
+            } else if (percentRemaining <= 50) {
+              el.classList.add('warning');
+            }
+
+            if (diff > bufferMs) {
+              if (diff <= 24 * 60 * 60 * 1000) {
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                el.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+              } else {
+                el.textContent = `${daysLeft}d`;
+              }
+            }
+          });
+        }, 1000);
+      }
+    }
+
+
+
+    function renderLongTerm(list) {
+      const root = document.getElementById('ltList');
+      root.innerHTML = (list || []).map(s => {
+        const dr = Math.max(0, parseInt(s.daysRemaining || 0));
+        const total = Math.max(1, parseInt(s.duration || 0));
+        const done = Math.max(0, Math.min(total, total - dr));
+        const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+
+        // FIXED: Use only time-based calculation for initial rendering
+        const endMs = +new Date(s.endDate || Date.now());
+        const now = Date.now();
+        const timeRemaining = Math.max(0, endMs - now);
+        const bufferMs = 60 * 1000; // 60-second buffer
+        const mature = timeRemaining <= bufferMs;
+
+        const realTimeDaysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+        const soon = !mature && realTimeDaysRemaining > 0 && realTimeDaysRemaining <= 7;
+        const accrued = calcAccrued(Number(s.amount || 0), s.apy, s.startDate, s.endDate);
+        const badge = mature ? '<span class="badge mature">Matured</span>' : (soon ? '<span class="badge soon">Maturing Soon</span>' : '');
+
+
+
+        // Determine initial countdown color class using real-time calculation
+        const percentRemaining = (realTimeDaysRemaining / total) * 100;
+        let countdownClass = '';
+        if (mature) {
+          countdownClass = 'ready';
+        } else if (percentRemaining <= 25) {
+          countdownClass = 'danger';
+        } else if (percentRemaining <= 50) {
+          countdownClass = 'warning';
+        }
+
+        return `
+        <div class="stake-item" data-stake-id="${s.stakeId}">
+          <div class="item-head">
+            <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
+            ${badge}
+          </div>
+          <div class="meta">Duration: ${s.duration} days • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO • Days Left: <span class="countdown ${countdownClass}" data-end="${endMs}" data-duration="${s.duration}">${mature ? 'READY!' : dr + 'd'}</span></div>
+          <div class="progress"><span style="width:${pct}%"></span></div>
+          <div class="details">
+            <div>Start: ${fmtDate(s.startDate)} ${fmtTime(s.startDate)} • End: ${fmtDate(s.endDate)} ${fmtTime(s.endDate)} • Progress: ${pct}%</div>
+            <div>Accrued so far: ${accrued.toFixed(2)} WALDO</div>
+          </div>
+          <div class="actions" data-stake-id="${s.stakeId}">
+            ${mature ? `<button class="btn buy" onclick="stakeRedeem('${s.stakeId}')">Redeem</button>` : `<button class="btn" onclick="stakeUnstake('${s.stakeId}')">Unlock</button>`}
+          </div>
+        </div>`
+      }).join('') || '<div class="subline">No active long‑term locks</div>';
+      ensureCountdownTick();
+    }
+
+    function renderReady(list) {
+      const block = document.getElementById('ltReadyBlock');
+      const root = document.getElementById('ltReadyList');
+      const now = Date.now();
+      const bufferMs = 60 * 1000; // 60-second buffer to match backend
+      const ready = (list || []).filter(s => {
+        const endMs = +new Date(s.endDate || Date.now());
+        const timeRemaining = Math.max(0, endMs - now);
+        return timeRemaining <= bufferMs; // Use real-time check with buffer
+      });
+      if (!ready.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
+      if (block) block.style.display = 'block';
+      if (root) root.innerHTML = ready.map(s => `
+        <div class="stake-item">
+          <div class="item-head">
+            <div class="amt">${Number(s.amount).toLocaleString()} WALDO</div>
+            <span class="badge mature">Matured</span>
+          </div>
+          <div class="meta">Locked ${s.duration}d • Bonus: +${s.apy}% • Est. Reward: ${s.expectedReward} WALDO</div>
+          <div class="meta">Started: ${fmtDate(s.startDate)} ${fmtTime(s.startDate)} • Matured: ${fmtDate(s.endDate)} ${fmtTime(s.endDate)}</div>
+          <div class="actions">
+            <button class="btn buy" data-stake-id="${s.stakeId}" ${(window.PENDING && window.PENDING.redeem && window.PENDING.redeem.has(s.stakeId)) ? 'disabled' : ''} onclick="stakeRedeem('${s.stakeId}', this)">Redeem</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderEarlyClaimed(list) {
+      const block = document.getElementById('ltEarlyClaimedBlock');
+      const root = document.getElementById('ltEarlyClaimedList');
+      const earlyClaimed = (list || []); // Already filtered to early claims only
+
+      // Render early unlock stakes with red badges
+
+      if (!earlyClaimed.length) {
+        console.log('[DEBUG] No early claims to show, hiding section');
+        if (block) block.style.display = 'none';
+        if (root) root.innerHTML = '';
+        return;
+      }
+      if (block) block.style.display = 'block';
+      if (root) root.innerHTML = earlyClaimed.map(s => {
+        // This function only handles early claims (already filtered)
+
+        // DEBUG: Log timestamp fields for early unlocks with alert to make it visible
+        console.warn(`🔴 EARLY-TIMESTAMP ${s.stakeId}:`, {
+          unstakedAt: s.unstakedAt,
+          processedAt: s.processedAt,
+          completedAt: s.completedAt,
+          redeemedAt: s.redeemedAt
+        });
+
+        // Try multiple timestamp fields for completion date
+        const completionDate = s.unstakedAt || s.processedAt || s.completedAt || s.redeemedAt;
+        let dateTime = null;
+
+        // Robust date parsing
+        if (completionDate) {
+          try {
+            dateTime = new Date(completionDate);
+            // Check if date is valid
+            if (isNaN(dateTime.getTime())) {
+              console.warn(`[TIMESTAMP] Invalid date for stake ${s.stakeId}:`, completionDate);
+              dateTime = null;
+            }
+          } catch (e) {
+            console.warn(`[TIMESTAMP] Date parsing error for stake ${s.stakeId}:`, e.message);
+            dateTime = null;
+          }
+        }
+
+        const dateStr = dateTime ? dateTime.toLocaleDateString() : 'Unknown';
+        const timeStr = dateTime ? dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        const originalAmount = Number(s.originalAmount || s.amount || 0);
+
+        // Early unlock - calculate 15% penalty
+        const penalty = Number(s.penalty || (originalAmount * 0.15));
+        const rewardAmount = -penalty; // Show as negative penalty
+        const totalReceived = originalAmount - penalty; // What user actually received
+        const actionText = `Early unlock on ${dateStr} at ${timeStr}`;
+        const badgeText = 'EARLY UNLOCK';
+
+        const explorerLink = s.unstakeTx || s.redeemTx || s.txid;
+        const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
+
+        // No NEW badge logic - removed for simplicity
+
+        return `
+        <div class="stake-item">
+          <div class="item-head">
+            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
+            <span class="badge early-unlock">${badgeText}</span>
+          </div>
+          <div class="meta">
+            ${actionText} • ${s.duration}d lock • ${s.apy}% APY
+            ${txLink ? ` • <a href="${txLink}" target="_blank" rel="noopener" style="color:#25c2a0;">View Transaction</a>` : ''}
+          </div>
+        </div>
+      `;
+      }).join('');
+    }
+
+    function renderRedeemed(list) {
+      const block = document.getElementById('ltRedeemedBlock');
+      const root = document.getElementById('ltRedeemedList');
+      const redeemed = (list || []); // Already filtered to mature redemptions only
+      if (!redeemed.length) { if (block) block.style.display = 'none'; if (root) root.innerHTML = ''; return; }
+      if (block) block.style.display = 'block';
+      if (root) root.innerHTML = redeemed.map(s => {
+        // This function now only handles mature redemptions (already filtered)
+
+        // DEBUG: Log timestamp fields for mature redemptions with alert to make it visible
+        console.warn(`🟢 MATURE-TIMESTAMP ${s.stakeId}:`, {
+          redeemedAt: s.redeemedAt,
+          unstakedAt: s.unstakedAt,
+          processedAt: s.processedAt,
+          completedAt: s.completedAt
+        });
+
+        // Try multiple timestamp fields for completion date
+        const completionDate = s.redeemedAt || s.unstakedAt || s.processedAt || s.completedAt;
+        let dateTime = null;
+
+        // Robust date parsing
+        if (completionDate) {
+          try {
+            dateTime = new Date(completionDate);
+            // Check if date is valid
+            if (isNaN(dateTime.getTime())) {
+              console.warn(`[TIMESTAMP] Invalid date for stake ${s.stakeId}:`, completionDate);
+              dateTime = null;
+            }
+          } catch (e) {
+            console.warn(`[TIMESTAMP] Date parsing error for stake ${s.stakeId}:`, e.message);
+            dateTime = null;
+          }
+        }
+
+        const dateStr = dateTime ? dateTime.toLocaleDateString() : 'Unknown';
+        const timeStr = dateTime ? dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        const originalAmount = Number(s.originalAmount || s.amount || 0);
+
+        // Mature redemption - show full rewards (early unlocks should be filtered out already)
+        const rewardAmount = Number(s.rewardAmount || s.expectedReward || (originalAmount * (parseFloat(s.apy || 12) / 100)));
+        const totalReceived = originalAmount + Math.abs(rewardAmount); // Always positive for mature redemptions
+        const actionText = `Redeemed on ${dateStr} at ${timeStr}`;
+        const badgeText = '✅ Redeemed';
+        const badgeClass = 'redeemed';
+
+        const explorerLink = s.redeemTx || s.unstakeTx || s.txid;
+        const txLink = explorerLink ? `https://livenet.xrpl.org/transactions/${explorerLink}` : null;
+
+        // No NEW badge logic - removed for simplicity
+
+        return `
+        <div class="stake-item">
+          <div class="item-head">
+            <div class="amt">${originalAmount.toLocaleString()} ${rewardAmount >= 0 ? '+' : '-'} ${Math.abs(rewardAmount).toLocaleString()} = ${totalReceived.toLocaleString()} WALDO</div>
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="meta">
+            ${actionText} • ${s.duration}d lock • ${s.apy}% APY
+            ${txLink ? ` • <a href="${txLink}" target="_blank" rel="noopener" style="color:#25c2a0;">View Transaction</a>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Create stakes
+    window.createLongTermStake = async function () {
+      const amt = parseFloat(document.getElementById('ltAmount').value || '0');
+      const dur = parseInt(document.getElementById('ltDuration').value || '0');
+      const msg = document.getElementById('ltMsg');
+      if (!WALLET) return msg.textContent = 'Load your wallet info first';
+      if (!amt || !dur) return msg.textContent = 'Enter amount and select duration';
+      try {
+        const r = await fetch(`${API}/api/staking/long-term`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, amount: amt, duration: dur }) });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error || 'Lock failed');
+        try { if (j?.uuid) localStorage.setItem('waldo_lock_uuid', j.uuid); } catch (_) { }
+        msg.textContent = `Sign in Xaman to lock ${amt} WALDO for ${dur} days...`;
+        xummOpenStake('Long‑term Lock', j);
+        if (j.uuid) startStakeStatusPoll(j.uuid, async () => { try { localStorage.removeItem('waldo_lock_uuid'); } catch (_) { } msg.textContent = 'Lock confirmed on‑ledger ✔'; await stakeLoadInfo(); });
+      } catch (e) { msg.textContent = 'Error: ' + e.message; }
+    }
+
+
+
+    // Unstake (with QR code) - should only be called for early unstaking
+    window.stakeUnstake = async function (stakeId) {
+      // Prevent double-clicking
+      if (window._unstaking && window._unstaking[stakeId]) {
+        console.log('[UNSTAKE] Already processing', stakeId);
+        return;
+      }
+
+      // CRITICAL: Always check if this stake is actually mature before showing penalty warning
+      console.log('[UNSTAKE] Checking real-time maturity for stake:', stakeId);
+      try {
+        const r = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
+        const j = await r.json();
+        if (j.success) {
+          const stake = j.positions.find(p => p.stakeId === stakeId);
+          if (stake) {
+            const now = Date.now();
+            const endMs = +new Date(stake.endDate || Date.now());
+            const timeRemaining = Math.max(0, endMs - now);
+            const bufferMs = 60 * 1000;
+
+            console.log('[UNSTAKE] Maturity check:', {
+              stakeId,
+              endDate: stake.endDate,
+              timeRemaining,
+              bufferMs,
+              isMature: timeRemaining <= bufferMs
+            });
+
+            if (timeRemaining <= bufferMs) {
+              console.log('[UNSTAKE] ✅ Stake is mature! Redirecting to redeem (no penalty)');
+              alert('This stake is now mature! Redirecting to penalty-free redemption...');
+              return stakeRedeem(stakeId);
+            } else {
+              console.log('[UNSTAKE] ⚠️ Stake is still early, will apply 15% penalty');
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[UNSTAKE] Could not check maturity, proceeding with unstake:', e);
+      }
+
+      if (!confirm('⚠️ EARLY UNLOCK WARNING ⚠️\n\nThis stake is not yet mature. Early unlock will reduce your WALDO by 15%.\n\nAre you sure you want to proceed with the penalty?')) return;
+
+      // Mark as processing
+      window._unstaking = window._unstaking || {};
+      window._unstaking[stakeId] = true;
+
+      // OPTIMISTIC UPDATE: Find and hide the stake item immediately
+      const unstakeBtn = document.querySelector(`button[onclick="stakeUnstake('${stakeId}')"]`);
+      const stakeItem = unstakeBtn ? unstakeBtn.closest('.stake-item') : null;
+
+      if (unstakeBtn) {
+        unstakeBtn.disabled = true;
+        unstakeBtn.textContent = 'Processing...';
+      }
+
+      // Hide the stake item immediately (optimistic update)
+      if (stakeItem) {
+        stakeItem.style.opacity = '0.5';
+        stakeItem.style.pointerEvents = 'none';
+        stakeItem.setAttribute('data-unstaking', 'true');
+      }
+
+      const msg = document.getElementById('ltMsg');
+      try {
+        console.log('[UNSTAKE] Starting unstake for:', stakeId);
+
+        // Retry logic for 502/CORS issues
+        let r;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            console.log(`[UNSTAKE] Attempt ${attempt}/3`);
+            r = await fetch(`${API}/api/staking/unstake`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ wallet: WALLET, stakeId })
+            });
+            if (r.ok || r.status !== 502) break; // Success or non-502 error
+            if (attempt < 3) {
+              console.log(`[UNSTAKE] Got ${r.status}, retrying in 2s...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } catch (e) {
+            console.log(`[UNSTAKE] Attempt ${attempt} failed:`, e.message);
+            if (attempt === 3) throw e;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+        const j = await r.json();
+
+        if (!j.success) throw new Error(j.error || 'Unlock failed');
+
+        // SUCCESS CASES: Keep row hidden and complete removal
+        console.log('[UNSTAKE] Checking success cases - already:', !!j.already, 'inProgress:', !!j.inProgress, 'txid:', !!j.txid);
+        if (j.already || j.inProgress || j.txid) {
+          console.log('[UNSTAKE] SUCCESS CASE MATCHED - returning early');
+          const successMsg = j.already ? 'Already unlocked ✔' :
+            j.inProgress ? 'Unlock in progress...' :
+              'Unlocked ✔ — WALDO sent back';
+          msg.textContent = successMsg;
+
+          // Completely remove the stake item after short delay
+          setTimeout(() => {
+            if (stakeItem) stakeItem.remove();
+          }, 2000);
+
+          // Background refresh to sync with server (longer delay to ensure backend processing)
+          setTimeout(() => stakeLoadInfo(), 8000);
+
+          try { xummCloseStake && xummCloseStake(); } catch (_) { }
+
+          // Clear processing flag
+          if (window._unstaking) {
+            delete window._unstaking[stakeId];
+          }
+
+          console.log('[UNSTAKE] Early return completed');
+          return;
+        }
+
+        console.log('[UNSTAKE] No success case matched - proceeding to QR flow');
+
+        // Otherwise proceed with XUMM QR flow
+        msg.textContent = 'Sign in Xaman to unlock your WALDO...';
+        try { if (j?.uuid) localStorage.setItem('waldo_unstake_uuid', j.uuid); } catch (_) { }
+        if (typeof xummOpenStake === 'function') {
+          xummOpenStake('Early Unlock', j);
+        }
+        if (j.uuid) {
+          startUnstakeStatusPoll(j.uuid, async () => {
+            msg.textContent = 'Unlocked ✔ — WALDO sent back';
+            try { xummCloseStake && xummCloseStake(); } catch (_) { }
+            await stakeLoadInfo();
+          });
+        }
+      } catch (e) {
+        console.error('[UNSTAKE] Error:', e);
+        msg.textContent = 'Unlock error: ' + e.message;
+
+        // RESTORE STAKE ITEM on error (rollback optimistic update)
+        if (stakeItem) {
+          stakeItem.style.opacity = '1';
+          stakeItem.style.pointerEvents = 'auto';
+          stakeItem.removeAttribute('data-unstaking');
+        }
+
+        // Re-enable button on error
+        if (unstakeBtn) {
+          unstakeBtn.disabled = false;
+          unstakeBtn.textContent = 'Unlock Early';
+        }
+
+        // Clear processing flag
+        if (window._unstaking) {
+          delete window._unstaking[stakeId];
+        }
+      }
+    }
+
+    // Status polling for unstake (like exchange widget)
+    function startUnstakeStatusPoll(uuid, onSuccess) {
+      if (!uuid) return;
+      console.log('[UNSTAKE-POLL] Starting status polling for UUID:', uuid);
+
+      let tries = 0;
+      const maxTries = 180; // 3 minutes
+
+      const pollInterval = setInterval(async () => {
+        tries++;
+        console.log(`[UNSTAKE-POLL] Attempt ${tries}/${maxTries} for UUID: ${uuid}`);
+
+        try {
+          const response = await fetch(`${API}/api/staking/unstake/status/${uuid}?account=${WALLET}&txid=pending&_t=${Date.now()}`);
+          const status = await response.json();
+          console.log(`[UNSTAKE-POLL] Status response:`, status);
+
+          if (status?.signed && status?.paid) {
+            // Transaction completed successfully
+            console.log('[UNSTAKE-POLL] Unstake completed successfully!');
+            clearInterval(pollInterval);
+            try { localStorage.removeItem('waldo_unstake_uuid'); } catch (_) { }
+            xummCloseStake();
+            if (onSuccess) onSuccess(status);
+            return;
+          }
+
+          if (status?.signed && !status?.paid) {
+            // Signed but payment not yet processed
+            const msg = document.getElementById('ltMsg');
+            if (msg && !msg._processingShown) {
+              msg.textContent = 'Signed. Processing unstake...';
+              msg._processingShown = true;
+            }
+          }
+
+        } catch (error) {
+          console.error('[UNSTAKE-POLL] Polling error:', error);
+          // Continue polling despite errors - backend might be temporarily unavailable
+        }
+
+        // Stop polling after max attempts
+        if (tries >= maxTries) {
+          console.log('[UNSTAKE-POLL] Max attempts reached, stopping poll');
+          clearInterval(pollInterval);
+          // Don't auto-close on timeout - user might still be signing
+        }
+
+      }, 1000); // Poll every second like exchange widget
+    }
+
+
+
+    // Redeem (maturity only, long-term visible here)
+    window.stakeRedeem = async function (stakeId, btnEl) {
+      try { if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Processing…'; } } catch (_) { }
+      try { window.PENDING?.redeem?.add(stakeId); } catch (_) { }
+      const msg = document.getElementById('ltMsg');
+      try {
+        const r = await fetch(`${API}/api/staking/redeem`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: WALLET, stakeId }) });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error || 'Redeem init failed');
+        try { if (j?.uuid) localStorage.setItem('waldo_redeem_uuid', j.uuid); } catch (_) { }
+        msg.textContent = 'Sign in Xaman to redeem your WALDO + bonus...';
+        xummOpenStake('Redeem Stake', j);
+
+        // Start status polling for redemption completion
+        startRedeemStatusPoll(j.uuid, async (result) => {
+          console.log('[REDEEM] Redemption completed:', result);
+          msg.textContent = 'Redeemed ✔ — WALDO sent back';
+
+          // Force refresh UI to show stake in "Recently Redeemed"
+          setTimeout(async () => {
+            try {
+              await stakeLoadInfo();
+              console.log('[REDEEM] UI refreshed after redemption completion');
+            } catch (error) {
+              console.log('[REDEEM] UI refresh failed:', error.message);
+            }
+          }, 1000);
+        });
+
+        // Optimistic: remove from Ready list immediately to prevent double-clicks
+        try { await stakeLoadInfo(); } catch (_) { }
+
+        // Add 15-second fallback timeout for CORS issues
+        setTimeout(async () => {
+          console.log('[REDEEM] 15-second timeout - closing modal and refreshing');
+          try { xummCloseStake && xummCloseStake(); } catch (_) { }
+          msg.textContent = 'Redeemed ✔ — WALDO sent back';
+
+          // Force refresh with delay to ensure backend processing is complete
+          setTimeout(async () => {
+            try {
+              // First try to trigger backend processing by calling status endpoint
+              if (j.uuid) {
+                try {
+                  const statusResponse = await fetch(`${API}/api/staking/redeem/status/${j.uuid}`);
+                  const statusResult = await statusResponse.json();
+                  console.log('[REDEEM] Status check result:', statusResult);
+                } catch (statusError) {
+                  console.log('[REDEEM] Status check failed (expected with CORS):', statusError.message);
+                }
+              }
+
+              // Then refresh UI
+              await stakeLoadInfo();
+            } catch (error) {
+              console.log('[REDEEM] Refresh failed silently (CORS issue), trying again in 3 seconds:', error.message);
+              setTimeout(async () => {
+                try {
+                  await stakeLoadInfo();
+                } catch (retryError) {
+                  console.log('[REDEEM] Retry refresh also failed silently:', retryError.message);
+                  // Final fallback: show message to user to manually refresh
+                  if (msg) msg.textContent = 'Redeemed ✔ — Click "Load Info" to refresh your stakes';
+                }
+              }, 3000);
+            }
+          }, 2000);
+        }, 15000);
+
+        // Skip status polling for redemption - rely on 15-second timeout to avoid CORS spam
+        console.log('[REDEEM] Skipping status polling - using 15-second timeout instead to avoid CORS errors');
+      } catch (e) {
+        console.log('Redeem error (likely already redeemed):', e.message);
+        if (msg) msg.textContent = 'This stake has already been redeemed';
+        // Don't show alert popup for double redemption attempts
+      }
+    }
+
+
+
+
+
+
+    function startRedeemStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      let corsErrorCount = 0;
+      const msg = document.getElementById('ltMsg');
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/staking/redeem/status/${encodeURIComponent(uuid)}?_t=${Date.now()}`);
+
+          // Reset CORS error count on successful request
+          corsErrorCount = 0;
+
+          const j = await s.json();
+          if (j?.signed) {
+            if (j?.error === 'missing_sender_secret') {
+              clearInterval(iv);
+              try { localStorage.removeItem('waldo_redeem_uuid'); } catch (_) { }
+              if (msg) msg.textContent = 'Signed, but payout is not configured (admin: set WALDO_SENDER_SECRET or WALDO_DISTRIBUTOR_SECRET)';
+              xummCloseStake();
+              return;
+            }
+            if (j?.paid) {
+              clearInterval(iv);
+              try { localStorage.removeItem('waldo_redeem_uuid'); } catch (_) { }
+              try { onDone && onDone(j); } catch (_) { }
+              xummCloseStake();
+              return;
+            }
+            // Signed but not yet paid: show interim status once
+            if (msg && !msg._waitingShown) { msg.textContent = 'Signed. Delivering WALDO…'; msg._waitingShown = true; }
+          }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (error) {
+          // Count CORS errors but don't show them to user
+          if (error.message && error.message.includes('CORS')) {
+            corsErrorCount++;
+            console.log(`[REDEEM-POLL] CORS error ${corsErrorCount}/5 - continuing silently`);
+
+            // If too many CORS errors, stop polling and rely on timeout
+            if (corsErrorCount >= 5) {
+              console.log('[REDEEM-POLL] Too many CORS errors, stopping poll - timeout will handle completion');
+              clearInterval(iv);
+              return;
+            }
+          } else {
+            console.log('[REDEEM-POLL] Network error:', error.message);
+          }
+
+          // Stop after max tries
+          if (tries > 180) { clearInterval(iv); }
+        }
+      }, 1000);
+    }
+
+
+    // Poll staking status
+    function startStakeStatusPoll(uuid, onDone) {
+      if (!uuid) return;
+      let tries = 0;
+      const iv = setInterval(async () => {
+        tries++;
+        try {
+          const s = await fetch(`${API}/api/staking/status/${encodeURIComponent(uuid)}`);
+          const j = await s.json();
+          if (j?.signed && j?.activated) { clearInterval(iv); try { localStorage.removeItem('waldo_lock_uuid'); } catch (_) { } try { onDone && onDone(j); } catch (_) { } xummCloseStake(); }
+          if (tries > 180) { clearInterval(iv); }
+        } catch (_) { /* ignore */ }
+      }, 2000);
+    }
+
+
+
+    // Force refresh function (can be called from console)
+    window.refreshStakes = function () {
+      console.log('Forcing stake refresh...');
+      if (typeof stakeLoadInfo === 'function') {
+        stakeLoadInfo().catch(e => console.warn('Refresh failed:', e));
+      }
+    };
+
+
+
+    // Force update all stake buttons based on current maturity (can be called from console)
+    window.updateAllStakeButtons = async function () {
+      console.log('[UPDATE-BUTTONS] Checking all stakes for maturity updates...');
+
+      try {
+        const response = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          console.warn('[UPDATE-BUTTONS] Failed to fetch stake data');
+          return;
+        }
+
+        const now = Date.now();
+        const bufferMs = 60 * 1000;
+
+        data.positions.forEach(stake => {
+          if (stake.status === 'active') {
+            const endMs = +new Date(stake.endDate || Date.now());
+            const timeRemaining = Math.max(0, endMs - now);
+            const isMature = timeRemaining <= bufferMs;
+
+            const stakeItem = document.querySelector(`[data-stake-id="${stake.stakeId}"]`);
+            if (stakeItem) {
+              const actionsDiv = stakeItem.querySelector('.actions');
+              const badge = stakeItem.querySelector('.badge');
+
+              if (isMature) {
+                // Update to mature state
+                if (actionsDiv) {
+                  actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stake.stakeId}')">Redeem</button>`;
+                }
+                if (badge && badge.classList.contains('soon')) {
+                  badge.className = 'badge mature';
+                  badge.textContent = 'Matured';
+                }
+                console.log(`[UPDATE-BUTTONS] ✅ Updated ${stake.stakeId} to mature state`);
+              } else {
+                // Update to active state
+                if (actionsDiv) {
+                  actionsDiv.innerHTML = `<button class="btn" onclick="stakeUnstake('${stake.stakeId}')">Unlock</button>`;
+                }
+                console.log(`[UPDATE-BUTTONS] ⏳ Confirmed ${stake.stakeId} still active`);
+              }
+            }
+          }
+        });
+
+        console.log('[UPDATE-BUTTONS] ✅ All stake buttons updated');
+
+      } catch (error) {
+        console.error('[UPDATE-BUTTONS] Error:', error);
+      }
+    };
+
+    // Update a specific stake in real-time when it becomes mature
+    window.updateStakeInRealTime = async function (stakeId) {
+      console.log(`[REAL-TIME] Updating stake ${stakeId} in real-time...`);
+
+      try {
+        // Get current stake data
+        const response = await fetch(`${API}/api/staking/positions/${encodeURIComponent(WALLET)}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          console.warn('[REAL-TIME] Failed to fetch stake data:', data.error);
+          return;
+        }
+
+        const stake = data.positions.find(p => p.stakeId === stakeId);
+        if (!stake) {
+          console.warn('[REAL-TIME] Stake not found:', stakeId);
+          return;
+        }
+
+        // Check if stake is now mature
+        const now = Date.now();
+        const endMs = +new Date(stake.endDate || Date.now());
+        const timeRemaining = Math.max(0, endMs - now);
+        const bufferMs = 60 * 1000;
+        const isMature = timeRemaining <= bufferMs;
+
+        console.log(`[REAL-TIME] Stake ${stakeId} maturity check:`, {
+          timeRemaining,
+          bufferMs,
+          isMature,
+          endDate: stake.endDate
+        });
+
+        if (isMature) {
+          // Find the stake item in the DOM
+          const stakeItem = document.querySelector(`[data-stake-id="${stakeId}"]`);
+          if (stakeItem) {
+            // Update the button from "Unlock" to "Redeem"
+            const actionsDiv = stakeItem.querySelector('.actions');
+            if (actionsDiv) {
+              actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">Redeem</button>`;
+              console.log(`[REAL-TIME] Updated button for stake ${stakeId} to "Redeem"`);
+            }
+
+            // Update the badge from "Maturing Soon" to "Matured"
+            const badge = stakeItem.querySelector('.badge.soon');
+            if (badge) {
+              badge.className = 'badge mature';
+              badge.textContent = 'Matured';
+              console.log(`[REAL-TIME] Updated badge for stake ${stakeId} to "Matured"`);
+            }
+
+            // Move stake to ready section after a short delay
+            setTimeout(() => {
+              console.log(`[REAL-TIME] Moving stake ${stakeId} to ready section...`);
+              refreshStakes(); // Full refresh to move between sections
+            }, 2000);
+          }
+        }
+
+      } catch (error) {
+        console.error('[REAL-TIME] Error updating stake:', error);
+        // Fallback to full refresh
+        setTimeout(() => {
+          refreshStakes();
+        }, 1000);
+      }
+    };
+
+    // SIMPLE DIRECT APPROACH: Check every second and move stakes as needed
+    setInterval(() => {
+      // Find all stakes with READY! countdown in the active section
+      const activeSection = document.getElementById('ltActiveList');
+      const readySection = document.getElementById('ltReadyList');
+      const readyBlock = document.getElementById('ltReadyBlock');
+
+      if (!activeSection || !readySection) return;
+
+      const readyStakesInActiveSection = activeSection.querySelectorAll('.stake-item');
+      let movedAny = false;
+
+      readyStakesInActiveSection.forEach(stakeItem => {
+        const countdown = stakeItem.querySelector('.countdown');
+        const stakeId = stakeItem.dataset.stakeId;
+
+        if (countdown && countdown.textContent === 'READY!' && stakeId) {
+          console.log(`[DIRECT-MOVE] Moving stake ${stakeId} from Active to Ready section`);
+
+          // Update the button to Redeem
+          const actionsDiv = stakeItem.querySelector('.actions');
+          if (actionsDiv) {
+            actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">💰 Redeem</button>`;
+          }
+
+          // Update badge to Matured
+          const badge = stakeItem.querySelector('.badge.soon');
+          if (badge) {
+            badge.className = 'badge mature';
+            badge.textContent = 'Matured';
+          }
+
+          // Move the entire stake item to ready section
+          readySection.appendChild(stakeItem);
+          movedAny = true;
+
+          console.log(`[DIRECT-MOVE] ✅ Moved stake ${stakeId} to Ready section with Redeem button`);
+        }
+      });
+
+      // Show ready block if we moved any stakes
+      if (movedAny && readyBlock) {
+        readyBlock.style.display = 'block';
+      }
+
+    }, 1000); // Check every second
+
+    // Also check immediately when page loads
+    setTimeout(() => {
+      if (document.querySelector('.stake-item')) {
+        updateAllStakeButtons();
+      }
+    }, 3000);
+
+    // NEW badge functionality removed for simplicity
+
+    // Add a direct button update function that can be called from console
+    window.forceUpdateButtons = function () {
+      console.log('[FORCE-UPDATE] Checking all stakes for immediate button updates...');
+
+      document.querySelectorAll('.stake-item').forEach(stakeItem => {
+        const stakeId = stakeItem.dataset.stakeId;
+        const countdownEl = stakeItem.querySelector('.countdown');
+        const actionsDiv = stakeItem.querySelector('.actions');
+        const badge = stakeItem.querySelector('.badge');
+
+        if (countdownEl && actionsDiv && stakeId) {
+          const isReady = countdownEl.textContent === 'READY!';
+
+          console.log(`[FORCE-UPDATE] Stake ${stakeId}: countdown="${countdownEl.textContent}", isReady=${isReady}`);
+
+          if (isReady) {
+            // Force update to redeem button
+            actionsDiv.innerHTML = `<button class="btn buy" onclick="stakeRedeem('${stakeId}')">Redeem</button>`;
+            if (badge && badge.classList.contains('soon')) {
+              badge.className = 'badge mature';
+              badge.textContent = 'Matured';
+            }
+            console.log(`[FORCE-UPDATE] ✅ Updated ${stakeId} to REDEEM button`);
+          } else {
+            // Ensure it's unlock button
+            actionsDiv.innerHTML = `<button class="btn" onclick="stakeUnstake('${stakeId}')">Unlock</button>`;
+            console.log(`[FORCE-UPDATE] ⏳ Confirmed ${stakeId} has UNLOCK button`);
+          }
+        }
+      });
+    };
+
+    // Add function to manually move ready stakes to correct section
+    window.fixStakeSections = function () {
+      console.log('[FIX-SECTIONS] Manually checking and moving stakes to correct sections...');
+
+      // Force a complete refresh of stake data and sections
+      if (typeof stakeLoadInfo === 'function') {
+        stakeLoadInfo().then(() => {
+          console.log('[FIX-SECTIONS] ✅ Stake sections refreshed');
+
+          // Also force button updates after refresh
+          setTimeout(() => {
+            forceUpdateButtons();
+          }, 1000);
+        }).catch(e => {
+          console.warn('[FIX-SECTIONS] Refresh failed:', e);
+        });
+      }
+    };
+
+
+  })();
+</script>
