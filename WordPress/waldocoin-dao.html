@@ -330,7 +330,25 @@
       border: 1px solid rgba(37, 194, 160, 0.3);
     }
 
+    /* Navigation responsive */
     @media (max-width: 768px) {
+      .nav-header {
+        flex-direction: column !important;
+        gap: 15px !important;
+        padding: 15px !important;
+      }
+
+      .nav-links {
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 10px !important;
+      }
+
+      .nav-link {
+        font-size: 0.8rem !important;
+        padding: 6px 12px !important;
+      }
+
       .dao-title {
         font-size: 2rem;
       }
@@ -358,6 +376,32 @@
 </head>
 
 <body>
+  <!-- Sticky Navigation Header -->
+  <div class="nav-header"
+    style="background: #000; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #25c2a0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.5); backdrop-filter: blur(10px);">
+    <div class="nav-logo" style="color: #25c2a0; font-size: 1.5rem; font-weight: bold;">🗳️ WALDOCOIN DAO</div>
+    <div class="nav-links" style="display: flex; align-items: center; gap: 20px;">
+      <a href="https://stats-page.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">📊
+        Dashboard</a>
+      <a href="https://battle-arena.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">⚔️
+        Battle Arena</a>
+      <a href="https://staking.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">💰
+        Staking</a>
+      <a href="https://nft-marketplace.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🏪
+        NFT Market</a>
+      <div class="wallet-display" id="navWalletDisplay"
+        style="background: #333; padding: 8px 16px; border-radius: 20px; font-family: monospace; font-size: 0.9rem; color: #25c2a0;">
+        Not Connected</div>
+      <button class="disconnect-button" onclick="disconnectWallet()" id="navDisconnectBtn"
+        style="display: none; background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;">🔌
+        Disconnect</button>
+    </div>
+  </div>
+
   <div class="dao-header">
     <h1 class="dao-title">🗳️ WALDOcoin DAO</h1>
     <p class="dao-subtitle">Decentralized Governance & Community Voting</p>
@@ -554,13 +598,31 @@
       const connectedWallet = $('connectedWallet');
       const disconnectBtn = $('disconnectBtn');
 
-      if (walletDisplay && connectedWallet && wallet) {
-        connectedWallet.textContent = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
-        walletDisplay.style.display = 'block';
+      // Also update sticky navigation
+      const navWalletDisplay = $('navWalletDisplay');
+      const navDisconnectBtn = $('navDisconnectBtn');
+
+      if (wallet) {
+        const shortWallet = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
+
+        // Update main wallet display
+        if (walletDisplay && connectedWallet) {
+          connectedWallet.textContent = shortWallet;
+          walletDisplay.style.display = 'block';
+        }
         if (disconnectBtn) disconnectBtn.style.display = 'block';
+
+        // Update sticky navigation
+        if (navWalletDisplay) navWalletDisplay.textContent = shortWallet;
+        if (navDisconnectBtn) navDisconnectBtn.style.display = 'block';
       } else {
+        // Hide main wallet display
         if (walletDisplay) walletDisplay.style.display = 'none';
         if (disconnectBtn) disconnectBtn.style.display = 'none';
+
+        // Reset sticky navigation
+        if (navWalletDisplay) navWalletDisplay.textContent = 'Not Connected';
+        if (navDisconnectBtn) navDisconnectBtn.style.display = 'none';
       }
     }
 
