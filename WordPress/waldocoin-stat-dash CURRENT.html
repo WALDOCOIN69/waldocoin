@@ -7123,9 +7123,9 @@
       function disconnectWallet() {
         logoutWallet(); // Use existing logout function
 
-        // Redirect to main waldocoin.live page after disconnect
+        // Redirect to stats page after disconnect for easy reconnection
         setTimeout(() => {
-          window.location.href = 'https://waldocoin.live';
+          window.location.href = 'https://stats-page.waldocoin.live';
         }, 1500);
       }
       window.logoutWallet = logoutWallet;
