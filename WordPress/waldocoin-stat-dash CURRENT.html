@@ -3960,8 +3960,8 @@
       })();
 
       (function () {
-        // Check authentication without forcing redirects
-        const wallet = localStorage.getItem('xummWallet');
+        // Check authentication without forcing redirects - prioritize sessionStorage
+        const wallet = sessionStorage.getItem('xummWallet') || localStorage.getItem('xummWallet');
         const desktopFlag = sessionStorage.getItem('waldoLoginDesktop');
 
         // If wallet exists but no desktop flag, set it to prevent future issues
@@ -4008,9 +4008,11 @@
 
       /** === UTILS === **/
       function $(id) { return document.getElementById(id); }
-      function getWallet() { return localStorage.getItem("xummWallet") || null; }
+      function getWallet() { return sessionStorage.getItem("xummWallet") || null; }
 
       function setWallet(wallet) {
+        sessionStorage.setItem('xummWallet', wallet);
+        // Also store in localStorage for cross-tab sync during active session
         localStorage.setItem('xummWallet', wallet);
         // Broadcast wallet change to other tabs/windows
         broadcastWalletChange(wallet);
@@ -4098,11 +4100,17 @@
               if (data.wallet !== currentWallet) {
                 // Properly handle wallet sync - remove if null, set if valid
                 if (data.wallet) {
+                  sessionStorage.setItem('xummWallet', data.wallet);
                   localStorage.setItem('xummWallet', data.wallet);
                   showToast('Wallet connected in another tab - refreshing...', 'success');
                   setTimeout(() => location.reload(), 1500);
                 } else {
                   // Properly clear wallet storage when disconnected
+                  sessionStorage.removeItem('xummWallet');
+                  sessionStorage.removeItem('wallet');
+                  sessionStorage.removeItem('walletAddress');
+                  sessionStorage.removeItem('connectedWallet');
+
                   localStorage.removeItem('xummWallet');
                   localStorage.removeItem('wallet');
                   localStorage.removeItem('walletAddress');
@@ -4130,11 +4138,17 @@
               if (event.data.wallet !== currentWallet) {
                 // Properly handle wallet sync - remove if null, set if valid
                 if (event.data.wallet) {
+                  sessionStorage.setItem('xummWallet', event.data.wallet);
                   localStorage.setItem('xummWallet', event.data.wallet);
                   showToast('Wallet connected in another tab - refreshing...', 'success');
                   setTimeout(() => location.reload(), 1500);
                 } else {
                   // Properly clear wallet storage when disconnected
+                  sessionStorage.removeItem('xummWallet');
+                  sessionStorage.removeItem('wallet');
+                  sessionStorage.removeItem('walletAddress');
+                  sessionStorage.removeItem('connectedWallet');
+
                   localStorage.removeItem('xummWallet');
                   localStorage.removeItem('wallet');
                   localStorage.removeItem('walletAddress');
@@ -7061,12 +7075,22 @@
         }
       });
       function logoutWallet() {
+        // Clear both session and local storage
+        sessionStorage.removeItem("xummWallet");
+        sessionStorage.removeItem("wallet");
+        sessionStorage.removeItem("walletAddress");
+        sessionStorage.removeItem("connectedWallet");
+        sessionStorage.removeItem("waldoLoginDesktop");
+
         localStorage.removeItem("xummWallet");
         localStorage.removeItem("wallet");
+        localStorage.removeItem("walletAddress");
+        localStorage.removeItem("connectedWallet");
         localStorage.removeItem("waldoWalletSync");
-        sessionStorage.removeItem("waldoLoginDesktop");
+
         updateWalletUI(null);
         updateNavWallet();
+        broadcastWalletChange(null);
         window.location.replace("https://waldocoin.live/?logout=1");
       }
 
