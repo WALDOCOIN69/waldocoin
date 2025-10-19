@@ -356,13 +356,20 @@
       <a href="/marketplace" class="nav-btn">🛒 Marketplace</a>
     </div>
 
-    <!-- Wallet Display -->
-    <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em; margin-top: 15px; display: none;">
-      🔗 Connected: <span id="connectedWallet">Loading...</span>
-      <br>
-      <div style="font-size: 0.8em; color: #888; margin-top: 10px;">
-        💡 To disconnect, visit the Stats page
+    <!-- Navigation & Wallet Display -->
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px;">
+      <a href="https://stats-page.waldocoin.live"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; background: #333; border-radius: 20px; font-size: 0.9em;">←
+        Back to Dashboard</a>
+
+      <div id="walletDisplay" style="color: #25c2a0; font-size: 0.9em; display: none;">
+        🔗 Connected: <span id="connectedWallet">Loading...</span>
       </div>
+
+      <button onclick="disconnectWallet()" id="disconnectBtn"
+        style="display: none; background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9em; cursor: pointer;">🔌
+        Disconnect</button>
     </div>
   </div>
 
@@ -461,11 +468,31 @@
     function updateWalletDisplay(wallet) {
       const walletDisplay = $('walletDisplay');
       const connectedWallet = $('connectedWallet');
+      const disconnectBtn = $('disconnectBtn');
 
       if (walletDisplay && connectedWallet && wallet) {
         connectedWallet.textContent = wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
         walletDisplay.style.display = 'block';
+        if (disconnectBtn) disconnectBtn.style.display = 'block';
+      } else {
+        if (walletDisplay) walletDisplay.style.display = 'none';
+        if (disconnectBtn) disconnectBtn.style.display = 'none';
       }
+    }
+
+    // Disconnect wallet function
+    function disconnectWallet() {
+      localStorage.removeItem("xummWallet");
+      localStorage.removeItem("wallet");
+      localStorage.removeItem("waldoWalletSync");
+      sessionStorage.removeItem("waldoLoginDesktop");
+
+      showToast("🔌 Wallet disconnected successfully", "success");
+
+      // Redirect to stats page after short delay
+      setTimeout(() => {
+        window.location.href = 'https://stats-page.waldocoin.live';
+      }, 1500);
     }
 
     // === GLOBAL DISCONNECT FUNCTION REMOVED ===
@@ -705,6 +732,7 @@
 
     // Make functions globally available
     window.connectWallet = connectWallet;
+    window.disconnectWallet = disconnectWallet;
     window.voteOnProposal = voteOnProposal;
     window.createProposal = createProposal;
   </script>
