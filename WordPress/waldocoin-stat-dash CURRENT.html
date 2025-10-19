@@ -6992,21 +6992,38 @@
       });
 
       function initializePage() {
-        // Always show wallet connection screen first
-        // This prevents getting stuck on loading
-        console.log("🚀 Initializing page - showing connect wallet screen");
-        showWalletConnectionScreen();
-        setupConnectWalletButton();
+        // Check if coming from a disconnect (show QR immediately)
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromDisconnect = urlParams.get('disconnect') === '1';
 
-        // Check if wallet is already connected in background
-        const walletAddress = localStorage.getItem('walletAddress') || localStorage.getItem('xummWallet');
-
-        if (walletAddress) {
-          console.log("📱 Found existing wallet, auto-connecting...");
-          // Small delay to show the connect screen briefly, then auto-connect
+        if (fromDisconnect) {
+          console.log("🔌 Coming from disconnect - showing QR modal immediately");
+          showWalletConnectionScreen();
+          setupConnectWalletButton();
+          // Automatically trigger connect wallet to show QR
           setTimeout(() => {
-            handleWalletConnection();
+            const connectBtn = document.getElementById('connectWalletBtn');
+            if (connectBtn) {
+              connectBtn.click();
+            }
           }, 500);
+        } else {
+          // Always show wallet connection screen first
+          // This prevents getting stuck on loading
+          console.log("🚀 Initializing page - showing connect wallet screen");
+          showWalletConnectionScreen();
+          setupConnectWalletButton();
+
+          // Check if wallet is already connected in background
+          const walletAddress = localStorage.getItem('walletAddress') || localStorage.getItem('xummWallet');
+
+          if (walletAddress) {
+            console.log("📱 Found existing wallet, auto-connecting...");
+            // Small delay to show the connect screen briefly, then auto-connect
+            setTimeout(() => {
+              handleWalletConnection();
+            }, 500);
+          }
         }
       }
 
@@ -7151,7 +7168,7 @@
 
         // Redirect to stats page after disconnect for easy reconnection
         setTimeout(() => {
-          window.location.href = 'https://stats-page.waldocoin.live';
+          window.location.href = 'https://stats-page.waldocoin.live?disconnect=1';
         }, 1500);
       }
       window.logoutWallet = logoutWallet;
