@@ -5266,7 +5266,7 @@
           const wallet = getWallet();
           const [stakingData, battleData, referralData] = await Promise.all([
             fetchStakingMultiplierData(wallet).catch(e => ({ error: e.message })),
-
+            Promise.resolve({ error: "Battle data not implemented yet" }), // Placeholder for battle data
             fetchReferralMultiplierData(wallet).catch(e => ({ error: e.message }))
           ]);
 
@@ -5352,14 +5352,15 @@
           let battleWins = 0;
           let winStreak = 0;
 
-          if (battleData && !battleData.error) {
-            battleWins = battleData.totalWins || 0;
-            winStreak = battleData.currentStreak || 0;
-          } else if (stats.battles) {
+          // Check stats data first (most reliable source currently)
+          if (stats.battles) {
             battleWins = stats.battles;
           } else if (stats.battleStats) {
             battleWins = stats.battleStats.wins || 0;
             winStreak = stats.battleStats.streak || 0;
+          } else if (battleData && !battleData.error) {
+            battleWins = battleData.totalWins || 0;
+            winStreak = battleData.currentStreak || 0;
           }
 
           // Calculate multiplier: 2% per win, max 20% total (10 wins max)
