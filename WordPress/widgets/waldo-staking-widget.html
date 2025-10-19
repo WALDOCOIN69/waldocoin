@@ -121,10 +121,11 @@
     border: 1px solid #18213d;
     border-radius: 16px;
     box-shadow: 0 0 22px rgba(0, 247, 255, .08), 0 0 42px rgba(255, 61, 247, .06);
-    max-width: 520px;
-    margin: 14px auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 14px 0;
     color: #eafff9;
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow: hidden;
   }
 
@@ -386,13 +387,23 @@
   }
 
 
-  @media (max-width:520px) {
+  @media (max-width:768px) {
     .waldo-stake {
-      max-width: 94vw
+      max-width: 100%;
+      margin: 14px 0;
+      border-radius: 12px;
     }
 
     .grid {
       grid-template-columns: 1fr
+    }
+
+    .row {
+      flex-direction: column;
+    }
+
+    .col {
+      flex: 1 1 auto;
     }
   }
 
@@ -405,7 +416,9 @@
     padding: 8px;
     background: #0a0f26;
     color: #eafff9;
-    box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05)
+    box-shadow: inset 0 0 0 1px rgba(0, 247, 255, .05);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 14px;
   }
 
   .actions {
@@ -418,18 +431,28 @@
     margin-top: 12px
   }
 
+  .list h4 {
+    color: #25c2a0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
   .stake-item {
-    background: #111;
-    border: 1px solid #1c1c1c;
+    background: linear-gradient(180deg, #0a0f26, #0a1020);
+    border: 1px solid #1c254a;
     border-radius: 10px;
     padding: 12px;
-    margin: 8px 0
+    margin: 8px 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 
   .subline {
     font-size: 12px;
     color: #9adbcf;
-    margin-top: 6px
+    margin-top: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 
   .btn {
@@ -438,7 +461,10 @@
     color: #bfeee3;
     padding: 10px 12px;
     border-radius: 10px;
-    cursor: pointer
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
   }
 
   .btn.buy {
@@ -449,7 +475,9 @@
 
   .msg {
     margin-top: 8px;
-    font-size: 13px
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: #9adbcf;
   }
 
   .xumm-modal {
@@ -525,6 +553,17 @@
 
   .balance-line {
     opacity: .9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+
+  /* Fix label styling */
+  .field label {
+    color: #9adbcf;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 </style>
 
