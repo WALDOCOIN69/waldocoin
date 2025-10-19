@@ -3317,39 +3317,39 @@
 
 
       <!-- Eligibility Badge Card (top status) -->
-      <div class="card" id="eligibilityCard">
-        <h2 id="eligibilityTitle">✅ WALDO Eligibility</h2>
+      <div class="card" id="eligibilityCard" style="margin-bottom: 15px;">
+        <h2 id="eligibilityTitle" style="margin-bottom: 15px;">✅ WALDO Eligibility</h2>
         <div class="content-center">
           <div class="large-number" id="eligibilityStatus">Checking…</div>
           <div class="subtitle-text" id="eligibilityDetail">—</div>
           <!-- Big thumbs up/down icon -->
           <div class="eligibility-icon" id="eligibilityIcon"
-            style="font-size: 4em; margin: 20px 0; opacity: 0; transition: all 0.5s ease;">
+            style="font-size: 3em; margin: 15px 0; opacity: 0; transition: all 0.5s ease;">
             👍
           </div>
         </div>
       </div>
 
       <!-- XP Trends -->
-      <div class="card" onclick="openXPChartModal()" style="cursor: pointer;">
-        <h2>📊 Meme XP Trends <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to expand</span></h2>
+      <div class="card" onclick="openXPChartModal()" style="cursor: pointer; margin-bottom: 15px;">
+        <h2 style="margin-bottom: 15px;">📊 Meme XP Trends <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to
+            expand</span></h2>
         <canvas width="800" height="300" id="xpChart"
-          style="width: 100%; height: 300px; background: rgba(255,255,255,0.05); border-radius: 8px;"></canvas>
-        <div id="xpChartStatus" style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
+          style="width: 100%; height: 250px; background: rgba(255,255,255,0.05); border-radius: 8px;"></canvas>
+        <div id="xpChartStatus" style="text-align: center; color: #666; font-size: 12px; margin-top: 8px;">
           Loading chart...
         </div>
-
       </div>
       <!-- Social Stats -->
-      <div class="card">
-        <h2>📱 Social Stats</h2>
-        <p><strong>🔥 Top Meme:</strong> <span id="socialHandle">Loading...</span></p>
-        <p><strong>👥 Followers:</strong> <span id="socialFollowers">—</span></p>
-        <p><strong>🔥 Total Likes:</strong> <span id="totalLikes">Loading...</span></p>
-        <p><strong>🏆 Top Meme Likes:</strong> <span id="topMemeLikes">Loading...</span></p>
-        <p><strong>🖼️ Top Meme Preview:</strong></p>
+      <div class="card" style="margin-bottom: 15px;">
+        <h2 style="margin-bottom: 15px;">📱 Social Stats</h2>
+        <p style="margin-bottom: 8px;"><strong>🔥 Top Meme:</strong> <span id="socialHandle">Loading...</span></p>
+        <p style="margin-bottom: 8px;"><strong>👥 Followers:</strong> <span id="socialFollowers">—</span></p>
+        <p style="margin-bottom: 8px;"><strong>🔥 Total Likes:</strong> <span id="totalLikes">Loading...</span></p>
+        <p style="margin-bottom: 8px;"><strong>🏆 Top Meme Likes:</strong> <span id="topMemeLikes">Loading...</span></p>
+        <p style="margin-bottom: 8px;"><strong>🖼️ Top Meme Preview:</strong></p>
         <img id="topMemeImage" src="https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg" alt="Top Meme"
-          class="meme-thumb">
+          class="meme-thumb" style="margin-bottom: 8px;">
         <p><a id="topMemeLink" href="#" target="_blank" class="xrpl-link-green">🔗 View Meme</a></p>
       </div>
 
@@ -3570,6 +3570,36 @@
 
       <div id="shortTermSection" class="collapsible-content">
 
+        <!-- Meme Table with Pagination, XP, Claim/Stake/Mint -->
+        <div class="card big-card">
+          <div class="centered-flex-container">
+            <h2 class="margin-top-0">📸 My Memes</h2>
+            <div class="tooltip-wrapper">
+              <span class="tooltip-icon">i</span>
+              <span class="tooltip-text">Each meme must reach 60 XP to be eligible for minting as an NFT.</span>
+            </div>
+          </div>
+          <div class="overflow-auto">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Thumbnail</th>
+                  <th scope="col">Tweet Link</th>
+                  <th scope="col">Retweets</th>
+                  <th scope="col">Likes</th>
+                  <th scope="col">XP</th>
+                  <th scope="col">Tier</th>
+                  <th scope="col">Get Now</th>
+                  <th scope="col">Wait 30 Days</th>
+                  <th scope="col">Mint</th>
+                </tr>
+              </thead>
+              <tbody id="memeTableBody"></tbody>
+            </table>
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+
         <!-- Simple Instructions Card -->
         <div class="card">
           <h4 class="duplicate-example-title">💰 How Meme Rewards Work</h4>
@@ -3659,35 +3689,7 @@
             </table>
           </div>
         </div>
-        <!-- Meme Table with Pagination, XP, Claim/Stake/Mint -->
-        <div class="card big-card">
-          <div class="centered-flex-container">
-            <h2 class="margin-top-0">📸 My Memes</h2>
-            <div class="tooltip-wrapper">
-              <span class="tooltip-icon">i</span>
-              <span class="tooltip-text">Each meme must reach 60 XP to be eligible for minting as an NFT.</span>
-            </div>
-          </div>
-          <div class="overflow-auto">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Thumbnail</th>
-                  <th scope="col">Tweet Link</th>
-                  <th scope="col">Retweets</th>
-                  <th scope="col">Likes</th>
-                  <th scope="col">XP</th>
-                  <th scope="col">Tier</th>
-                  <th scope="col">Get Now</th>
-                  <th scope="col">Wait 30 Days</th>
-                  <th scope="col">Mint</th>
-                </tr>
-              </thead>
-              <tbody id="memeTableBody"></tbody>
-            </table>
-            <div class="pagination" id="pagination"></div>
-          </div>
-        </div>
+
 
       </div>
     </div>
