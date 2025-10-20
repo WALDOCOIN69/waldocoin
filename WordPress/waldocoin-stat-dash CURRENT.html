@@ -7232,14 +7232,31 @@
 
           const data = await response.json();
           console.log('📦 API Response data:', data);
+          console.log('🔍 Response keys:', Object.keys(data));
+          console.log('🔍 qr_png value:', data.qr_png);
+          console.log('🔍 uuid value:', data.uuid);
+          console.log('🔍 qr value:', data.qr);
+          console.log('🔍 refs value:', data.refs);
 
-          if (data.qr_png && data.uuid) {
+          // Check multiple possible property names
+          const qrUrl = data.qr_png || data.qr || data.refs?.qr_png;
+          const uuid = data.uuid;
+
+          if (qrUrl && uuid) {
             console.log('✅ QR code received, showing modal');
-            showXummModal('Connect Wallet', data);
-            pollLoginStatus(data.uuid);
+            // Create a normalized data object
+            const normalizedData = {
+              qr_png: qrUrl,
+              uuid: uuid,
+              refs: data.refs,
+              next: data.next
+            };
+            showXummModal('Connect Wallet', normalizedData);
+            pollLoginStatus(uuid);
           } else {
-            console.error('❌ Missing qr_png or UUID in response:', data);
-            throw new Error('Failed to create login payload - missing qr_png or UUID');
+            console.error('❌ Missing QR URL or UUID in response:', data);
+            console.error('❌ qrUrl:', qrUrl, 'uuid:', uuid);
+            throw new Error('Failed to create login payload - missing QR URL or UUID');
           }
         } catch (error) {
           console.error('❌ Connect wallet error:', error);
