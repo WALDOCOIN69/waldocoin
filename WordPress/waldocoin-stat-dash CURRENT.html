@@ -3264,16 +3264,16 @@
         <p class="dashboard-subtitle" style="text-align: center; color: #ccc; margin-bottom: 20px;">Track your memes,
           earn rewards, and battle for the leaderboard.</p>
 
-        <!-- Navigation Buttons -->
+        <!-- Page Navigation Buttons -->
         <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
-          <a href="https://dao-portal.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🗳️ DAO Portal</a>
-          <a href="https://battle-arena.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">⚔️ Battle Arena</a>
-          <a href="https://staking.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">💰 Staking Portal</a>
-          <a href="https://nft-marketplace.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🏪 NFT Marketplace</a>
+          <button onclick="scrollToSection('shortTermBonusSection')" class="button-style"
+            style="padding: 10px 20px; font-size: 0.9em; cursor: pointer;">💎 Short Term Bonus</button>
+          <button onclick="scrollToSection('longTermSection')" class="button-style"
+            style="padding: 10px 20px; font-size: 0.9em; cursor: pointer;">🔒 Long Term Staking</button>
+          <button onclick="scrollToSection('nftSection')" class="button-style"
+            style="padding: 10px 20px; font-size: 0.9em; cursor: pointer;">🖼️ My NFT Collection</button>
+          <button onclick="scrollToSection('daoSection')" class="button-style"
+            style="padding: 10px 20px; font-size: 0.9em; cursor: pointer;">🗳️ DAO Voting</button>
         </div>
         <div id="walletControls">
           <button type="button" onclick="logoutWallet()" class="disconnect-btn" id="disconnectBtn"
@@ -3549,7 +3549,7 @@
     </div> <!-- End container -->
 
     <!-- Short term Bonus Option Collapsible Container -->
-    <div class="collapsible-container">
+    <div id="shortTermBonusSection" class="collapsible-container">
       <h2 class="collapsible-header" onclick="toggleShortTermOption()">
         💎 Short Term Bonus Option
         <span id="shortTermToggleIcon" class="toggle-icon collapsed">►</span>
@@ -3753,7 +3753,7 @@
     </div>
 
     <!-- 🔒 COMPREHENSIVE WALDO LONG TERM BONUS ZONE (FULL-WIDTH BAR) -->
-    <div class="staking-zone-bar">
+    <div id="longTermSection" class="staking-zone-bar">
       <h2 class="staking-zone-header" onclick="toggleLongTermZone()">
         🔒 WALDO Long Term Bonus Zone
         <span id="longTermZoneToggleIcon" class="toggle-icon collapsed">►</span>
@@ -3834,7 +3834,7 @@
 
 
     <!-- My NFT Collection -->
-    <div class="card big-card">
+    <div id="nftSection" class="card big-card">
       <div class="centered-flex-container">
         <h2 class="margin-top-0">🖼️ My NFT Collection</h2>
         <div class="tooltip-wrapper">
@@ -3897,7 +3897,7 @@
       </div>
     </div>
     <!-- DAO Navigation Card -->
-    <div class="card big-card dao-voting-card" id="daoVotingCard">
+    <div id="daoSection" class="card big-card dao-voting-card">
       <h2>🗳️ WALDOcoin DAO Governance</h2>
       <div style="text-align: center; padding: 20px;">
         <p style="color: #ccc; margin-bottom: 20px;">Participate in decentralized governance and community voting</p>
@@ -7325,8 +7325,25 @@
 
       // Test modal function removed - no longer needed
 
+      // Smooth scroll to section function
+      function scrollToSection(sectionId) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest'
+          });
+          // Add a small offset for the fixed header
+          setTimeout(() => {
+            window.scrollBy(0, -100);
+          }, 500);
+        }
+      }
+
       window.showXummModal = showXummModal;
       window.hideXummModal = hideXummModal;
+      window.scrollToSection = scrollToSection;
 
       /** === BUTTON HOOKS FOR HTML === **/
       window.dismissWaldoNotification = dismissWaldoNotification;
