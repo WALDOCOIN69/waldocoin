@@ -3288,12 +3288,19 @@
       <button type="button" onclick="dismissWaldoNotification()" class="dismiss-btn">Dismiss</button>
     </div>
     <div class="container">
-      <!-- WELCOME CARD + LINK TWITTER ACCOUNT -->
+      <!-- WALLET CONNECTION + WELCOME CARD -->
       <div class="card big-card">
+        <h1 class="dashboard-title" style="color: #25c2a0; text-align: center; margin-bottom: 10px;">💰 WALDOCOIN
+          Dashboard</h1>
+        <p class="dashboard-subtitle" style="text-align: center; color: #ccc; margin-bottom: 20px;">Connect your wallet
+          to access your stats, battles, and rewards.</p>
+
         <div id="walletControls">
           <button type="button" onclick="logoutWallet()" class="disconnect-btn" id="disconnectBtn"
             style="display:none;">Disconnect</button>
-          <button type="button" onclick="connectWallet()" class="connect-btn" id="connectBtn">Connect Wallet</button>
+          <button type="button" onclick="connectWallet()" class="connect-btn" id="connectBtn"
+            style="color: white !important; background: #25c2a0 !important; margin-bottom: 15px;">🔗 Connect Xaman
+            Wallet</button>
         </div>
         <p id="walletAddress" class="wallet-address">Wallet: Not Connected</p>
         <h3 class="center-text">🔗 Link Twitter Account</h3>
@@ -7095,7 +7102,7 @@
         const fromDisconnect = urlParams.get('disconnect') === '1';
 
         if (fromDisconnect) {
-          console.log("🔌 Coming from disconnect - clearing wallet and showing QR modal");
+          console.log("🔌 Coming from disconnect - clearing wallet and showing main page");
 
           // Force clear all wallet storage
           sessionStorage.clear();
@@ -7108,18 +7115,16 @@
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
 
-          showWalletConnectionScreen();
-          setupConnectWalletButton();
-          // Automatically trigger connect wallet to show QR
-          setTimeout(() => {
-            handleWalletConnection();
-          }, 500);
+          // Show main stats page instead of wallet connection screen
+          hideWalletConnectionScreen();
+          hideLoader();
+          showMainContent();
         } else {
-          // Always show wallet connection screen first
-          // This prevents getting stuck on loading
-          console.log("🚀 Initializing page - showing connect wallet screen");
-          showWalletConnectionScreen();
-          setupConnectWalletButton();
+          // Show main stats page directly instead of wallet connection screen
+          console.log("🚀 Initializing page - showing main stats page");
+          hideWalletConnectionScreen();
+          hideLoader();
+          showMainContent();
 
           // Check if wallet is already connected in background
           const walletAddress = localStorage.getItem('walletAddress') || localStorage.getItem('xummWallet');
@@ -7284,18 +7289,25 @@
       async function connectWallet() {
         try {
           console.log('🔗 Connecting wallet...');
+          showToast('Generating QR code...', 'info');
+
           const response = await fetch(`${baseURL}/api/login`);
+          console.log('📡 API Response status:', response.status);
+
           const data = await response.json();
+          console.log('📦 API Response data:', data);
 
           if (data.qr && data.uuid) {
+            console.log('✅ QR code received, showing modal');
             showXummModal('Connect Wallet', data);
             pollLoginStatus(data.uuid);
           } else {
-            throw new Error('Failed to create login payload');
+            console.error('❌ Missing QR or UUID in response:', data);
+            throw new Error('Failed to create login payload - missing QR or UUID');
           }
         } catch (error) {
           console.error('❌ Connect wallet error:', error);
-          showToast('Failed to connect wallet. Please try again.', 'error');
+          showToast(`Failed to connect wallet: ${error.message}`, 'error');
         }
       }
       window.connectWallet = connectWallet;
@@ -7359,6 +7371,8 @@
 
       // Show XUMM modal
       function showXummModal(title, data) {
+        console.log('🖼️ showXummModal called with:', { title, data });
+
         const modal = document.getElementById('xummModal');
         const titleEl = document.getElementById('xummTitle');
         const qrEl = document.getElementById('xummQr');
@@ -7366,8 +7380,12 @@
         const qrContainer = document.getElementById('xummQrContainer');
         const loader = document.getElementById('xummLoader');
 
+        console.log('🔍 Modal elements found:', { modal: !!modal, titleEl: !!titleEl, qrEl: !!qrEl });
+
         titleEl.textContent = title;
-        qrEl.src = data.qr || data.refs?.qr_png;
+        const qrSrc = data.qr || data.refs?.qr_png;
+        console.log('🖼️ Setting QR source:', qrSrc);
+        qrEl.src = qrSrc;
 
         // Set mobile deep link if available
         if (data.next?.always || data.next?.app) {
@@ -7381,6 +7399,8 @@
         qrContainer.style.display = 'block';
         loader.style.display = 'none';
         modal.style.display = 'flex';
+
+        console.log('✅ Modal should now be visible');
       }
 
       // Hide XUMM modal
