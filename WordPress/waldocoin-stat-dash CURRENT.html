@@ -3289,9 +3289,6 @@
           <button type="button" onclick="connectWallet()" class="connect-btn" id="connectBtn"
             style="color: white !important; background: #25c2a0 !important; margin-bottom: 15px;">🔗 Connect Xaman
             Wallet</button>
-          <button type="button" onclick="testModal()" class="connect-btn"
-            style="color: white !important; background: #ff6b6b !important; margin-bottom: 15px; margin-left: 10px;">🧪
-            Test Modal</button>
         </div>
         <p id="walletAddress" class="wallet-address">Wallet: Not Connected</p>
         <h3 class="center-text">🔗 Link Twitter Account</h3>
@@ -7122,6 +7119,12 @@
           updateWalletUI(walletAddress);
           updateNavWallet();
           startDashboard();
+        } else {
+          // No wallet connected - automatically show QR code on main stats page
+          console.log("🔗 No wallet found - auto-showing QR code on stats page");
+          setTimeout(() => {
+            connectWallet();
+          }, 1000); // Small delay to let page load
         }
       }
 
@@ -7344,32 +7347,10 @@
         modal.style.display = 'none';
       }
 
-      // Test modal function for debugging
-      function testModal() {
-        console.log('🧪 Testing modal display...');
-        const modal = document.getElementById('xummModal');
-        const titleEl = document.getElementById('xummTitle');
-        const qrEl = document.getElementById('xummQr');
-        const qrContainer = document.getElementById('xummQrContainer');
-        const loader = document.getElementById('xummLoader');
-
-        console.log('🔍 Modal elements:', { modal: !!modal, titleEl: !!titleEl, qrEl: !!qrEl });
-
-        if (modal) {
-          titleEl.textContent = 'Test Modal';
-          qrEl.src = 'https://via.placeholder.com/280x280/25c2a0/ffffff?text=TEST+QR';
-          qrContainer.style.display = 'block';
-          loader.style.display = 'none';
-          modal.style.display = 'flex';
-          console.log('✅ Test modal should be visible');
-        } else {
-          console.error('❌ Modal element not found!');
-        }
-      }
+      // Test modal function removed - no longer needed
 
       window.showXummModal = showXummModal;
       window.hideXummModal = hideXummModal;
-      window.testModal = testModal;
 
       /** === BUTTON HOOKS FOR HTML === **/
       window.dismissWaldoNotification = dismissWaldoNotification;
