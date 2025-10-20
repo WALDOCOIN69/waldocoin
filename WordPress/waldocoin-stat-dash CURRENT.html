@@ -3240,26 +3240,7 @@
   <!-- Main Dashboard Content -->
   <div id="mainContent" style="display: none; padding-top: 80px;">
 
-    <!-- WALDO Dashboard Title -->
-    <div>
-      <div class="dashboard-title-card">
-        <h1 class="dashboard-title">WALDOcoin Dashboard</h1>
-        <p class="dashboard-subtitle">Track your memes, earn rewards, and battle for the leaderboard.</p>
-
-        <!-- Navigation Buttons -->
-        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
-          <a href="https://dao-portal.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🗳️ DAO Portal</a>
-          <a href="https://battle-arena.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">⚔️ Battle Arena</a>
-          <a href="https://staking.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">💰 Staking Portal</a>
-          <a href="https://nft-marketplace.waldocoin.live" class="button-style"
-            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🏪 NFT Marketplace</a>
-        </div>
-      </div>
-      <!-- Instructions Card -->
-    </div>
+    <!-- Instructions Card moved up -->
     <div class="instruction-card">
       <h2>🚀 How to Earn WALDO</h2>
       <ul>
@@ -3276,13 +3257,24 @@
       <button type="button" onclick="dismissWaldoNotification()" class="dismiss-btn">Dismiss</button>
     </div>
     <div class="container">
-      <!-- WALLET CONNECTION + WELCOME CARD -->
+      <!-- WALLET CONNECTION + DASHBOARD TITLE CARD -->
       <div class="card big-card">
-        <h1 class="dashboard-title" style="color: #25c2a0; text-align: center; margin-bottom: 10px;">💰 WALDOCOIN
+        <h1 class="dashboard-title" style="color: #25c2a0; text-align: center; margin-bottom: 10px;">💰 WALDOcoin
           Dashboard</h1>
-        <p class="dashboard-subtitle" style="text-align: center; color: #ccc; margin-bottom: 20px;">Connect your wallet
-          to access your stats, battles, and rewards.</p>
+        <p class="dashboard-subtitle" style="text-align: center; color: #ccc; margin-bottom: 20px;">Track your memes,
+          earn rewards, and battle for the leaderboard.</p>
 
+        <!-- Navigation Buttons -->
+        <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+          <a href="https://dao-portal.waldocoin.live" class="button-style"
+            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🗳️ DAO Portal</a>
+          <a href="https://battle-arena.waldocoin.live" class="button-style"
+            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">⚔️ Battle Arena</a>
+          <a href="https://staking.waldocoin.live" class="button-style"
+            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">💰 Staking Portal</a>
+          <a href="https://nft-marketplace.waldocoin.live" class="button-style"
+            style="text-decoration: none; padding: 10px 20px; font-size: 0.9em;">🏪 NFT Marketplace</a>
+        </div>
         <div id="walletControls">
           <button type="button" onclick="logoutWallet()" class="disconnect-btn" id="disconnectBtn"
             style="display:none;">Disconnect</button>
