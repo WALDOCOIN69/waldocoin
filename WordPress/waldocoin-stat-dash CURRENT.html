@@ -5253,7 +5253,7 @@
           const wallet = getWallet();
           const [stakingData, battleData, referralData] = await Promise.all([
             fetchStakingMultiplierData(wallet).catch(e => ({ error: e.message })),
-            Promise.resolve({ error: "Battle data not implemented yet" }), // Placeholder for battle data
+            fetchBattleData(wallet).catch(e => ({ error: e.message })),
             fetchReferralMultiplierData(wallet).catch(e => ({ error: e.message }))
           ]);
 
@@ -5261,7 +5261,7 @@
           await updateStakingMultiplier(stats, stakingData);
 
           // 2. Battle Streak Multiplier (from stats data)
-          await updateBattleMultiplier(stats);
+          await updateBattleMultiplier(stats, battleData);
 
           // 3. Member Level XP Boost Multiplier
           await updateLevelMultiplier(stats);
@@ -5326,7 +5326,7 @@
         }
       }
 
-      async function updateBattleMultiplier(stats) {
+      async function updateBattleMultiplier(stats, battleData) {
         const card = $("battleMultiplierCard");
         const value = $("battleMultiplier");
         const desc = $("battleMultiplierDesc");
@@ -5515,6 +5515,40 @@
           return { totalReferrals: 0, activeReferrals: 0, totalEarned: 0 };
         } catch (error) {
           console.warn('Failed to fetch referral multiplier data:', error);
+          throw error;
+        }
+      }
+
+      async function fetchBattleData(wallet) {
+        try {
+          const response = await fetch(`${baseURL}/api/battle/history/${wallet}`);
+          const data = await response.json();
+
+          if (data.success && data.battles) {
+            const wins = data.battles.filter(battle => battle.winner === wallet).length;
+            const totalBattles = data.battles.length;
+
+            // Calculate current win streak
+            let currentStreak = 0;
+            for (let i = data.battles.length - 1; i >= 0; i--) {
+              if (data.battles[i].winner === wallet) {
+                currentStreak++;
+              } else {
+                break;
+              }
+            }
+
+            return {
+              totalWins: wins,
+              totalBattles: totalBattles,
+              currentStreak: currentStreak,
+              winRate: totalBattles > 0 ? (wins / totalBattles * 100).toFixed(1) : 0
+            };
+          }
+
+          return { totalWins: 0, totalBattles: 0, currentStreak: 0, winRate: 0 };
+        } catch (error) {
+          console.warn('Failed to fetch battle data:', error);
           throw error;
         }
       }
