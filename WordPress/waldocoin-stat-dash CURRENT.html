@@ -973,7 +973,7 @@
       background: #1a1a1a;
       border: 1px solid #333;
       border-radius: 12px;
-      margin: 30px 20px;
+      margin: 15px 20px;
       padding: 25px;
       width: calc(100% - 40px);
       box-sizing: border-box;
@@ -2179,8 +2179,8 @@
       border: 1px solid #333;
       border-radius: 12px;
       padding: 25px;
-      margin: 36px 0;
-      /* Half inch spacing (36px ≈ 0.5 inch) */
+      margin: 15px 0;
+      /* Consistent spacing with other tiles */
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
@@ -3304,7 +3304,7 @@
 
 
       <!-- Eligibility Badge Card (top status) -->
-      <div class="card" id="eligibilityCard" style="margin-bottom: 15px;">
+      <div class="card" id="eligibilityCard">
         <h2 id="eligibilityTitle" style="margin-bottom: 15px;">✅ WALDO Eligibility</h2>
         <div class="content-center">
           <div class="large-number" id="eligibilityStatus">Checking…</div>
@@ -3318,7 +3318,7 @@
       </div>
 
       <!-- XP Trends -->
-      <div class="card" onclick="openXPChartModal()" style="cursor: pointer; margin-bottom: 15px;">
+      <div class="card" onclick="openXPChartModal()" style="cursor: pointer;">
         <h2 style="margin-bottom: 15px;">📊 Meme XP Trends <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to
             expand</span></h2>
         <canvas width="800" height="300" id="xpChart"
@@ -3328,7 +3328,7 @@
         </div>
       </div>
       <!-- Social Stats -->
-      <div class="card" style="margin-bottom: 15px;">
+      <div class="card">
         <h2 style="margin-bottom: 15px;">📱 Social Stats</h2>
         <p style="margin-bottom: 8px;"><strong>🔥 Top Meme:</strong> <span id="socialHandle">Loading...</span></p>
         <p style="margin-bottom: 8px;"><strong>👥 Followers:</strong> <span id="socialFollowers">—</span></p>
@@ -3897,7 +3897,7 @@
       </div>
     </div>
     <!-- DAO Navigation Card -->
-    <div id="daoSection" class="card big-card dao-voting-card" style="margin-top: 15px;">
+    <div id="daoSection" class="card big-card dao-voting-card">
       <h2>🗳️ WALDOcoin DAO Governance</h2>
       <div style="text-align: center; padding: 20px;">
         <p style="color: #ccc; margin-bottom: 20px;">Participate in decentralized governance and community voting</p>
