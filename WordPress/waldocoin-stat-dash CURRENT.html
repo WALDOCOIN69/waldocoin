@@ -3231,20 +3231,7 @@
     </div>
   </div>
 
-  <!-- Wallet Connection Screen -->
-  <div id="walletConnectionScreen" class="wallet-connection-screen">
-    <div class="dashboard-title-card">
-      <h1 class="dashboard-title">WALDOcoin Dashboard</h1>
-      <p class="dashboard-subtitle">Connect your wallet to access your stats, battles, and rewards.</p>
-      <button id="connectWalletBtn" class="button-style" style="margin-top: 20px;">
-        Connect XUMM Wallet
-      </button>
-      <button onclick="window.location.href='https://waldocoin.live'" class="button-style"
-        style="margin-top: 15px; background: #333; color: #25c2a0; border: 1px solid #25c2a0;">
-        🏠 Back to Home
-      </button>
-    </div>
-  </div>
+  <!-- Wallet Connection Screen - REMOVED - Now integrated into main stats page -->
 
   <div id="waldoLoader" class="waldo-loader" style="display: none;">
     <span class="waldo-loader-text">Loading WALDO Dashboard...</span>
@@ -7118,40 +7105,27 @@
 
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
-          // Show main stats page instead of wallet connection screen
-          hideWalletConnectionScreen();
-          hideLoader();
-          showMainContent();
-        } else {
-          // Show main stats page directly instead of wallet connection screen
-          console.log("🚀 Initializing page - showing main stats page");
-          hideWalletConnectionScreen();
-          hideLoader();
-          showMainContent();
+        // Always show main stats page directly (no wallet connection screen)
+        console.log("🚀 Initializing page - showing main stats page");
+        hideLoader();
+        showMainContent();
 
-          // Check if wallet is already connected in background
-          const walletAddress = localStorage.getItem('walletAddress') || localStorage.getItem('xummWallet');
+        // Check if wallet is already connected in background
+        const walletAddress = localStorage.getItem('walletAddress') || localStorage.getItem('xummWallet');
 
-          if (walletAddress) {
-            console.log("📱 Found existing wallet, auto-connecting...");
-            // Small delay to show the connect screen briefly, then auto-connect
-            setTimeout(() => {
-              handleWalletConnection();
-            }, 500);
-          }
+        if (walletAddress) {
+          console.log("📱 Found existing wallet, auto-connecting...");
+          // Auto-connect existing wallet
+          setWallet(walletAddress);
+          updateWalletUI(walletAddress);
+          updateNavWallet();
+          startDashboard();
         }
       }
 
-      function showWalletConnectionScreen() {
-        const connectionScreen = document.getElementById("walletConnectionScreen");
-        if (connectionScreen) connectionScreen.style.display = "flex";
-      }
-
-      function hideWalletConnectionScreen() {
-        const connectionScreen = document.getElementById("walletConnectionScreen");
-        if (connectionScreen) connectionScreen.style.display = "none";
-      }
+      // Wallet connection screen functions removed - no longer needed
 
       function showLoader() {
         const loader = document.getElementById("waldoLoader");
@@ -7168,54 +7142,9 @@
         if (mainContent) mainContent.style.display = "block";
       }
 
-      function setupConnectWalletButton() {
-        const connectBtn = document.getElementById("connectWalletBtn");
-        if (connectBtn) {
-          connectBtn.addEventListener("click", handleWalletConnection);
-        }
-      }
+      // setupConnectWalletButton removed - no longer needed
 
-      async function handleWalletConnection() {
-        try {
-          console.log("🔗 Starting wallet connection...");
-
-          // Keep connection screen visible, don't hide it
-          // hideWalletConnectionScreen();
-          // showLoader();
-
-          // Check if wallet is already connected
-          const existingWallet = localStorage.getItem('walletAddress') || localStorage.getItem('xummWallet');
-
-          if (existingWallet) {
-            console.log("📱 Using existing wallet:", existingWallet);
-            // Wallet already exists, just start dashboard
-            startDashboard();
-          } else {
-            console.log("🔗 Connecting new wallet...");
-            // Connect wallet using existing XUMM functionality
-            await connectWallet();
-
-            // Wait a moment for wallet to be stored
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Start dashboard
-            startDashboard();
-          }
-
-          // Hide loader and show main content
-          hideLoader();
-          showMainContent();
-
-          console.log("✅ Dashboard loaded successfully!");
-
-        } catch (error) {
-          console.error("❌ Wallet connection failed:", error);
-          // Keep connection screen visible on error
-          // hideLoader();
-          // showWalletConnectionScreen();
-          showToast("Wallet connection failed. Please try again.");
-        }
-      }
+      // handleWalletConnection removed - using connectWallet directly
 
       /** === POSTMESSAGE LOGIN SUPPORT === **/
       window.addEventListener("message", (event) => {
