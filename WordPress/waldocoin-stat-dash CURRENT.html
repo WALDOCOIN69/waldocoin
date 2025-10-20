@@ -371,7 +371,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: 10000;
+      z-index: 99999 !important;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -389,14 +389,15 @@
 
     .xumm-content {
       position: relative;
-      background: #111;
+      background: #111 !important;
       border-radius: 15px;
       padding: 30px;
       max-width: 400px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 0 30px rgba(37, 194, 160, 0.3);
-      border: 1px solid #25c2a0;
+      box-shadow: 0 0 30px rgba(37, 194, 160, 0.8) !important;
+      border: 3px solid #25c2a0 !important;
+      z-index: 100000 !important;
     }
 
 
@@ -3301,6 +3302,9 @@
           <button type="button" onclick="connectWallet()" class="connect-btn" id="connectBtn"
             style="color: white !important; background: #25c2a0 !important; margin-bottom: 15px;">🔗 Connect Xaman
             Wallet</button>
+          <button type="button" onclick="testModal()" class="connect-btn"
+            style="color: white !important; background: #ff6b6b !important; margin-bottom: 15px; margin-left: 10px;">🧪
+            Test Modal</button>
         </div>
         <p id="walletAddress" class="wallet-address">Wallet: Not Connected</p>
         <h3 class="center-text">🔗 Link Twitter Account</h3>
@@ -7409,8 +7413,32 @@
         modal.style.display = 'none';
       }
 
+      // Test modal function for debugging
+      function testModal() {
+        console.log('🧪 Testing modal display...');
+        const modal = document.getElementById('xummModal');
+        const titleEl = document.getElementById('xummTitle');
+        const qrEl = document.getElementById('xummQr');
+        const qrContainer = document.getElementById('xummQrContainer');
+        const loader = document.getElementById('xummLoader');
+
+        console.log('🔍 Modal elements:', { modal: !!modal, titleEl: !!titleEl, qrEl: !!qrEl });
+
+        if (modal) {
+          titleEl.textContent = 'Test Modal';
+          qrEl.src = 'https://via.placeholder.com/280x280/25c2a0/ffffff?text=TEST+QR';
+          qrContainer.style.display = 'block';
+          loader.style.display = 'none';
+          modal.style.display = 'flex';
+          console.log('✅ Test modal should be visible');
+        } else {
+          console.error('❌ Modal element not found!');
+        }
+      }
+
       window.showXummModal = showXummModal;
       window.hideXummModal = hideXummModal;
+      window.testModal = testModal;
 
       /** === BUTTON HOOKS FOR HTML === **/
       window.dismissWaldoNotification = dismissWaldoNotification;
