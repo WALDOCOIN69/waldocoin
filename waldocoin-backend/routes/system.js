@@ -9,7 +9,7 @@ console.log("⚙️ Loaded: routes/system.js");
 router.get('/waldo-requirements', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
@@ -43,7 +43,7 @@ router.get('/waldo-requirements', async (req, res) => {
 router.post('/update-waldo-requirements', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
@@ -107,7 +107,7 @@ router.post('/update-waldo-requirements', async (req, res) => {
 router.post('/reset-waldo-requirements', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
@@ -150,7 +150,7 @@ router.post('/reset-waldo-requirements', async (req, res) => {
 router.get('/requirement-history', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
@@ -178,7 +178,7 @@ router.get('/requirement-history', async (req, res) => {
 router.post('/clear-cache', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
@@ -220,7 +220,7 @@ router.post('/clear-cache', async (req, res) => {
 router.post('/emergency-stop', async (req, res) => {
   try {
     const adminKey = req.headers['x-admin-key'];
-    
+
     if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
@@ -256,9 +256,9 @@ router.get('/meme-limits', async (req, res) => {
     }
 
     // Get current meme limits from Redis with defaults
-    const daily = await redis.get("limits:meme_daily") || 10; // 10 memes per day
-    const premium = await redis.get("limits:meme_premium") || 25; // 25 for 10K+ WALDO holders
-    const vip = await redis.get("limits:meme_vip") || 50; // 50 for 50K+ WALDO holders
+    const daily = await redis.get("limits:meme_daily") || 5; // 5 memes per day
+    const premium = await redis.get("limits:meme_premium") || 15; // 15 for 10K+ WALDO holders
+    const vip = await redis.get("limits:meme_vip") || 25; // 25 for 50K+ WALDO holders
     const resetHour = await redis.get("limits:meme_reset_hour") || 0; // Midnight UTC
 
     return res.json({
@@ -356,16 +356,16 @@ router.post('/reset-meme-limits', async (req, res) => {
     const { reason } = req.body;
 
     // Reset to defaults
-    await redis.set("limits:meme_daily", 10); // 10 memes per day
-    await redis.set("limits:meme_premium", 25); // 25 for premium users
-    await redis.set("limits:meme_vip", 50); // 50 for VIP users
+    await redis.set("limits:meme_daily", 5); // 5 memes per day
+    await redis.set("limits:meme_premium", 15); // 15 for premium users
+    await redis.set("limits:meme_vip", 25); // 25 for VIP users
     await redis.set("limits:meme_reset_hour", 0); // Midnight UTC
 
     // Log the reset
     const limitChange = {
       timestamp: new Date().toISOString(),
       reason: reason || 'Reset to default meme limits',
-      changes: ['Daily: 10 memes', 'Premium: 25 memes', 'VIP: 50 memes', 'Reset: 0:00 UTC'],
+      changes: ['Daily: 5 memes', 'Premium: 15 memes', 'VIP: 25 memes', 'Reset: 0:00 UTC'],
       adminKey: adminKey.slice(-4)
     };
 
@@ -433,13 +433,13 @@ router.get('/user-meme-usage/:wallet', async (req, res) => {
     // Determine daily limit based on WALDO holdings
     let dailyLimit, tier;
     if (waldoBalance >= 50000) {
-      dailyLimit = parseInt(await redis.get("limits:meme_vip")) || 50;
+      dailyLimit = parseInt(await redis.get("limits:meme_vip")) || 25;
       tier = "VIP";
     } else if (waldoBalance >= 10000) {
-      dailyLimit = parseInt(await redis.get("limits:meme_premium")) || 25;
+      dailyLimit = parseInt(await redis.get("limits:meme_premium")) || 15;
       tier = "Premium";
     } else {
-      dailyLimit = parseInt(await redis.get("limits:meme_daily")) || 10;
+      dailyLimit = parseInt(await redis.get("limits:meme_daily")) || 5;
       tier = "Standard";
     }
 
@@ -504,9 +504,9 @@ router.get('/meme-usage-stats', async (req, res) => {
     let usersAtLimit = 0;
 
     // Get limits
-    const dailyLimit = parseInt(await redis.get("limits:meme_daily")) || 10;
-    const premiumLimit = parseInt(await redis.get("limits:meme_premium")) || 25;
-    const vipLimit = parseInt(await redis.get("limits:meme_vip")) || 50;
+    const dailyLimit = parseInt(await redis.get("limits:meme_daily")) || 5;
+    const premiumLimit = parseInt(await redis.get("limits:meme_premium")) || 15;
+    const vipLimit = parseInt(await redis.get("limits:meme_vip")) || 25;
 
     for (const key of dailyKeys) {
       const count = parseInt(await redis.get(key)) || 0;

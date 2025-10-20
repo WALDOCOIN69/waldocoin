@@ -110,13 +110,13 @@ def check_daily_meme_limit(handle, wallet):
 
         # Determine daily limit based on WALDO holdings
         if waldo_balance >= 50000:  # VIP tier
-            daily_limit = int(r.get("limits:meme_vip") or 50)
+            daily_limit = int(r.get("limits:meme_vip") or 25)
             tier = "VIP"
         elif waldo_balance >= 10000:  # Premium tier
-            daily_limit = int(r.get("limits:meme_premium") or 25)
+            daily_limit = int(r.get("limits:meme_premium") or 15)
             tier = "Premium"
         else:  # Standard tier
-            daily_limit = int(r.get("limits:meme_daily") or 10)
+            daily_limit = int(r.get("limits:meme_daily") or 5)
             tier = "Standard"
 
         # Get today's date for tracking
@@ -132,7 +132,7 @@ def check_daily_meme_limit(handle, wallet):
 
     except Exception as e:
         print(f"❌ Error checking meme limit for @{handle}: {str(e)}")
-        return True, 0, 10, "Standard"  # Default to allowing with standard limit
+        return True, 0, 5, "Standard"  # Default to allowing with standard limit
 
 def store_meme_tweet(tweet):
     key = f"meme:{tweet['id']}"
