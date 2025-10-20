@@ -7225,42 +7225,19 @@
       async function connectWallet() {
         try {
           console.log('🔗 Connecting wallet...');
-          showToast('Generating QR code...', 'info');
-
           const response = await fetch(`${baseURL}/api/login`);
-          console.log('📡 API Response status:', response.status);
 
           const data = await response.json();
-          console.log('📦 API Response data:', data);
-          console.log('🔍 Response keys:', Object.keys(data));
-          console.log('🔍 qr_png value:', data.qr_png);
-          console.log('🔍 uuid value:', data.uuid);
-          console.log('🔍 qr value:', data.qr);
-          console.log('🔍 refs value:', data.refs);
 
-          // Check multiple possible property names
-          const qrUrl = data.qr_png || data.qr || data.refs?.qr_png;
-          const uuid = data.uuid;
-
-          if (qrUrl && uuid) {
-            console.log('✅ QR code received, showing modal');
-            // Create a normalized data object
-            const normalizedData = {
-              qr_png: qrUrl,
-              uuid: uuid,
-              refs: data.refs,
-              next: data.next
-            };
-            showXummModal('Connect Wallet', normalizedData);
-            pollLoginStatus(uuid);
+          if (data.qr && data.uuid) {
+            showXummModal('Connect Wallet', data);
+            pollLoginStatus(data.uuid);
           } else {
-            console.error('❌ Missing QR URL or UUID in response:', data);
-            console.error('❌ qrUrl:', qrUrl, 'uuid:', uuid);
-            throw new Error('Failed to create login payload - missing QR URL or UUID');
+            throw new Error('Failed to create login payload');
           }
         } catch (error) {
           console.error('❌ Connect wallet error:', error);
-          showToast(`Failed to connect wallet: ${error.message}`, 'error');
+          showToast('Failed to connect wallet. Please try again.', 'error');
         }
       }
       window.connectWallet = connectWallet;
@@ -7324,8 +7301,6 @@
 
       // Show XUMM modal
       function showXummModal(title, data) {
-        console.log('🖼️ showXummModal called with:', { title, data });
-
         const modal = document.getElementById('xummModal');
         const titleEl = document.getElementById('xummTitle');
         const qrEl = document.getElementById('xummQr');
@@ -7333,12 +7308,8 @@
         const qrContainer = document.getElementById('xummQrContainer');
         const loader = document.getElementById('xummLoader');
 
-        console.log('🔍 Modal elements found:', { modal: !!modal, titleEl: !!titleEl, qrEl: !!qrEl });
-
         titleEl.textContent = title;
-        const qrSrc = data.qr_png || data.qr || data.refs?.qr_png;
-        console.log('🖼️ Setting QR source:', qrSrc);
-        qrEl.src = qrSrc;
+        qrEl.src = data.qr || data.refs?.qr_png;
 
         // Set mobile deep link if available
         if (data.next?.always || data.next?.app) {
@@ -7352,10 +7323,6 @@
         qrContainer.style.display = 'block';
         loader.style.display = 'none';
         modal.style.display = 'flex';
-
-        console.log('✅ Modal should now be visible');
-        console.log('🔍 Modal display style:', modal.style.display);
-        console.log('🔍 QR image src:', qrEl.src);
       }
 
       // Hide XUMM modal
