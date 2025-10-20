@@ -7112,6 +7112,12 @@
         hideLoader();
         showMainContent();
 
+        // Test modal display after 2 seconds
+        setTimeout(() => {
+          console.log('🧪 Testing modal display on page load...');
+          testModal();
+        }, 2000);
+
         // Check if wallet is already connected in background
         const walletAddress = localStorage.getItem('walletAddress') || localStorage.getItem('xummWallet');
 
@@ -7222,7 +7228,6 @@
       async function connectWallet() {
         try {
           console.log('🔗 Connecting wallet...');
-          alert('🔗 Connect wallet function called!'); // Debug alert
           showToast('Generating QR code...', 'info');
 
           const response = await fetch(`${baseURL}/api/login`);
@@ -7356,7 +7361,6 @@
       // Test modal function for debugging
       function testModal() {
         console.log('🧪 Testing modal display...');
-        alert('🧪 Test modal function called!'); // Debug alert
         const modal = document.getElementById('xummModal');
         const titleEl = document.getElementById('xummTitle');
         const qrEl = document.getElementById('xummQr');
