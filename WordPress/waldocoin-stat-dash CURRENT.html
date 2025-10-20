@@ -91,9 +91,9 @@
     .container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 30px;
+      gap: 15px;
       margin: 0 auto;
-      padding: 40px 10px;
+      padding: 30px 10px;
       box-sizing: border-box;
       max-width: 1400px;
       width: 100%;
@@ -2226,7 +2226,7 @@
     }
 
     .collapsible-content .card {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       background: #222;
       border: 1px solid #444;
     }
@@ -3897,7 +3897,7 @@
       </div>
     </div>
     <!-- DAO Navigation Card -->
-    <div id="daoSection" class="card big-card dao-voting-card" style="margin-top: 30px;">
+    <div id="daoSection" class="card big-card dao-voting-card" style="margin-top: 15px;">
       <h2>🗳️ WALDOcoin DAO Governance</h2>
       <div style="text-align: center; padding: 20px;">
         <p style="color: #ccc; margin-bottom: 20px;">Participate in decentralized governance and community voting</p>
@@ -7363,15 +7363,14 @@
       function scrollToSection(sectionId) {
         const element = document.getElementById(sectionId);
         if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-            inline: 'nearest'
+          // Calculate the position with offset for fixed header/navigation
+          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+          const offsetPosition = elementPosition - 120; // Adjust offset for better positioning
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
           });
-          // Add a small offset for the fixed header
-          setTimeout(() => {
-            window.scrollBy(0, -100);
-          }, 500);
         }
       }
 
