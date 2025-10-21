@@ -76,7 +76,7 @@ router.post("/", async (req, res) => {
       wallet,
       'battle_accepted',
       `You accepted a meme battle challenge! Let the voting begin!`,
-      75,
+      10,
       { battleId, challengerHandle }
     );
 
@@ -86,7 +86,7 @@ router.post("/", async (req, res) => {
         battle.challenger,
         'battle_accepted',
         `Your battle challenge was accepted! Voting has started!`,
-        25,
+        5,
         { battleId }
       );
     }
