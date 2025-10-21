@@ -428,22 +428,39 @@
         </div>
 
         <!-- Battle Controls -->
-        <div class="battle-controls" data-tweetid="" data-status="open" data-canaccept="false" id="battle-wrapper">
-          <input id="memeTweetId" onblur="extractTweetId(this.value)"
-            placeholder="Paste Meme Tweet Link (e.g. https://x.com/user/status/1234567890)" class="margin-bottom-10"
-            type="text">
+        <div class="battle-controls" id="battle-wrapper">
 
-          <!-- Battle Fees Info - Centered in Controls -->
-          <p id="battleFeeInfo" class="twitter-link-status"
-            style="text-align: center; margin: 10px 0; font-size: 0.9rem; color: #666;">
+          <!-- Battle Action Selector -->
+          <div style="margin-bottom: 20px;">
+            <label style="color: #25c2a0; font-weight: bold; margin-bottom: 10px; display: block;">Choose Your
+              Action:</label>
+            <select id="battleActionSelect"
+              style="width: 100%; padding: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px;">
+              <option value="">-- Select Action --</option>
+              <option value="start-open">🚀 Start Open Battle (anyone can accept)</option>
+              <option value="challenge-user">⚔️ Challenge Specific User</option>
+              <option value="accept-battle">🤜 Accept Pending Battle</option>
+            </select>
+          </div>
+
+          <!-- Dynamic Input Section -->
+          <div id="battleInputSection" style="display: none;">
+            <input id="memeTweetId" placeholder="Paste your meme tweet link"
+              style="width: 100%; padding: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 10px;"
+              type="text">
+            <input id="challengeHandle" placeholder="Enter Twitter handle to challenge (e.g. @username)"
+              style="width: 100%; padding: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 5px; margin-bottom: 10px; display: none;"
+              type="text">
+          </div>
+
+          <!-- Battle Fees Info -->
+          <p id="battleFeeInfo" style="text-align: center; margin: 10px 0; font-size: 0.9rem; color: #666;">
             Loading battle fees…
           </p>
 
-          <button id="start-battle-btn" type="button" class="button-style">
-            🧠 Start New Battle (150,000 WALDO)
-          </button>
-          <button id="accept-battle-btn" type="button" class="button-style">
-            🤜 Accept Current Battle (75,000 WALDO)
+          <!-- Action Button -->
+          <button id="battleActionBtn" type="button" class="button-style" style="display: none; width: 100%;">
+            Execute Action
           </button>
         </div>
 
@@ -1032,6 +1049,154 @@
       } catch (e) { showToast("Vote error", "error"); }
     }
 
+    // === NEW UI FLOW LOGIC ===
+    function setupBattleUI() {
+      const actionSelect = document.getElementById('battleActionSelect');
+      const inputSection = document.getElementById('battleInputSection');
+      const actionBtn = document.getElementById('battleActionBtn');
+      const memeTweetId = document.getElementById('memeTweetId');
+      const challengeHandle = document.getElementById('challengeHandle');
+
+      if (!actionSelect) return;
+
+      actionSelect.addEventListener('change', function () {
+        const action = this.value;
+
+        if (!action) {
+          inputSection.style.display = 'none';
+          actionBtn.style.display = 'none';
+          return;
+        }
+
+        inputSection.style.display = 'block';
+        actionBtn.style.display = 'block';
+
+        // Reset inputs
+        memeTweetId.style.display = 'block';
+        challengeHandle.style.display = 'none';
+        memeTweetId.value = '';
+        challengeHandle.value = '';
+
+        switch (action) {
+          case 'start-open':
+            memeTweetId.placeholder = 'Paste your meme tweet link';
+            actionBtn.textContent = '🚀 Start Open Battle (150,000 WLO)';
+            actionBtn.onclick = () => executeStartOpenBattle();
+            break;
+
+          case 'challenge-user':
+            memeTweetId.placeholder = 'Paste your meme tweet link';
+            challengeHandle.style.display = 'block';
+            actionBtn.textContent = '⚔️ Challenge User (150,000 WLO)';
+            actionBtn.onclick = () => executeChallengeUser();
+            break;
+
+          case 'accept-battle':
+            memeTweetId.placeholder = 'Paste your meme tweet link';
+            actionBtn.textContent = '🤜 Accept Battle (75,000 WLO)';
+            actionBtn.onclick = () => executeAcceptBattle();
+            break;
+        }
+      });
+    }
+
+    async function executeStartOpenBattle() {
+      const tweetId = extractTweetId($("memeTweetId").value.trim());
+      if (!tweetId) return showToast("Please paste a valid meme tweet link!", "error");
+
+      try {
+        const res = await fetch(`${baseURL}/api/battle/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: getWallet(), tweetId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Open battle started! Waiting for someone to accept...", "success");
+          resetBattleUI();
+        } else {
+          showToast(data.error || "Could not start battle", "error");
+        }
+        fetchBattleStatus();
+      } catch (e) {
+        showToast("Battle start error", "error");
+      }
+    }
+
+    async function executeChallengeUser() {
+      const tweetId = extractTweetId($("memeTweetId").value.trim());
+      const handle = $("challengeHandle").value.trim().replace('@', '');
+
+      if (!tweetId) return showToast("Please paste a valid meme tweet link!", "error");
+      if (!handle) return showToast("Please enter a Twitter handle to challenge!", "error");
+
+      try {
+        const res = await fetch(`${baseURL}/api/battle/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: getWallet(), tweetId, challengeHandle: handle })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Challenge sent to @${handle}! Waiting for them to accept...`, "success");
+          resetBattleUI();
+        } else {
+          showToast(data.error || "Could not send challenge", "error");
+        }
+        fetchBattleStatus();
+      } catch (e) {
+        showToast("Challenge error", "error");
+      }
+    }
+
+    async function executeAcceptBattle() {
+      const tweetId = extractTweetId($("memeTweetId").value.trim());
+      if (!tweetId) return showToast("Please paste a valid meme tweet link!", "error");
+
+      try {
+        // First get current battle ID
+        const battleRes = await fetch(`${baseURL}/api/battle/current`);
+        const battleData = await battleRes.json();
+
+        if (!battleData.success) {
+          return showToast("No battle available to accept", "error");
+        }
+
+        const res = await fetch(`${baseURL}/api/battle/accept`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            wallet: getWallet(),
+            tweetId,
+            battleId: battleData.battle.id
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Battle accepted! Let the voting begin!", "success");
+          resetBattleUI();
+        } else {
+          showToast(data.error || "Accept failed", "error");
+        }
+        fetchBattleStatus();
+      } catch (e) {
+        showToast("Battle accept error", "error");
+      }
+    }
+
+    function resetBattleUI() {
+      const actionSelect = document.getElementById('battleActionSelect');
+      const inputSection = document.getElementById('battleInputSection');
+      const actionBtn = document.getElementById('battleActionBtn');
+
+      if (actionSelect) actionSelect.value = '';
+      if (inputSection) inputSection.style.display = 'none';
+      if (actionBtn) actionBtn.style.display = 'none';
+
+      document.getElementById('memeTweetId').value = '';
+      document.getElementById('challengeHandle').value = '';
+    }
+
     // === TWEET ID EXTRACTION ===
     function extractTweetId(url) {
       if (!url) return '';
@@ -1152,7 +1317,10 @@
         battleContent.style.display = "block";
       }
 
-      // Ensure buttons are properly set up
+      // Setup new UI flow
+      setupBattleUI();
+
+      // Legacy button setup (kept for compatibility)
       const startBtn = document.getElementById("start-battle-btn");
       const acceptBtn = document.getElementById("accept-battle-btn");
 
