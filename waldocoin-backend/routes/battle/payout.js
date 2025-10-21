@@ -64,9 +64,8 @@ router.post("/", async (req, res) => {
 
     // Voters
     const winningVoters = await redis.sMembers(`battle:${battleId}:voters:${winner}`);
-    const totalVoters =
-      (await redis.sCard(`battle:${battleId}:voters:A`)) +
-      (await redis.sCard(`battle:${battleId}:voters:B`));
+    const losingVoters = await redis.sMembers(`battle:${battleId}:voters:${winner === "A" ? "B" : "A"}`);
+    const totalVoters = winningVoters.length + losingVoters.length;
 
     // Handle no-votes scenario - no fees charged if no one voted
     if (totalVoters === 0) {
@@ -91,25 +90,55 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // WALDO Distribution with new fee structure (only if there were votes)
-    const pot = 150000 + 75000 + (totalVoters * 30000); // challenger + acceptor + voters
-    const burnAmount = Math.floor(pot * 0.005); // 0.5% burned
-    const treasuryAmount = Math.floor(pot * 0.025); // 2.5% treasury
-    const prizePool = pot - burnAmount - treasuryAmount; // 97% for prizes
+    // Handle one-sided voting - cancel battle and refund all voters
+    if (losingVoters.length === 0) {
+      console.log(`⚔️ Battle ${battleId} was one-sided - canceling and refunding all voters`);
 
-    // Prize distribution: 55% to winner, 45% to winning voters
-    const posterAmount = Math.floor(prizePool * 0.55); // 55% to winner
-    let voterAmount = Math.floor(prizePool * 0.45); // 45% to voters
-    let voterSplit = winningVoters.length ? Math.floor(voterAmount / winningVoters.length) : 0;
+      // Refund all voters their vote fees
+      const { xrpSendWaldo } = await import("../../utils/sendWaldo.js");
+      for (const voter of winningVoters) {
+        await xrpSendWaldo(voter, 30000);
+        console.log(`💰 Refunded 30,000 WLO to voter: ${voter}`);
+      }
 
-    // Voter Loss Protection: Ensure voters never lose more than 20%
-    const minVoterReturn = 24000; // 80% of 30,000 WLO vote fee
-    if (voterSplit > 0 && voterSplit < minVoterReturn) {
-      console.log(`🛡️ Voter protection activated: ${voterSplit} → ${minVoterReturn} WLO per voter`);
-      voterSplit = minVoterReturn;
-      voterAmount = voterSplit * winningVoters.length;
-      // Protection cost comes from treasury/house share
+      // Mark battle as canceled
+      await redis.hset(battleKey, {
+        status: "canceled_one_sided",
+        winner: "none",
+        payoutAt: now,
+        voterCount: totalVoters,
+        totalPot: 0,
+        message: "Battle canceled due to one-sided voting - all voters refunded"
+      });
+
+      return res.json({
+        success: true,
+        result: "canceled_one_sided",
+        message: `Battle canceled due to one-sided voting. All ${totalVoters} voters refunded 30,000 WLO each.`,
+        totalPot: 0,
+        voterCount: totalVoters,
+        refundedVoters: totalVoters
+      });
     }
+
+    // WALDO Distribution - Two-sided battle with losing side redistribution
+    const basePot = 150000 + 75000; // challenger + acceptor fees only
+    const winningVoteFees = winningVoters.length * 30000;
+    const losingVoteFees = losingVoters.length * 30000;
+    const totalPot = basePot + winningVoteFees + losingVoteFees;
+
+    const burnAmount = Math.floor(totalPot * 0.005); // 0.5% burned
+    const treasuryAmount = Math.floor(totalPot * 0.025); // 2.5% treasury
+    const prizePool = totalPot - burnAmount - treasuryAmount; // 97% for prizes
+
+    // Prize distribution: 55% to winner, 45% + losing side bets to winning voters
+    const posterAmount = Math.floor(prizePool * 0.55); // 55% to winner
+    const baseVoterAmount = Math.floor(prizePool * 0.45); // 45% base voter share
+    const totalVoterAmount = baseVoterAmount + losingVoteFees; // Add losing side bets
+    const voterSplit = winningVoters.length ? Math.floor(totalVoterAmount / winningVoters.length) : 0;
+
+    console.log(`💰 Battle payout: Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters share ${totalVoterAmount} WLO (${voterSplit} each)`);
+    console.log(`📊 Losing side contributed ${losingVoteFees} WLO (${losingVoters.length} voters) to winning voters`);
 
     // Import treasury wallet functionality
     const { xrpSendWaldo } = await import("../../utils/sendWaldo.js");
@@ -150,38 +179,38 @@ router.post("/", async (req, res) => {
     await addXP(loserWallet, 25);   // Loser gets 25 XP (consolation)
 
     // Mark battle as paid/ended and store results
-    const protectionUsed = voterSplit === minVoterReturn && winningVoters.length > 0;
     await redis.hset(battleKey, {
       status: "paid",
       winner,
       payoutAt: now,
       voterCount: winningVoters.length,
-      totalPot: pot,
+      losingVoterCount: losingVoters.length,
+      totalPot,
       prizePool,
       burnAmount,
       treasuryAmount,
-      voterProtectionUsed: protectionUsed ? "true" : "false",
-      voterSplit
+      voterSplit,
+      losingVoteFees
     });
 
-    console.log(`⚔️ Battle ${battleId} completed - Winner: ${winner}, Pot: ${pot} WLO${protectionUsed ? ' (Voter protection used)' : ''}`);
+    console.log(`⚔️ Battle ${battleId} completed - Winner: ${winner}, Total Pot: ${totalPot} WLO, Losing side: ${losingVoteFees} WLO redistributed`);
 
-    const protectionMessage = protectionUsed ? ' 🛡️ Voter protection activated!' : '';
     return res.json({
       success: true,
       result: "paid",
       winner,
       winnerWallet,
-      totalPot: pot,
+      totalPot,
       prizePool,
       burnAmount,
       treasuryAmount,
       posterAmount,
-      voterAmount,
+      totalVoterAmount,
       voterSplit,
       votersPaid: winningVoters.length,
-      voterProtectionUsed: protectionUsed,
-      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} voters get ${voterSplit} WLO each.${protectionMessage}`
+      losingVoterCount: losingVoters.length,
+      losingVoteFees,
+      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters get ${voterSplit} WLO each (includes ${losingVoteFees} WLO from ${losingVoters.length} losing voters).`
     });
 
   } catch (err) {
