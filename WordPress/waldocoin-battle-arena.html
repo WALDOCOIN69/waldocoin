@@ -415,7 +415,7 @@
     <h2>🔥 Meme Battle Arena</h2>
     <p style="text-align: center; margin-bottom: 15px;">
       📢 Welcome to the Meme Battle Arena! Paste a meme tweet link, start a battle, or accept one to begin voting.
-      Voters pay 30,000 WALDO to participate, and get a share of the pot + XP if they pick the winner!
+      Voters pay 30,000 WLO to participate, and get a share of the pot + XP if they pick the winner!
     </p>
     <div
       style="background: #2a2a2a; border: 1px solid #444; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;">
@@ -465,7 +465,7 @@
           </a>
           <button type="button" onclick="voteBattle('meme1')" class="button-style" id="voteMeme1Btn"
             style="display: block; margin: 15px auto 0 auto;">
-            Vote for Meme 1 (30,000 WALDO)
+            Vote for Meme 1 (30,000 WLO)
           </button>
         </div>
 
@@ -529,7 +529,7 @@
           </a>
           <button type="button" onclick="voteBattle('meme2')" class="button-style" id="voteMeme2Btn"
             style="display: block; margin: 15px auto 0 auto;">
-            Vote for Meme 2 (30,000 WALDO)
+            Vote for Meme 2 (30,000 WLO)
           </button>
         </div>
       </div>
@@ -958,8 +958,14 @@
 
           // Show battle controls
           $("battle-wrapper").dataset.status = "open";
-          $("accept-battle-btn").disabled = true;
-          $("start-battle-btn").disabled = false;
+
+          // Reset dropdown styling when no battle
+          const actionSelect = document.getElementById("battleActionSelect");
+          if (actionSelect) {
+            actionSelect.style.background = "#333";
+            actionSelect.style.border = "1px solid #555";
+            actionSelect.style.animation = "none";
+          }
 
           // Set battle placeholder image when no active battles
           $("meme1Img").src = "https://waldocoin.live/wp-content/uploads/2025/07/waldobattle-1.png";
@@ -988,20 +994,33 @@
             $("meme1Link").href = `https://twitter.com/i/status/${battleData.meme1.id}`;
           }
 
-          // Highlight accept button for targeted challenges
-          const acceptBtn = document.getElementById("accept-battle-btn");
-          if (acceptBtn) {
-            acceptBtn.style.background = "linear-gradient(135deg, #ff6b6b, #ff4757)";
-            acceptBtn.style.border = "2px solid #ff6b6b";
-            acceptBtn.style.animation = "pulse 2s infinite";
-            acceptBtn.textContent = "🎯 Accept Challenge (75,000 WLO)";
+          // Highlight dropdown for targeted challenges
+          const actionSelect = document.getElementById("battleActionSelect");
+          if (actionSelect) {
+            actionSelect.style.background = "linear-gradient(135deg, #ff6b6b, #ff4757)";
+            actionSelect.style.border = "2px solid #ff6b6b";
+            actionSelect.style.animation = "pulse 2s infinite";
+            actionSelect.value = "accept-battle";
+
+            // Trigger the change event to show inputs
+            const event = new Event('change');
+            actionSelect.dispatchEvent(event);
           }
 
           return; // Don't continue to regular battle display
         } else if (battleData.status === "pending" && battleData.isTargeted) {
           statusDiv.innerHTML = `⏳ <strong>Targeted Challenge Pending</strong><br>
                                 <span style="color: #ccc; font-size: 0.9em;">@${battleData.challengerHandle || 'Unknown'} challenged @${battleData.challengedHandle || 'Unknown'}</span>`;
-          return; // Don't show accept button for challenges not meant for you
+
+          // Reset dropdown styling for non-targeted challenges
+          const actionSelect = document.getElementById("battleActionSelect");
+          if (actionSelect) {
+            actionSelect.style.background = "#333";
+            actionSelect.style.border = "1px solid #555";
+            actionSelect.style.animation = "none";
+          }
+
+          return; // Don't show accept option for challenges not meant for you
         } else if (battleData.status === "pending") {
           statusDiv.innerHTML = `🚀 <strong>Open Battle Available!</strong><br>
                                 <span style="color: #ccc; font-size: 0.9em;">Started by @${battleData.challengerHandle || 'Unknown'} - Anyone can accept</span>`;
@@ -1010,6 +1029,14 @@
           if (battleData.meme1 && battleData.meme1.imageUrl) {
             $("meme1Img").src = battleData.meme1.imageUrl;
             $("meme1Link").href = `https://twitter.com/i/status/${battleData.meme1.id}`;
+          }
+
+          // Reset dropdown styling for open battles
+          const actionSelect = document.getElementById("battleActionSelect");
+          if (actionSelect) {
+            actionSelect.style.background = "#333";
+            actionSelect.style.border = "1px solid #555";
+            actionSelect.style.animation = "none";
           }
 
           return; // Don't continue to regular battle display
@@ -1046,8 +1073,6 @@
         }
 
         $("battle-wrapper").dataset.status = "running";
-        $("accept-battle-btn").disabled = true;
-        $("start-battle-btn").disabled = true;
 
       } catch (e) {
         console.error("Battle status error:", e);
@@ -1086,54 +1111,7 @@
       window.battleTimerInterval = setInterval(update, 1000);
     }
 
-    // === BATTLE ACTIONS ===
-    async function startBattle() {
-      const tweetId = $("memeTweetId").value.trim();
-      if (!tweetId) return showToast("Paste a meme tweet link!", "error");
-      try {
-        const res = await fetch(`${baseURL}/api/battle/start`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet: getWallet(), tweetId })
-        });
-        const data = await res.json();
-        if (data.success) showToast("Battle started! Waiting for opponent...", "success");
-        else showToast(data.error || "Could not start battle", "error");
-        fetchBattleStatus();
-      } catch (e) { showToast("Battle start error", "error"); }
-    }
-
-    async function acceptBattle() {
-      const tweetId = $("memeTweetId").value.trim();
-      if (!tweetId) return showToast("Paste a meme tweet link to accept battle!", "error");
-
-      try {
-        // First get current battle ID
-        const battleRes = await fetch(`${baseURL}/api/battle/current`);
-        const battleData = await battleRes.json();
-
-        if (!battleData.success || !battleData.battle) {
-          return showToast("No active battle to accept", "error");
-        }
-
-        const res = await fetch(`${baseURL}/api/battle/accept`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            wallet: getWallet(),
-            tweetId: tweetId,
-            battleId: battleData.battle.id
-          })
-        });
-        const data = await res.json();
-        if (data.success) showToast("Battle accepted. Battle is ON!", "success");
-        else showToast(data.error || "Accept failed", "error");
-        fetchBattleStatus();
-      } catch (e) {
-        console.error("Accept battle error:", e);
-        showToast("Battle accept error", "error");
-      }
-    }
+    // === BATTLE ACTIONS === (Now handled by dropdown functions)
 
     async function voteBattle(meme) {
       try {
@@ -1420,19 +1398,7 @@
       // Setup new UI flow
       setupBattleUI();
 
-      // Legacy button setup (kept for compatibility)
-      const startBtn = document.getElementById("start-battle-btn");
-      const acceptBtn = document.getElementById("accept-battle-btn");
-
-      if (startBtn) {
-        startBtn.disabled = false;
-        startBtn.onclick = startBattle;
-      }
-
-      if (acceptBtn) {
-        acceptBtn.style.display = "block";
-        acceptBtn.onclick = acceptBattle;
-      }
+      // Clean dropdown-only interface - no legacy buttons needed
 
       // Set initial battle status
       const statusDiv = document.getElementById("battleStatus");
