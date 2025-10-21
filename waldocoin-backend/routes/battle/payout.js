@@ -122,14 +122,18 @@ router.post("/", async (req, res) => {
     }
 
     // WALDO Distribution - Two-sided battle with losing side redistribution
-    const basePot = 150000 + 75000; // challenger + acceptor fees only
+    const memeCreatorFees = 150000 + 75000; // challenger + acceptor fees (no house fees)
     const winningVoteFees = winningVoters.length * 30000;
     const losingVoteFees = losingVoters.length * 30000;
-    const totalPot = basePot + winningVoteFees + losingVoteFees;
+    const totalVotingPool = winningVoteFees + losingVoteFees;
 
-    const burnAmount = Math.floor(totalPot * 0.005); // 0.5% burned
-    const treasuryAmount = Math.floor(totalPot * 0.025); // 2.5% treasury
-    const prizePool = totalPot - burnAmount - treasuryAmount; // 97% for prizes
+    // House fees only apply to betting pool, not meme creator fees
+    const burnAmount = Math.floor(totalVotingPool * 0.005); // 0.5% of betting pool
+    const treasuryAmount = Math.floor(totalVotingPool * 0.025); // 2.5% of betting pool
+    const availableVotingPool = totalVotingPool - burnAmount - treasuryAmount;
+
+    const totalPot = memeCreatorFees + totalVotingPool;
+    const prizePool = memeCreatorFees + availableVotingPool; // Meme fees + net betting pool
 
     // Prize distribution: 55% to winner, 45% + losing side bets to winning voters
     const posterAmount = Math.floor(prizePool * 0.55); // 55% to winner
@@ -138,6 +142,8 @@ router.post("/", async (req, res) => {
     const voterSplit = winningVoters.length ? Math.floor(totalVoterAmount / winningVoters.length) : 0;
 
     console.log(`💰 Battle payout: Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters share ${totalVoterAmount} WLO (${voterSplit} each)`);
+    console.log(`📊 Meme creator fees: ${memeCreatorFees} WLO (no house fees), Betting pool: ${totalVotingPool} WLO`);
+    console.log(`🏦 House fees from betting only: Burn ${burnAmount} WLO, Treasury ${treasuryAmount} WLO`);
     console.log(`📊 Losing side contributed ${losingVoteFees} WLO (${losingVoters.length} voters) to winning voters`);
 
     // Import treasury wallet functionality
@@ -186,6 +192,8 @@ router.post("/", async (req, res) => {
       voterCount: winningVoters.length,
       losingVoterCount: losingVoters.length,
       totalPot,
+      memeCreatorFees,
+      totalVotingPool,
       prizePool,
       burnAmount,
       treasuryAmount,
@@ -201,6 +209,8 @@ router.post("/", async (req, res) => {
       winner,
       winnerWallet,
       totalPot,
+      memeCreatorFees,
+      totalVotingPool,
       prizePool,
       burnAmount,
       treasuryAmount,
@@ -210,7 +220,7 @@ router.post("/", async (req, res) => {
       votersPaid: winningVoters.length,
       losingVoterCount: losingVoters.length,
       losingVoteFees,
-      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters get ${voterSplit} WLO each (includes ${losingVoteFees} WLO from ${losingVoters.length} losing voters).`
+      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters get ${voterSplit} WLO each. House fees (${burnAmount + treasuryAmount} WLO) taken from betting pool only.`
     });
 
   } catch (err) {
