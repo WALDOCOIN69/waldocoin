@@ -221,6 +221,24 @@
       margin: 10px 0;
     }
 
+    /* === CHALLENGE ANIMATIONS === */
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+      }
+
+      70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
+      }
+
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+      }
+    }
+
     /* === RESPONSIVE === */
     @media (max-width: 900px) {
       .battle-memes-container {
@@ -953,6 +971,49 @@
         }
 
         const battleData = battle.battle;
+        const currentWallet = getWallet();
+
+        // Check if this is a targeted challenge for the current user
+        if (battleData.status === "pending" && battleData.isTargeted && battleData.challenged === currentWallet) {
+          statusDiv.innerHTML = `🎯 <strong style="color: #ff6b6b;">You've been challenged by @${battleData.challengerHandle || 'Unknown'}!</strong><br>
+                                <span style="color: #ccc; font-size: 0.9em;">Accept the challenge to start the battle</span>`;
+          statusDiv.style.background = "linear-gradient(135deg, #ff6b6b20, #ff6b6b10)";
+          statusDiv.style.border = "2px solid #ff6b6b";
+          statusDiv.style.borderRadius = "10px";
+          statusDiv.style.padding = "15px";
+
+          // Show meme 1 (challenger's meme)
+          if (battleData.meme1 && battleData.meme1.imageUrl) {
+            $("meme1Img").src = battleData.meme1.imageUrl;
+            $("meme1Link").href = `https://twitter.com/i/status/${battleData.meme1.id}`;
+          }
+
+          // Highlight accept button for targeted challenges
+          const acceptBtn = document.getElementById("accept-battle-btn");
+          if (acceptBtn) {
+            acceptBtn.style.background = "linear-gradient(135deg, #ff6b6b, #ff4757)";
+            acceptBtn.style.border = "2px solid #ff6b6b";
+            acceptBtn.style.animation = "pulse 2s infinite";
+            acceptBtn.textContent = "🎯 Accept Challenge (75,000 WLO)";
+          }
+
+          return; // Don't continue to regular battle display
+        } else if (battleData.status === "pending" && battleData.isTargeted) {
+          statusDiv.innerHTML = `⏳ <strong>Targeted Challenge Pending</strong><br>
+                                <span style="color: #ccc; font-size: 0.9em;">@${battleData.challengerHandle || 'Unknown'} challenged @${battleData.challengedHandle || 'Unknown'}</span>`;
+          return; // Don't show accept button for challenges not meant for you
+        } else if (battleData.status === "pending") {
+          statusDiv.innerHTML = `🚀 <strong>Open Battle Available!</strong><br>
+                                <span style="color: #ccc; font-size: 0.9em;">Started by @${battleData.challengerHandle || 'Unknown'} - Anyone can accept</span>`;
+
+          // Show meme 1 (challenger's meme)
+          if (battleData.meme1 && battleData.meme1.imageUrl) {
+            $("meme1Img").src = battleData.meme1.imageUrl;
+            $("meme1Link").href = `https://twitter.com/i/status/${battleData.meme1.id}`;
+          }
+
+          return; // Don't continue to regular battle display
+        }
 
         // Active battle - show everything
         statusDiv.textContent = "Current Battle:";

@@ -42,7 +42,11 @@ router.get("/", async (req, res) => {
         status: data.status,
         timerSeconds,
         acceptedAt,
-        // You can add more fields here as needed (votes, voters, etc)
+        challenger: data.challenger,
+        challengerHandle: data.challengerHandle,
+        challenged: data.challenged,
+        challengedHandle: data.challengedHandle,
+        isTargeted: data.challenged ? true : false
       }
     });
   } catch (err) {
