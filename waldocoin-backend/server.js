@@ -34,6 +34,7 @@ import conversionRoute from "./routes/conversion.js";
 import topMemeRoute from "./routes/topmeme.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import activityRoute from "./routes/activity.js";
+import paymentRoute from "./routes/payment.js";
 
 // Buy bot completely removed - using volume trading bot only
 // No Telegram bot imports to prevent conflicts
@@ -179,6 +180,7 @@ const startServer = async () => {
   app.use("/api/topMeme", topMemeRoute);
   app.use("/api/linkTwitter", linkTwitterRoute);
   app.use("/api/activity", activityRoute);
+  app.use("/api/payment", paymentRoute);
   app.use("/api/referral", (await import("./routes/referral.js")).default);
   app.use("/api/system", (await import("./routes/system.js")).default);
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);

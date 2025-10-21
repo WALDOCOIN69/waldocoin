@@ -37,12 +37,21 @@ router.post("/", async (req, res) => {
     const feeWaldo = acceptFeeWLO;
     const now = dayjs();
 
+    // 🔐 WALDO payment payload - Send to Battle Escrow Wallet
+    const BATTLE_ESCROW_WALLET = process.env.BATTLE_ESCROW_WALLET || process.env.WALDO_TREASURY_WALLET || "rnWfL48YCknW6PYewFLKfMKUymHCfj3aww";
+
     const payload = {
       txjson: {
         TransactionType: "Payment",
-        Destination: process.env.ISSUER_WALLET,
+        Destination: BATTLE_ESCROW_WALLET,
         Amount: String(feeWaldo * 1_000_000),
-        DestinationTag: 778
+        DestinationTag: 778,
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('BATTLE_ACCEPT').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`Battle accept fee: ${battleId}`).toString('hex').toUpperCase()
+          }
+        }]
       },
       options: {
         submit: true,
