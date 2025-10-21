@@ -99,8 +99,17 @@ router.post("/", async (req, res) => {
 
     // Prize distribution: 55% to winner, 45% to winning voters
     const posterAmount = Math.floor(prizePool * 0.55); // 55% to winner
-    const voterAmount = Math.floor(prizePool * 0.45); // 45% to voters
-    const voterSplit = winningVoters.length ? Math.floor(voterAmount / winningVoters.length) : 0;
+    let voterAmount = Math.floor(prizePool * 0.45); // 45% to voters
+    let voterSplit = winningVoters.length ? Math.floor(voterAmount / winningVoters.length) : 0;
+
+    // Voter Loss Protection: Ensure voters never lose more than 20%
+    const minVoterReturn = 24000; // 80% of 30,000 WLO vote fee
+    if (voterSplit > 0 && voterSplit < minVoterReturn) {
+      console.log(`🛡️ Voter protection activated: ${voterSplit} → ${minVoterReturn} WLO per voter`);
+      voterSplit = minVoterReturn;
+      voterAmount = voterSplit * winningVoters.length;
+      // Protection cost comes from treasury/house share
+    }
 
     // Import treasury wallet functionality
     const { xrpSendWaldo } = await import("../../utils/sendWaldo.js");
@@ -141,6 +150,7 @@ router.post("/", async (req, res) => {
     await addXP(loserWallet, 25);   // Loser gets 25 XP (consolation)
 
     // Mark battle as paid/ended and store results
+    const protectionUsed = voterSplit === minVoterReturn && winningVoters.length > 0;
     await redis.hset(battleKey, {
       status: "paid",
       winner,
@@ -149,11 +159,14 @@ router.post("/", async (req, res) => {
       totalPot: pot,
       prizePool,
       burnAmount,
-      treasuryAmount
+      treasuryAmount,
+      voterProtectionUsed: protectionUsed ? "true" : "false",
+      voterSplit
     });
 
-    console.log(`⚔️ Battle ${battleId} completed - Winner: ${winner}, Pot: ${pot} WLO`);
+    console.log(`⚔️ Battle ${battleId} completed - Winner: ${winner}, Pot: ${pot} WLO${protectionUsed ? ' (Voter protection used)' : ''}`);
 
+    const protectionMessage = protectionUsed ? ' 🛡️ Voter protection activated!' : '';
     return res.json({
       success: true,
       result: "paid",
@@ -167,7 +180,8 @@ router.post("/", async (req, res) => {
       voterAmount,
       voterSplit,
       votersPaid: winningVoters.length,
-      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} voters share ${voterAmount} WLO`
+      voterProtectionUsed: protectionUsed,
+      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} voters get ${voterSplit} WLO each.${protectionMessage}`
     });
 
   } catch (err) {
