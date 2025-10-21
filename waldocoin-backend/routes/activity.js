@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     // Get user's activity from Redis
     const activityKey = `activity:${wallet}`;
     const activities = await redis.lRange(activityKey, 0, limit - 1);
-    
+
     const parsedActivities = activities.map(activity => {
       try {
         return JSON.parse(activity);
@@ -173,6 +173,11 @@ function getActivityIcon(type) {
     'level_up': '⭐',
     'battle_won': '⚔️',
     'battle_lost': '💔',
+    'battle_challenged': '🎯',
+    'battle_challenge_sent': '⚔️',
+    'battle_started': '🚀',
+    'battle_accepted': '🤜',
+    'battle_voted': '🗳️',
     'staking_started': '🏦',
     'staking_completed': '💎',
     'dao_voted': '🗳️',
@@ -180,8 +185,32 @@ function getActivityIcon(type) {
     'referral_earned': '📣',
     'achievement_unlocked': '🏆'
   };
-  
+
   return icons[type] || '📊';
+}
+
+// Helper function to add activity notification
+export async function addActivityNotification(wallet, type, message, xp = 0, metadata = {}) {
+  try {
+    const activity = {
+      type,
+      message,
+      timestamp: new Date().toISOString(),
+      xp,
+      metadata,
+      icon: getActivityIcon(type)
+    };
+
+    const activityKey = `activity:${wallet}`;
+    await redis.lPush(activityKey, JSON.stringify(activity));
+    await redis.lTrim(activityKey, 0, 99); // Keep only last 100
+
+    console.log(`📊 Activity notification: ${wallet} - ${type}: ${message}`);
+    return activity;
+  } catch (error) {
+    console.error('❌ Failed to add activity notification:', error);
+    return null;
+  }
 }
 
 export default router;

@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
 import dotenv from "dotenv";
+import { addActivityNotification } from "../activity.js";
 dotenv.config();
 
 const router = express.Router();
@@ -66,6 +67,29 @@ router.post("/", async (req, res) => {
 
     // Optionally set a TTL (30 hours)
     await redis.expire(battleKey, 60 * 60 * 30);
+
+    // Add activity notifications
+    const challengerHandle = battle.challengerHandle || 'Unknown';
+
+    // Notify acceptor
+    await addActivityNotification(
+      wallet,
+      'battle_accepted',
+      `You accepted a meme battle challenge! Let the voting begin!`,
+      75,
+      { battleId, challengerHandle }
+    );
+
+    // Notify challenger
+    if (battle.challenger) {
+      await addActivityNotification(
+        battle.challenger,
+        'battle_accepted',
+        `Your battle challenge was accepted! Voting has started!`,
+        25,
+        { battleId }
+      );
+    }
 
     return res.json({
       success: true,

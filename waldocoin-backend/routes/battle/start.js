@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
 import dotenv from "dotenv";
+import { addActivityNotification } from "../activity.js";
 dotenv.config();
 
 const router = express.Router();
@@ -83,6 +84,35 @@ router.post("/", async (req, res) => {
     };
 
     await redis.set(`battle:${battleId}`, JSON.stringify(battleData), { EX: 60 * 60 * 12 });
+
+    // Add activity notifications
+    if (challengedWallet && challengedHandle) {
+      // Targeted challenge - notify both challenger and challenged
+      await addActivityNotification(
+        wallet,
+        'battle_challenge_sent',
+        `You challenged @${challengedHandle} to a meme battle!`,
+        50,
+        { battleId, challengedHandle, tweetId }
+      );
+
+      await addActivityNotification(
+        challengedWallet,
+        'battle_challenged',
+        `🎯 @${challengerHandle || 'Someone'} challenged you to a meme battle!`,
+        0,
+        { battleId, challengerHandle, tweetId, urgent: true }
+      );
+    } else {
+      // Open battle - notify challenger only
+      await addActivityNotification(
+        wallet,
+        'battle_started',
+        `You started an open meme battle! Waiting for someone to accept...`,
+        25,
+        { battleId, tweetId }
+      );
+    }
 
     return res.json({
       success: true,

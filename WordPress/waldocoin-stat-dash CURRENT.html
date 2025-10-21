@@ -6197,15 +6197,35 @@
 
           if (res.ok) {
             const data = await res.json();
-            if (data.success && data.activities && data.activities.length > 0) {
-              // Use real activity data
-              expandedFeed.innerHTML = data.activities.map(activity => `
-                <li class="activity-item">
-                  <span class="activity-icon">${activity.icon || '📊'}</span>
-                  <span class="activity-text">${activity.text || activity.message}</span>
-                  <span class="activity-time">${activity.time || new Date(activity.timestamp).toLocaleString()}</span>
-                </li>
-              `).join('');
+            if (data.success && data.activity && data.activity.length > 0) {
+              // Prioritize battle challenges and urgent activities
+              const activities = data.activity.sort((a, b) => {
+                // Battle challenges first
+                if (a.type === 'battle_challenged' && b.type !== 'battle_challenged') return -1;
+                if (b.type === 'battle_challenged' && a.type !== 'battle_challenged') return 1;
+
+                // Urgent activities next
+                if (a.metadata?.urgent && !b.metadata?.urgent) return -1;
+                if (b.metadata?.urgent && !a.metadata?.urgent) return 1;
+
+                // Then by timestamp
+                return new Date(b.timestamp) - new Date(a.timestamp);
+              });
+
+              // Use real activity data with special styling for challenges
+              expandedFeed.innerHTML = activities.map(activity => {
+                const isChallenge = activity.type === 'battle_challenged';
+                const itemClass = isChallenge ? 'activity-item challenge-item' : 'activity-item';
+                const textStyle = isChallenge ? 'color: #ff6b6b; font-weight: bold;' : '';
+
+                return `
+                  <li class="${itemClass}" ${isChallenge ? 'style="background: linear-gradient(135deg, #ff6b6b20, #ff6b6b10); border: 1px solid #ff6b6b; border-radius: 8px; margin: 5px 0; cursor: pointer;" onclick="window.location.href=\'/battle-arena\'"' : ''}>
+                    <span class="activity-icon">${activity.icon || '📊'}</span>
+                    <span class="activity-text" style="${textStyle}">${activity.message || activity.text}</span>
+                    <span class="activity-time">${formatTimeAgo ? formatTimeAgo(activity.timestamp) : new Date(activity.timestamp).toLocaleString()}</span>
+                  </li>
+                `;
+              }).join('');
               return;
             }
           }
@@ -6755,19 +6775,40 @@
 
         try {
           // Try to fetch real activity data from backend first
-          const res = await fetch(`${baseURL}/api/activity?wallet=${wallet}&limit=3`);
+          const res = await fetch(`${baseURL}/api/activity?wallet=${wallet}&limit=5`);
 
           if (res.ok) {
             const data = await res.json();
-            if (data.success && data.activities && data.activities.length > 0) {
-              // Use real activity data
-              ul.innerHTML = data.activities.map(activity => `
-                <li class="activity-item">
-                  <span class="activity-icon">${activity.icon || '📊'}</span>
-                  <span class="activity-text">${activity.text || activity.message}</span>
-                  <span class="activity-time">${activity.time || new Date(activity.timestamp).toLocaleString()}</span>
-                </li>
-              `).join('');
+            if (data.success && data.activity && data.activity.length > 0) {
+              // Prioritize battle challenges and urgent activities
+              const activities = data.activity.sort((a, b) => {
+                // Battle challenges first
+                if (a.type === 'battle_challenged' && b.type !== 'battle_challenged') return -1;
+                if (b.type === 'battle_challenged' && a.type !== 'battle_challenged') return 1;
+
+                // Urgent activities next
+                if (a.metadata?.urgent && !b.metadata?.urgent) return -1;
+                if (b.metadata?.urgent && !a.metadata?.urgent) return 1;
+
+                // Then by timestamp
+                return new Date(b.timestamp) - new Date(a.timestamp);
+              });
+
+              // Use real activity data with special styling for challenges
+              ul.innerHTML = activities.slice(0, 3).map(activity => {
+                const isChallenge = activity.type === 'battle_challenged';
+                const isUrgent = activity.metadata?.urgent;
+                const itemClass = isChallenge ? 'activity-item challenge-item' : 'activity-item';
+                const textStyle = isChallenge ? 'color: #ff6b6b; font-weight: bold;' : '';
+
+                return `
+                  <li class="${itemClass}" ${isChallenge ? 'style="background: linear-gradient(135deg, #ff6b6b20, #ff6b6b10); border: 1px solid #ff6b6b; border-radius: 8px; margin: 5px 0; cursor: pointer;" onclick="window.location.href=\'/battle-arena\'"' : ''}>
+                    <span class="activity-icon">${activity.icon || '📊'}</span>
+                    <span class="activity-text" style="${textStyle}">${activity.message || activity.text}</span>
+                    <span class="activity-time">${formatTimeAgo ? formatTimeAgo(activity.timestamp) : new Date(activity.timestamp).toLocaleString()}</span>
+                  </li>
+                `;
+              }).join('');
               return;
             }
           }
