@@ -128,8 +128,8 @@ router.post("/", async (req, res) => {
     const totalVotingPool = winningVoteFees + losingVoteFees;
 
     // House fees only apply to betting pool, not meme creator fees
-    const burnAmount = Math.floor(totalVotingPool * 0.005); // 0.5% of betting pool
-    const treasuryAmount = Math.floor(totalVotingPool * 0.025); // 2.5% of betting pool
+    const burnAmount = Math.floor(totalVotingPool * 0.0025); // 0.25% of betting pool
+    const treasuryAmount = Math.floor(totalVotingPool * 0.0175); // 1.75% of betting pool
     const availableVotingPool = totalVotingPool - burnAmount - treasuryAmount;
 
     const totalPot = memeCreatorFees + totalVotingPool;
@@ -143,7 +143,7 @@ router.post("/", async (req, res) => {
 
     console.log(`💰 Battle payout: Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters share ${totalVoterAmount} WLO (${voterSplit} each)`);
     console.log(`📊 Meme creator fees: ${memeCreatorFees} WLO (no house fees), Betting pool: ${totalVotingPool} WLO`);
-    console.log(`🏦 House fees from betting only: Burn ${burnAmount} WLO, Treasury ${treasuryAmount} WLO`);
+    console.log(`🏦 Voter house fees (2% total): Burn ${burnAmount} WLO (0.25%), Treasury ${treasuryAmount} WLO (1.75%)`);
     console.log(`📊 Losing side contributed ${losingVoteFees} WLO (${losingVoters.length} voters) to winning voters`);
 
     // Import treasury wallet functionality
@@ -220,7 +220,7 @@ router.post("/", async (req, res) => {
       votersPaid: winningVoters.length,
       losingVoterCount: losingVoters.length,
       losingVoteFees,
-      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters get ${voterSplit} WLO each. House fees (${burnAmount + treasuryAmount} WLO) taken from betting pool only.`
+      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters get ${voterSplit} WLO each. Voter house fees: ${burnAmount + treasuryAmount} WLO (2% total: 1.75% treasury, 0.25% burn).`
     });
 
   } catch (err) {
