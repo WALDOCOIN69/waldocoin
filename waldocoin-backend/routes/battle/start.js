@@ -92,7 +92,7 @@ router.post("/", async (req, res) => {
         wallet,
         'battle_challenge_sent',
         `You challenged @${challengedHandle} to a meme battle!`,
-        5,
+        0,
         { battleId, challengedHandle, tweetId }
       );
 
@@ -100,7 +100,7 @@ router.post("/", async (req, res) => {
         challengedWallet,
         'battle_challenged',
         `🎯 @${challengerHandle || 'Someone'} challenged you to a meme battle!`,
-        2,
+        0,
         { battleId, challengerHandle, tweetId, urgent: true }
       );
     } else {
@@ -109,7 +109,7 @@ router.post("/", async (req, res) => {
         wallet,
         'battle_started',
         `You started an open meme battle! Waiting for someone to accept...`,
-        5,
+        0,
         { battleId, tweetId }
       );
     }
