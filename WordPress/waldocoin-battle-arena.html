@@ -1189,10 +1189,19 @@
           body: JSON.stringify({ wallet: getWallet(), meme })
         });
         const data = await res.json();
-        if (data.success) showToast("Vote cast! Check battle results after timer.", "success");
-        else showToast(data.error || "Vote failed", "error");
-        fetchBattleStatus();
-      } catch (e) { showToast("Vote error", "error"); }
+        if (data.success && data.uuid && data.next) {
+          // Show payment modal for vote
+          const memeNumber = meme === 'meme1' ? '1' : '2';
+          showPaymentModal(data.uuid, data.next, `🗳️ Vote for Meme ${memeNumber}`, "30,000 WLO", () => {
+            showToast("Vote cast! Check battle results after timer.", "success");
+            fetchBattleStatus();
+          });
+        } else {
+          showToast(data.error || "Vote failed", "error");
+        }
+      } catch (e) {
+        showToast("Vote error", "error");
+      }
     }
 
     // === NEW UI FLOW LOGIC ===

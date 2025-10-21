@@ -90,16 +90,15 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Handle one-sided voting - cancel battle and refund all voters
+    // Handle one-sided voting - cancel battle and refund everyone
     if (losingVoters.length === 0) {
-      console.log(`⚔️ Battle ${battleId} was one-sided - canceling and refunding all voters`);
+      console.log(`⚔️ Battle ${battleId} was one-sided - canceling and refunding all participants`);
 
-      // Refund all voters their vote fees
-      const { xrpSendWaldo } = await import("../../utils/sendWaldo.js");
-      for (const voter of winningVoters) {
-        await xrpSendWaldo(voter, 30000);
-        console.log(`💰 Refunded 30,000 WLO to voter: ${voter}`);
-      }
+      // Import refund utilities
+      const { refundFullBattle } = await import("../../utils/battleRefunds.js");
+
+      // Refund all participants (challenger + acceptor + all voters)
+      await refundFullBattle(battleId, "One-sided voting - battle canceled");
 
       // Mark battle as canceled
       await redis.hset(battleKey, {
@@ -108,13 +107,13 @@ router.post("/", async (req, res) => {
         payoutAt: now,
         voterCount: totalVoters,
         totalPot: 0,
-        message: "Battle canceled due to one-sided voting - all voters refunded"
+        message: "Battle canceled due to one-sided voting - all participants refunded"
       });
 
       return res.json({
         success: true,
         result: "canceled_one_sided",
-        message: `Battle canceled due to one-sided voting. All ${totalVoters} voters refunded 30,000 WLO each.`,
+        message: `Battle canceled due to one-sided voting. All participants (challenger, acceptor, ${totalVoters} voters) have been refunded.`,
         totalPot: 0,
         voterCount: totalVoters,
         refundedVoters: totalVoters

@@ -37,8 +37,8 @@ router.post("/", async (req, res) => {
     const feeWaldo = acceptFeeWLO;
     const now = dayjs();
 
-    // 🔐 WALDO payment payload - Send to Battle Escrow Wallet
-    const BATTLE_ESCROW_WALLET = process.env.BATTLE_ESCROW_WALLET || process.env.WALDO_TREASURY_WALLET || "rnWfL48YCknW6PYewFLKfMKUymHCfj3aww";
+    // 🔐 WALDO payment payload - Send to dedicated Battle Escrow Wallet
+    const BATTLE_ESCROW_WALLET = process.env.BATTLE_ESCROW_WALLET || "rfn7cG6qAQMuG97i9Nb5GxGdHbTjY7TzW";
 
     const payload = {
       txjson: {

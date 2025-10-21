@@ -39,12 +39,21 @@ router.post("/", async (req, res) => {
     const { voteFeeWLO } = await (await import("../../utils/config.js")).getBattleFees();
     const feeWaldo = voteFeeWLO;
 
+    // 🔐 WALDO payment payload - Send to dedicated Battle Escrow Wallet
+    const BATTLE_ESCROW_WALLET = process.env.BATTLE_ESCROW_WALLET || "rfn7cG6qAQMuG97i9Nb5GxGdHbTjY7TzW";
+
     const payload = {
       txjson: {
         TransactionType: "Payment",
-        Destination: process.env.ISSUER_WALLET,
+        Destination: BATTLE_ESCROW_WALLET,
         Amount: String(feeWaldo * 1_000_000),
-        DestinationTag: 779
+        DestinationTag: 779,
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('BATTLE_VOTE').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`Battle vote fee: ${battleId} - ${vote}`).toString('hex').toUpperCase()
+          }
+        }]
       },
       options: {
         submit: true,

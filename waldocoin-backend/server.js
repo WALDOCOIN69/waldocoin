@@ -36,6 +36,9 @@ import linkTwitterRoute from "./routes/linkTwitter.js";
 import activityRoute from "./routes/activity.js";
 import paymentRoute from "./routes/payment.js";
 
+// 🕐 Cron Jobs
+import { startExpiredBattleRefunder } from "./cron/expiredBattleRefunder.js";
+
 // Buy bot completely removed - using volume trading bot only
 // No Telegram bot imports to prevent conflicts
 
@@ -69,6 +72,7 @@ import adminSendWaldoRoute from "./routes/admin/sendWaldo.js";
 import adminTrustlineRoute from "./routes/admin/trustline.js";
 import adminVolumeBotRoute from "./routes/admin/volumeBot.js";
 import adminClearStakingRoute from "./routes/admin/clearStaking.js";
+import adminBattleRefundsRoute from "./routes/admin/battleRefunds.js";
 
 
 
@@ -215,6 +219,7 @@ const startServer = async () => {
   app.use("/api/admin/send-waldo", adminSendWaldoRoute);
   app.use("/api/admin/trustline", adminTrustlineRoute);
   app.use("/api/admin/volume-bot", adminVolumeBotRoute);
+  app.use("/api/admin/battle-refunds", adminBattleRefundsRoute);
   app.use("/api/admin", adminClearStakingRoute);
 
   // Admin fixes for missing endpoints
@@ -398,6 +403,11 @@ const startServer = async () => {
   const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => {
     console.log(`🧩 WALDO backend running on http://localhost:${PORT} - UPDATED ${new Date().toISOString()}`);
+
+    // Start cron jobs
+    console.log("🕐 Starting cron jobs...");
+    startExpiredBattleRefunder();
+    console.log("✅ All cron jobs started");
   });
 };
 
