@@ -6,7 +6,8 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   const { proposalId, adminKey } = req.body;
 
-  if (adminKey !== process.env.ADMIN_KEY) {
+  // Use X_ADMIN_KEY for consistency with new DAO system
+  if (adminKey !== process.env.X_ADMIN_KEY) {
     return res.status(403).json({ success: false, error: "Unauthorized" });
   }
 

@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { validateAdminKey, getAdminKey } from '../../utils/adminAuth.js';
 import { rateLimitMiddleware } from '../../utils/rateLimiter.js';
 import { createErrorResponse, logError } from '../../utils/errorHandler.js';
+import { migrateDAOData } from '../../utils/daoDataMigration.js';
 
 const router = express.Router();
 
@@ -454,6 +455,35 @@ router.post('/reject-request', requireAdmin, rateLimitMiddleware('ADMIN_ACTION',
     return res.status(500).json({
       success: false,
       error: "Failed to reject request"
+    });
+  }
+});
+
+// POST /api/admin/dao/migrate - Migrate legacy DAO data to new format
+router.post('/migrate', requireAdmin, rateLimitMiddleware('ADMIN_ACTION', () => 'admin'), async (req, res) => {
+  try {
+    console.log('🔄 Admin triggered DAO data migration');
+
+    const result = await migrateDAOData();
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: "DAO data migration completed successfully",
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        error: result.error || "Migration failed"
+      });
+    }
+
+  } catch (error) {
+    await logError('ADMIN_DAO_MIGRATION_FAILED', error, {}, 'admin', 'POST /api/admin/dao/migrate');
+    return res.status(500).json({
+      success: false,
+      error: "Failed to run DAO data migration"
     });
   }
 });

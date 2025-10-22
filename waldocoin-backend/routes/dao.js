@@ -26,8 +26,13 @@ router.get('/proposals', async (req, res) => {
         const noVotes = await redis.get(`dao:proposal:${proposalId}:no`) || 0;
         const totalVotes = parseInt(yesVotes) + parseInt(noVotes);
 
-        // Check if proposal matches status filter
-        if (status === 'all' || proposalData.status === status) {
+        // Check if proposal matches status filter (handle both status formats)
+        const proposalStatus = proposalData.status;
+        const statusMatches = status === 'all' ||
+          proposalStatus === status ||
+          (status === 'active' && (proposalStatus === 'ACTIVE' || proposalStatus === 'active'));
+
+        if (statusMatches) {
           proposals.push({
             id: proposalId,
             title: proposalData.title || `Proposal ${proposalId}`,
@@ -384,7 +389,9 @@ router.post('/vote', async (req, res) => {
       });
     }
 
-    if (proposalData.status !== 'active') {
+    // Check if proposal is active (handle both status formats)
+    const isActive = proposalData.status === 'ACTIVE' || proposalData.status === 'active';
+    if (!isActive) {
       return res.status(400).json({
         success: false,
         error: "Proposal is not accepting votes"
@@ -400,11 +407,12 @@ router.post('/vote', async (req, res) => {
       });
     }
 
-    // Check if user already voted
+    // Check if user already voted (check both new and legacy vote storage)
     const voteKey = `dao:vote:${proposalId}:${wallet}`;
-    const existingVote = await redis.get(voteKey);
+    const existingVoteNew = await redis.get(voteKey);
+    const existingVoteLegacy = await redis.hGet(`proposalVotes:${proposalId}`, wallet);
 
-    if (existingVote) {
+    if (existingVoteNew || existingVoteLegacy) {
       return res.status(400).json({
         success: false,
         error: "You have already voted on this proposal"

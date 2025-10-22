@@ -51,15 +51,16 @@ import battlePayoutRoute from "./routes/battle/payout.js";
 import battleResultsRoute from "./routes/battle/results.js";
 import battleCurrentRoute from "./routes/battle/current.js";
 
-// 🧠 DAO Governance Routes
-import daoCreateRoute from "./routes/dao/create.js";
-import daoVoteRoute from "./routes/dao/vote.js";
-import daoExpireRoute from "./routes/dao/expire.js";
-import daoDeleteRoute from "./routes/dao/delete.js";
-import daoOverrideRoute from "./routes/dao/override.js";
-import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
-import daoConfigRoute from "./routes/dao/config.js";
-import daoArchiveRoute from "./routes/dao/archive.js";
+// 🧠 DAO Governance Routes - LEGACY (DISABLED)
+// These imports are kept for reference but routes are disabled
+// import daoCreateRoute from "./routes/dao/create.js";      // Now: secure admin system
+// import daoVoteRoute from "./routes/dao/vote.js";          // Conflicts with main voting
+// import daoExpireRoute from "./routes/dao/expire.js";
+// import daoDeleteRoute from "./routes/dao/delete.js";
+// import daoOverrideRoute from "./routes/dao/override.js";
+// import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
+// import daoConfigRoute from "./routes/dao/config.js";
+// import daoArchiveRoute from "./routes/dao/archive.js";
 
 // 💰 Presale Route
 import presaleRoute from "./routes/presale.js";
@@ -208,14 +209,20 @@ const startServer = async () => {
   app.use("/api/battle/results", battleResultsRoute);
   app.use("/api/battle/current", battleCurrentRoute);
 
-  app.use("/api/dao/create", daoCreateRoute);
-  app.use("/api/dao/vote", daoVoteRoute);
-  app.use("/api/dao/expire", daoExpireRoute);
-  app.use("/api/dao/delete", daoDeleteRoute);
-  app.use("/api/dao/override", daoOverrideRoute);
-  app.use("/api/dao/voter-history", daoVoterHistoryRoute);
-  app.use("/api/dao/config", daoConfigRoute);
-  app.use("/api/dao/archive", daoArchiveRoute);
+  // ⚠️ LEGACY DAO ROUTES - DISABLED FOR SECURITY
+  // These routes use old data patterns and conflict with new secure DAO system
+  // app.use("/api/dao/create", daoCreateRoute);  // Now handled by secure admin system
+  // app.use("/api/dao/vote", daoVoteRoute);      // Conflicts with main DAO voting
+  // app.use("/api/dao/expire", daoExpireRoute);
+  // app.use("/api/dao/delete", daoDeleteRoute);
+  // app.use("/api/dao/override", daoOverrideRoute);
+  // app.use("/api/dao/voter-history", daoVoterHistoryRoute);
+  // app.use("/api/dao/config", daoConfigRoute);
+  // app.use("/api/dao/archive", daoArchiveRoute);
+
+  // ✅ NEW SECURE DAO SYSTEM: All DAO functionality now handled by:
+  // - /api/dao/* (main DAO routes with secure voting)
+  // - /api/admin/dao/* (admin DAO management)
 
   console.log("🔗 Registering airdrop routes...");
   app.use("/api/airdrop", airdropRoute);
