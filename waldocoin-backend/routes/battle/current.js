@@ -1,6 +1,7 @@
 // routes/battle/current.js
 import express from "express";
 import { redis } from "../../redisClient.js";
+import { getTweetDataForBattle } from "../../utils/tweetValidator.js";
 
 const router = express.Router();
 
@@ -19,10 +20,18 @@ router.get("/", async (req, res) => {
       return res.json({ success: false, error: "Battle not ready" });
     }
 
-    // Parse necessary values
-    // Required: meme1, meme2, acceptedAt (timestamp), ... etc.
-    const meme1 = data.meme1 ? JSON.parse(data.meme1) : {};
-    const meme2 = data.meme2 ? JSON.parse(data.meme2) : {};
+    // Get proper meme data for display
+    let meme1 = null;
+    let meme2 = null;
+
+    if (data.challengerTweetId) {
+      meme1 = await getTweetDataForBattle(data.challengerTweetId);
+    }
+
+    if (data.acceptorTweetId) {
+      meme2 = await getTweetDataForBattle(data.acceptorTweetId);
+    }
+
     const acceptedAt = data.acceptedAt ? Number(data.acceptedAt) : null; // Unix ms
 
     // Timer logic

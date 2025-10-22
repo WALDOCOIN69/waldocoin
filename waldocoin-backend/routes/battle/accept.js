@@ -4,6 +4,7 @@ import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
 import dotenv from "dotenv";
 import { addActivityNotification } from "../activity.js";
+import { validateTweetForBattle } from "../../utils/tweetValidator.js";
 dotenv.config();
 
 const router = express.Router();
@@ -18,6 +19,15 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    // 🔍 Validate tweet before processing payment
+    const tweetValidation = await validateTweetForBattle(tweetId, wallet);
+    if (!tweetValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: tweetValidation.reason
+      });
+    }
+
     const battleKey = `battle:${battleId}:data`; // <- Consistent hash key!
     const battle = await redis.hgetall(battleKey);
 

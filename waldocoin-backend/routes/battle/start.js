@@ -5,6 +5,7 @@ import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
 import dotenv from "dotenv";
 import { addActivityNotification } from "../activity.js";
+import { validateTweetForBattle } from "../../utils/tweetValidator.js";
 dotenv.config();
 
 const router = express.Router();
@@ -31,6 +32,15 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    // 🔍 Validate tweet before processing payment
+    const tweetValidation = await validateTweetForBattle(tweetId, wallet);
+    if (!tweetValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: tweetValidation.reason
+      });
+    }
+
     const battleId = uuidv4();
     const now = dayjs();
     const { startFeeWLO } = await (await import("../../utils/config.js")).getBattleFees();

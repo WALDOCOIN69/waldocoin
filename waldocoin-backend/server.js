@@ -73,6 +73,7 @@ import adminTrustlineRoute from "./routes/admin/trustline.js";
 import adminVolumeBotRoute from "./routes/admin/volumeBot.js";
 import adminClearStakingRoute from "./routes/admin/clearStaking.js";
 import adminBattleRefundsRoute from "./routes/admin/battleRefunds.js";
+import adminTweetValidationRoute from "./routes/admin/tweetValidation.js";
 
 
 
@@ -220,6 +221,7 @@ const startServer = async () => {
   app.use("/api/admin/trustline", adminTrustlineRoute);
   app.use("/api/admin/volume-bot", adminVolumeBotRoute);
   app.use("/api/admin/battle-refunds", adminBattleRefundsRoute);
+  app.use("/api/admin/tweet-validation", adminTweetValidationRoute);
   app.use("/api/admin", adminClearStakingRoute);
 
   // Admin fixes for missing endpoints

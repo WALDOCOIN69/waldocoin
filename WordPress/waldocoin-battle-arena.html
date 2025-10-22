@@ -1274,7 +1274,18 @@
             fetchBattleStatus();
           });
         } else {
-          showToast(data.error || "Could not start battle", "error");
+          // Show detailed error message for tweet validation issues
+          const errorMsg = data.error || "Could not start battle";
+          showToast(errorMsg, "error");
+
+          // If it's a tweet validation error, also show a helpful tip
+          if (errorMsg.includes("not found in your meme collection") ||
+            errorMsg.includes("#WaldoMeme") ||
+            errorMsg.includes("not properly processed")) {
+            setTimeout(() => {
+              showToast("💡 Tip: Make sure your tweet has #WaldoMeme hashtag and has been processed by our system", "info");
+            }, 3000);
+          }
         }
       } catch (e) {
         showToast("Battle start error", "error");
@@ -1303,7 +1314,18 @@
             fetchBattleStatus();
           });
         } else {
-          showToast(data.error || "Could not send challenge", "error");
+          // Show detailed error message for tweet validation issues
+          const errorMsg = data.error || "Could not send challenge";
+          showToast(errorMsg, "error");
+
+          // If it's a tweet validation error, also show a helpful tip
+          if (errorMsg.includes("not found in your meme collection") ||
+            errorMsg.includes("#WaldoMeme") ||
+            errorMsg.includes("not properly processed")) {
+            setTimeout(() => {
+              showToast("💡 Tip: Make sure your tweet has #WaldoMeme hashtag and has been processed by our system", "info");
+            }, 3000);
+          }
         }
       } catch (e) {
         showToast("Challenge error", "error");
@@ -1341,7 +1363,18 @@
             fetchBattleStatus();
           });
         } else {
-          showToast(data.error || "Accept failed", "error");
+          // Show detailed error message for tweet validation issues
+          const errorMsg = data.error || "Accept failed";
+          showToast(errorMsg, "error");
+
+          // If it's a tweet validation error, also show a helpful tip
+          if (errorMsg.includes("not found in your meme collection") ||
+            errorMsg.includes("#WaldoMeme") ||
+            errorMsg.includes("not properly processed")) {
+            setTimeout(() => {
+              showToast("💡 Tip: Make sure your tweet has #WaldoMeme hashtag and has been processed by our system", "info");
+            }, 3000);
+          }
         }
       } catch (e) {
         showToast("Battle accept error", "error");
