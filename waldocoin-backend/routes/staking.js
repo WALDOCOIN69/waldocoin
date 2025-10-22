@@ -4,6 +4,8 @@ import getWaldoBalance from '../utils/getWaldoBalance.js';
 import { xummClient } from '../utils/xummClient.js';
 import xrpl from 'xrpl';
 import { validateAdminKey, getAdminKey } from '../utils/adminAuth.js';
+import { rateLimitMiddleware } from '../utils/rateLimiter.js';
+import { createErrorResponse, logError } from '../utils/errorHandler.js';
 import {
   calculateMaturity,
   createStakeId,
@@ -272,7 +274,7 @@ router.get("/test-unstake", async (req, res) => {
 });
 
 // ✅ POST /api/staking/long-term - Create long-term staking position
-router.post("/long-term", async (req, res) => {
+router.post("/long-term", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
   try {
     console.log('[LT] Raw request body:', req.body);
     const { wallet, amount, duration } = req.body;
@@ -450,7 +452,7 @@ router.post("/long-term", async (req, res) => {
 });
 
 // ✅ POST /api/staking/per-meme - Create per-meme staking position (whitepaper system)
-router.post("/per-meme", async (req, res) => {
+router.post("/per-meme", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
   try {
     const { wallet, amount, memeId } = req.body;
 
@@ -1424,7 +1426,7 @@ router.get('/stats', async (req, res) => {
 });
 
 // POST /api/staking/stake - Create new staking position
-router.post('/stake', async (req, res) => {
+router.post('/stake', rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
   try {
     const { wallet, amount, duration, tier } = req.body;
 

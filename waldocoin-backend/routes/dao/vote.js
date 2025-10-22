@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import path from "path";
 import { redis } from "../../redisClient.js";
 import { addXP } from "../../utils/xpManager.js";
+import { rateLimitMiddleware } from "../../utils/rateLimiter.js";
+import { createErrorResponse, logError } from "../../utils/errorHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +15,7 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // 🗳 Vote submission route
-router.post("/", async (req, res) => {
+router.post("/", rateLimitMiddleware('API_GENERAL', (req) => req.body.wallet), async (req, res) => {
   const { proposalId, choice, wallet } = req.body;
 
   if (!proposalId || !choice || !wallet) {

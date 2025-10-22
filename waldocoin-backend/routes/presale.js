@@ -3,6 +3,8 @@ import express from "express";
 import { redis } from "../redisClient.js";
 import { DISTRIBUTOR_WALLET, WALDO_ISSUER } from "../constants.js";
 import { xummClient } from "../utils/xummClient.js";
+import { rateLimitMiddleware } from "../utils/rateLimiter.js";
+import { createErrorResponse, logError } from "../utils/errorHandler.js";
 
 const router = express.Router();
 
@@ -231,7 +233,7 @@ router.get("/total-sold", async (req, res) => {
 });
 
 // ✅ POST /api/presale/buy - Create presale purchase transaction (using working XUMM pattern)
-router.post("/buy", async (req, res) => {
+router.post("/buy", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
   try {
     const { wallet, xrpAmount } = req.body;
 

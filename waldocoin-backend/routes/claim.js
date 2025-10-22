@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import { redis } from "../redisClient.js";
 import { xummClient } from "../utils/xummClient.js";
+import { rateLimitMiddleware } from "../utils/rateLimiter.js";
+import { createErrorResponse, logError } from "../utils/errorHandler.js";
 
 dotenv.config();
 
@@ -22,7 +24,8 @@ const maxClaimsPerMonth = 10;
 const stakingWindowHours = 8;
 const memeCooldownDays = 30;
 
-router.post("/", async (req, res) => {
+// Apply rate limiting to claim endpoint
+router.post("/", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
   const { wallet, stake, tier, memeId } = req.body;
 
   // Input validation
@@ -265,7 +268,7 @@ router.post("/", async (req, res) => {
 });
 
 // POST /api/claim - Claim meme rewards (for stats dashboard)
-router.post('/', async (req, res) => {
+router.post('/', rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
   try {
     const { wallet, memeId, tier, stake } = req.body;
 

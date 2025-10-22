@@ -16,16 +16,26 @@ const RATE_LIMITS = {
   BATTLE_START: { requests: 5, window: 60 * 60 * 1000 }, // 5 battles per hour
   BATTLE_ACCEPT: { requests: 10, window: 60 * 60 * 1000 }, // 10 accepts per hour
   BATTLE_VOTE: { requests: 50, window: 60 * 60 * 1000 }, // 50 votes per hour
-  
+
   // Tweet validation
   TWEET_VALIDATION: { requests: 20, window: 60 * 1000 }, // 20 validations per minute
-  
-  // Payment actions
+
+  // Payment actions (includes claims, staking, presale)
   PAYMENT_CREATE: { requests: 15, window: 60 * 60 * 1000 }, // 15 payments per hour
-  
+
+  // Staking actions
+  STAKING_ACTION: { requests: 10, window: 60 * 60 * 1000 }, // 10 staking actions per hour
+
+  // Claim actions
+  CLAIM_ACTION: { requests: 20, window: 60 * 60 * 1000 }, // 20 claims per hour
+
+  // DAO actions
+  DAO_VOTE: { requests: 30, window: 60 * 60 * 1000 }, // 30 DAO votes per hour
+  DAO_CREATE: { requests: 5, window: 60 * 60 * 1000 }, // 5 proposal creations per hour
+
   // General API
   API_GENERAL: { requests: 100, window: 60 * 1000 }, // 100 requests per minute
-  
+
   // Admin actions
   ADMIN_ACTION: { requests: 50, window: 60 * 1000 } // 50 admin actions per minute
 };
@@ -40,26 +50,26 @@ const RATE_LIMITS = {
 export async function checkRateLimit(action, identifier, customLimit = null) {
   try {
     const limit = customLimit || RATE_LIMITS[action];
-    
+
     if (!limit) {
       // No rate limit configured for this action
       return { allowed: true, remaining: Infinity, resetTime: null };
     }
-    
+
     const key = `ratelimit:${action}:${identifier}`;
     const now = Date.now();
     const windowStart = now - limit.window;
-    
+
     // Get current request count in the time window
     const requests = await redis.zcount(key, windowStart, now);
-    
+
     if (requests >= limit.requests) {
       // Rate limit exceeded
       const oldestRequest = await redis.zrange(key, 0, 0, { WITHSCORES: true });
-      const resetTime = oldestRequest.length > 0 
-        ? parseInt(oldestRequest[1]) + limit.window 
+      const resetTime = oldestRequest.length > 0
+        ? parseInt(oldestRequest[1]) + limit.window
         : now + limit.window;
-      
+
       await logError('RATE_LIMIT_EXCEEDED', `Rate limit exceeded for ${action}`, {
         action,
         identifier,
@@ -67,7 +77,7 @@ export async function checkRateLimit(action, identifier, customLimit = null) {
         limit: limit.requests,
         window: limit.window
       });
-      
+
       return {
         allowed: false,
         remaining: 0,
@@ -75,27 +85,27 @@ export async function checkRateLimit(action, identifier, customLimit = null) {
         error: `Rate limit exceeded. Try again in ${Math.ceil((resetTime - now) / 1000)} seconds.`
       };
     }
-    
+
     // Record this request
     await redis.zadd(key, now, `${now}_${Math.random()}`);
-    
+
     // Clean up old entries
     await redis.zremrangebyscore(key, 0, windowStart);
-    
+
     // Set expiry for the key
     await redis.expire(key, Math.ceil(limit.window / 1000));
-    
+
     const remaining = limit.requests - requests - 1;
-    
+
     return {
       allowed: true,
       remaining: Math.max(0, remaining),
       resetTime: now + limit.window
     };
-    
+
   } catch (error) {
     await logError('RATE_LIMIT_CHECK_FAILED', error, { action, identifier });
-    
+
     // Fail open - allow the request if rate limiting fails
     return {
       allowed: true,
@@ -116,23 +126,23 @@ export function rateLimitMiddleware(action, getIdentifier = (req) => req.body?.w
   return async (req, res, next) => {
     try {
       const identifier = getIdentifier(req);
-      
+
       if (!identifier) {
         return res.status(400).json({
           success: false,
           error: "Unable to identify request for rate limiting"
         });
       }
-      
+
       const result = await checkRateLimit(action, identifier);
-      
+
       // Add rate limit headers
       res.set({
         'X-RateLimit-Limit': RATE_LIMITS[action]?.requests || 'unlimited',
         'X-RateLimit-Remaining': result.remaining,
         'X-RateLimit-Reset': result.resetTime ? new Date(result.resetTime).toISOString() : null
       });
-      
+
       if (!result.allowed) {
         return res.status(429).json({
           success: false,
@@ -140,7 +150,7 @@ export function rateLimitMiddleware(action, getIdentifier = (req) => req.body?.w
           retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000)
         });
       }
-      
+
       next();
     } catch (error) {
       await logError('RATE_LIMIT_MIDDLEWARE_ERROR', error, { action });
@@ -159,7 +169,7 @@ export function rateLimitMiddleware(action, getIdentifier = (req) => req.body?.w
 export async function getRateLimitStatus(action, identifier) {
   try {
     const limit = RATE_LIMITS[action];
-    
+
     if (!limit) {
       return {
         action,
@@ -170,19 +180,19 @@ export async function getRateLimitStatus(action, identifier) {
         resetTime: null
       };
     }
-    
+
     const key = `ratelimit:${action}:${identifier}`;
     const now = Date.now();
     const windowStart = now - limit.window;
-    
+
     const current = await redis.zcount(key, windowStart, now);
     const remaining = Math.max(0, limit.requests - current);
-    
+
     const oldestRequest = await redis.zrange(key, 0, 0, { WITHSCORES: true });
-    const resetTime = oldestRequest.length > 0 
-      ? parseInt(oldestRequest[1]) + limit.window 
+    const resetTime = oldestRequest.length > 0
+      ? parseInt(oldestRequest[1]) + limit.window
       : now + limit.window;
-    
+
     return {
       action,
       identifier,
@@ -194,7 +204,7 @@ export async function getRateLimitStatus(action, identifier) {
       windowStart: new Date(windowStart).toISOString(),
       windowEnd: new Date(now).toISOString()
     };
-    
+
   } catch (error) {
     await logError('RATE_LIMIT_STATUS_ERROR', error, { action, identifier });
     return {
@@ -215,7 +225,7 @@ export async function clearRateLimit(action, identifier) {
   try {
     const key = `ratelimit:${action}:${identifier}`;
     await redis.del(key);
-    
+
     console.log(`🧹 Rate limit cleared: ${action} for ${identifier}`);
     return true;
   } catch (error) {
@@ -233,23 +243,23 @@ export async function getRateLimitStats(hours = 1) {
   try {
     const cutoff = Date.now() - (hours * 60 * 60 * 1000);
     const keys = await redis.keys('ratelimit:*');
-    
+
     const stats = {
       totalKeys: keys.length,
       actionStats: {},
       topIdentifiers: {},
       timeRange: `${hours} hours`
     };
-    
+
     for (const key of keys) {
       const parts = key.split(':');
       if (parts.length >= 3) {
         const action = parts[1];
         const identifier = parts.slice(2).join(':');
-        
+
         // Count requests in time window
         const requests = await redis.zcount(key, cutoff, Date.now());
-        
+
         if (requests > 0) {
           // Action stats
           if (!stats.actionStats[action]) {
@@ -257,7 +267,7 @@ export async function getRateLimitStats(hours = 1) {
           }
           stats.actionStats[action].requests += requests;
           stats.actionStats[action].identifiers += 1;
-          
+
           // Top identifiers
           if (!stats.topIdentifiers[identifier]) {
             stats.topIdentifiers[identifier] = 0;
@@ -266,16 +276,16 @@ export async function getRateLimitStats(hours = 1) {
         }
       }
     }
-    
+
     // Sort top identifiers
     stats.topIdentifiers = Object.entries(stats.topIdentifiers)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
       .reduce((obj, [key, value]) => {
         obj[key] = value;
         return obj;
       }, {});
-    
+
     return stats;
   } catch (error) {
     await logError('RATE_LIMIT_STATS_ERROR', error, { hours });

@@ -3,11 +3,13 @@ import express from "express";
 import { redis } from "../../redisClient.js";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
+import { rateLimitMiddleware } from "../../utils/rateLimiter.js";
+import { createErrorResponse, logError } from "../../utils/errorHandler.js";
 
 const router = express.Router();
 console.log("🧩 Loaded: routes/dao/create.js");
 
-router.post("/", async (req, res) => {
+router.post("/", rateLimitMiddleware('ADMIN_ACTION', (req) => req.ip), async (req, res) => {
   const { title, description, duration } = req.body;
 
   if (!title || !description || !duration) {

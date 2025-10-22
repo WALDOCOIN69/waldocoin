@@ -2,6 +2,7 @@ import { redis } from "../redisClient.js";
 import { xrpSendWaldo } from "./sendWaldo.js";
 import { acquireLock, releaseLock } from "./battleStorage.js";
 import { logError } from "./errorHandler.js";
+import { trackEscrowTransaction } from "./escrowMonitor.js";
 
 console.log("🧩 Loaded: utils/battleRefunds.js");
 
@@ -39,7 +40,10 @@ export async function refundChallenger(battleId, challengerWallet, amount, reaso
       throw new Error(`Invalid refund amount: ${amount}`);
     }
 
-    await xrpSendWaldo(challengerWallet, amount);
+    const txResult = await xrpSendWaldo(challengerWallet, amount);
+
+    // Track escrow transaction
+    await trackEscrowTransaction('REFUND', amount, battleId, challengerWallet, txResult?.txid || null);
 
     // Log refund in battle data atomically
     await redis.hset(battleKey, {
@@ -74,7 +78,10 @@ export async function refundAcceptor(battleId, acceptorWallet, amount, reason = 
   try {
     console.log(`💰 Refunding acceptor ${acceptorWallet}: ${amount} WLO for battle ${battleId}`);
 
-    await xrpSendWaldo(acceptorWallet, amount);
+    const txResult = await xrpSendWaldo(acceptorWallet, amount);
+
+    // Track escrow transaction
+    await trackEscrowTransaction('REFUND', amount, battleId, acceptorWallet, txResult?.txid || null);
 
     // Log refund in battle data
     const battleKey = `battle:${battleId}:data`;
