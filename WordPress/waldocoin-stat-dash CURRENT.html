@@ -5519,37 +5519,129 @@
         }
       }
 
-      async function fetchBattleData(wallet) {
+      // === ENHANCED BATTLE SYSTEM INTEGRATION ===
+      let battleUpdateChannel = null;
+
+      function initializeBattleSync() {
         try {
-          const response = await fetch(`${baseURL}/api/battle/history/${wallet}`);
-          const data = await response.json();
-
-          if (data.success && data.battles) {
-            const wins = data.battles.filter(battle => battle.winner === wallet).length;
-            const totalBattles = data.battles.length;
-
-            // Calculate current win streak
-            let currentStreak = 0;
-            for (let i = data.battles.length - 1; i >= 0; i--) {
-              if (data.battles[i].winner === wallet) {
-                currentStreak++;
-              } else {
-                break;
+          // Listen for battle updates from battle arena
+          battleUpdateChannel = new BroadcastChannel('waldocoin_battle_updates');
+          battleUpdateChannel.onmessage = (event) => {
+            if (event.data.type === 'battle_update') {
+              console.log('📡 Received battle update from arena:', event.data);
+              // Refresh battle data when updates are received
+              const wallet = localStorage.getItem('xummWallet');
+              if (wallet) {
+                fetchBattleData(wallet).then(data => {
+                  if (!data.error) {
+                    updateBattleStatsDisplay(data);
+                  }
+                });
               }
             }
+          };
+          console.log('📡 Battle sync channel initialized');
+        } catch (e) {
+          console.warn('Battle sync initialization failed:', e);
+        }
+      }
 
-            return {
-              totalWins: wins,
-              totalBattles: totalBattles,
-              currentStreak: currentStreak,
-              winRate: totalBattles > 0 ? (wins / totalBattles * 100).toFixed(1) : 0
-            };
+      function updateBattleStatsDisplay(battleData) {
+        try {
+          // Update battle multiplier display
+          const multiplierElement = document.querySelector('#battleMultiplier .stat-value');
+          if (multiplierElement && battleData.totalWins !== undefined) {
+            const multiplier = Math.min(1 + (battleData.totalWins * 0.02), 1.2);
+            multiplierElement.textContent = `${multiplier.toFixed(1)}x`;
           }
 
-          return { totalWins: 0, totalBattles: 0, currentStreak: 0, winRate: 0 };
+          console.log('📊 Battle stats display updated');
+        } catch (e) {
+          console.warn('Battle stats display update failed:', e);
+        }
+      }
+
+      async function fetchBattleData(wallet) {
+        try {
+          // Try multiple endpoints for comprehensive battle data
+          const [historyResponse, statsResponse] = await Promise.all([
+            fetch(`${baseURL}/api/battle/history/${wallet}`).catch(() => null),
+            fetch(`${baseURL}/api/battle/management/user-stats?wallet=${wallet}`).catch(() => null)
+          ]);
+
+          let battleData = {
+            totalWins: 0,
+            totalLosses: 0,
+            totalBattles: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            winRate: 0,
+            totalVotes: 0,
+            votingAccuracy: 0
+          };
+
+          // Process stats endpoint (preferred)
+          if (statsResponse) {
+            const statsData = await statsResponse.json();
+            if (statsData.success) {
+              battleData = {
+                totalWins: statsData.stats.totalWins || 0,
+                totalLosses: statsData.stats.totalLosses || 0,
+                totalBattles: statsData.stats.totalBattles || 0,
+                currentStreak: statsData.stats.currentStreak || 0,
+                longestStreak: statsData.stats.longestStreak || 0,
+                winRate: statsData.stats.winRate || 0,
+                totalVotes: statsData.stats.totalVotes || 0,
+                votingAccuracy: statsData.stats.votingAccuracy || 0
+              };
+
+              // Update display immediately
+              updateBattleStatsDisplay(battleData);
+              return battleData;
+            }
+          }
+
+          // Fallback to history endpoint
+          if (historyResponse) {
+            const historyData = await historyResponse.json();
+            if (historyData.success && historyData.battles) {
+              const wins = historyData.battles.filter(battle => battle.winner === wallet).length;
+              const totalBattles = historyData.battles.length;
+
+              // Calculate current win streak
+              let currentStreak = 0;
+              for (let i = historyData.battles.length - 1; i >= 0; i--) {
+                if (historyData.battles[i].winner === wallet) {
+                  currentStreak++;
+                } else {
+                  break;
+                }
+              }
+
+              battleData = {
+                totalWins: wins,
+                totalLosses: totalBattles - wins,
+                totalBattles: totalBattles,
+                currentStreak: currentStreak,
+                longestStreak: currentStreak, // Simplified for now
+                winRate: totalBattles > 0 ? (wins / totalBattles * 100) : 0,
+                totalVotes: 0, // Not available from history
+                votingAccuracy: 0 // Not available from history
+              };
+
+              // Update display immediately
+              updateBattleStatsDisplay(battleData);
+              return battleData;
+            }
+          }
+
+          // Return default data if no endpoints worked
+          console.warn('No battle data available from any endpoint');
+          return battleData;
+
         } catch (error) {
-          console.warn('Failed to fetch battle data:', error);
-          throw error;
+          console.error('❌ Error fetching battle data:', error);
+          return { error: error.message };
         }
       }
 
@@ -7049,6 +7141,10 @@
           ];
 
           await Promise.allSettled(loadPromises);
+
+          // Initialize battle sync for real-time updates
+          initializeBattleSync();
+
           setupPeriodicUpdates(wallet);
 
         } catch (error) {

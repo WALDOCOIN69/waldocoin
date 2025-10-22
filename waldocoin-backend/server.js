@@ -35,6 +35,7 @@ import topMemeRoute from "./routes/topmeme.js";
 import linkTwitterRoute from "./routes/linkTwitter.js";
 import activityRoute from "./routes/activity.js";
 import paymentRoute from "./routes/payment.js";
+import feesRoute from "./routes/fees.js";
 
 // 🕐 Cron Jobs
 import { startExpiredBattleRefunder } from "./cron/expiredBattleRefunder.js";
@@ -74,6 +75,7 @@ import adminVolumeBotRoute from "./routes/admin/volumeBot.js";
 import adminClearStakingRoute from "./routes/admin/clearStaking.js";
 import adminBattleRefundsRoute from "./routes/admin/battleRefunds.js";
 import adminTweetValidationRoute from "./routes/admin/tweetValidation.js";
+import adminSystemMonitoringRoute from "./routes/admin/systemMonitoring.js";
 
 
 
@@ -186,6 +188,7 @@ const startServer = async () => {
   app.use("/api/linkTwitter", linkTwitterRoute);
   app.use("/api/activity", activityRoute);
   app.use("/api/payment", paymentRoute);
+  app.use("/api/fees", feesRoute);
   app.use("/api/referral", (await import("./routes/referral.js")).default);
   app.use("/api/system", (await import("./routes/system.js")).default);
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
@@ -222,6 +225,7 @@ const startServer = async () => {
   app.use("/api/admin/volume-bot", adminVolumeBotRoute);
   app.use("/api/admin/battle-refunds", adminBattleRefundsRoute);
   app.use("/api/admin/tweet-validation", adminTweetValidationRoute);
+  app.use("/api/admin/system-monitoring", adminSystemMonitoringRoute);
   app.use("/api/admin", adminClearStakingRoute);
 
   // Admin fixes for missing endpoints
