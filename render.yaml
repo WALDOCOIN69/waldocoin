@@ -29,6 +29,8 @@ services:
         sync: false
       - key: DISTRIBUTOR_WALLET
         sync: false
+      - key: X_ADMIN_KEY
+        sync: false
 
   # === WALDO Backend API ===
   - type: web
@@ -64,6 +66,18 @@ services:
         sync: false
       - key: XRPL_ENDPOINT
         sync: false
+      - key: X_ADMIN_KEY
+        sync: false
+      - key: AI_CONTENT_VERIFICATION_ENABLED
+        value: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_VISION_API_KEY
+        sync: false
+      - key: TINEYE_API_KEY
+        sync: false
+      - key: AI_CONFIDENCE_THRESHOLD
+        value: 70
   
   - type: worker
     name: waldo-autodistribute
@@ -95,6 +109,8 @@ services:
       - key: ISSUER_WALLET
         sync: false
       - key: REDIS_URL
+        sync: false
+      - key: X_ADMIN_KEY
         sync: false
 
 
