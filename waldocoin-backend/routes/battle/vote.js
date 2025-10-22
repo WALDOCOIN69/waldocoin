@@ -3,6 +3,7 @@ import express from "express";
 import { xummClient } from "../../utils/xummClient.js";
 import { redis } from "../../redisClient.js";
 import { addXP } from "../../utils/xpManager.js";
+import { recordVote, getBattle } from "../../utils/battleStorage.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -66,15 +67,15 @@ router.post("/", async (req, res) => {
       if (event.data.signed === false) throw new Error("User rejected voting payment");
     });
 
-    // ⏱️ Save vote to prevent double voting (7-day expiry)
-    await redis.set(voteKey, JSON.stringify({ vote, timestamp: Date.now() }), { EX: 60 * 60 * 24 * 7 });
+    // Record vote atomically (prevents double voting and race conditions)
+    const voteResult = await recordVote(battleId, wallet, vote);
 
-    // 📊 Increment meme vote count
-    const countKey = `battle:${battleId}:count:${vote}`;
-    await redis.incr(countKey);
-
-    // 📋 Track voter by vote choice
-    await redis.sAdd(`battle:${battleId}:voters:${vote}`, wallet);
+    if (!voteResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: voteResult.error
+      });
+    }
 
     // ⭐ Award XP for voting (whitepaper compliant: 2 XP)
     await addXP(wallet, 2);

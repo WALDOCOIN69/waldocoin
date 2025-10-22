@@ -5,6 +5,7 @@ import { xummClient } from "../../utils/xummClient.js";
 import dotenv from "dotenv";
 import { addActivityNotification } from "../activity.js";
 import { validateTweetForBattle } from "../../utils/tweetValidator.js";
+import { updateBattle, getBattle, BATTLE_KEYS } from "../../utils/battleStorage.js";
 dotenv.config();
 
 const router = express.Router();
@@ -28,19 +29,24 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const battleKey = `battle:${battleId}:data`; // <- Consistent hash key!
-    const battle = await redis.hgetall(battleKey);
+    // Get battle data using standardized storage
+    const battle = await getBattle(battleId);
 
-    if (!battle || !battle.status) {
+    if (!battle) {
       return res.status(404).json({ success: false, error: "Battle not found" });
     }
 
-    if (battle.status !== "pending") {
-      return res.status(400).json({ success: false, error: "Battle is not pending" });
+    if (battle.status !== "pending" && battle.status !== "open") {
+      return res.status(400).json({ success: false, error: "Battle is not available for acceptance" });
     }
 
     if (battle.acceptedAt) {
       return res.status(400).json({ success: false, error: "Battle already accepted" });
+    }
+
+    // Prevent self-acceptance
+    if (battle.challenger === wallet) {
+      return res.status(400).json({ success: false, error: "You cannot accept your own battle" });
     }
 
     const { acceptFeeWLO } = await (await import("../../utils/config.js")).getBattleFees();
@@ -74,18 +80,22 @@ router.post("/", async (req, res) => {
       if (event.data.signed === false) throw new Error("User rejected battle accept payment");
     });
 
-    // Update only the necessary fields (Redis hash)
-    await redis.hset(battleKey, {
+    // Update battle data atomically
+    const updateResult = await updateBattle(battleId, {
       acceptor: wallet,
       acceptorTweetId: tweetId,
-      acceptedAt: now.valueOf(), // store as timestamp ms
+      acceptedAt: now.valueOf(),
       endsAt: now.add(24, "hour").valueOf(),
       status: "accepted",
       votes: 0
     });
 
-    // Optionally set a TTL (30 hours)
-    await redis.expire(battleKey, 60 * 60 * 30);
+    if (!updateResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: updateResult.error || "Failed to accept battle"
+      });
+    }
 
     // Add activity notifications
     const challengerHandle = battle.challengerHandle || 'Unknown';
