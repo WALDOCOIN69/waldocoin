@@ -76,6 +76,7 @@ import adminClearStakingRoute from "./routes/admin/clearStaking.js";
 import adminBattleRefundsRoute from "./routes/admin/battleRefunds.js";
 import adminTweetValidationRoute from "./routes/admin/tweetValidation.js";
 import adminSystemMonitoringRoute from "./routes/admin/systemMonitoring.js";
+import adminDaoRoute from "./routes/admin/dao.js";
 
 
 
@@ -226,6 +227,7 @@ const startServer = async () => {
   app.use("/api/admin/battle-refunds", adminBattleRefundsRoute);
   app.use("/api/admin/tweet-validation", adminTweetValidationRoute);
   app.use("/api/admin/system-monitoring", adminSystemMonitoringRoute);
+  app.use("/api/admin/dao", adminDaoRoute);
   app.use("/api/admin", adminClearStakingRoute);
 
   // Admin fixes for missing endpoints

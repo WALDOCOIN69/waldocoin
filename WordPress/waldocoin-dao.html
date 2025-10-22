@@ -203,11 +203,150 @@
       font-size: 0.9em;
     }
 
+    .governance-info {
+      margin-bottom: 25px;
+    }
+
+    .info-box {
+      background: #0a2a1a;
+      border: 1px solid #25c2a0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .info-box h4 {
+      color: #25c2a0;
+      margin: 0 0 15px 0;
+      font-size: 1.1em;
+    }
+
+    .info-box p {
+      color: #ccc;
+      margin: 8px 0;
+      font-size: 0.95em;
+      line-height: 1.4;
+    }
+
     .create-proposal-form {
       background: #1a1a1a;
       padding: 25px;
       border-radius: 8px;
       border: 1px solid #444;
+    }
+
+    .stake-info {
+      background: #2a1a0a;
+      border: 1px solid #c2a025;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .stake-requirement {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .stake-icon {
+      font-size: 1.5em;
+      margin-right: 10px;
+    }
+
+    .stake-text {
+      color: #fff;
+      font-size: 1.1em;
+    }
+
+    .stake-note {
+      color: #ccc;
+      font-size: 0.9em;
+      font-style: italic;
+    }
+
+    .proposal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .proposal-tier {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .proposal-tier.community {
+      background: #1a4a2a;
+      color: #4ade80;
+      border: 1px solid #4ade80;
+    }
+
+    .proposal-tier.protocol {
+      background: #2a3a4a;
+      color: #60a5fa;
+      border: 1px solid #60a5fa;
+    }
+
+    .proposal-tier.treasury {
+      background: #4a2a1a;
+      color: #fbbf24;
+      border: 1px solid #fbbf24;
+    }
+
+    .proposal-tier.emergency {
+      background: #4a1a1a;
+      color: #f87171;
+      border: 1px solid #f87171;
+    }
+
+    .governance-info-small {
+      display: flex;
+      gap: 15px;
+      margin: 10px 0;
+      font-size: 0.85em;
+      color: #aaa;
+      flex-wrap: wrap;
+    }
+
+    .vote-bar {
+      width: 100%;
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      display: flex;
+    }
+
+    .vote-bar-yes {
+      background: #4ade80;
+      transition: width 0.3s ease;
+    }
+
+    .vote-bar-no {
+      background: #f87171;
+      transition: width 0.3s ease;
+    }
+
+    .vote-counts {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+    }
+
+    .yes-votes {
+      color: #4ade80;
+    }
+
+    .no-votes {
+      color: #f87171;
     }
 
     .form-group {
@@ -472,9 +611,19 @@
         </div>
       </div>
 
-      <!-- Create New Proposal -->
+      <!-- Submit Proposal Request -->
       <div class="dao-card">
-        <h2>✍️ Create New Proposal</h2>
+        <h2>📝 Submit Proposal Request</h2>
+        <div class="governance-info">
+          <div class="info-box">
+            <h4>🏛️ How Governance Works</h4>
+            <p><strong>Step 1:</strong> Submit your proposal request with 100,000 WALDO stake</p>
+            <p><strong>Step 2:</strong> Admin reviews and validates your request</p>
+            <p><strong>Step 3:</strong> If approved, becomes official proposal for community voting</p>
+            <p><strong>Step 4:</strong> Your stake is refunded if approved, kept if rejected</p>
+          </div>
+        </div>
+
         <div class="create-proposal-form">
           <div class="form-group">
             <label class="form-label" for="proposalTitle">Proposal Title</label>
@@ -489,15 +638,36 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="proposalDuration">Voting Duration (days)</label>
-            <select id="proposalDuration" class="form-input">
-              <option value="7">7 days</option>
-              <option value="14">14 days</option>
-              <option value="30">30 days</option>
+            <label class="form-label" for="proposalCategory">Category</label>
+            <select id="proposalCategory" class="form-input">
+              <option value="GENERAL">General Proposal</option>
+              <option value="FEE_ADJUSTMENT">Fee Adjustment</option>
+              <option value="STAKING_PARAMS">Staking Parameters</option>
+              <option value="FEATURE_REQUEST">Feature Request</option>
+              <option value="TREASURY_ALLOCATION">Treasury Allocation</option>
             </select>
           </div>
 
-          <button class="submit-btn" onclick="createProposal()">🚀 Submit Proposal</button>
+          <div class="form-group">
+            <label class="form-label" for="requestedTier">Requested Tier</label>
+            <select id="requestedTier" class="form-input">
+              <option value="COMMUNITY">Community (100K WALDO stake, 7 days voting)</option>
+              <option value="PROTOCOL">Protocol (500K WALDO requirement, 14 days voting)</option>
+              <option value="TREASURY">Treasury (1M WALDO requirement, 21 days voting)</option>
+            </select>
+          </div>
+
+          <div class="stake-info">
+            <div class="stake-requirement">
+              <span class="stake-icon">💰</span>
+              <span class="stake-text">Required Stake: <strong>100,000 WALDO</strong></span>
+            </div>
+            <div class="stake-note">
+              Stake will be refunded if your request is approved, kept if rejected
+            </div>
+          </div>
+
+          <button class="submit-btn" onclick="submitProposalRequest()">📤 Submit Request (100K WALDO)</button>
         </div>
       </div>
 
@@ -847,6 +1017,34 @@
       }
     }
 
+    // Helper function to get tier information
+    function getTierInfo(tier) {
+      const tiers = {
+        'COMMUNITY': { name: 'Community', quorum: 1000, threshold: 0.60 },
+        'PROTOCOL': { name: 'Protocol', quorum: 5000, threshold: 0.65 },
+        'TREASURY': { name: 'Treasury', quorum: 10000, threshold: 0.70 },
+        'EMERGENCY': { name: 'Emergency', quorum: 2000, threshold: 0.55 }
+      };
+      return tiers[tier] || tiers['COMMUNITY'];
+    }
+
+    // Helper function to get time remaining
+    function getTimeRemaining(endDate) {
+      if (!endDate) return 'No end date';
+
+      const now = new Date();
+      const end = new Date(endDate);
+      const diff = end - now;
+
+      if (diff <= 0) return '⏰ Voting ended';
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+      if (days > 0) return `⏰ ${days}d ${hours}h remaining`;
+      return `⏰ ${hours}h remaining`;
+    }
+
     // Load proposals
     async function loadProposals() {
       const container = $('proposalsContainer');
@@ -856,27 +1054,49 @@
         const data = await response.json();
 
         if (data.success && data.proposals && data.proposals.length > 0) {
-          container.innerHTML = data.proposals.map(proposal => `
+          container.innerHTML = data.proposals.map(proposal => {
+            const tierInfo = getTierInfo(proposal.tier);
+            const timeRemaining = getTimeRemaining(proposal.votingEndsAt || proposal.expiresAt);
+            const totalVotes = (proposal.votes?.yes || 0) + (proposal.votes?.no || 0);
+            const yesPercentage = totalVotes > 0 ? ((proposal.votes?.yes || 0) / totalVotes * 100).toFixed(1) : 0;
+
+            return `
             <div class="proposal-card">
-              <div class="proposal-title">${proposal.title}</div>
+              <div class="proposal-header">
+                <div class="proposal-title">${proposal.title}</div>
+                <div class="proposal-tier ${proposal.tier?.toLowerCase() || 'community'}">${tierInfo.name}</div>
+              </div>
               <div class="proposal-description">${proposal.description}</div>
               <div class="proposal-meta">
-                <span>Created: ${new Date(proposal.createdAt).toLocaleDateString()}</span>
-                <span>Ends: ${new Date(proposal.endsAt).toLocaleDateString()}</span>
-                <span>Status: ${proposal.status}</span>
+                <span>📅 Created: ${new Date(proposal.createdAt).toLocaleDateString()}</span>
+                <span>${timeRemaining}</span>
+                <span>📊 Status: ${proposal.status}</span>
+                ${proposal.proposer && proposal.proposer !== 'admin' ? `<span>👤 By: ${proposal.proposer.substring(0, 8)}...</span>` : ''}
+              </div>
+              <div class="governance-info-small">
+                <span>🎯 Quorum: ${proposal.quorum || tierInfo.quorum}</span>
+                <span>📈 Threshold: ${((proposal.threshold || tierInfo.threshold) * 100).toFixed(0)}%</span>
+                <span>🗳️ Total Votes: ${totalVotes}</span>
               </div>
               <div class="vote-results">
-                <span>Yes: <span class="vote-count">${proposal.yesVotes || 0}</span></span>
-                <span>No: <span class="vote-count">${proposal.noVotes || 0}</span></span>
-              </div>
-              ${proposal.status === 'active' ? `
-                <div class="vote-buttons">
-                  <button class="vote-btn vote-yes" onclick="voteOnProposal('${proposal.id}', true)">👍 Vote Yes</button>
-                  <button class="vote-btn vote-no" onclick="voteOnProposal('${proposal.id}', false)">👎 Vote No</button>
+                <div class="vote-bar">
+                  <div class="vote-bar-yes" style="width: ${yesPercentage}%"></div>
+                  <div class="vote-bar-no" style="width: ${100 - yesPercentage}%"></div>
                 </div>
+                <div class="vote-counts">
+                  <span class="yes-votes">👍 Yes: ${proposal.votes?.yes || 0} (${yesPercentage}%)</span>
+                  <span class="no-votes">👎 No: ${proposal.votes?.no || 0} (${(100 - yesPercentage).toFixed(1)}%)</span>
+                </div>
+              </div>
+              ${proposal.status === 'ACTIVE' || proposal.status === 'active' ? `
+              <div class="vote-buttons">
+                <button class="vote-btn vote-yes" onclick="voteOnProposal('${proposal.id}', true)">👍 Vote Yes</button>
+                <button class="vote-btn vote-no" onclick="voteOnProposal('${proposal.id}', false)">👎 Vote No</button>
+              </div>
               ` : ''}
             </div>
-          `).join('');
+          `;
+          }).join('');
         } else {
           container.innerHTML = '<div class="loading">No active proposals at this time.</div>';
         }
@@ -922,8 +1142,8 @@
       }
     }
 
-    // Create new proposal
-    async function createProposal() {
+    // Submit proposal request (new secure system)
+    async function submitProposalRequest() {
       const wallet = getWallet();
       if (!wallet) {
         showToast("Please connect your wallet first", "error");
@@ -932,14 +1152,39 @@
 
       const title = $('proposalTitle').value.trim();
       const description = $('proposalDescription').value.trim();
-      const duration = parseInt($('proposalDuration').value);
+      const category = $('proposalCategory').value;
+      const requestedTier = $('requestedTier').value;
 
       if (!title || !description) {
         showToast("Please fill in all fields", "error");
         return;
       }
 
+      if (title.length < 10) {
+        showToast("Title must be at least 10 characters", "error");
+        return;
+      }
+
+      if (description.length < 50) {
+        showToast("Description must be at least 50 characters", "error");
+        return;
+      }
+
+      // Show confirmation dialog
+      const confirmed = confirm(
+        `Submit proposal request?\n\n` +
+        `Title: ${title}\n` +
+        `Category: ${category}\n` +
+        `Tier: ${requestedTier}\n\n` +
+        `This will stake 100,000 WALDO. Your stake will be refunded if approved, kept if rejected.\n\n` +
+        `Continue?`
+      );
+
+      if (!confirmed) return;
+
       try {
+        showToast("Submitting proposal request...", "info");
+
         const response = await fetch(`${baseURL}/api/dao/create`, {
           method: 'POST',
           headers: {
@@ -949,29 +1194,36 @@
             wallet: wallet,
             title: title,
             description: description,
-            duration: duration
+            category: category,
+            requestedTier: requestedTier
           })
         });
 
         const data = await response.json();
 
         if (data.success) {
-          showToast("Proposal created successfully!", "success");
+          showToast("✅ Proposal request submitted for admin review!", "success");
 
           // Clear form
           $('proposalTitle').value = '';
           $('proposalDescription').value = '';
-          $('proposalDuration').value = '7';
+          $('proposalCategory').value = 'GENERAL';
+          $('requestedTier').value = 'COMMUNITY';
+
+          // Show success details
+          setTimeout(() => {
+            showToast(`Request ID: ${data.requestId}. You'll be notified when reviewed.`, "info");
+          }, 2000);
 
           // Refresh data
           loadProposals();
           loadDAOStats();
         } else {
-          showToast(data.error || "Failed to create proposal", "error");
+          showToast(data.error || "Failed to submit proposal request", "error");
         }
       } catch (error) {
-        console.error('Failed to create proposal:', error);
-        showToast("Failed to create proposal. Please try again.", "error");
+        console.error('Failed to submit proposal request:', error);
+        showToast("Failed to submit proposal request. Please try again.", "error");
       }
     }
 
@@ -1067,7 +1319,7 @@
     window.connectWallet = connectWallet;
     window.disconnectWallet = disconnectWallet;
     window.voteOnProposal = voteOnProposal;
-    window.createProposal = createProposal;
+    window.submitProposalRequest = submitProposalRequest;
     window.closeXummModal = closeXummModal;
   </script>
 </body>
