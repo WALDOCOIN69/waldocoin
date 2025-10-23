@@ -465,14 +465,15 @@ router.get("/current-password", async (req, res) => {
     // Validate admin access using X_ADMIN_KEY (environment variable only)
     const expectedKey = process.env.X_ADMIN_KEY;
 
-    console.log(`🔑 Password endpoint admin key debug: Received="${adminKey}", Expected="${expectedKey}"`);
+    // SECURITY: Never log admin keys in plain text
+    console.log(`🔑 Password endpoint admin key validation: ${adminKey ? 'Provided' : 'Missing'}`);
 
     if (adminKey !== expectedKey) {
-      console.log(`❌ Password endpoint admin key mismatch: "${adminKey}" !== "${expectedKey}"`);
+      console.log(`❌ Password endpoint admin key validation failed`);
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    console.log(`✅ Password endpoint admin key accepted: "${adminKey}"`);
+    console.log(`✅ Password endpoint admin key validation successful`);
 
     // Get current password (same logic as main endpoint)
     const redisPassword = await redis.get("airdrop:daily_password");
@@ -544,14 +545,15 @@ router.get('/debug-env', async (req, res) => {
     // Only allow if admin key matches (environment variable only)
     const expectedKey = process.env.X_ADMIN_KEY;
 
-    console.log(`🔑 Admin key debug: Received="${adminKey}", Expected="${expectedKey}", EnvVar="${process.env.X_ADMIN_KEY}"`);
+    // SECURITY: Never log admin keys in plain text
+    console.log(`🔑 Admin key validation: ${adminKey ? 'Provided' : 'Missing'}, EnvVar: ${expectedKey ? 'Set' : 'Not Set'}`);
 
     if (adminKey !== expectedKey) {
-      console.log(`❌ Admin key mismatch: "${adminKey}" !== "${expectedKey}"`);
+      console.log(`❌ Admin key validation failed`);
       return res.status(403).json({ success: false, error: "Unauthorized access" });
     }
 
-    console.log(`✅ Admin key accepted: "${adminKey}"`);
+    console.log(`✅ Admin key validation successful`);
 
     return res.json({
       success: true,
