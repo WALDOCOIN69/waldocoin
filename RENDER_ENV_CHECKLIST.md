@@ -49,19 +49,25 @@ Value: [Your secure admin key - same as current admin key]
 Description: Critical for DAO admin authentication
 ```
 
-### **2. Set AI API Keys (Optional but Recommended):**
+### **2. Configure Content Verification (Recommended - FREE):**
 ```
-Variable: OPENAI_API_KEY
-Value: [Your OpenAI API key]
-Description: For AI content verification
+Variable: AI_CONTENT_VERIFICATION_ENABLED
+Value: false
+Description: Disable expensive AI services, use free text analysis
 
-Variable: GOOGLE_VISION_API_KEY  
-Value: [Your Google Vision API key]
-Description: For image analysis
+Variable: AI_CONFIDENCE_THRESHOLD
+Value: 70
+Description: Confidence threshold for content verification
+```
 
-Variable: TINEYE_API_KEY
-Value: [Your TinEye API key] 
-Description: For reverse image search
+### **3. AI API Keys (OPTIONAL - Skip for Cost Savings):**
+```
+# SKIP THESE TO AVOID COSTS:
+# OPENAI_API_KEY=[Skip - expensive]
+# GOOGLE_VISION_API_KEY=[Skip - expensive]
+# TINEYE_API_KEY=[Skip - expensive]
+
+# System will use FREE text-based verification instead
 ```
 
 ---

@@ -69,13 +69,14 @@ services:
       - key: X_ADMIN_KEY
         sync: false
       - key: AI_CONTENT_VERIFICATION_ENABLED
-        value: true
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: GOOGLE_VISION_API_KEY
-        sync: false
-      - key: TINEYE_API_KEY
-        sync: false
+        value: false
+      # AI API Keys - DISABLED to avoid costs (system uses free text analysis)
+      # - key: OPENAI_API_KEY
+      #   sync: false
+      # - key: GOOGLE_VISION_API_KEY
+      #   sync: false
+      # - key: TINEYE_API_KEY
+      #   sync: false
       - key: AI_CONFIDENCE_THRESHOLD
         value: 70
   

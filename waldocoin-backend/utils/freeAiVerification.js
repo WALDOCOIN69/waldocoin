@@ -1,4 +1,6 @@
-// utils/freeAiVerification.js - FREE AI Content Verification
+// utils/freeAiVerification.js - FREE AI Content Verification (No API costs)
+// Focus: TEXT CONTENT ANALYSIS - Images can be reused, but text should be creative
+// Philosophy: Same image + different creative text = ALLOWED (encourages creativity)
 import crypto from 'crypto';
 import { redis } from '../redisClient.js';
 
@@ -355,18 +357,34 @@ export class FreeAIVerifier {
 
   checkWaldoRelevance(text) {
     const waldoKeywords = [
-      'waldo', 'waldocoin', 'wlo', '$wlo', '#waldomeme', '#waldocoin',
-      'meme', 'crypto', 'token', 'xrpl', 'ripple'
+      'waldo', 'waldocoin', 'wlo', '$wlo', '#waldomeme', '#waldocoin', '#waldo',
+      'meme', 'crypto', 'token', 'xrpl', 'ripple', 'hodl', 'moon'
+    ];
+
+    const creativeKeywords = [
+      'funny', 'hilarious', 'lol', 'lmao', 'epic', 'amazing', 'awesome',
+      'creative', 'original', 'unique', 'brilliant', 'genius', 'fire', '🔥',
+      'based', 'chad', 'diamond', 'hands', 'ape', 'rocket', '🚀', '💎'
     ];
 
     const lowerText = text.toLowerCase();
-    const matches = waldoKeywords.filter(keyword => lowerText.includes(keyword));
-    const score = (matches.length / waldoKeywords.length) * 100;
+    const waldoMatches = waldoKeywords.filter(keyword => lowerText.includes(keyword));
+    const creativeMatches = creativeKeywords.filter(keyword => lowerText.includes(keyword));
+
+    // Score based on WALDO relevance + creative content (focus on text creativity)
+    const waldoScore = Math.min((waldoMatches.length / 2) * 60, 60); // Max 60% for WALDO keywords
+    const creativeScore = Math.min((creativeMatches.length / 1) * 40, 40); // Max 40% for creativity
+    const totalScore = waldoScore + creativeScore;
 
     return {
-      score,
-      matches,
-      isRelevant: score > 10
+      score: totalScore,
+      waldoMatches,
+      creativeMatches,
+      isRelevant: totalScore >= 20, // Lower threshold - focus on creativity over strict WALDO mentions
+      hasWaldoContent: waldoMatches.length > 0,
+      hasCreativeContent: creativeMatches.length > 0,
+      textLength: text.length,
+      isSubstantial: text.length >= 20 // Encourage substantial content
     };
   }
 
