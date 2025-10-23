@@ -108,18 +108,31 @@ export class FreeAIVerifier {
       let confidence = 100;
       const issues = [];
 
-      // Check for spam patterns (FREE)
+      // Check for spam patterns (FREE) - Enhanced anti-farming
       const spamScore = this.calculateSpamScore(tweetText);
-      if (spamScore > 70) {
+      if (spamScore > 80) {
+        issues.push('GIBBERISH_OR_FARMING');
+        confidence -= 60; // Heavy penalty for obvious farming
+      } else if (spamScore > 60) {
         issues.push('HIGH_SPAM_SCORE');
         confidence -= 40;
+      } else if (spamScore > 40) {
+        issues.push('MODERATE_SPAM_SCORE');
+        confidence -= 20;
       }
 
       // Check WALDO relevance (FREE)
       const waldoRelevance = this.checkWaldoRelevance(tweetText);
-      if (waldoRelevance.score < 20) {
+      if (waldoRelevance.score < 15) {
         issues.push('LOW_WALDO_RELEVANCE');
-        confidence -= 20;
+        confidence -= 30;
+      }
+
+      // Check content quality (NEW) - Prevents farming with gibberish
+      const contentQuality = this.calculateContentQuality(tweetText);
+      if (contentQuality < 30) {
+        issues.push('LOW_QUALITY_CONTENT');
+        confidence -= 35;
       }
 
       // Check for inappropriate keywords (FREE)
@@ -334,25 +347,121 @@ export class FreeAIVerifier {
   calculateSpamScore(text) {
     let score = 0;
 
-    // Excessive caps
+    // 1. GIBBERISH DETECTION - Random character patterns
+    const gibberishPatterns = [
+      /[qwerty]{4,}/i,           // Keyboard mashing: qwerty, asdf
+      /[asdfgh]{4,}/i,
+      /[zxcvbn]{4,}/i,
+      /(.)\1{4,}/,               // Same character 5+ times: aaaaa
+      /^[a-z]{1,3}(\s[a-z]{1,3}){3,}$/i, // Single letters: a b c d e
+      /[0-9]{6,}/,               // Random numbers: 123456789
+      /^[!@#$%^&*()]{3,}$/       // Just symbols: !@#$%
+    ];
+
+    for (const pattern of gibberishPatterns) {
+      if (pattern.test(text)) {
+        score += 60; // Heavy penalty for gibberish
+        break;
+      }
+    }
+
+    // 2. FARMING PATTERNS - Low effort content
+    const farmingPatterns = [
+      /^(nice|good|great|cool|wow|ok|yes|no)\.?$/i,  // Single word responses
+      /^(lol|lmao|haha|omg|wtf)\.?$/i,               // Just reactions
+      /^.{1,10}$/,                                   // Extremely short (under 10 chars)
+      /^(\w+\s?){1,3}$/,                            // 1-3 words only
+      /^(to the moon|hodl|diamond hands|wen moon)\.?$/i // Generic crypto phrases
+    ];
+
+    for (const pattern of farmingPatterns) {
+      if (pattern.test(text.trim())) {
+        score += 50; // Heavy penalty for farming attempts
+        break;
+      }
+    }
+
+    // 3. EXCESSIVE CAPS (farming tactic)
     const capsRatio = (text.match(/[A-Z]/g) || []).length / text.length;
-    if (capsRatio > 0.5) score += 30;
+    if (capsRatio > 0.7) score += 40;  // Increased penalty
+    else if (capsRatio > 0.5) score += 25;
 
-    // Excessive emojis
+    // 4. EMOJI SPAM (farming tactic)
     const emojiCount = (text.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/gu) || []).length;
-    if (emojiCount > 5) score += 20;
+    if (emojiCount > 8) score += 35;   // More than 8 emojis = spam
+    else if (emojiCount > 5) score += 20;
 
-    // Repeated characters
-    if (/(.)\1{3,}/.test(text)) score += 25;
+    // 5. REPEATED CHARACTERS/WORDS
+    if (/(.)\1{4,}/.test(text)) score += 40;        // Same char 5+ times
+    if (/(\w+)\s+\1\s+\1/.test(text)) score += 35;  // Same word 3+ times
 
-    // Excessive punctuation
+    // 6. EXCESSIVE PUNCTUATION
     const punctuationRatio = (text.match(/[!?.,;:]/g) || []).length / text.length;
-    if (punctuationRatio > 0.2) score += 15;
+    if (punctuationRatio > 0.3) score += 30;        // Increased threshold
+    else if (punctuationRatio > 0.2) score += 15;
 
-    // Short repetitive text
-    if (text.length < 20 && /(\w+)\s+\1/.test(text)) score += 20;
+    // 7. MEANINGLESS COMBINATIONS
+    const meaninglessWords = ['aaa', 'bbb', 'ccc', 'xxx', 'zzz', 'test', 'testing', '123', 'abc'];
+    const wordCount = meaninglessWords.filter(word => text.toLowerCase().includes(word)).length;
+    if (wordCount >= 2) score += 30;
+
+    // 8. LACK OF VOWELS (gibberish indicator)
+    const vowelRatio = (text.match(/[aeiou]/gi) || []).length / text.length;
+    if (vowelRatio < 0.1 && text.length > 10) score += 25; // Very few vowels = likely gibberish
 
     return Math.min(score, 100);
+  }
+
+  // NEW: Content Quality Scoring - Prevents farming with meaningful content requirements
+  calculateContentQuality(text) {
+    let score = 0;
+
+    // 1. Length bonus (substantial content)
+    if (text.length >= 50) score += 25;
+    else if (text.length >= 30) score += 15;
+    else if (text.length >= 20) score += 10;
+
+    // 2. Word variety (not repetitive)
+    const words = text.toLowerCase().split(/\s+/);
+    const uniqueWords = new Set(words);
+    const varietyRatio = uniqueWords.size / words.length;
+    if (varietyRatio > 0.8) score += 20;  // High word variety
+    else if (varietyRatio > 0.6) score += 15;
+    else if (varietyRatio > 0.4) score += 10;
+
+    // 3. Sentence structure (proper grammar indicators)
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    if (sentences.length >= 2) score += 15; // Multiple sentences
+    if (/^[A-Z]/.test(text.trim())) score += 5; // Starts with capital
+
+    // 4. Meaningful words (not just filler)
+    const meaningfulWords = [
+      'when', 'how', 'why', 'what', 'where', 'because', 'since', 'although',
+      'think', 'believe', 'feel', 'know', 'understand', 'realize', 'remember',
+      'love', 'hate', 'like', 'enjoy', 'prefer', 'want', 'need', 'hope',
+      'community', 'project', 'future', 'potential', 'growth', 'success'
+    ];
+    const meaningfulCount = meaningfulWords.filter(word =>
+      text.toLowerCase().includes(word)
+    ).length;
+    score += Math.min(meaningfulCount * 3, 15); // Up to 15 points for meaningful words
+
+    // 5. Context and coherence (basic checks)
+    if (text.includes(' and ') || text.includes(' but ') || text.includes(' or ')) score += 5;
+    if (text.includes(' the ') || text.includes(' this ') || text.includes(' that ')) score += 5;
+
+    // 6. Penalty for obvious farming attempts
+    const farmingPhrases = [
+      'nice project', 'good project', 'great project', 'amazing project',
+      'to the moon', 'wen moon', 'hodl strong', 'diamond hands',
+      'buy the dip', 'this is the way', 'bullish', 'bearish'
+    ];
+    const farmingCount = farmingPhrases.filter(phrase =>
+      text.toLowerCase().includes(phrase)
+    ).length;
+    if (farmingCount >= 2) score -= 20; // Multiple generic phrases = farming
+
+    return Math.max(Math.min(score, 100), 0);
   }
 
   checkWaldoRelevance(text) {
