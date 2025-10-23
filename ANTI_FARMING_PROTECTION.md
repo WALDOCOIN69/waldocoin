@@ -4,23 +4,30 @@
 
 ### **Farming Attempts We Block:**
 ```
-❌ "asdfjkl qwerty"
-❌ "nice"  
-❌ "lol"
-❌ "to the moon"
-❌ "🚀🚀🚀🚀🚀🚀🚀🚀"
-❌ "AAAAAAAA"
-❌ "123456789"
-❌ "test test test"
+❌ "asdfjkl qwerty" (gibberish)
+❌ "nice" (single word farming)
+❌ "lol" (generic reaction)
+❌ "to the moon" (crypto cliché)
+❌ "🚀🚀🚀🚀🚀🚀🚀🚀" (emoji spam)
+❌ "AAAAAAAA" (character repetition)
+❌ "123456789" (random numbers)
+❌ "test test test" (word repetition)
+❌ Retweets/Quote tweets (reposts)
+❌ Replies to other tweets
+❌ "@username thanks!" (reply patterns)
 ```
 
 ### **Quality Content We Reward:**
 ```
-✅ "When WALDO hits $1 and you're still hodling like a true diamond hands legend 💎"
-✅ "This WALDOCOIN community is absolutely amazing! The creativity here is off the charts 🔥"
-✅ "Just explained WALDOCOIN to my wife and she actually gets it now. Bullish on adoption!"
-✅ "The WALDO meme game is strong today. Love seeing all the creative takes on this template"
+✅ "When you realize you've been hodling the wrong coin this whole time 😅"
+✅ "That moment when your portfolio is down but your meme game is strong 💪"
+✅ "Me trying to explain crypto to my parents for the 100th time 🤦‍♂️"
+✅ "POV: You're checking your portfolio at 3am again 📱"
+✅ "This meme perfectly captures my trading strategy: pure chaos 🎯"
+✅ "When someone asks if I'm winning in crypto... *shows meme* 📈"
 ```
+
+**Note**: Memes can be about ANYTHING - crypto, life, humor, relatable moments. No specific topic required!
 
 ---
 
@@ -61,14 +68,26 @@ Result: BLOCKED - No rewards
 Result: Must score 30+ to get rewards
 ```
 
-### **Layer 4: WALDO Relevance (15+ Required)**
+### **Layer 4: Repost/Reply Detection (Must Pass)**
 ```javascript
-// Must have WALDO connection + creativity
-- WALDO keywords: waldo, $wlo, waldocoin (60% max)
-- Creative words: funny, epic, genius, fire (40% max)
-- Must score 15+ total to qualify
+// Must be standalone original tweets
+- Retweets: BLOCKED (not original content)
+- Quote tweets: BLOCKED (not original content)
+- Replies: BLOCKED (must be standalone)
+- Reply patterns: "@username thanks" = BLOCKED
 
-Result: Must be WALDO-relevant AND creative
+Result: Only standalone original tweets allowed
+```
+
+### **Layer 5: Content Creativity (20+ Required)**
+```javascript
+// Memes can be about ANYTHING - no WALDO requirement
+- Creative words: funny, epic, genius, fire (40% max)
+- Humor words: lol, hilarious, mood, relatable (35% max)
+- Meme language: when, me, pov, literally (25% max)
+- Must score 20+ total to qualify
+
+Result: Must be creative and engaging content
 ```
 
 ---

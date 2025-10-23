@@ -121,11 +121,11 @@ export class FreeAIVerifier {
         confidence -= 20;
       }
 
-      // Check WALDO relevance (FREE)
-      const waldoRelevance = this.checkWaldoRelevance(tweetText);
-      if (waldoRelevance.score < 15) {
-        issues.push('LOW_WALDO_RELEVANCE');
-        confidence -= 30;
+      // Check content creativity (FREE) - Memes can be about ANYTHING
+      const creativityScore = this.checkContentCreativity(tweetText);
+      if (creativityScore < 20) {
+        issues.push('LOW_CREATIVITY_SCORE');
+        confidence -= 25;
       }
 
       // Check content quality (NEW) - Prevents farming with gibberish
@@ -133,6 +133,13 @@ export class FreeAIVerifier {
       if (contentQuality < 30) {
         issues.push('LOW_QUALITY_CONTENT');
         confidence -= 35;
+      }
+
+      // Check for reposts/replies (NEW) - Must be standalone original tweets
+      const originalityCheck = this.checkTweetOriginality(tweetData);
+      if (!originalityCheck.isOriginal) {
+        issues.push(originalityCheck.reason);
+        confidence -= 50; // Heavy penalty for reposts/replies
       }
 
       // Check for inappropriate keywords (FREE)
@@ -464,36 +471,120 @@ export class FreeAIVerifier {
     return Math.max(Math.min(score, 100), 0);
   }
 
-  checkWaldoRelevance(text) {
-    const waldoKeywords = [
-      'waldo', 'waldocoin', 'wlo', '$wlo', '#waldomeme', '#waldocoin', '#waldo',
-      'meme', 'crypto', 'token', 'xrpl', 'ripple', 'hodl', 'moon'
-    ];
+  // NEW: Tweet Originality Check - Blocks reposts and replies
+  checkTweetOriginality(tweetData) {
+    try {
+      const text = tweetData.text || '';
+      const tweetId = tweetData.id;
 
+      // 1. Check for REPOSTS/RETWEETS (Twitter API fields)
+      if (tweetData.referenced_tweets) {
+        const hasRetweet = tweetData.referenced_tweets.some(ref => ref.type === 'retweeted');
+        const hasQuoteTweet = tweetData.referenced_tweets.some(ref => ref.type === 'quoted');
+
+        if (hasRetweet) {
+          return {
+            isOriginal: false,
+            reason: 'RETWEET_DETECTED',
+            details: 'Retweets are not eligible for rewards'
+          };
+        }
+
+        if (hasQuoteTweet) {
+          return {
+            isOriginal: false,
+            reason: 'QUOTE_TWEET_DETECTED',
+            details: 'Quote tweets are not eligible for rewards'
+          };
+        }
+      }
+
+      // 2. Check for REPLIES (Twitter API field)
+      if (tweetData.in_reply_to_user_id) {
+        return {
+          isOriginal: false,
+          reason: 'REPLY_DETECTED',
+          details: 'Replies are not eligible - must be standalone tweets'
+        };
+      }
+
+      // 3. Check for reply patterns in text (backup detection)
+      const replyPatterns = [
+        /^@\w+/,                    // Starts with @username
+        /^RT @\w+/i,                // Starts with RT @username
+        /^Replying to @\w+/i,       // "Replying to @username"
+        /@\w+\s+(.*)/               // Contains @username (less strict)
+      ];
+
+      for (const pattern of replyPatterns) {
+        if (pattern.test(text.trim())) {
+          return {
+            isOriginal: false,
+            reason: 'REPLY_PATTERN_DETECTED',
+            details: 'Text appears to be a reply - must be standalone content'
+          };
+        }
+      }
+
+      // 4. Passed all checks - appears to be original standalone tweet
+      return {
+        isOriginal: true,
+        reason: 'STANDALONE_ORIGINAL',
+        details: 'Appears to be original standalone tweet'
+      };
+
+    } catch (error) {
+      console.error('❌ Error checking tweet originality:', error);
+      // Default to allowing if check fails
+      return {
+        isOriginal: true,
+        reason: 'CHECK_FAILED',
+        error: error.message
+      };
+    }
+  }
+
+  checkContentCreativity(text) {
+    // Memes can be about ANYTHING - focus on creativity and humor, not WALDO mentions
     const creativeKeywords = [
       'funny', 'hilarious', 'lol', 'lmao', 'epic', 'amazing', 'awesome',
       'creative', 'original', 'unique', 'brilliant', 'genius', 'fire', '🔥',
-      'based', 'chad', 'diamond', 'hands', 'ape', 'rocket', '🚀', '💎'
+      'based', 'chad', 'when', 'me', 'my', 'that', 'moment', 'feeling',
+      'literally', 'actually', 'basically', 'honestly', 'imagine', 'trying'
+    ];
+
+    const humorKeywords = [
+      'lol', 'lmao', 'haha', 'funny', 'hilarious', 'dead', 'crying', '😂', '🤣',
+      'mood', 'vibe', 'energy', 'same', 'relatable', 'facts', 'truth', 'real'
+    ];
+
+    const memeKeywords = [
+      'when', 'me', 'pov', 'nobody', 'everyone', 'that', 'moment', 'face',
+      'reaction', 'mood', 'energy', 'vibe', 'literally', 'actually', 'be like'
     ];
 
     const lowerText = text.toLowerCase();
-    const waldoMatches = waldoKeywords.filter(keyword => lowerText.includes(keyword));
     const creativeMatches = creativeKeywords.filter(keyword => lowerText.includes(keyword));
+    const humorMatches = humorKeywords.filter(keyword => lowerText.includes(keyword));
+    const memeMatches = memeKeywords.filter(keyword => lowerText.includes(keyword));
 
-    // Score based on WALDO relevance + creative content (focus on text creativity)
-    const waldoScore = Math.min((waldoMatches.length / 2) * 60, 60); // Max 60% for WALDO keywords
-    const creativeScore = Math.min((creativeMatches.length / 1) * 40, 40); // Max 40% for creativity
-    const totalScore = waldoScore + creativeScore;
+    // Score based on creativity, humor, and meme language (NO WALDO requirement)
+    const creativeScore = Math.min(creativeMatches.length * 8, 40); // Max 40% for creative words
+    const humorScore = Math.min(humorMatches.length * 10, 35);      // Max 35% for humor
+    const memeScore = Math.min(memeMatches.length * 5, 25);         // Max 25% for meme language
+    const totalScore = creativeScore + humorScore + memeScore;
 
     return {
       score: totalScore,
-      waldoMatches,
       creativeMatches,
-      isRelevant: totalScore >= 20, // Lower threshold - focus on creativity over strict WALDO mentions
-      hasWaldoContent: waldoMatches.length > 0,
+      humorMatches,
+      memeMatches,
+      isCreative: totalScore >= 20, // Focus on creativity, not WALDO mentions
       hasCreativeContent: creativeMatches.length > 0,
+      hasHumor: humorMatches.length > 0,
+      hasMemeLanguage: memeMatches.length > 0,
       textLength: text.length,
-      isSubstantial: text.length >= 20 // Encourage substantial content
+      isSubstantial: text.length >= 20
     };
   }
 
