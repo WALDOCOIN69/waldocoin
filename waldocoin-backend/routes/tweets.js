@@ -17,7 +17,7 @@ const router = express.Router();
 // 🚫 REMOVE MOCK FLAG FOR PRODUCTION
 const USE_FAKE_DATA = false;
 
-const twitterClient = new TwitterApi(process.env.TWITTER_BEARER);
+const twitterClient = new TwitterApi(process.env.TWITTER_BEARER_TOKEN);
 
 // 🐦 GET /tweets?wallet=...
 router.get("/", async (req, res) => {

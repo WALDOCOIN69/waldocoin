@@ -79,6 +79,29 @@ services:
       #   sync: false
       - key: AI_CONFIDENCE_THRESHOLD
         value: 70
+      # Twitter API Integration
+      - key: TWITTER_BEARER_TOKEN
+        sync: false
+      - key: TWITTER_API_KEY
+        sync: false
+      - key: TWITTER_API_SECRET
+        sync: false
+      - key: TWITTER_ACCESS_TOKEN
+        sync: false
+      - key: TWITTER_ACCESS_SECRET
+        sync: false
+      # XRPL Configuration (matching code usage)
+      - key: WALDO_ISSUER
+        sync: false
+      - key: WALDO_CURRENCY
+        value: WLO
+      - key: WALDOCOIN_TOKEN
+        value: WLO
+      - key: WALDO_DISTRIBUTOR_SECRET
+        sync: false
+      # Additional environment variables used in code
+      - key: NFT_STORAGE_API_KEY
+        sync: false
   
   - type: worker
     name: waldo-autodistribute

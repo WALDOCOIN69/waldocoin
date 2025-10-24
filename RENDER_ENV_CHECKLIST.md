@@ -24,19 +24,24 @@
 ### **✅ Already Configured in Render:**
 - `REDIS_URL` - Redis database connection
 - `XUMM_API_KEY` / `XUMM_API_SECRET` - Wallet integration
-- `WALDO_ISSUER` / `WALDO_CURRENCY` - Token configuration
 - `DISTRIBUTOR_WALLET` / `DISTRIBUTOR_SECRET` - Payment processing
 - `STAKING_VAULT_WALLET` - Staking system
 - `BOT_TOKEN` - Telegram integration
-- `XRPL_NODE` / `XRPL_ENDPOINT` - XRPL blockchain connection
+- `XRPL_NODE` - XRPL blockchain connection
+- `TWITTER_BEARER_TOKEN` / `TWITTER_API_KEY` / `TWITTER_API_SECRET` - Twitter API
+- `TWITTER_ACCESS_TOKEN` / `TWITTER_ACCESS_SECRET` - Twitter API
 
 ### **🆕 Newly Added to render.yaml:**
 - `X_ADMIN_KEY` - **CRITICAL** for DAO admin functions
-- `AI_CONTENT_VERIFICATION_ENABLED` - Enable AI verification
-- `OPENAI_API_KEY` - AI content analysis
-- `GOOGLE_VISION_API_KEY` - Image analysis
-- `TINEYE_API_KEY` - Reverse image search
-- `AI_CONFIDENCE_THRESHOLD` - AI confidence threshold
+- `AI_CONTENT_VERIFICATION_ENABLED=false` - Disabled (using free verification)
+- `TWITTER_BEARER_TOKEN` - Twitter API v2 access (FIXED: was TWITTER_BEARER)
+- `TWITTER_API_KEY` / `TWITTER_API_SECRET` - Twitter API credentials
+- `TWITTER_ACCESS_TOKEN` / `TWITTER_ACCESS_SECRET` - Twitter API credentials
+- `WALDO_ISSUER` - Token issuer address
+- `WALDO_CURRENCY=WLO` - Token currency code
+- `WALDOCOIN_TOKEN=WLO` - Token symbol
+- `WALDO_DISTRIBUTOR_SECRET` - Distributor wallet secret
+- `NFT_STORAGE_API_KEY` - IPFS storage for NFTs
 
 ---
 
