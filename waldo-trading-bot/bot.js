@@ -69,6 +69,18 @@ let isReconnecting = false;
 // ===== REDIS CONNECTION =====
 redis.on('error', (err) => logger.error('Redis error:', err));
 redis.on('connect', () => logger.info('Connected to Redis'));
+
+// Connect to Redis
+async function connectRedis() {
+  try {
+    await redis.connect();
+    logger.info('✅ Redis connected successfully');
+    return true;
+  } catch (error) {
+    logger.error('❌ Redis connection failed:', error);
+    return false;
+  }
+}
 // ===== ROBUST XRPL CONNECTION MANAGER =====
 async function connectToNextNode() {
   if (isReconnecting) return false;
@@ -1925,6 +1937,13 @@ bot.onText(/\/help/, (msg) => {
 // ===== STARTUP =====
 async function startBot() {
   logger.info('🚀 Starting WALDO Trading Bot...');
+
+  // Connect to Redis first
+  const redisConnected = await connectRedis();
+  if (!redisConnected) {
+    logger.error('❌ Failed to connect to Redis - exiting');
+    process.exit(1);
+  }
 
   const xrplConnected = await connectXRPL();
   if (!xrplConnected) {

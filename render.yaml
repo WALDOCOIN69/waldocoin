@@ -102,6 +102,66 @@ services:
       # Additional environment variables used in code
       - key: NFT_STORAGE_API_KEY
         sync: false
+
+  # === WALDO Trading Bot Worker ===
+  - type: worker
+    name: waldo-trading-bot
+    runtime: node
+    rootDir: waldo-trading-bot
+    buildCommand: "npm install"
+    startCommand: "node bot.js"
+    envVars:
+      # Telegram Configuration
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHANNEL_ID
+        value: "@waldocoin"
+      - key: TELEGRAM_ADMIN_ID
+        sync: false
+      - key: PERSONAL_ACCOUNT_MODE
+        value: true
+      - key: STEALTH_MODE
+        value: true
+      # XRPL Configuration
+      - key: XRPL_NODE
+        sync: false
+      - key: TRADING_WALLET_SECRET
+        sync: false
+      - key: WALDO_ISSUER
+        sync: false
+      - key: WALDO_CURRENCY
+        value: WLO
+      # Trading Parameters
+      - key: MIN_TRADE_AMOUNT_XRP
+        value: 0.5
+      - key: MAX_TRADE_AMOUNT_XRP
+        value: 2.0
+      - key: PRICE_SPREAD_PERCENTAGE
+        value: 0
+      - key: MARKET_MAKING_ENABLED
+        value: true
+      - key: AUTO_TRADE_INTERVAL
+        value: 3
+      # Profit Management
+      - key: PROFIT_TRACKING_ENABLED
+        value: true
+      - key: STARTING_BALANCE_XRP
+        value: 70
+      - key: PROFIT_RESERVE_THRESHOLD
+        value: 200
+      - key: PROFIT_RESERVE_PERCENTAGE
+        value: 50
+      # Safety Limits
+      - key: MAX_DAILY_VOLUME_XRP
+        value: 500
+      - key: EMERGENCY_STOP
+        value: false
+      # Redis Connection
+      - key: REDIS_URL
+        sync: false
+      # Logging
+      - key: LOG_LEVEL
+        value: info
   
   - type: worker
     name: waldo-autodistribute
