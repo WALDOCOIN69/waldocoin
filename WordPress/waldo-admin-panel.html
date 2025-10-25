@@ -841,6 +841,7 @@
         <button type="button" class="nav-btn" onclick="showSection('security')">🛡️ Security Override</button>
         <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
         <button type="button" class="nav-btn" onclick="showSection('volumebot')">🤖 Volume Bot</button>
+        <button type="button" class="nav-btn" onclick="showSection('tradingbot')">💰 Trading Bot</button>
         <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
         <button type="button" class="nav-btn" onclick="runDiagnostics()" style="background: #f39c12;">🔍
           Diagnostics</button>
@@ -2406,6 +2407,114 @@
         </div>
       </div>
 
+      <!-- Trading Bot Section -->
+      <div id="tradingbot" class="admin-section">
+        <div class="alert alert-info margin-bottom-20">
+          💰 <strong>TRADING BOT CONTROLS</strong><br>
+          Manage the Telegram trading bot that creates constant WLO trading activity and price stabilization.
+        </div>
+
+        <!-- Trading Bot Status -->
+        <div class="card margin-bottom-20">
+          <div class="card-header">
+            <h3>🤖 Trading Bot Status</h3>
+          </div>
+          <div class="card-body">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-value" id="tradingBotStatus">Loading...</div>
+                <div class="stat-label">Bot Status</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="tradingBotBalance">Loading...</div>
+                <div class="stat-label">XRP Balance</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="tradingBotWLO">Loading...</div>
+                <div class="stat-label">WLO Balance</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="tradingBotProfit">Loading...</div>
+                <div class="stat-label">Total Profit</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="tradingBotTrades">Loading...</div>
+                <div class="stat-label">Trades Today</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="tradingBotVolume">Loading...</div>
+                <div class="stat-label">24h Volume</div>
+              </div>
+            </div>
+            <div class="button-group margin-top-20">
+              <button onclick="loadTradingBotStatus()" class="btn btn-primary">🔄 Refresh Status</button>
+              <button onclick="pauseTradingBot()" class="btn btn-warning">⏸️ Pause Bot</button>
+              <button onclick="resumeTradingBot()" class="btn btn-success">▶️ Resume Bot</button>
+              <button onclick="emergencyStopTradingBot()" class="btn btn-danger">🛑 Emergency Stop</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trading Bot Settings -->
+        <div class="card margin-bottom-20">
+          <div class="card-header">
+            <h3>⚙️ Trading Bot Settings</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="tbTradingMode">Trading Mode:</label>
+                <select id="tbTradingMode" class="form-control">
+                  <option value="automated">🤖 Automated (Smart Weighted)</option>
+                  <option value="perpetual">🔄 Perpetual (60/40 Balance)</option>
+                  <option value="buy_only">📈 Buy Only</option>
+                  <option value="sell_only">📉 Sell Only</option>
+                  <option value="buy_sell">⚖️ Buy & Sell (Balanced)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="tbTradingFrequency">Frequency (minutes):</label>
+                <input type="number" id="tbTradingFrequency" class="form-control" min="1" max="60" value="3">
+              </div>
+              <div class="form-group">
+                <label for="tbMinTradeSize">Min Trade Size (XRP):</label>
+                <input type="number" id="tbMinTradeSize" class="form-control" min="0.1" max="10" step="0.1" value="0.5">
+              </div>
+              <div class="form-group">
+                <label for="tbMaxTradeSize">Max Trade Size (XRP):</label>
+                <input type="number" id="tbMaxTradeSize" class="form-control" min="0.1" max="10" step="0.1" value="2.0">
+              </div>
+              <div class="form-group">
+                <label for="tbPriceSpread">Price Spread (%):</label>
+                <input type="number" id="tbPriceSpread" class="form-control" min="0" max="5" step="0.1" value="0">
+              </div>
+              <div class="form-group">
+                <label for="tbMaxDailyVolume">Max Daily Volume (XRP):</label>
+                <input type="number" id="tbMaxDailyVolume" class="form-control" min="100" max="2000" step="50"
+                  value="500">
+              </div>
+            </div>
+            <div class="button-group margin-top-20">
+              <button onclick="updateTradingBotSettings()" class="btn btn-primary">💾 Update Settings</button>
+              <button onclick="resetTradingBotProfit()" class="btn btn-warning">🔄 Reset Profit Tracking</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Trading Activity -->
+        <div class="card">
+          <div class="card-header">
+            <h3>📊 Recent Trading Activity</h3>
+          </div>
+          <div class="card-body">
+            <div id="tradingBotTradesList">
+              <p>Loading recent trades...</p>
+            </div>
+            <button onclick="loadTradingBotTrades()" class="btn btn-secondary margin-top-10">🔄 Refresh Trades</button>
+          </div>
+        </div>
+      </div>
+
       <!-- System Section -->
       <div id="system" class="admin-section">
         <div class="alert alert-error margin-bottom-20">
@@ -3926,6 +4035,10 @@
             break;
           case 'volumebot':
             await loadVolumeBotData();
+            break;
+          case 'tradingbot':
+            await loadTradingBotStatus();
+            await loadTradingBotTrades();
             break;
         }
       } catch (error) {
@@ -8240,6 +8353,219 @@ This action cannot be undone. Continue?`;
         console.error('Error optimizing bot:', error);
         resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Error optimizing bot settings</div>';
         showAlert('Error optimizing bot settings', 'error');
+      }
+    }
+
+    // ===== TRADING BOT FUNCTIONS =====
+    async function loadTradingBotStatus() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/trading-bot/status`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update status displays
+          document.getElementById('tradingBotStatus').textContent = data.status || 'Unknown';
+          document.getElementById('tradingBotBalance').textContent = `${data.balance?.xrp || '0'} XRP`;
+          document.getElementById('tradingBotWLO').textContent = `${data.balance?.wlo || '0'} WLO`;
+          document.getElementById('tradingBotProfit').textContent = `${data.profit?.xrp || '0'} XRP (${data.profit?.percentage || '0'}%)`;
+          document.getElementById('tradingBotTrades').textContent = data.activity?.tradesCount || '0';
+          document.getElementById('tradingBotVolume').textContent = data.activity?.volume24h || '0 XRP';
+
+          // Update form fields with current settings
+          if (data.settings) {
+            document.getElementById('tbTradingMode').value = data.settings.tradingMode || 'automated';
+            document.getElementById('tbTradingFrequency').value = data.settings.frequency || '3';
+            document.getElementById('tbMinTradeSize').value = data.settings.minTradeSize || '0.5';
+            document.getElementById('tbMaxTradeSize').value = data.settings.maxTradeSize || '2.0';
+            document.getElementById('tbPriceSpread').value = data.settings.priceSpread || '0';
+            document.getElementById('tbMaxDailyVolume').value = data.settings.maxDailyVolume || '500';
+          }
+        } else {
+          showAlert(`Error loading trading bot status: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error loading trading bot status:', error);
+        showAlert('Network error loading trading bot status', 'error');
+      }
+    }
+
+    async function pauseTradingBot() {
+      if (!confirm('⏸️ Pause Trading Bot?\n\nThis will stop all trading activity until resumed.')) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/trading-bot/pause`, {
+          method: 'POST',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Trading bot paused successfully', 'success');
+          await loadTradingBotStatus();
+        } else {
+          showAlert(`Failed to pause trading bot: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error pausing trading bot:', error);
+        showAlert('Network error pausing trading bot', 'error');
+      }
+    }
+
+    async function resumeTradingBot() {
+      if (!confirm('▶️ Resume Trading Bot?\n\nThis will restart trading activity.')) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/trading-bot/resume`, {
+          method: 'POST',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Trading bot resumed successfully', 'success');
+          await loadTradingBotStatus();
+        } else {
+          showAlert(`Failed to resume trading bot: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error resuming trading bot:', error);
+        showAlert('Network error resuming trading bot', 'error');
+      }
+    }
+
+    async function emergencyStopTradingBot() {
+      if (!confirm('🛑 EMERGENCY STOP TRADING BOT\n\nThis will immediately halt all trading activity.\n\nAre you sure?')) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/trading-bot/emergency-stop`, {
+          method: 'POST',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Emergency stop activated - all trading halted', 'warning');
+          await loadTradingBotStatus();
+        } else {
+          showAlert(`Failed to emergency stop: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error executing emergency stop:', error);
+        showAlert('Network error executing emergency stop', 'error');
+      }
+    }
+
+    async function updateTradingBotSettings() {
+      try {
+        const settings = {
+          tradingMode: document.getElementById('tbTradingMode').value,
+          frequency: parseInt(document.getElementById('tbTradingFrequency').value),
+          minTradeSize: parseFloat(document.getElementById('tbMinTradeSize').value),
+          maxTradeSize: parseFloat(document.getElementById('tbMaxTradeSize').value),
+          priceSpread: parseFloat(document.getElementById('tbPriceSpread').value),
+          maxDailyVolume: parseInt(document.getElementById('tbMaxDailyVolume').value)
+        };
+
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/trading-bot/settings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify(settings)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Trading bot settings updated successfully', 'success');
+          await loadTradingBotStatus();
+        } else {
+          showAlert(`Failed to update settings: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error updating trading bot settings:', error);
+        showAlert('Network error updating settings', 'error');
+      }
+    }
+
+    async function loadTradingBotTrades() {
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/trading-bot/trades`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+        const tradesDiv = document.getElementById('tradingBotTradesList');
+
+        if (data.success && data.trades && data.trades.length > 0) {
+          let tradesHtml = '';
+          data.trades.forEach(trade => {
+            const timestamp = new Date(trade.timestamp).toLocaleString();
+            const typeColor = trade.type === 'BUY' ? '#27ae60' : '#e74c3c';
+            const typeIcon = trade.type === 'BUY' ? '📈' : '📉';
+
+            tradesHtml += `
+              <div style="background: #333; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${typeColor};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="color: ${typeColor}; font-weight: bold;">${typeIcon} ${trade.type}</div>
+                    <div style="color: #ccc; font-size: 0.9em;">${trade.amount} ${trade.currency || 'WLO'}</div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="color: #fff; font-weight: bold;">${trade.price} XRP</div>
+                    <div style="color: #666; font-size: 0.8em;">${timestamp}</div>
+                  </div>
+                </div>
+                ${trade.hash ? `<div style="color: #3498db; font-size: 0.8em; margin-top: 5px;">TX: ${trade.hash.substring(0, 16)}...</div>` : ''}
+              </div>
+            `;
+          });
+          tradesDiv.innerHTML = tradesHtml;
+        } else {
+          tradesDiv.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">No recent trades found</div>';
+        }
+      } catch (error) {
+        console.error('Error loading trading bot trades:', error);
+        document.getElementById('tradingBotTradesList').innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">Error loading trades</div>';
+      }
+    }
+
+    async function resetTradingBotProfit() {
+      const newBalance = prompt('🔄 Reset Profit Tracking\n\nEnter new starting balance (XRP):', '70');
+      if (!newBalance || isNaN(newBalance)) return;
+
+      if (!confirm(`Reset profit tracking with starting balance: ${newBalance} XRP?`)) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/trading-bot/reset-profit`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({ newStartingBalance: parseFloat(newBalance) })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showAlert(`Profit tracking reset with starting balance: ${newBalance} XRP`, 'success');
+          await loadTradingBotStatus();
+        } else {
+          showAlert(`Failed to reset profit tracking: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error resetting profit tracking:', error);
+        showAlert('Network error resetting profit tracking', 'error');
       }
     }
   </script>
