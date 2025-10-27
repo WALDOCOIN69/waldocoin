@@ -1039,21 +1039,30 @@
 
     // Trading functions (redirect to exchanges)
     window.openBestDEX = function () {
+      console.log('🔘 openBestDEX clicked! bestExchange:', bestExchange);
       if (bestExchange) {
+        console.log('🚀 Opening:', EXCHANGES[bestExchange].url);
         window.open(EXCHANGES[bestExchange].url, '_blank');
+      } else {
+        console.error('❌ No best exchange selected!');
       }
     };
 
     window.openFirstLedger = function () {
+      console.log('🔘 openFirstLedger clicked!');
+      console.log('🚀 Opening:', EXCHANGES.firstledger.url);
       window.open(EXCHANGES.firstledger.url, '_blank');
     };
 
     window.openXRPLTo = function () {
-      console.log('⚡ Opening XRPL.to WLO token page...');
+      console.log('🔘 openXRPLTo clicked!');
+      console.log('🚀 Opening XRPL.to WLO token page...');
       window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank', 'noopener,noreferrer');
     };
 
     window.openXMagnetic = function () {
+      console.log('🔘 openXMagnetic clicked!');
+      console.log('🚀 Opening:', EXCHANGES.xmagnetic.url);
       window.open(EXCHANGES.xmagnetic.url, '_blank');
     };
 
