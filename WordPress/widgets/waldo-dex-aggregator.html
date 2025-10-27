@@ -814,44 +814,58 @@
         const data = await response.json();
         console.log('📊 XRPL.to API response:', data);
 
-        let price = 0.000024; // Slightly different realistic price
-        let volume = 8500;
+        let price = 0.00006400; // Conservative fallback
+        let volume = 0;
 
-        // Find WLO token in the XRPL.to API response
-        if (data && data.tokens && Array.isArray(data.tokens)) {
-          const wloToken = data.tokens.find(token =>
-            token.currency === 'WLO' && token.issuer === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
-          );
+        // Prefer WALDOCOIN backend REAL price for consistency
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const waldoRes = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
 
-          if (wloToken) {
-            console.log('📊 XRPL.to found WLO token:', wloToken);
-
-            // Use slightly different price for XRPL.to (simulate different exchange rates)
-            if (wloToken.exch && typeof wloToken.exch === 'number') {
-              price = wloToken.exch * 0.98; // 2% lower than First Ledger
-              console.log(`📊 XRPL.to real price: ${price.toFixed(8)} XRP per WLO`);
+          if (waldoRes.ok) {
+            const waldoData = await waldoRes.json();
+            if (waldoData.success) {
+              if (typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
+                price = waldoData.xrpPerWlo; // Use same base as First Ledger for apples-to-apples
+              } else if (waldoData.best && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
+                price = waldoData.best.mid;
+              }
+              if (typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
+                volume = waldoData.volume24h; // Use real 24h volume
+              }
             }
-
-            if (wloToken.vol24hxrp) {
-              volume = wloToken.vol24hxrp * 0.6; // Lower volume
-            }
-          } else {
-            console.log('📊 XRPL.to: WLO token not found, using fallback');
           }
-        } else {
-          console.log('📊 XRPL.to: Invalid API response, using fallback');
+        } catch (err) {
+          console.warn('⚠️ WALDO API for XRPL.to failed, will use XRPL.to response if available', err);
         }
 
-        const bid = price * 0.999;
-        const ask = price * 1.001;
+        // If WALDO price not obtained, try XRPL.to fields as a fallback
+        if ((price === 0.00006400 || !isFinite(price)) && data && Array.isArray(data.tokens)) {
+          const wloToken = data.tokens.find(t => t.currency === 'WLO' && t.issuer === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY');
+          if (wloToken && typeof wloToken.exch === 'number' && wloToken.exch > 0) {
+            price = wloToken.exch;
+            if (typeof wloToken.vol24hxrp === 'number') volume = wloToken.vol24hxrp;
+          }
+        }
+
+        // Build bid/ask from real mid if not provided elsewhere
+        const bid = price * 0.995; // 0.5% synthetic spread for display
+        const ask = price * 1.005;
 
         priceData.xrplto = {
-          price: price,
-          bid: bid,
-          ask: ask,
-          volume: volume,
-          liquidity: 'Medium',
-          lastUpdate: Date.now()
+          price,
+          bid,
+          ask,
+          volume,
+          liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
+          lastUpdate: Date.now(),
+          source: 'waldocoin-api'
         };
 
         console.log('✅ XRPL.to live price loaded:', price.toFixed(8));
@@ -1073,12 +1087,12 @@
         return;
       }
 
-      // Find highest price (best for selling WLO)
-      let bestPrice = 0;
+      // Find lowest price (best for BUYING WLO)
+      let bestPrice = Infinity;
       let bestKey = null;
 
       exchanges.forEach(([key, data]) => {
-        if (data.price > bestPrice) {
+        if (data.price < bestPrice) {
           bestPrice = data.price;
           bestKey = key;
         }

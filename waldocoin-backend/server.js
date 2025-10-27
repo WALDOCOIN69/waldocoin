@@ -97,13 +97,19 @@ const startServer = async () => {
     max: 100,
   });
   // CORS: Allow waldocoin.live and waldo.live domains and subdomains
-  const allowedDomains = ["waldocoin.live", "waldo.live", "waldocoin.onrender.com"];
+  const allowedDomains = ["waldocoin.live", "waldo.live", "waldocoin.onrender.com", "waldocoin-backend-api.onrender.com"];
   const corsOriginCheck = (origin) => {
     console.log(`🔍 CORS Check: origin="${origin}"`);
 
     if (!origin) {
       console.log('✅ CORS: No origin (curl/local) - ALLOWED');
       return true; // allow curl/local/file://
+    }
+
+    // Some browsers send 'null' for file:// origins
+    if (origin === 'null') {
+      console.log('✅ CORS: null origin (file://) - ALLOWED');
+      return true;
     }
 
     // Allow file:// protocol for local development
