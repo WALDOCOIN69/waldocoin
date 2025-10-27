@@ -610,11 +610,21 @@
     const getRoot = () => document.getElementById('waldoAggregator');
     const toggle = document.getElementById('widgetToggle');
 
+    console.log('🔍 Widget elements found:', {
+      root: !!getRoot(),
+      toggle: !!toggle,
+      tabs: document.querySelectorAll('.tab').length
+    });
+
     // Helpers for collapsed state
     const isCollapsed = () => getRoot()?.classList.contains('collapsed');
     const setCollapsed = (state) => {
       const root = getRoot();
-      if (!root) return;
+      if (!root) {
+        console.error('❌ Root element not found!');
+        return;
+      }
+      console.log(`🔄 Setting collapsed state to: ${state}`);
       root.classList.toggle('collapsed', state);
     };
 
@@ -622,8 +632,10 @@
     if (toggle) toggle.setAttribute('type', 'button');
 
     const handleToggle = (evt) => {
+      console.log('🔘 Toggle clicked!');
       if (evt) evt.preventDefault();
       const next = !isCollapsed();
+      console.log(`Current: ${isCollapsed()}, Next: ${next}`);
       setCollapsed(next);
       if (!next) {
         console.log('🔍 Widget opened, loading prices...');
@@ -633,11 +645,15 @@
 
     // Direct handlers if elements exist now
     if (toggle) {
+      console.log('✅ Attaching click handler to toggle button');
       toggle.addEventListener('click', handleToggle);
       toggle.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') handleToggle(e);
       });
+    } else {
+      console.warn('⚠️ Toggle button not found during init');
     }
+
     const header = document.querySelector('#waldoAggregator .aggregator-head');
     if (header) {
       header.addEventListener('click', (e) => {
@@ -648,18 +664,32 @@
 
     // Event delegation fallback (works even if widget is injected later)
     document.addEventListener('click', (e) => {
-      if (e.target.closest('#widgetToggle')) return handleToggle(e);
+      const toggleEl = e.target.closest('#widgetToggle');
+      if (toggleEl) {
+        console.log('🔘 Toggle clicked via delegation');
+        handleToggle(e);
+        return;
+      }
       const headerEl = e.target.closest('#waldoAggregator .aggregator-head');
-      if (headerEl && !e.target.closest('.tab') && !e.target.closest('#widgetToggle')) return handleToggle(e);
+      if (headerEl && !e.target.closest('.tab') && !e.target.closest('#widgetToggle')) {
+        handleToggle(e);
+      }
     });
 
     // Initialize to whatever the markup has once available
-    setCollapsed(getRoot()?.classList.contains('collapsed'));
+    const initialCollapsed = getRoot()?.classList.contains('collapsed');
+    console.log(`📊 Initial collapsed state: ${initialCollapsed}`);
+    setCollapsed(initialCollapsed);
 
 
     // Tab switching (direct + delegated)
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
+    const tabs = document.querySelectorAll('.tab');
+    console.log(`📑 Found ${tabs.length} tabs, attaching handlers`);
+
+    tabs.forEach((tab, index) => {
+      console.log(`  Tab ${index}: ${tab.dataset.tab}`);
+      tab.addEventListener('click', (e) => {
+        console.log(`🔘 Tab clicked: ${tab.dataset.tab}`);
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         const tabName = tab.dataset.tab;
@@ -668,9 +698,12 @@
         if (!isCollapsed() && tabName === 'prices') loadAllPrices();
       });
     });
+
+    // Delegation fallback for tabs
     document.addEventListener('click', (e) => {
       const tab = e.target.closest('.tab');
-      if (!tab) return;
+      if (!tab || !tab.closest('#waldoAggregator')) return;
+      console.log(`🔘 Tab clicked via delegation: ${tab.dataset.tab}`);
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       const tabName = tab.dataset.tab;
