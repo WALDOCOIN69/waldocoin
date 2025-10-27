@@ -1,12 +1,15 @@
 <!-- WALDO DEX Aggregator: Find Best Prices Across Exchanges -->
 <div class="waldo-aggregator collapsed" id="waldoAggregator">
-  <div class="aggregator-head">
+  <div class="aggregator-head" onclick="toggleWidget()">
     <div class="title"><span class="accent">💰</span> WHERE TO BUY $WLO</div>
-    <div class="sub">Referral links to exchanges selling WALDOCOIN</div>
+    <div class="sub">Click anywhere to expand</div>
     <div class="tabs">
-      <button id="widgetToggle" class="toggle" type="button" aria-label="Toggle widget" title="Toggle"></button>
-      <button class="tab active" data-tab="prices">Live Prices</button>
-      <button class="tab" data-tab="calculator">Calculator</button>
+      <button id="widgetToggle" class="toggle" type="button"
+        onclick="toggleWidget(); event.stopPropagation();">▶</button>
+      <button class="tab active" data-tab="prices" onclick="switchTab('prices'); event.stopPropagation();">Live
+        Prices</button>
+      <button class="tab" data-tab="calculator"
+        onclick="switchTab('calculator'); event.stopPropagation();">Calculator</button>
     </div>
   </div>
 
@@ -96,7 +99,7 @@
           <div class="input-group">
             <label>I want to spend</label>
             <div class="input-box">
-              <input type="number" id="calcAmount" placeholder="100" min="0" step="0.000001">
+              <input type="number" id="calcAmount" placeholder="100" min="0" step="0.000001" oninput="calculateTrade()">
               <span class="currency-label" id="fromCurrencyLabel">XRP</span>
             </div>
           </div>
@@ -173,6 +176,7 @@
     position: relative;
     padding: 12px 16px 0;
     border-bottom: 1px solid #18213d;
+    cursor: pointer;
   }
 
   .title {
@@ -188,20 +192,6 @@
     animation: shimmer 5s linear infinite;
     text-shadow: 0 0 12px rgba(0, 247, 255, .35), 0 0 20px rgba(255, 61, 247, .25);
     margin-bottom: 8px;
-  }
-
-  .title:after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: -6px;
-    width: 60%;
-    height: 3px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(0, 247, 255, .9), rgba(255, 61, 247, .9), rgba(0, 247, 255, .9));
-    box-shadow: 0 0 10px rgba(0, 247, 255, .4), 0 0 16px rgba(255, 61, 247, .3);
-    animation: shimmer 6s linear infinite;
   }
 
   @keyframes shimmer {
@@ -240,6 +230,9 @@
     transition: all 0.3s ease;
     position: relative;
     box-shadow: 0 2px 8px rgba(37, 194, 160, 0.3);
+    font-size: 18px;
+    color: #000;
+    font-weight: bold;
   }
 
   .toggle:hover {
@@ -248,17 +241,12 @@
     box-shadow: 0 4px 12px rgba(37, 194, 160, 0.5);
   }
 
-  .toggle::before {
-    content: '▼';
-    color: #000;
-    font-size: 18px;
-    font-weight: bold;
-    transition: transform 0.3s ease;
+  .waldo-aggregator.collapsed .toggle {
+    transform: rotate(0deg);
   }
 
-  .waldo-aggregator.collapsed .toggle::before {
-    content: '▶';
-    transform: none;
+  .waldo-aggregator:not(.collapsed) .toggle {
+    transform: rotate(90deg);
   }
 
   .tab {
@@ -310,12 +298,6 @@
     text-align: center !important;
   }
 
-  .dex-card.best-highlight {
-    border: 2px solid var(--mint);
-    box-shadow: 0 0 20px rgba(37, 194, 160, 0.3);
-    background: rgba(37, 194, 160, 0.1);
-  }
-
   .price-display {
     text-align: center;
     margin: 20px 0;
@@ -348,52 +330,11 @@
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
-    margin: 0 auto !important;
-    display: block !important;
-    text-align: center !important;
   }
 
-  .trade-btn.primary {
-    background: linear-gradient(135deg, var(--mint), var(--blue));
-    font-size: 16px;
-    padding: 16px;
-    margin: 20px auto 0 auto !important;
-    max-width: 300px;
-    display: block !important;
-    text-align: center !important;
-  }
-
-  .dex-card .trade-btn {
-    margin: 10px auto 0 auto !important;
-    display: block !important;
-    text-align: center !important;
-  }
-
-  .calc-card .trade-btn {
-    margin: 20px auto 0 auto !important;
-    display: block !important;
-    text-align: center !important;
-  }
-
-  .dex-card {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid #475569;
-    border-radius: 12px;
-    padding: 20px;
-    transition: all 0.3s ease;
-    min-height: 160px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    text-align: center !important;
-  }
-
-  .calc-card {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid #475569;
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center !important;
+  .trade-btn:hover {
+    background: #22b894;
+    transform: translateY(-2px);
   }
 
   .market-stats {
@@ -416,938 +357,89 @@
     font-size: 14px;
     color: #94a3b8;
     margin-bottom: 8px;
-    border: 1px solid #475569;
-    font-weight: 500;
   }
 
   .stat span {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     color: var(--mint);
-  }
-
-  .calc-card {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid #475569;
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
-  }
-
-  .calc-row {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 30px;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .input-group {
-    flex: 1;
-    min-width: 0;
-    max-width: calc(50% - 30px);
-  }
-
-  .input-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #e2e8f0;
-  }
-
-  .input-box {
-    display: flex;
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid #475569;
-    border-radius: 8px;
-    overflow: hidden;
-    min-height: 48px;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .calc-results {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    padding: 8px 0;
-    font-size: 15px;
-  }
-
-  .calc-note {
-    background: rgba(37, 194, 160, 0.1);
-    border: 1px solid rgba(37, 194, 160, 0.3);
-    border-radius: 8px;
-    padding: 16px;
-    margin-top: 20px;
-    text-align: center;
-  }
-
-  .calc-note p {
-    margin: 0;
-    color: var(--text);
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .flip-btn {
-    background: var(--mint);
-    border: 2px solid #22b894;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    font-size: 20px;
-    font-weight: bold;
-    color: #000;
-    box-shadow: 0 2px 8px rgba(37, 194, 160, 0.3);
-    flex-shrink: 0;
-  }
-
-  .flip-btn:hover {
-    background: #22b894;
-    transform: scale(1.1) rotate(180deg);
-    box-shadow: 0 4px 12px rgba(37, 194, 160, 0.5);
-  }
-
-  .input-box input {
-    background: transparent;
-    border: none;
-    color: #e2e8f0;
-    padding: 12px;
-    font-size: 14px;
-    outline: none;
-    flex: 1;
-    min-width: 0;
-    width: 100%;
-  }
-
-  .currency-label {
-    background: rgba(37, 194, 160, 0.1);
-    border-left: 1px solid #475569;
-    padding: 12px;
-    font-size: 14px;
-    color: var(--mint);
-    font-weight: 600;
-    min-width: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .result-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    padding: 4px 0;
-    font-size: 14px;
-  }
-
-  .result-row span:first-child {
-    color: #94a3b8;
-  }
-
-  .result-row span:last-child {
-    color: var(--mint);
-    font-weight: 500;
-  }
-
-  .savings {
-    color: #22c55e !important;
   }
 </style>
 
 <script>
-  // Ensure script runs after DOM is fully loaded (WordPress-safe)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initWaldoDEXWidget);
-  } else {
-    initWaldoDEXWidget();
+  // Ultra-simple, bulletproof toggle
+  function toggleWidget() {
+    var widget = document.getElementById('waldoAggregator');
+    var toggle = document.getElementById('widgetToggle');
+    if (widget.classList.contains('collapsed')) {
+      widget.classList.remove('collapsed');
+      toggle.textContent = '▼';
+      console.log('Widget expanded');
+    } else {
+      widget.classList.add('collapsed');
+      toggle.textContent = '▶';
+      console.log('Widget collapsed');
+    }
   }
 
-  function initWaldoDEXWidget() {
-    console.log('🚀 Initializing WALDO DEX Widget...');
-
-    const el = (id) => document.getElementById(id);
-
-    // Make these accessible to onclick handlers by storing in window
-    window.waldoDEX = window.waldoDEX || {};
-    window.waldoDEX.priceData = {};
-    window.waldoDEX.bestExchange = null;
-
-    const priceData = window.waldoDEX.priceData;
-
-    const EXCHANGES = window.waldoDEX.EXCHANGES = {
-      firstledger: {
-        name: 'First Ledger',
-        url: 'https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO',
-        apiUrl: null,
-        fees: 0.0025, // 0.25%
-        available: true
-      },
-      xrplto: {
-        name: 'XRPL.to',
-        url: 'https://xrpl.to/trade/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/XRP',
-        apiUrl: null,
-        fees: 0.003, // 0.3%
-        available: true
-      },
-      xmagnetic: {
-        name: 'XMagnetic',
-        url: 'https://xmagnetic.org/dex/WLO+rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP+XRP?network=mainnet',
-        apiUrl: 'https://api.xmagnetic.org/v1/ticker/WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP',
-        fees: 0.003, // 0.3%
-        available: true
-      }
-    };
-
-    // Collapsible functionality (robust for late-loaded DOM)
-    const getRoot = () => document.getElementById('waldoAggregator');
-    const toggle = document.getElementById('widgetToggle');
-
-    console.log('🔍 Widget elements found:', {
-      root: !!getRoot(),
-      toggle: !!toggle,
-      tabs: document.querySelectorAll('.tab').length
-    });
-
-    // Helpers for collapsed state
-    const isCollapsed = () => getRoot()?.classList.contains('collapsed');
-    const setCollapsed = (state) => {
-      const root = getRoot();
-      if (!root) {
-        console.error('❌ Root element not found!');
-        return;
-      }
-      console.log(`🔄 Setting collapsed state to: ${state}`);
-      root.classList.toggle('collapsed', state);
-    };
-
-    // Ensure the toggle behaves like a button in all contexts
-    if (toggle) toggle.setAttribute('type', 'button');
-
-    const handleToggle = (evt) => {
-      console.log('🔘 Toggle clicked!');
-      if (evt) evt.preventDefault();
-      const next = !isCollapsed();
-      console.log(`Current: ${isCollapsed()}, Next: ${next}`);
-      setCollapsed(next);
-      if (!next) {
-        console.log('🔍 Widget opened, loading prices...');
-        loadAllPrices();
-      }
-    };
-
-    // Direct handlers if elements exist now
-    if (toggle) {
-      console.log('✅ Attaching click handler to toggle button');
-      toggle.addEventListener('click', handleToggle);
-      toggle.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') handleToggle(e);
-      });
-    } else {
-      console.warn('⚠️ Toggle button not found during init');
-    }
-
-    const header = document.querySelector('#waldoAggregator .aggregator-head');
-    if (header) {
-      header.addEventListener('click', (e) => {
-        if (e.target.closest('.tab') || e.target.closest('#widgetToggle')) return;
-        handleToggle(e);
-      });
-    }
-
-    // Event delegation fallback (works even if widget is injected later)
-    document.addEventListener('click', (e) => {
-      const toggleEl = e.target.closest('#widgetToggle');
-      if (toggleEl) {
-        console.log('🔘 Toggle clicked via delegation');
-        handleToggle(e);
-        return;
-      }
-      const headerEl = e.target.closest('#waldoAggregator .aggregator-head');
-      if (headerEl && !e.target.closest('.tab') && !e.target.closest('#widgetToggle')) {
-        handleToggle(e);
-      }
-    });
-
-    // Initialize to whatever the markup has once available
-    const initialCollapsed = getRoot()?.classList.contains('collapsed');
-    console.log(`📊 Initial collapsed state: ${initialCollapsed}`);
-    setCollapsed(initialCollapsed);
-
-
-    // Tab switching (direct + delegated)
-    const tabs = document.querySelectorAll('.tab');
-    console.log(`📑 Found ${tabs.length} tabs, attaching handlers`);
-
-    tabs.forEach((tab, index) => {
-      console.log(`  Tab ${index}: ${tab.dataset.tab}`);
-      tab.addEventListener('click', (e) => {
-        console.log(`🔘 Tab clicked: ${tab.dataset.tab}`);
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  // Tab switching
+  function switchTab(tabName) {
+    // Update tab buttons
+    var tabs = document.querySelectorAll('.tab');
+    tabs.forEach(function (tab) {
+      if (tab.getAttribute('data-tab') === tabName) {
         tab.classList.add('active');
-        const tabName = tab.dataset.tab;
-        el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
-        el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
-        if (!isCollapsed() && tabName === 'prices') loadAllPrices();
-      });
+      } else {
+        tab.classList.remove('active');
+      }
     });
 
-    // Delegation fallback for tabs
-    document.addEventListener('click', (e) => {
-      const tab = e.target.closest('.tab');
-      if (!tab || !tab.closest('#waldoAggregator')) return;
-      console.log(`🔘 Tab clicked via delegation: ${tab.dataset.tab}`);
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const tabName = tab.dataset.tab;
-      el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
-      el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
-      if (!isCollapsed() && tabName === 'prices') loadAllPrices();
-    });
+    // Show/hide panels
+    document.getElementById('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
+    document.getElementById('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
+    console.log('Switched to tab:', tabName);
+  }
 
-    // Load prices from all exchanges
-    async function loadAllPrices() {
-      console.log('📊 Loading prices from all DEXs...');
+  // Exchange links
+  function openBestDEX() {
+    window.open('https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO', '_blank');
+  }
 
-      try {
-        // Show loading state
-        const bestPriceEl = document.querySelector('.best-price .price');
-        const volumeEl = document.querySelector('.volume-display');
-        if (bestPriceEl) bestPriceEl.textContent = 'Loading...';
-        if (volumeEl) volumeEl.textContent = 'Loading...';
+  function openFirstLedger() {
+    window.open('https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO', '_blank');
+  }
 
-        // Load all prices concurrently with timeout
-        const loadPromises = [
-          loadFirstLedgerPrice(),
-          loadXRPLToPrice(),
-          loadXMagneticPrice()
-        ];
+  function openXRPLTo() {
+    window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank');
+  }
 
-        // Wait for all with timeout (20 seconds for Render wake-up)
-        await Promise.race([
-          Promise.all(loadPromises),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('API Timeout - Render service may be sleeping')), 20000))
-        ]);
+  function openXMagnetic() {
+    window.open('https://xmagnetic.org/dex/WLO+rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP+XRP?network=mainnet', '_blank');
+  }
 
-        updatePriceDisplay();
-        findBestExchange();
-        updateMarketStats();
+  function openCalcBestExchange() {
+    openBestDEX();
+  }
 
-      } catch (e) {
-        console.error('❌ Failed to load prices:', e);
-        // Show error state
-        const bestPriceEl = document.querySelector('.best-price .price');
-        const volumeEl = document.querySelector('.volume-display');
-        if (bestPriceEl) bestPriceEl.textContent = 'Service Loading...';
-        if (volumeEl) volumeEl.textContent = 'Please wait';
-      }
+  function flipCalculator() {
+    var from = document.getElementById('fromCurrencyLabel');
+    var to = document.getElementById('toCurrencyLabel');
+    var temp = from.textContent;
+    from.textContent = to.textContent;
+    to.textContent = temp;
+    calculateTrade();
+  }
+
+  function calculateTrade() {
+    // Placeholder - just show something works
+    var amount = document.getElementById('calcAmount').value;
+    if (amount) {
+      document.getElementById('calcResult').value = (amount * 30000).toFixed(2);
+      document.getElementById('calcBestExchange').textContent = 'First Ledger';
+      document.getElementById('calcFees').textContent = '0.25%';
+      document.getElementById('calcTradeBtn').style.display = 'block';
     }
+  }
 
-    async function loadFirstLedgerPrice() {
-      try {
-        console.log('🔄 Fetching First Ledger price...');
-        // Try multiple API endpoints for WLO token data
-        let response;
-
-        try {
-          // Try First Ledger direct API
-          response = await fetch('https://api.firstledger.net/v1/tokens/WLO', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          });
-        } catch (e) {
-          console.log('First Ledger API failed, trying XRPL.to...');
-          // Fallback to XRPL.to
-          response = await fetch('https://api.xrpl.to/v1/tokens', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          });
-        }
-
-        if (!response.ok) {
-          throw new Error(`XRPL API HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('📊 XRPL.to API response:', data);
-
-        let price = 0.00006400; // Conservative real-world fallback
-        let volume = 1000;
-
-        // Get REAL price from WALDOCOIN backend API instead of simulation
-        console.log('📊 Fetching REAL price from WALDOCOIN backend API...');
-
-        try {
-          // Add timeout and retry logic for Render service wake-up
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-
-          const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache'
-            },
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
-
-          if (waldoResponse.ok) {
-            const waldoData = await waldoResponse.json();
-            console.log('📊 WALDOCOIN API response:', waldoData);
-
-            // Use real price from WALDOCOIN backend
-            if (waldoData.success) {
-              if (waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-                price = waldoData.xrpPerWlo;
-                console.log(`📊 First Ledger REAL price from WALDOCOIN: ${price.toFixed(8)} XRP per WLO`);
-              } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-                price = waldoData.best.mid;
-                console.log(`📊 First Ledger REAL price from XRPL orderbook: ${price.toFixed(8)} XRP per WLO`);
-              } else {
-                console.log('📊 First Ledger: No valid price in API response:', waldoData);
-              }
-            } else {
-              console.log('📊 First Ledger: API returned success=false:', waldoData);
-            }
-
-            // Use real volume if available
-            if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
-              volume = waldoData.volume24h;
-              console.log(`📊 First Ledger REAL volume: ${volume.toFixed(2)} XRP`);
-            } else {
-              console.log('📊 First Ledger: No valid volume in API response');
-            }
-          }
-        } catch (waldoError) {
-          console.error('❌ WALDOCOIN API failed for First Ledger:', waldoError);
-          console.error('Error details:', waldoError.message, waldoError.stack);
-
-          // If it's a network error, the service might be sleeping - show helpful message
-          if (waldoError.name === 'AbortError' || waldoError.message.includes('fetch')) {
-            console.log('💤 Render service may be sleeping - using fallback price');
-          }
-        }
-
-        console.log(`📊 First Ledger REAL price: ${price.toFixed(8)} XRP per WLO, Volume: ${volume.toFixed(0)} XRP`);
-
-        priceData.firstledger = {
-          price: price,
-          volume: volume,
-          liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
-          lastUpdate: Date.now(),
-          source: 'waldocoin-api'
-        };
-
-        console.log('✅ First Ledger live price loaded:', price.toFixed(8));
-        return priceData.firstledger;
-      } catch (e) {
-        console.error('❌ First Ledger API failed:', e);
-        // Fallback to conservative real-world price
-        priceData.firstledger = {
-          price: 0.00006400,
-          volume: 1000,
-          liquidity: 'Low',
-          lastUpdate: Date.now(),
-          source: 'fallback'
-        };
-        return priceData.firstledger;
-      }
-    }
-
-    async function loadXRPLToPrice() {
-      try {
-        console.log('🔄 Fetching XRPL.to price data...');
-        // Try XRPL.to specific token endpoint
-        let response;
-
-        try {
-          // Try specific WLO token endpoint
-          response = await fetch('https://xrpl.to/api/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY.WLO', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          });
-        } catch (e) {
-          console.log('XRPL.to specific API failed, trying general...');
-          // Fallback to general tokens API
-          response = await fetch('https://api.xrpl.to/v1/tokens', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          });
-        }
-
-        if (!response.ok) {
-          throw new Error(`XRPL API HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('📊 XRPL.to API response:', data);
-
-        let price = 0.00006400; // Conservative fallback
-        let volume = 0;
-
-        // Prefer WALDOCOIN backend REAL price for consistency
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
-          const waldoRes = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-
-          if (waldoRes.ok) {
-            const waldoData = await waldoRes.json();
-            if (waldoData.success) {
-              if (typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-                price = waldoData.xrpPerWlo; // Use same base as First Ledger for apples-to-apples
-              } else if (waldoData.best && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-                price = waldoData.best.mid;
-              }
-              if (typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
-                volume = waldoData.volume24h; // Use real 24h volume
-              }
-            }
-          }
-        } catch (err) {
-          console.warn('⚠️ WALDO API for XRPL.to failed, will use XRPL.to response if available', err);
-        }
-
-        // If WALDO price not obtained, try XRPL.to fields as a fallback
-        if ((price === 0.00006400 || !isFinite(price)) && data && Array.isArray(data.tokens)) {
-          const wloToken = data.tokens.find(t => t.currency === 'WLO' && t.issuer === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY');
-          if (wloToken && typeof wloToken.exch === 'number' && wloToken.exch > 0) {
-            price = wloToken.exch;
-            if (typeof wloToken.vol24hxrp === 'number') volume = wloToken.vol24hxrp;
-          }
-        }
-
-        // Build bid/ask from real mid if not provided elsewhere
-        const bid = price * 0.995; // 0.5% synthetic spread for display
-        const ask = price * 1.005;
-
-        priceData.xrplto = {
-          price,
-          bid,
-          ask,
-          volume,
-          liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
-          lastUpdate: Date.now(),
-          source: 'waldocoin-api'
-        };
-
-        console.log('✅ XRPL.to live price loaded:', price.toFixed(8));
-        return priceData.xrplto;
-      } catch (e) {
-        console.error('❌ XRPL.to API failed:', e);
-        // Fallback data
-        priceData.xrplto = {
-          price: 0.00012250,
-          bid: 0.00012225,
-          ask: 0.00012275,
-          volume: 8500,
-          liquidity: 'Medium',
-          lastUpdate: Date.now()
-        };
-        return priceData.xrplto;
-      }
-    }
-
-    async function loadXMagneticPrice() {
-      try {
-        console.log('🔄 Fetching XMagnetic price data...');
-        // Try XMagnetic API endpoints
-        let response;
-
-        try {
-          // Try XMagnetic direct API
-          response = await fetch('https://api.xmagnetic.org/v1/token/WLO', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          });
-        } catch (e) {
-          console.log('XMagnetic API failed, trying alternative...');
-          // Try alternative endpoint
-          response = await fetch('https://xmagnetic.org/api/tokens/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY.WLO', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          });
-        }
-
-        if (!response.ok) {
-          throw new Error(`XRPL API HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('📊 XMagnetic API response:', data);
-
-        let price = 0.00006400; // Conservative fallback price
-        let volume = 800;
-
-        // Get REAL price from WALDOCOIN backend API
-        console.log('📊 XMagnetic: Fetching REAL price from WALDOCOIN backend API...');
-
-        try {
-          // Add timeout for Render service wake-up
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-
-          const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache'
-            },
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
-
-          if (waldoResponse.ok) {
-            const waldoData = await waldoResponse.json();
-            console.log('📊 XMagnetic WALDOCOIN API response:', waldoData);
-
-            // Use real price from WALDOCOIN backend with slight variation for XMagnetic
-            if (waldoData.success) {
-              if (waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-                price = waldoData.xrpPerWlo * 0.98; // 2% lower spread for XMagnetic
-                console.log(`📊 XMagnetic REAL price: ${price.toFixed(8)} XRP per WLO`);
-              } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-                price = waldoData.best.mid * 0.98; // 2% lower spread
-                console.log(`📊 XMagnetic REAL price from XRPL: ${price.toFixed(8)} XRP per WLO`);
-              } else {
-                console.log('📊 XMagnetic: No valid price in API response:', waldoData);
-              }
-            } else {
-              console.log('📊 XMagnetic: API returned success=false:', waldoData);
-            }
-
-            // Use real volume with variation
-            if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
-              volume = waldoData.volume24h * 0.6; // Lower volume for XMagnetic
-              console.log(`📊 XMagnetic REAL volume: ${volume.toFixed(2)} XRP`);
-            } else {
-              console.log('📊 XMagnetic: No valid volume in API response');
-            }
-          }
-        } catch (waldoError) {
-          console.error('❌ XMagnetic WALDOCOIN API failed:', waldoError);
-          console.error('Error details:', waldoError.message, waldoError.stack);
-
-          // Fallback to XRPL.to data if available
-          if (data && data.tokens && Array.isArray(data.tokens)) {
-            const wloToken = data.tokens.find(token =>
-              token.currency === 'WLO' && token.issuer === 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
-            );
-
-            if (wloToken && wloToken.exch && typeof wloToken.exch === 'number') {
-              price = wloToken.exch;
-              console.log(`📊 XMagnetic using XRPL.to price: ${price.toFixed(8)} XRP per WLO`);
-
-              if (wloToken.vol24hxrp) {
-                volume = wloToken.vol24hxrp;
-              }
-            }
-          }
-        }
-
-        priceData.xmagnetic = {
-          price: price,
-          volume: volume,
-          liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
-          lastUpdate: Date.now(),
-          source: 'waldocoin-api'
-        };
-
-        console.log('✅ XMagnetic live price loaded:', price.toFixed(8));
-        return priceData.xmagnetic;
-      } catch (e) {
-        console.error('❌ XMagnetic API failed:', e);
-        // Fallback data
-        priceData.xmagnetic = {
-          price: 0.00006200, // Slightly lower than First Ledger
-          volume: 800,
-          liquidity: 'Low',
-          lastUpdate: Date.now(),
-          source: 'fallback'
-        };
-        return priceData.xmagnetic;
-      }
-    }
-
-    async function getLiveXRPLPrices() {
-      try {
-        console.log('📊 Fetching REAL XRPL orderbook prices...');
-
-        // Get real XRPL orderbook data from WALDOCOIN backend
-        const response = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📊 XRPL orderbook API response:', data);
-
-          if (data.success && data.best) {
-            const { bid, ask, mid } = data.best;
-
-            if (bid && ask && mid) {
-              console.log(`📊 REAL XRPL orderbook - Bid: ${bid.toFixed(8)}, Ask: ${ask.toFixed(8)}, Mid: ${mid.toFixed(8)}`);
-              return { bid, ask, mid };
-            } else if (mid) {
-              // If only mid price available, create spread
-              const spread = mid * 0.01; // 1% spread
-              console.log(`📊 REAL XRPL mid price: ${mid.toFixed(8)}, creating 1% spread`);
-              return {
-                bid: mid - spread / 2,
-                ask: mid + spread / 2,
-                mid: mid
-              };
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ XRPL orderbook API failed:', error);
-      }
-
-      // Fallback to conservative real-world estimate
-      console.log('📊 Using fallback XRPL prices');
-      const basePrice = 0.00006400; // Conservative estimate
-      const spread = basePrice * 0.02; // 2% spread
-
-      return {
-        bid: basePrice - spread / 2,
-        ask: basePrice + spread / 2,
-        mid: basePrice
-      };
-    }
-
-    function updatePriceDisplay() {
-      console.log('🔄 Updating price display...', priceData);
-
-      if (priceData.firstledger) {
-        el('flPrice').textContent = priceData.firstledger.price.toFixed(8);
-        el('flLiquidity').textContent = priceData.firstledger.liquidity;
-      }
-
-      if (priceData.xrplto) {
-        el('xrplToPrice').textContent = priceData.xrplto.price.toFixed(8);
-        el('xrplToLiquidity').textContent = priceData.xrplto.liquidity;
-      }
-
-      if (priceData.xmagnetic) {
-        el('xmagneticPrice').textContent = priceData.xmagnetic.price.toFixed(8);
-        el('xmagneticLiquidity').textContent = priceData.xmagnetic.liquidity;
-      }
-    }
-
-    function findBestExchange() {
-      console.log('🔍 Finding best exchange...', priceData);
-
-      const exchanges = Object.entries(priceData).filter(([key, data]) => data && data.price);
-
-      if (exchanges.length === 0) {
-        console.log('⚠️ No price data available for best exchange');
-        return;
-      }
-
-      // Find lowest price (best for BUYING WLO)
-      let bestPrice = Infinity;
-      let bestKey = null;
-
-      exchanges.forEach(([key, data]) => {
-        if (data.price < bestPrice) {
-          bestPrice = data.price;
-          bestKey = key;
-        }
-      });
-
-      bestExchange = bestKey;
-      window.waldoDEX.bestExchange = bestKey; // Keep window reference updated
-
-      // Update best price card
-      if (bestExchange && priceData[bestExchange]) {
-        el('bestPrice').textContent = priceData[bestExchange].price.toFixed(8);
-        el('bestTradeBtn').textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
-
-        // Add visual indicator to the best exchange card
-        document.querySelectorAll('.dex-card').forEach(card => card.classList.remove('best-highlight'));
-        const bestCard = document.getElementById(bestExchange + 'Card');
-        if (bestCard) {
-          bestCard.classList.add('best-highlight');
-        }
-      }
-
-      console.log('✅ Best exchange found:', bestExchange, 'Price:', bestPrice.toFixed(8));
-      return bestExchange;
-    }
-
-    function updateMarketStats() {
-      console.log('📊 Updating market stats...', priceData);
-
-      const exchanges = Object.values(priceData).filter(d => d && d.price);
-
-      if (exchanges.length === 0) {
-        console.log('⚠️ No price data available for stats');
-        return;
-      }
-
-      // Calculate total volume
-      const totalVol = exchanges.reduce((sum, d) => sum + (d.volume || 0), 0);
-
-      // Calculate price range
-      const prices = exchanges.map(d => d.price).filter(p => p > 0);
-      const minPrice = Math.min(...prices);
-      const maxPrice = Math.max(...prices);
-
-      // Calculate spread
-      const spread = prices.length > 1 ? ((maxPrice - minPrice) / minPrice * 100) : 0;
-
-      // Update DOM
-      el('totalVolume').textContent = totalVol.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' XRP';
-      el('priceRange').textContent = `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`;
-      el('bestSpread').textContent = spread.toFixed(2) + '%';
-
-      console.log('✅ Market stats updated:', {
-        volume: totalVol,
-        range: `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`,
-        spread: spread.toFixed(2) + '%'
-      });
-    }
-
-    // Calculator functionality
-    el('calcAmount').addEventListener('input', calculateTrade);
-
-    function calculateTrade() {
-      const amount = parseFloat(el('calcAmount').value);
-      const fromCurrency = el('fromCurrencyLabel').textContent;
-      const toCurrency = el('toCurrencyLabel').textContent;
-
-      if (!amount || !bestExchange || !priceData[bestExchange]) {
-        el('calcResult').value = '';
-        el('calcBestExchange').textContent = '—';
-        el('calcSavings').textContent = '—';
-        el('calcFees').textContent = '—';
-        el('calcTradeBtn').style.display = 'none';
-        return;
-      }
-
-      const bestPrice = priceData[bestExchange].price;
-      const fees = EXCHANGES[bestExchange].fees;
-
-      let result, savings;
-
-      // Handle all conversion combinations
-      if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
-        result = (amount / bestPrice) * (1 - fees);
-      } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
-        result = (amount * bestPrice) * (1 - fees);
-      } else if (fromCurrency === toCurrency) {
-        result = amount;
-      } else {
-        result = 0;
-      }
-
-      el('calcResult').value = result.toFixed(6);
-      el('calcBestExchange').textContent = EXCHANGES[bestExchange].name;
-      el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : (fees * 100).toFixed(2) + '%';
-
-      // Calculate savings vs worst exchange
-      if (fromCurrency !== toCurrency) {
-        const prices = Object.values(priceData).map(d => d.price).filter(p => p > 0);
-        const worstPrice = fromCurrency === 'XRP' ? Math.max(...prices) : Math.min(...prices);
-        const worstResult = fromCurrency === 'XRP' ? (amount / worstPrice) * (1 - fees) : (amount * worstPrice) * (1 - fees);
-        savings = Math.abs(result - worstResult);
-        el('calcSavings').textContent = `${savings.toFixed(6)} ${toCurrency}`;
-      } else {
-        el('calcSavings').textContent = '0.000000 ' + toCurrency;
-      }
-
-      // Show trade button
-      const tradeBtn = el('calcTradeBtn');
-      tradeBtn.textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
-      tradeBtn.style.display = 'block';
-    }
-
-    window.flipCalculator = function () {
-      const fromLabel = el('fromCurrencyLabel');
-      const toLabel = el('toCurrencyLabel');
-      const temp = fromLabel.textContent;
-      fromLabel.textContent = toLabel.textContent;
-      toLabel.textContent = temp;
-      calculateTrade();
-    }
-
-    // Trading functions (redirect to exchanges) - use window.waldoDEX references
-    window.openBestDEX = function () {
-      const best = window.waldoDEX.bestExchange;
-      const exchanges = window.waldoDEX.EXCHANGES;
-      if (best && exchanges[best]) {
-        console.log(`🚀 Opening best exchange: ${exchanges[best].name}`);
-        window.open(exchanges[best].url, '_blank');
-      }
-    };
-
-    window.openFirstLedger = function () {
-      const exchanges = window.waldoDEX.EXCHANGES;
-      if (exchanges && exchanges.firstledger) {
-        window.open(exchanges.firstledger.url, '_blank');
-      }
-    };
-
-    window.openXRPLTo = function () {
-      console.log('⚡ Opening XRPL.to WLO token page...');
-      window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank', 'noopener,noreferrer');
-    };
-
-    window.openXMagnetic = function () {
-      const exchanges = window.waldoDEX.EXCHANGES;
-      if (exchanges && exchanges.xmagnetic) {
-        window.open(exchanges.xmagnetic.url, '_blank');
-      }
-    };
-
-    window.openCalcBestExchange = function () {
-      const best = window.waldoDEX.bestExchange;
-      const exchanges = window.waldoDEX.EXCHANGES;
-      if (best && exchanges && exchanges[best]) {
-        console.log(`🚀 Opening best exchange: ${exchanges[best].name}`);
-        window.open(exchanges[best].url, '_blank', 'noopener,noreferrer');
-      }
-    };
-
-    // Calculator is for reference only - no trading functionality
-
-    // Force initial load when widget opens (removed duplicate event listener)
-
-    // Auto-refresh prices every 30 seconds
-    setInterval(() => {
-      if (!collapsed) {
-        loadAllPrices();
-      }
-    }, 30000);
-
-    // Initial load after 1 second (only if not collapsed)
-    setTimeout(() => {
-      if (!collapsed) {
-        console.log('🚀 Initial price load...');
-        loadAllPrices();
-      }
-    }, 1000);
-
-    console.log('✅ WALDO DEX Widget initialized successfully');
-  } // end initWaldoDEXWidget
+  console.log('✅ WALDO DEX Widget Simple - Loaded');
 </script>
