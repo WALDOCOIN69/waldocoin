@@ -911,12 +911,12 @@
         return;
       }
 
-      // Find highest price (best for selling WLO)
-      let bestPrice = 0;
+      // Find LOWEST price (best for BUYING WLO)
+      let bestPrice = Infinity;
       let bestKey = null;
 
       exchanges.forEach(([key, data]) => {
-        if (data.price > bestPrice) {
+        if (data.price < bestPrice) {
           bestPrice = data.price;
           bestKey = key;
         }
@@ -927,7 +927,7 @@
       // Update best price card
       if (bestExchange && priceData[bestExchange]) {
         el('bestPrice').textContent = priceData[bestExchange].price.toFixed(8);
-        el('bestTradeBtn').textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
+        el('bestTradeBtn').textContent = `🔥 Buy on ${EXCHANGES[bestExchange].name}`;
 
         // Add visual indicator to the best exchange card
         document.querySelectorAll('.dex-card').forEach(card => card.classList.remove('best-highlight'));
@@ -937,7 +937,7 @@
         }
       }
 
-      console.log('✅ Best exchange found:', bestExchange, 'Price:', bestPrice.toFixed(8));
+      console.log('✅ Best exchange for BUYING:', bestExchange, 'Price:', bestPrice.toFixed(8));
       return bestExchange;
     }
 
