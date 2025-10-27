@@ -2642,6 +2642,7 @@
             <button onclick="pauseBot()" class="btn btn-warning">⏸️ Pause Bot</button>
             <button onclick="resumeBot()" class="btn btn-success">▶️ Resume Bot</button>
             <button onclick="restartBot()" class="btn btn-danger">🔄 Restart Bot</button>
+            <button onclick="resetVolume()" class="btn btn-secondary">🔄 Reset Volume</button>
           </div>
 
           <div id="botControlResult" class="margin-top-15"></div>
@@ -8198,6 +8199,39 @@ This action cannot be undone. Continue?`;
         console.error('Error restarting bot:', error);
         resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error restarting bot</div>';
         showAlert('Network error restarting bot', 'error');
+      }
+    }
+
+    async function resetVolume() {
+      if (!confirm('🔄 Reset daily volume counters?\n\nThis will reset volume and trade count to 0. Current data will be archived.')) return;
+
+      const resultDiv = document.getElementById('botControlResult');
+      resultDiv.innerHTML = '<div style="color: #ffd93d;">🔄 Resetting volume...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/admin/volume-bot/reset-volume`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = '<div style="color: #27ae60;">✅ Volume counters reset successfully!</div>';
+          showAlert('Volume counters reset', 'success');
+          await loadBotStatus(); // Refresh status to show 0 volume
+        } else {
+          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
+          showAlert(`Failed to reset volume: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error resetting volume:', error);
+        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error resetting volume</div>';
+        showAlert('Network error resetting volume', 'error');
       }
     }
 

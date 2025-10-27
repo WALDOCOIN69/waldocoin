@@ -267,4 +267,40 @@ router.post("/withdraw", requireAdmin, async (req, res) => {
   }
 });
 
+// Reset daily volume and trade counters
+router.post("/reset-volume", requireAdmin, async (req, res) => {
+  try {
+    console.log("🔄 Admin resetting daily volume and trade counters...");
+
+    // Archive current stats before resetting
+    const currentVolume = await redis.get('waldo:daily_volume') || '0';
+    const currentVolume24h = await redis.get('volume_bot:volume_24h') || '0';
+    const tradesCount = await redis.get('volume_bot:trades_today') || '0';
+
+    const dateKey = new Date().toISOString().split('T')[0];
+    await redis.set(`waldo:archive:${dateKey}:volume`, currentVolume);
+    await redis.set(`waldo:archive:${dateKey}:trades`, tradesCount);
+
+    // Reset all volume counters to 0
+    await redis.set('waldo:daily_volume', '0');
+    await redis.set('volume_bot:volume_24h', '0');
+    await redis.set('volume_bot:trades_today', '0');
+
+    console.log(`✅ Volume reset: ${currentVolume24h} XRP archived, counters reset to 0`);
+
+    res.json({
+      success: true,
+      message: 'Daily volume and trade counters reset successfully',
+      archived: {
+        date: dateKey,
+        volume: currentVolume24h,
+        trades: tradesCount
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error resetting volume:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;
