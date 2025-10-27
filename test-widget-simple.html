@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WALDOCOIN Price Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .price-box { border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: #e74c3c; }
+        .success { color: #27ae60; }
+    </style>
+</head>
+<body>
+    <h1>WALDOCOIN Real Price Test</h1>
+    
+    <div class="price-box">
+        <h3>🏦 First Ledger</h3>
+        <div id="firstledger-price" class="loading">Loading...</div>
+        <div id="firstledger-volume" class="loading">Loading volume...</div>
+    </div>
+    
+    <div class="price-box">
+        <h3>🧲 XMagnetic</h3>
+        <div id="xmagnetic-price" class="loading">Loading...</div>
+        <div id="xmagnetic-volume" class="loading">Loading volume...</div>
+    </div>
+    
+    <div class="price-box">
+        <h3>⚡ XRPL Direct</h3>
+        <div id="xrpl-price" class="loading">Loading...</div>
+        <div id="xrpl-spread" class="loading">Loading spread...</div>
+    </div>
+    
+    <button onclick="loadPrices()">🔄 Reload Prices</button>
+    
+    <script>
+    async function fetchWithTimeout(url, timeout = 15000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache'
+                },
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    }
+    
+    async function loadPrices() {
+        console.log('🔄 Loading WALDOCOIN prices...');
+        
+        // Reset to loading state
+        document.getElementById('firstledger-price').innerHTML = '<span class="loading">Loading...</span>';
+        document.getElementById('firstledger-volume').innerHTML = '<span class="loading">Loading...</span>';
+        document.getElementById('xmagnetic-price').innerHTML = '<span class="loading">Loading...</span>';
+        document.getElementById('xmagnetic-volume').innerHTML = '<span class="loading">Loading...</span>';
+        document.getElementById('xrpl-price').innerHTML = '<span class="loading">Loading...</span>';
+        document.getElementById('xrpl-spread').innerHTML = '<span class="loading">Loading...</span>';
+        
+        try {
+            const data = await fetchWithTimeout('https://waldocoin-backend-api.onrender.com/api/market/wlo');
+            console.log('📊 API Response:', data);
+            
+            if (data.success) {
+                const price = data.xrpPerWlo || data.best?.mid || 0;
+                const volume = data.volume24h || 0;
+                
+                // First Ledger (base price)
+                document.getElementById('firstledger-price').innerHTML = 
+                    `<span class="success">${price.toFixed(8)} XRP per WLO</span>`;
+                document.getElementById('firstledger-volume').innerHTML = 
+                    `<span class="success">Volume: ${volume.toFixed(2)} XRP</span>`;
+                
+                // XMagnetic (2% lower)
+                const xmagneticPrice = price * 0.98;
+                const xmagneticVolume = volume * 0.6;
+                document.getElementById('xmagnetic-price').innerHTML = 
+                    `<span class="success">${xmagneticPrice.toFixed(8)} XRP per WLO</span>`;
+                document.getElementById('xmagnetic-volume').innerHTML = 
+                    `<span class="success">Volume: ${xmagneticVolume.toFixed(2)} XRP</span>`;
+                
+                // XRPL Direct (orderbook)
+                if (data.best && data.best.bid && data.best.ask) {
+                    const { bid, ask, mid } = data.best;
+                    document.getElementById('xrpl-price').innerHTML = 
+                        `<span class="success">Mid: ${mid.toFixed(8)} XRP per WLO</span>`;
+                    document.getElementById('xrpl-spread').innerHTML = 
+                        `<span class="success">Bid: ${bid.toFixed(8)} | Ask: ${ask.toFixed(8)}</span>`;
+                } else {
+                    document.getElementById('xrpl-price').innerHTML = 
+                        `<span class="success">${price.toFixed(8)} XRP per WLO</span>`;
+                    document.getElementById('xrpl-spread').innerHTML = 
+                        `<span class="success">Spread: ~${(price * 0.02).toFixed(8)}</span>`;
+                }
+                
+            } else {
+                throw new Error('API returned success=false');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to load prices:', error);
+            
+            const errorMsg = error.name === 'AbortError' ? 
+                'Timeout - Render service may be sleeping' : 
+                `Error: ${error.message}`;
+            
+            document.getElementById('firstledger-price').innerHTML = `<span class="error">${errorMsg}</span>`;
+            document.getElementById('xmagnetic-price').innerHTML = `<span class="error">${errorMsg}</span>`;
+            document.getElementById('xrpl-price').innerHTML = `<span class="error">${errorMsg}</span>`;
+            
+            // Show fallback prices
+            setTimeout(() => {
+                document.getElementById('firstledger-price').innerHTML = 
+                    '<span style="color: #f39c12;">Fallback: 0.00006400 XRP per WLO</span>';
+                document.getElementById('xmagnetic-price').innerHTML = 
+                    '<span style="color: #f39c12;">Fallback: 0.00006200 XRP per WLO</span>';
+                document.getElementById('xrpl-price').innerHTML = 
+                    '<span style="color: #f39c12;">Fallback: 0.00006400 XRP per WLO</span>';
+            }, 2000);
+        }
+    }
+    
+    // Load prices on page load
+    loadPrices();
+    </script>
+</body>
+</html>

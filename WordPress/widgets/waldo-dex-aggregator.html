@@ -640,11 +640,23 @@
       console.log('📊 Loading prices from all DEXs...');
 
       try {
-        // Load all prices concurrently
-        await Promise.all([
+        // Show loading state
+        const bestPriceEl = document.querySelector('.best-price .price');
+        const volumeEl = document.querySelector('.volume-display');
+        if (bestPriceEl) bestPriceEl.textContent = 'Loading...';
+        if (volumeEl) volumeEl.textContent = 'Loading...';
+
+        // Load all prices concurrently with timeout
+        const loadPromises = [
           loadFirstLedgerPrice(),
           loadXRPLToPrice(),
           loadXMagneticPrice()
+        ];
+
+        // Wait for all with timeout (20 seconds for Render wake-up)
+        await Promise.race([
+          Promise.all(loadPromises),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('API Timeout - Render service may be sleeping')), 20000))
         ]);
 
         updatePriceDisplay();
@@ -653,6 +665,11 @@
 
       } catch (e) {
         console.error('❌ Failed to load prices:', e);
+        // Show error state
+        const bestPriceEl = document.querySelector('.best-price .price');
+        const volumeEl = document.querySelector('.volume-display');
+        if (bestPriceEl) bestPriceEl.textContent = 'Service Loading...';
+        if (volumeEl) volumeEl.textContent = 'Please wait';
       }
     }
 
@@ -691,13 +708,20 @@
         console.log('📊 Fetching REAL price from WALDOCOIN backend API...');
 
         try {
+          // Add timeout and retry logic for Render service wake-up
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
           const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
               'Cache-Control': 'no-cache'
-            }
+            },
+            signal: controller.signal
           });
+
+          clearTimeout(timeoutId);
 
           if (waldoResponse.ok) {
             const waldoData = await waldoResponse.json();
@@ -729,6 +753,11 @@
         } catch (waldoError) {
           console.error('❌ WALDOCOIN API failed for First Ledger:', waldoError);
           console.error('Error details:', waldoError.message, waldoError.stack);
+
+          // If it's a network error, the service might be sleeping - show helpful message
+          if (waldoError.name === 'AbortError' || waldoError.message.includes('fetch')) {
+            console.log('💤 Render service may be sleeping - using fallback price');
+          }
         }
 
         console.log(`📊 First Ledger REAL price: ${price.toFixed(8)} XRP per WLO, Volume: ${volume.toFixed(0)} XRP`);
@@ -877,13 +906,20 @@
         console.log('📊 XMagnetic: Fetching REAL price from WALDOCOIN backend API...');
 
         try {
+          // Add timeout for Render service wake-up
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
           const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
               'Cache-Control': 'no-cache'
-            }
+            },
+            signal: controller.signal
           });
+
+          clearTimeout(timeoutId);
 
           if (waldoResponse.ok) {
             const waldoData = await waldoResponse.json();
