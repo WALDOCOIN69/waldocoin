@@ -574,10 +574,15 @@
     console.log('🚀 Initializing WALDO DEX Widget...');
 
     const el = (id) => document.getElementById(id);
-    const priceData = {};
-    let bestExchange = null;
 
-    const EXCHANGES = {
+    // Make these accessible to onclick handlers by storing in window
+    window.waldoDEX = window.waldoDEX || {};
+    window.waldoDEX.priceData = {};
+    window.waldoDEX.bestExchange = null;
+
+    const priceData = window.waldoDEX.priceData;
+
+    const EXCHANGES = window.waldoDEX.EXCHANGES = {
       firstledger: {
         name: 'First Ledger',
         url: 'https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO',
@@ -1138,6 +1143,7 @@
       });
 
       bestExchange = bestKey;
+      window.waldoDEX.bestExchange = bestKey; // Keep window reference updated
 
       // Update best price card
       if (bestExchange && priceData[bestExchange]) {
@@ -1252,15 +1258,21 @@
       calculateTrade();
     }
 
-    // Trading functions (redirect to exchanges)
+    // Trading functions (redirect to exchanges) - use window.waldoDEX references
     window.openBestDEX = function () {
-      if (bestExchange) {
-        window.open(EXCHANGES[bestExchange].url, '_blank');
+      const best = window.waldoDEX.bestExchange;
+      const exchanges = window.waldoDEX.EXCHANGES;
+      if (best && exchanges[best]) {
+        console.log(`🚀 Opening best exchange: ${exchanges[best].name}`);
+        window.open(exchanges[best].url, '_blank');
       }
     };
 
     window.openFirstLedger = function () {
-      window.open(EXCHANGES.firstledger.url, '_blank');
+      const exchanges = window.waldoDEX.EXCHANGES;
+      if (exchanges && exchanges.firstledger) {
+        window.open(exchanges.firstledger.url, '_blank');
+      }
     };
 
     window.openXRPLTo = function () {
@@ -1269,13 +1281,18 @@
     };
 
     window.openXMagnetic = function () {
-      window.open(EXCHANGES.xmagnetic.url, '_blank');
+      const exchanges = window.waldoDEX.EXCHANGES;
+      if (exchanges && exchanges.xmagnetic) {
+        window.open(exchanges.xmagnetic.url, '_blank');
+      }
     };
 
     window.openCalcBestExchange = function () {
-      if (bestExchange && EXCHANGES[bestExchange]) {
-        console.log(`🚀 Opening best exchange: ${EXCHANGES[bestExchange].name}`);
-        window.open(EXCHANGES[bestExchange].url, '_blank', 'noopener,noreferrer');
+      const best = window.waldoDEX.bestExchange;
+      const exchanges = window.waldoDEX.EXCHANGES;
+      if (best && exchanges && exchanges[best]) {
+        console.log(`🚀 Opening best exchange: ${exchanges[best].name}`);
+        window.open(exchanges[best].url, '_blank', 'noopener,noreferrer');
       }
     };
 
