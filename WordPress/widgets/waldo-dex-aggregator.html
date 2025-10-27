@@ -563,7 +563,16 @@
 </style>
 
 <script>
-  (function () {
+  // Ensure script runs after DOM is fully loaded (WordPress-safe)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWaldoDEXWidget);
+  } else {
+    initWaldoDEXWidget();
+  }
+
+  function initWaldoDEXWidget() {
+    console.log('🚀 Initializing WALDO DEX Widget...');
+
     const el = (id) => document.getElementById(id);
     const priceData = {};
     let bestExchange = null;
@@ -1289,5 +1298,6 @@
       }
     }, 1000);
 
-  })();
+    console.log('✅ WALDO DEX Widget initialized successfully');
+  } // end initWaldoDEXWidget
 </script>

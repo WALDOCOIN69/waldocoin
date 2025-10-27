@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEX Widget Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #0a0c1a;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .test-info {
+      background: #1a1c2e;
+      color: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+    .test-info h2 {
+      margin-top: 0;
+      color: #00f7ff;
+    }
+    .test-info button {
+      background: #25c2a0;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .test-info button:hover {
+      background: #22b894;
+    }
+    #console-log {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+    #console-log div {
+      margin: 2px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-info">
+    <h2>🧪 DEX Widget Standalone Test</h2>
+    <p>This page tests the widget in isolation without WordPress interference.</p>
+    <button onclick="testToggle()">Test Toggle</button>
+    <button onclick="testTabs()">Test Tabs</button>
+    <button onclick="testButtons()">Test Exchange Buttons</button>
+    <button onclick="clearConsole()">Clear Console</button>
+    <div id="console-log"></div>
+  </div>
+
+  <!-- INJECT WIDGET HERE -->
+  <div id="widget-container"></div>
+
+  <script>
+    // Console logger
+    const logEl = document.getElementById('console-log');
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    function addLog(type, ...args) {
+      const div = document.createElement('div');
+      div.style.color = type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0';
+      div.textContent = `[${type.toUpperCase()}] ${args.join(' ')}`;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      addLog('log', ...args);
+    };
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      addLog('error', ...args);
+    };
+    console.warn = function(...args) {
+      originalWarn.apply(console, args);
+      addLog('warn', ...args);
+    };
+
+    function clearConsole() {
+      logEl.innerHTML = '';
+    }
+
+    function testToggle() {
+      const toggle = document.getElementById('widgetToggle');
+      if (toggle) {
+        console.log('🔘 Clicking toggle button...');
+        toggle.click();
+      } else {
+        console.error('❌ Toggle button not found!');
+      }
+    }
+
+    function testTabs() {
+      const tabs = document.querySelectorAll('.tab');
+      console.log(`📑 Found ${tabs.length} tabs`);
+      tabs.forEach((tab, i) => {
+        console.log(`Tab ${i}: ${tab.dataset.tab}`);
+      });
+      if (tabs[1]) {
+        console.log('🔘 Clicking Calculator tab...');
+        tabs[1].click();
+      }
+    }
+
+    function testButtons() {
+      const buttons = document.querySelectorAll('.trade-btn');
+      console.log(`🔘 Found ${buttons.length} trade buttons`);
+      buttons.forEach((btn, i) => {
+        console.log(`Button ${i}: ${btn.textContent.trim()}`);
+      });
+    }
+
+    // Load widget
+    console.log('📦 Loading widget...');
+    fetch('WordPress/widgets/waldo-dex-aggregator.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('widget-container').innerHTML = html;
+        console.log('✅ Widget loaded successfully');
+        console.log('🔍 Checking for elements...');
+        console.log('  - Root:', document.getElementById('waldoAggregator') ? '✅' : '❌');
+        console.log('  - Toggle:', document.getElementById('widgetToggle') ? '✅' : '❌');
+        console.log('  - Tabs:', document.querySelectorAll('.tab').length);
+      })
+      .catch(err => {
+        console.error('❌ Failed to load widget:', err);
+      });
+  </script>
+</body>
+</html>
+
