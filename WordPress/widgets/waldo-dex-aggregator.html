@@ -592,14 +592,14 @@
       }
     };
 
-    // Collapsible functionality
-    const root = el('waldoAggregator');
-    const toggle = el('widgetToggle');
-    const header = document.querySelector('#waldoAggregator .aggregator-head');
+    // Collapsible functionality (robust for late-loaded DOM)
+    const getRoot = () => document.getElementById('waldoAggregator');
+    const toggle = document.getElementById('widgetToggle');
 
     // Helpers for collapsed state
-    const isCollapsed = () => root?.classList.contains('collapsed');
+    const isCollapsed = () => getRoot()?.classList.contains('collapsed');
     const setCollapsed = (state) => {
+      const root = getRoot();
       if (!root) return;
       root.classList.toggle('collapsed', state);
     };
@@ -617,37 +617,52 @@
       }
     };
 
-    // Click/keyboard handlers
+    // Direct handlers if elements exist now
     if (toggle) {
       toggle.addEventListener('click', handleToggle);
       toggle.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') handleToggle(e);
       });
     }
+    const header = document.querySelector('#waldoAggregator .aggregator-head');
     if (header) {
       header.addEventListener('click', (e) => {
-        // Ignore clicks on tabs or the toggle itself
         if (e.target.closest('.tab') || e.target.closest('#widgetToggle')) return;
         handleToggle(e);
       });
     }
 
-    // Initialize to whatever the markup has
-    setCollapsed(root?.classList.contains('collapsed'));
+    // Event delegation fallback (works even if widget is injected later)
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#widgetToggle')) return handleToggle(e);
+      const headerEl = e.target.closest('#waldoAggregator .aggregator-head');
+      if (headerEl && !e.target.closest('.tab') && !e.target.closest('#widgetToggle')) return handleToggle(e);
+    });
+
+    // Initialize to whatever the markup has once available
+    setCollapsed(getRoot()?.classList.contains('collapsed'));
 
 
-    // Tab switching
+    // Tab switching (direct + delegated)
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-
         const tabName = tab.dataset.tab;
         el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
         el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
-
         if (!isCollapsed() && tabName === 'prices') loadAllPrices();
       });
+    });
+    document.addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab');
+      if (!tab) return;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const tabName = tab.dataset.tab;
+      el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
+      el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
+      if (!isCollapsed() && tabName === 'prices') loadAllPrices();
     });
 
     // Load prices from all exchanges
