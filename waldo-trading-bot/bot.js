@@ -73,10 +73,22 @@ redis.on('connect', () => logger.info('Connected to Redis'));
 // Connect to Redis
 async function connectRedis() {
   try {
+    // Check if already connected
+    if (redis.isOpen) {
+      logger.info('✅ Redis already connected');
+      return true;
+    }
+
     await redis.connect();
     logger.info('✅ Redis connected successfully');
     return true;
   } catch (error) {
+    // If error is "Socket already opened", it means we're already connected
+    if (error.message && error.message.includes('Socket already opened')) {
+      logger.info('✅ Redis already connected (socket open)');
+      return true;
+    }
+
     logger.error('❌ Redis connection failed:', error);
     return false;
   }
@@ -1968,7 +1980,7 @@ process.on('unhandledRejection', (error) => {
 process.on('SIGTERM', async () => {
   logger.info('🛑 Shutting down gracefully...');
   await client.disconnect();
-  await redis.disconnect();
+  await redis.quit();
   process.exit(0);
 });
 
