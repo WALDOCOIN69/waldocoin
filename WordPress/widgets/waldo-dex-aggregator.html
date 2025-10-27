@@ -4,7 +4,7 @@
     <div class="title"><span class="accent">�</span> WHERE TO BUY $WLO</div>
     <div class="sub">Referral links to exchanges selling WALDOCOIN</div>
     <div class="tabs">
-      <button id="widgetToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
+      <button id="widgetToggle" class="toggle" type="button" aria-label="Toggle widget" title="Toggle"></button>
       <button class="tab active" data-tab="prices">Live Prices</button>
       <button class="tab" data-tab="calculator">Calculator</button>
     </div>
@@ -595,31 +595,46 @@
     // Collapsible functionality
     const root = el('waldoAggregator');
     const toggle = el('widgetToggle');
-    let collapsed = true;
+    const header = document.querySelector('#waldoAggregator .aggregator-head');
 
-    const applyCollapsed = () => {
-      if (root) {
-        if (collapsed) {
-          root.classList.add('collapsed');
-        } else {
-          root.classList.remove('collapsed');
-        }
+    // Helpers for collapsed state
+    const isCollapsed = () => root?.classList.contains('collapsed');
+    const setCollapsed = (state) => {
+      if (!root) return;
+      root.classList.toggle('collapsed', state);
+    };
+
+    // Ensure the toggle behaves like a button in all contexts
+    if (toggle) toggle.setAttribute('type', 'button');
+
+    const handleToggle = (evt) => {
+      if (evt) evt.preventDefault();
+      const next = !isCollapsed();
+      setCollapsed(next);
+      if (!next) {
+        console.log('🔍 Widget opened, loading prices...');
+        loadAllPrices();
       }
     };
 
+    // Click/keyboard handlers
     if (toggle) {
-      toggle.addEventListener('click', () => {
-        collapsed = !collapsed;
-        applyCollapsed();
-        if (!collapsed) {
-          console.log('🔍 Widget opened, loading prices...');
-          loadAllPrices();
-        }
+      toggle.addEventListener('click', handleToggle);
+      toggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') handleToggle(e);
+      });
+    }
+    if (header) {
+      header.addEventListener('click', (e) => {
+        // Ignore clicks on tabs or the toggle itself
+        if (e.target.closest('.tab') || e.target.closest('#widgetToggle')) return;
+        handleToggle(e);
       });
     }
 
-    // Initialize collapsed state
-    applyCollapsed();
+    // Initialize to whatever the markup has
+    setCollapsed(root?.classList.contains('collapsed'));
+
 
     // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
@@ -631,7 +646,7 @@
         el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
         el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
 
-        if (!collapsed && tabName === 'prices') loadAllPrices();
+        if (!isCollapsed() && tabName === 'prices') loadAllPrices();
       });
     });
 
