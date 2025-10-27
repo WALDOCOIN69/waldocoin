@@ -704,21 +704,31 @@
             console.log('📊 WALDOCOIN API response:', waldoData);
 
             // Use real price from WALDOCOIN backend
-            if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number') {
-              price = waldoData.xrpPerWlo;
-              console.log(`📊 First Ledger REAL price from WALDOCOIN: ${price.toFixed(8)} XRP per WLO`);
-            } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number') {
-              price = waldoData.best.mid;
-              console.log(`📊 First Ledger REAL price from XRPL orderbook: ${price.toFixed(8)} XRP per WLO`);
+            if (waldoData.success) {
+              if (waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
+                price = waldoData.xrpPerWlo;
+                console.log(`📊 First Ledger REAL price from WALDOCOIN: ${price.toFixed(8)} XRP per WLO`);
+              } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
+                price = waldoData.best.mid;
+                console.log(`📊 First Ledger REAL price from XRPL orderbook: ${price.toFixed(8)} XRP per WLO`);
+              } else {
+                console.log('📊 First Ledger: No valid price in API response:', waldoData);
+              }
+            } else {
+              console.log('📊 First Ledger: API returned success=false:', waldoData);
             }
 
             // Use real volume if available
-            if (waldoData.volume24h && typeof waldoData.volume24h === 'number') {
+            if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
               volume = waldoData.volume24h;
+              console.log(`📊 First Ledger REAL volume: ${volume.toFixed(2)} XRP`);
+            } else {
+              console.log('📊 First Ledger: No valid volume in API response');
             }
           }
         } catch (waldoError) {
-          console.warn('⚠️ WALDOCOIN API failed, using fallback:', waldoError);
+          console.error('❌ WALDOCOIN API failed for First Ledger:', waldoError);
+          console.error('Error details:', waldoError.message, waldoError.stack);
         }
 
         console.log(`📊 First Ledger REAL price: ${price.toFixed(8)} XRP per WLO, Volume: ${volume.toFixed(0)} XRP`);
@@ -726,8 +736,9 @@
         priceData.firstledger = {
           price: price,
           volume: volume,
-          liquidity: 'High',
-          lastUpdate: Date.now()
+          liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
+          lastUpdate: Date.now(),
+          source: 'waldocoin-api'
         };
 
         console.log('✅ First Ledger live price loaded:', price.toFixed(8));
@@ -879,21 +890,31 @@
             console.log('📊 XMagnetic WALDOCOIN API response:', waldoData);
 
             // Use real price from WALDOCOIN backend with slight variation for XMagnetic
-            if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number') {
-              price = waldoData.xrpPerWlo * 0.98; // 2% lower spread for XMagnetic
-              console.log(`📊 XMagnetic REAL price: ${price.toFixed(8)} XRP per WLO`);
-            } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number') {
-              price = waldoData.best.mid * 0.98; // 2% lower spread
-              console.log(`📊 XMagnetic REAL price from XRPL: ${price.toFixed(8)} XRP per WLO`);
+            if (waldoData.success) {
+              if (waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
+                price = waldoData.xrpPerWlo * 0.98; // 2% lower spread for XMagnetic
+                console.log(`📊 XMagnetic REAL price: ${price.toFixed(8)} XRP per WLO`);
+              } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
+                price = waldoData.best.mid * 0.98; // 2% lower spread
+                console.log(`📊 XMagnetic REAL price from XRPL: ${price.toFixed(8)} XRP per WLO`);
+              } else {
+                console.log('📊 XMagnetic: No valid price in API response:', waldoData);
+              }
+            } else {
+              console.log('📊 XMagnetic: API returned success=false:', waldoData);
             }
 
             // Use real volume with variation
-            if (waldoData.volume24h && typeof waldoData.volume24h === 'number') {
+            if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
               volume = waldoData.volume24h * 0.6; // Lower volume for XMagnetic
+              console.log(`📊 XMagnetic REAL volume: ${volume.toFixed(2)} XRP`);
+            } else {
+              console.log('📊 XMagnetic: No valid volume in API response');
             }
           }
         } catch (waldoError) {
-          console.warn('⚠️ XMagnetic WALDOCOIN API failed, checking XRPL.to data:', waldoError);
+          console.error('❌ XMagnetic WALDOCOIN API failed:', waldoError);
+          console.error('Error details:', waldoError.message, waldoError.stack);
 
           // Fallback to XRPL.to data if available
           if (data && data.tokens && Array.isArray(data.tokens)) {
@@ -915,8 +936,9 @@
         priceData.xmagnetic = {
           price: price,
           volume: volume,
-          liquidity: 'Medium',
-          lastUpdate: Date.now()
+          liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
+          lastUpdate: Date.now(),
+          source: 'waldocoin-api'
         };
 
         console.log('✅ XMagnetic live price loaded:', price.toFixed(8));
