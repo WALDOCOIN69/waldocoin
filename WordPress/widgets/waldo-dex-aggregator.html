@@ -14,21 +14,6 @@
     <!-- Price Comparison Panel -->
     <div class="panel" id="panelPrices">
       <div class="price-grid">
-        <div class="dex-card best" id="bestDex">
-          <div class="dex-header">
-            <span class="dex-name">🔥 WHERE TO BUY WLO</span>
-            <span class="badge" style="background: #ff4444; animation: pulse 2s infinite;">REFERRAL</span>
-          </div>
-          <div class="price-display">
-            <span class="price" id="bestPrice">Loading...</span>
-            <span class="currency">XRP per WLO</span>
-          </div>
-          <button class="trade-btn primary" id="bestTradeBtn" onclick="openBestDEX()"
-            style="background: #ff4444; font-weight: bold; font-size: 16px; animation: pulse 2s infinite;">
-            🔗 GO TO EXCHANGE 🔗
-          </button>
-        </div>
-
         <div class="dex-card" id="firstLedgerCard">
           <div class="dex-header">
             <span class="dex-name">🏦 First Ledger</span>
@@ -911,12 +896,12 @@
         return;
       }
 
-      // Find LOWEST price (best for BUYING WLO)
-      let bestPrice = Infinity;
+      // Find highest price (best for selling WLO)
+      let bestPrice = 0;
       let bestKey = null;
 
       exchanges.forEach(([key, data]) => {
-        if (data.price < bestPrice) {
+        if (data.price > bestPrice) {
           bestPrice = data.price;
           bestKey = key;
         }
@@ -927,7 +912,7 @@
       // Update best price card
       if (bestExchange && priceData[bestExchange]) {
         el('bestPrice').textContent = priceData[bestExchange].price.toFixed(8);
-        el('bestTradeBtn').textContent = `🔥 Buy on ${EXCHANGES[bestExchange].name}`;
+        el('bestTradeBtn').textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
 
         // Add visual indicator to the best exchange card
         document.querySelectorAll('.dex-card').forEach(card => card.classList.remove('best-highlight'));
@@ -937,7 +922,7 @@
         }
       }
 
-      console.log('✅ Best exchange for BUYING:', bestExchange, 'Price:', bestPrice.toFixed(8));
+      console.log('✅ Best exchange found:', bestExchange, 'Price:', bestPrice.toFixed(8));
       return bestExchange;
     }
 
@@ -1039,30 +1024,21 @@
 
     // Trading functions (redirect to exchanges)
     window.openBestDEX = function () {
-      console.log('🔘 openBestDEX clicked! bestExchange:', bestExchange);
       if (bestExchange) {
-        console.log('🚀 Opening:', EXCHANGES[bestExchange].url);
         window.open(EXCHANGES[bestExchange].url, '_blank');
-      } else {
-        console.error('❌ No best exchange selected!');
       }
     };
 
     window.openFirstLedger = function () {
-      console.log('🔘 openFirstLedger clicked!');
-      console.log('🚀 Opening:', EXCHANGES.firstledger.url);
       window.open(EXCHANGES.firstledger.url, '_blank');
     };
 
     window.openXRPLTo = function () {
-      console.log('🔘 openXRPLTo clicked!');
-      console.log('🚀 Opening XRPL.to WLO token page...');
+      console.log('⚡ Opening XRPL.to WLO token page...');
       window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank', 'noopener,noreferrer');
     };
 
     window.openXMagnetic = function () {
-      console.log('🔘 openXMagnetic clicked!');
-      console.log('🚀 Opening:', EXCHANGES.xmagnetic.url);
       window.open(EXCHANGES.xmagnetic.url, '_blank');
     };
 
