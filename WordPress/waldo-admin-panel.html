@@ -840,8 +840,7 @@
         <button type="button" class="nav-btn" onclick="showSection('staking')">🏦 Staking Monitor</button>
         <button type="button" class="nav-btn" onclick="showSection('security')">🛡️ Security Override</button>
         <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
-        <button type="button" class="nav-btn" onclick="showSection('volumebot')">🤖 Volume Bot</button>
-        <button type="button" class="nav-btn" onclick="showSection('tradingbot')">💰 Trading Bot</button>
+        <button type="button" class="nav-btn" onclick="showSection('volumebot')">🤖 Trading Bot</button>
         <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
         <button type="button" class="nav-btn" onclick="runDiagnostics()" style="background: #f39c12;">🔍
           Diagnostics</button>
@@ -2407,113 +2406,6 @@
         </div>
       </div>
 
-      <!-- Trading Bot Section -->
-      <div id="tradingbot" class="admin-section">
-        <div class="alert alert-info margin-bottom-20">
-          💰 <strong>TRADING BOT CONTROLS</strong><br>
-          Manage the Telegram trading bot that creates constant WLO trading activity and price stabilization.
-        </div>
-
-        <!-- Trading Bot Status -->
-        <div class="card margin-bottom-20">
-          <div class="card-header">
-            <h3>🤖 Trading Bot Status</h3>
-          </div>
-          <div class="card-body">
-            <div class="stats-grid">
-              <div class="stat-card">
-                <div class="stat-value" id="tradingBotStatus">Loading...</div>
-                <div class="stat-label">Bot Status</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value" id="tradingBotBalance">Loading...</div>
-                <div class="stat-label">XRP Balance</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value" id="tradingBotWLO">Loading...</div>
-                <div class="stat-label">WLO Balance</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value" id="tradingBotProfit">Loading...</div>
-                <div class="stat-label">Total Profit</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value" id="tradingBotTrades">Loading...</div>
-                <div class="stat-label">Trades Today</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value" id="tradingBotVolume">Loading...</div>
-                <div class="stat-label">24h Volume</div>
-              </div>
-            </div>
-            <div class="button-group margin-top-20">
-              <button onclick="loadTradingBotStatus()" class="btn btn-primary">🔄 Refresh Status</button>
-              <button onclick="pauseTradingBot()" class="btn btn-warning">⏸️ Pause Bot</button>
-              <button onclick="resumeTradingBot()" class="btn btn-success">▶️ Resume Bot</button>
-              <button onclick="emergencyStopTradingBot()" class="btn btn-danger">🛑 Emergency Stop</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Trading Bot Settings -->
-        <div class="card margin-bottom-20">
-          <div class="card-header">
-            <h3>⚙️ Trading Bot Settings</h3>
-          </div>
-          <div class="card-body">
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="tbTradingMode">Trading Mode:</label>
-                <select id="tbTradingMode" class="form-control">
-                  <option value="automated">🤖 Automated (Smart Weighted)</option>
-                  <option value="perpetual">🔄 Perpetual (60/40 Balance)</option>
-                  <option value="buy_only">📈 Buy Only</option>
-                  <option value="sell_only">📉 Sell Only</option>
-                  <option value="buy_sell">⚖️ Buy & Sell (Balanced)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="tbTradingFrequency">Frequency (minutes):</label>
-                <input type="number" id="tbTradingFrequency" class="form-control" min="1" max="60" value="3">
-              </div>
-              <div class="form-group">
-                <label for="tbMinTradeSize">Min Trade Size (XRP):</label>
-                <input type="number" id="tbMinTradeSize" class="form-control" min="0.1" max="10" step="0.1" value="0.5">
-              </div>
-              <div class="form-group">
-                <label for="tbMaxTradeSize">Max Trade Size (XRP):</label>
-                <input type="number" id="tbMaxTradeSize" class="form-control" min="0.1" max="10" step="0.1" value="2.0">
-              </div>
-              <div class="form-group">
-                <label for="tbPriceSpread">Price Spread (%):</label>
-                <input type="number" id="tbPriceSpread" class="form-control" min="0" max="5" step="0.1" value="0">
-              </div>
-              <div class="form-group">
-                <label for="tbMaxDailyVolume">Max Daily Volume (XRP):</label>
-                <input type="number" id="tbMaxDailyVolume" class="form-control" min="100" max="2000" step="50"
-                  value="500">
-              </div>
-            </div>
-            <div class="button-group margin-top-20">
-              <button onclick="updateTradingBotSettings()" class="btn btn-primary">💾 Update Settings</button>
-              <button onclick="resetTradingBotProfit()" class="btn btn-warning">🔄 Reset Profit Tracking</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Recent Trading Activity -->
-        <div class="card">
-          <div class="card-header">
-            <h3>📊 Recent Trading Activity</h3>
-          </div>
-          <div class="card-body">
-            <div id="tradingBotTradesList">
-              <p>Loading recent trades...</p>
-            </div>
-            <button onclick="loadTradingBotTrades()" class="btn btn-secondary margin-top-10">🔄 Refresh Trades</button>
-          </div>
-        </div>
-      </div>
 
       <!-- System Section -->
       <div id="system" class="admin-section">
@@ -2547,10 +2439,10 @@
         </div>
       </div>
 
-      <!-- Volume Bot Section -->
+      <!-- Trading Bot Section -->
       <div id="volumebot" class="admin-section">
         <div class="alert alert-info margin-bottom-20">
-          🤖 <strong>VOLUME BOT CONTROLS</strong><br>
+          🤖 <strong>TRADING BOT CONTROLS</strong><br>
           Manage the XRPL trading bot that generates real volume for WALDOCOIN.
         </div>
 
@@ -4036,10 +3928,6 @@
             break;
           case 'volumebot':
             await loadVolumeBotData();
-            break;
-          case 'tradingbot':
-            await loadTradingBotStatus();
-            await loadTradingBotTrades();
             break;
         }
       } catch (error) {
