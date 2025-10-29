@@ -134,7 +134,7 @@ function calculateRewards(likes, retweets, rewardType) {
 
 1. **User Selects Tweet** - Chooses from their captured tweets
 2. **Clicks "Mint NFT"** - Initiates minting process
-3. **Pays 50 WALDO** - Via XUMM wallet
+3. **Pays 500 WALDO** - Via XUMM wallet
 4. **Backend Confirms** - Verifies payment on XRPL
 
 ### Backend: `waldocoin-backend/routes/mint.js`
@@ -148,12 +148,12 @@ const paymentPayload = {
     Amount: {
       currency: "WLO",
       issuer: process.env.WALDO_ISSUER,
-      value: "50"  // 50 WALDO cost
+      value: "500"  // 500 WALDO cost
     }
   },
   custom_meta: {
     identifier: `MINT:${tweetId}`,
-    instruction: "Pay 50 WALDO to mint your meme NFT"
+    instruction: "Pay 500 WALDO to mint your meme NFT"
   }
 };
 
@@ -297,11 +297,12 @@ meme:ai_confidence:{tweet_id} → 0.95
 2. **Post Meme** → User posts with `#WaldoMeme` hashtag
 3. **Bot Captures** → Twitter bot finds and stores tweet data
 4. **Earn Rewards** → User gets XP and WALDO based on engagement
-5. **Mint NFT** → User pays 50 WALDO to mint NFT
-6. **Own NFT** → NFT stored in user's XRPL wallet
-7. **List for Sale** → User lists NFT on marketplace
-8. **Buyer Purchases** → Buyer pays WALDO, gets NFT
-9. **Creator Royalty** → Original creator gets 5% on resale
+5. **Reach 60+ XP** → Meme must have at least 60 XP to be eligible
+6. **Mint NFT** → User pays 500 WALDO to mint NFT
+7. **Own NFT** → NFT stored in user's XRPL wallet
+8. **List for Sale** → User lists NFT on marketplace
+9. **Buyer Purchases** → Buyer pays WALDO, gets NFT
+10. **Creator Royalty** → Original creator gets 5% on resale
 
 ---
 

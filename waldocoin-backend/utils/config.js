@@ -15,7 +15,7 @@ const DEFAULTS = {
     useDefaults: true
   },
   nft: {
-    mintCostWLO: 50,
+    mintCostWLO: 500,
     useDefaults: true
   },
   dao: {

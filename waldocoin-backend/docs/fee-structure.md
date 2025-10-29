@@ -34,7 +34,7 @@
 ### **NFT System**
 | Action | Fee | Destination | Purpose |
 |--------|-----|-------------|---------|
-| Mint NFT | 50 WALDO | Distributor Wallet | Minting cost |
+| Mint NFT | 500 WALDO | Distributor Wallet | Minting cost |
 | Requirement | 60+ XP | - | Quality gate |
 
 ### **DAO System**
