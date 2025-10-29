@@ -725,10 +725,31 @@
       window.open(`https://twitter.com/i/status/${tweetId}`, '_blank');
     }
 
-    // View listing details (placeholder)
-    function viewListing(listingId) {
-      console.log('View listing:', listingId);
-      // TODO: Implement listing details view
+    // View listing details
+    async function viewListing(listingId) {
+      try {
+        const response = await fetch(`${baseURL}/api/marketplace/listing/${listingId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          const listing = data.listing;
+          // Display listing details in a modal or new page
+          alert(`
+Listing Details:
+Title: ${listing.title}
+Price: ${listing.price} ${listing.currency}
+Rarity: ${listing.rarity}
+Views: ${listing.views}
+Favorites: ${listing.favorites}
+Status: ${listing.status}
+          `);
+        } else {
+          alert('Failed to load listing details');
+        }
+      } catch (error) {
+        console.error('Error loading listing details:', error);
+        alert('Failed to load listing details');
+      }
     }
 
     // Close modal when clicking outside

@@ -638,10 +638,47 @@
       }
     }
 
-    // Favorite NFT (placeholder)
-    function favoriteNFT(listingId) {
-      // TODO: Implement favorite functionality
-      console.log('Favorited NFT:', listingId);
+    // Favorite NFT
+    async function favoriteNFT(listingId) {
+      const wallet = localStorage.getItem('xummWallet');
+
+      if (!wallet) {
+        alert('Please connect your wallet first');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${baseURL}/api/marketplace/favorite`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            wallet: wallet,
+            listingId: listingId
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update UI to show favorite status
+          const button = event.target;
+          if (data.action === 'added') {
+            button.style.color = '#ff5252';
+            button.textContent = '❤️';
+          } else {
+            button.style.color = '#ccc';
+            button.textContent = '🤍';
+          }
+          console.log(`Favorite ${data.action}:`, listingId);
+        } else {
+          alert(`Failed to update favorite: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Error toggling favorite:', error);
+        alert('Failed to update favorite');
+      }
     }
 
     // === GLOBAL DISCONNECT LISTENER REMOVED ===

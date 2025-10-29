@@ -106,7 +106,7 @@ router.get('/listings', async (req, res) => {
             price: parseFloat(listingData.price),
             currency: listingData.currency,
             title: memeData.text?.substring(0, 100) || 'Untitled Meme',
-            imageUrl: `https://waldocoin.live/wp-content/uploads/memes/${listingData.tweetId}.jpg`,
+            imageUrl: memeData.image_url || 'https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg',
             rarity: rarityInfo.rarity,
             rarityColor: rarityInfo.color,
             rarityMultiplier: rarityInfo.multiplier,
@@ -603,107 +603,7 @@ router.delete('/delist', async (req, res) => {
   }
 });
 
-// ✅ GET /api/marketplace/my-listings/:wallet - Get user's active listings
-router.get('/my-listings/:wallet', async (req, res) => {
-  try {
-    const { wallet } = req.params;
 
-    const listingIds = await redis.sMembers(`marketplace:seller:${wallet}`);
-    const listings = [];
-
-    for (const listingId of listingIds) {
-      try {
-        const listingData = await redis.hGetAll(`marketplace:listing:${listingId}`);
-
-        if (listingData && Object.keys(listingData).length > 0) {
-          const memeData = await redis.hGetAll(`meme:${listingData.tweetId}`);
-
-          listings.push({
-            listingId: listingData.listingId,
-            nftId: listingData.nftId,
-            tweetId: listingData.tweetId,
-            price: parseFloat(listingData.price),
-            currency: listingData.currency,
-            status: listingData.status,
-            title: memeData.text?.substring(0, 100) || 'Untitled Meme',
-            imageUrl: `https://waldocoin.live/wp-content/uploads/memes/${listingData.tweetId}.jpg`,
-            createdAt: listingData.createdAt,
-            views: parseInt(listingData.views) || 0,
-            favorites: parseInt(listingData.favorites) || 0
-          });
-        }
-      } catch (error) {
-        console.error(`Error processing listing ${listingId}:`, error);
-      }
-    }
-
-    res.json({
-      success: true,
-      listings: listings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching user listings:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch user listings'
-    });
-  }
-});
-
-// ✅ GET /api/marketplace/stats - Get marketplace statistics
-router.get('/stats', async (req, res) => {
-  try {
-    const totalListings = await redis.get('marketplace:total_listings') || 0;
-    const totalSales = await redis.get('marketplace:total_sales') || 0;
-    const totalVolume = await redis.get('marketplace:total_volume') || 0;
-    const activeListings = await redis.sCard('marketplace:active_listings') || 0;
-
-    // Get recent sales
-    const recentSalesKeys = await redis.keys('marketplace:listing:*');
-    const recentSales = [];
-
-    for (const key of recentSalesKeys.slice(0, 10)) {
-      try {
-        const listingData = await redis.hGetAll(key);
-        if (listingData.status === 'sold') {
-          const memeData = await redis.hGetAll(`meme:${listingData.tweetId}`);
-          recentSales.push({
-            nftId: listingData.nftId,
-            price: parseFloat(listingData.finalPrice),
-            buyer: listingData.buyer,
-            seller: listingData.seller,
-            soldAt: listingData.soldAt,
-            title: memeData.text?.substring(0, 50) || 'Untitled Meme'
-          });
-        }
-      } catch (error) {
-        console.error(`Error processing recent sale ${key}:`, error);
-      }
-    }
-
-    recentSales.sort((a, b) => new Date(b.soldAt) - new Date(a.soldAt));
-
-    res.json({
-      success: true,
-      stats: {
-        totalListings: parseInt(totalListings),
-        totalSales: parseInt(totalSales),
-        totalVolume: parseFloat(totalVolume),
-        activeListings: parseInt(activeListings),
-        averagePrice: totalSales > 0 ? (parseFloat(totalVolume) / parseInt(totalSales)).toFixed(2) : 0,
-        recentSales: recentSales.slice(0, 5)
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching marketplace stats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch marketplace statistics'
-    });
-  }
-});
 
 // ✅ POST /api/marketplace/favorite - Add/remove NFT from favorites
 router.post('/favorite', async (req, res) => {
@@ -797,7 +697,7 @@ router.get('/listing/:listingId', async (req, res) => {
       retweets: parseInt(memeData.retweets) || 0,
       xp: parseInt(memeData.xp) || 0,
       rarity: rarityInfo.rarity,
-      rarityScore: rarityInfo.score,
+      rarityMultiplier: rarityInfo.multiplier,
       royaltyRate: parseFloat(listingData.royaltyRate) || 0,
       originalCreator: listingData.originalCreator
     };
