@@ -79,6 +79,9 @@ import adminTweetValidationRoute from "./routes/admin/tweetValidation.js";
 import adminSystemMonitoringRoute from "./routes/admin/systemMonitoring.js";
 import adminDaoRoute from "./routes/admin/dao.js";
 import adminTradingBotRoute from "./routes/admin/tradingBot.js";
+import adminNewWalletRoute from "./routes/admin/newWallet.js";
+import adminPriceRoute from "./routes/admin/price.js";
+import adminSetRegularKeyRoute from "./routes/admin/setRegularKey.js";
 
 
 
@@ -243,6 +246,9 @@ const startServer = async () => {
   app.use("/api/admin/system-monitoring", adminSystemMonitoringRoute);
   app.use("/api/admin/dao", adminDaoRoute);
   app.use("/api/admin/trading-bot", adminTradingBotRoute);
+  app.use("/api/admin/new-wallet", adminNewWalletRoute);
+  app.use("/api/admin/price", adminPriceRoute);
+  app.use("/api/admin/set-regular-key", adminSetRegularKeyRoute);
   app.use("/api/admin", adminClearStakingRoute);
 
   // Admin fixes for missing endpoints

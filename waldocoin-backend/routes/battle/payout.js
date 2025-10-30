@@ -2,8 +2,7 @@
 import express from "express";
 import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
-import { calculateXpReward } from "../../utils/xp.js";
-import { addXP } from "../../utils/xpManager.js";
+import { calculateXpReward, addXP } from "../../utils/xpManager.js";
 
 const router = express.Router();
 

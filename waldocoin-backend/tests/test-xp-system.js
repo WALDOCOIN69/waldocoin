@@ -1,10 +1,11 @@
 // test-xp-system.js - Test the dynamic XP leveling system
-import { 
-  addXP, 
-  getXP, 
-  getWalletProgression, 
-  getWalletLevel 
-} from "./utils/xpManager.js";
+import {
+  addXP,
+  getXP,
+  getWalletProgression,
+  getWalletLevel
+} from "../utils/xpManager.js";
+import { redis } from "../redisClient.js";
 
 const TEST_WALLET = "rTestWallet123456789012345678901234";
 
@@ -15,9 +16,7 @@ async function testXPSystem() {
   try {
     // Reset test wallet XP
     console.log("🔄 Resetting test wallet XP...");
-    await import("./redisClient.js").then(({ redis }) => 
-      redis.del(`xp:${TEST_WALLET}`)
-    );
+    await redis.del(`xp:${TEST_WALLET}`);
 
     console.log("\n📊 Testing XP Progression Through All 5 Levels:");
     console.log("================================================");
