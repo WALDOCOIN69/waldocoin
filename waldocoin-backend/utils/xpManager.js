@@ -161,6 +161,8 @@ export const calculateXpReward = async (wallet, baseXp = 10) => {
 export const getUserXp = async (wallet) => {
   const xp = parseInt(await redis.get(`xp:${wallet}`)) || 0;
   return xp;
+};
+
 export const getWalletTier = async (wallet) => {
   const xp = await getXP(wallet);
   return getXPTier(xp);
