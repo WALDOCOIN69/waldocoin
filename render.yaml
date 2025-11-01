@@ -99,6 +99,9 @@ services:
         value: WLO
       - key: WALDO_DISTRIBUTOR_SECRET
         sync: false
+      # NFT Minting Configuration
+      - key: MINTING_WALLET_SECRET
+        sync: false
       # Additional environment variables used in code
       - key: NFT_STORAGE_API_KEY
         sync: false
