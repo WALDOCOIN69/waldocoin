@@ -2,15 +2,13 @@
 import express from 'express';
 import { redis } from '../redisClient.js';
 import { Client, Wallet } from 'xrpl';
+import { DISTRIBUTOR_WALLET, WALDO_ISSUER, DISTRIBUTOR_WALLET_SECRET, BURN_ADDRESS } from '../constants.js';
 
 const router = express.Router();
 
 // XRPL Configuration
 const XRPL_SERVER = process.env.XRPL_NODE || 'wss://xrplcluster.com';
-const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
-// Correct WALDO distributor wallet that has the tokens to burn
-const DISTRIBUTOR_SECRET = process.env.WALDO_DISTRIBUTOR_SECRET;
-const DISTRIBUTOR_WALLET = 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+const DISTRIBUTOR_SECRET = DISTRIBUTOR_WALLET_SECRET;
 
 // Total supply (1 billion)
 const TOTAL_SUPPLY = 1000000000;

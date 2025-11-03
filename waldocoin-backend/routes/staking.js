@@ -16,6 +16,7 @@ import {
   addToActiveSets,
   calculateEarlyUnstakePenalty
 } from '../utils/stakingUtils.js';
+import { DISTRIBUTOR_WALLET, TREASURY_WALLET, WALDO_ISSUER } from '../constants.js';
 
 // XRPL connection with fallback nodes for better reliability
 const XRPL_NODES = [
@@ -40,10 +41,10 @@ async function getReliableXrplClient() {
   throw new Error('All XRPL nodes failed to connect');
 }
 
-const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+const ISSUER = WALDO_ISSUER;
 const CURRENCY = (process.env.WALDO_CURRENCY || process.env.WALDOCOIN_TOKEN || 'WLO').toUpperCase();
 // Prefer dedicated staking vault or Treasury; only fall back to distributor if no vault/treasury configured
-const STAKING_VAULT = process.env.WALDO_STAKING_VAULT || process.env.WALDO_TREASURY_WALLET || process.env.TREASURY_WALLET || process.env.WALDO_DISTRIBUTOR_WALLET || process.env.DISTRIBUTOR_WALLET || 'rnWfL48YCknW6PYewFLKfMKUymHCfj3aww';
+const STAKING_VAULT = process.env.WALDO_STAKING_VAULT || TREASURY_WALLET || DISTRIBUTOR_WALLET || 'rnWfL48YCknW6PYewFLKfMKUymHCfj3aww';
 
 // ✅ DUAL STAKING SYSTEM CONFIGURATION
 
@@ -1769,9 +1770,7 @@ router.post('/redeem', async (req, res) => {
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
-    // Get distributor wallet address
-    const DISTRIBUTOR_WALLET = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
-    const ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+    // Get distributor wallet address (from constants)
     const CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 
     // Check distributor wallet balance before creating transaction

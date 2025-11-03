@@ -3,6 +3,7 @@ import express from "express";
 import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
 import { calculateXpReward, addXP } from "../../utils/xpManager.js";
+import { TREASURY_WALLET, BURN_ADDRESS } from "../../constants.js";
 
 const router = express.Router();
 
@@ -166,14 +167,12 @@ router.post("/", async (req, res) => {
 
     // Burn 0.5% to dead address (black hole)
     if (burnAmount > 0) {
-      const BURN_ADDRESS = "rrrrrrrrrrrrrrrrrrrrrhoLvTp"; // XRPL black hole address
       await xrpSendWaldo(BURN_ADDRESS, burnAmount);
       console.log(`🔥 Burned ${burnAmount} WLO to black hole address`);
     }
 
-    // Send 2.5% to treasury wallet (r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K)
+    // Send 2.5% to treasury wallet
     if (treasuryAmount > 0) {
-      const TREASURY_WALLET = "r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K";
       await xrpSendWaldo(TREASURY_WALLET, treasuryAmount);
       console.log(`🏦 Sent ${treasuryAmount} WLO to treasury: ${TREASURY_WALLET}`);
     }
