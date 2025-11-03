@@ -17,7 +17,6 @@ export const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"; // WALDO issue
 // ===== WALLET SECRETS =====
 export const DISTRIBUTOR_WALLET_SECRET = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
 export const TREASURY_WALLET_SECRET = process.env.TREASURY_WALLET_SECRET;
-export const STAKING_VAULT_SECRET = process.env.STAKING_VAULT_SECRET;
 
 // Backwards compatibility
 export const WALDO_DISTRIBUTOR_SECRET = DISTRIBUTOR_WALLET_SECRET;
