@@ -33,6 +33,10 @@ services:
         sync: false
       - key: TREASURY_WALLET_SECRET
         sync: false
+      - key: STAKING_VAULT_WALLET
+        sync: false
+      - key: STAKING_VAULT_SECRET
+        sync: false
       - key: X_ADMIN_KEY
         sync: false
 
@@ -55,6 +59,8 @@ services:
       - key: WALDO_CURRENCY
         sync: false
       - key: STAKING_VAULT_WALLET
+        sync: false
+      - key: STAKING_VAULT_SECRET
         sync: false
       - key: PORT
         value: 4000
@@ -190,6 +196,8 @@ services:
       - key: WALDOCOIN_TOKEN
         sync: false
       - key: STAKING_VAULT_WALLET
+        sync: false
+      - key: STAKING_VAULT_SECRET
         sync: false
       - key: DISTRIBUTOR_WALLET
         sync: false

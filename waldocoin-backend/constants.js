@@ -7,6 +7,7 @@ dotenv.config();
 // ===== WALLET ADDRESSES =====
 export const DISTRIBUTOR_WALLET = process.env.DISTRIBUTOR_WALLET || "rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL";
 export const TREASURY_WALLET = process.env.TREASURY_WALLET || "r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K";
+export const STAKING_VAULT_WALLET = process.env.STAKING_VAULT_WALLET || "rnWfL48YCknW6PYewFLKfMKUymHCfj3aww";
 export const BURN_ADDRESS = "rrrrrrrrrrrrrrrrrrrrrhoLvTp"; // XRPL black hole address
 
 // ===== TOKEN CONFIGURATION =====
@@ -16,6 +17,7 @@ export const WALDO_ISSUER = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"; // WALDO issue
 // ===== WALLET SECRETS =====
 export const DISTRIBUTOR_WALLET_SECRET = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
 export const TREASURY_WALLET_SECRET = process.env.TREASURY_WALLET_SECRET;
+export const STAKING_VAULT_SECRET = process.env.STAKING_VAULT_SECRET;
 
 // Backwards compatibility
 export const WALDO_DISTRIBUTOR_SECRET = DISTRIBUTOR_WALLET_SECRET;
