@@ -161,14 +161,14 @@ async function checkWalletBalance() {
   
   try {
     // Check XRPL directly for wallet balance
-    const walletAddress = 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC';
-    
+    const walletAddress = 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
+
     resultDiv.innerHTML = `
       <div>Distributor wallet: <code>${walletAddress}</code></div>
       <div>Check balance manually at: <a href="https://livenet.xrpl.org/accounts/${walletAddress}" target="_blank" style="color: #25c2a0;">XRPL Explorer</a></div>
       <div style="margin-top: 10px;">Look for WLO tokens with issuer: <code>rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY</code></div>
     `;
-    
+
     log(`Wallet to check: ${walletAddress}`);
     log('Please check the XRPL Explorer link to see WLO balance');
     

@@ -110,7 +110,7 @@ router.post("/", async (req, res) => {
   if (isAdminOverride) {
     // Admin override - validate admin wallet and custom amount
     const adminWallet = req.headers['x-admin-wallet'];
-    if (adminWallet !== "rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC") {
+    if (adminWallet !== "rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL") {
       return res.status(403).json({ success: false, error: "Admin access required" });
     }
 
@@ -1460,7 +1460,7 @@ router.get("/system-health", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            account: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL',
             ledger_index: 'validated'
           }]
         }),
@@ -2452,7 +2452,7 @@ router.get("/advanced-reports", async (req, res) => {
         body: JSON.stringify({
           method: 'account_lines',
           params: [{
-            account: 'rJGYLktGg1FgAa4t2yfA8tnyMUGsyxofUC',
+            account: 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL',
             ledger_index: 'validated'
           }]
         }),
