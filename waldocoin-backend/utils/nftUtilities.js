@@ -280,7 +280,7 @@ export async function getMonthlyPerks(wallet) {
         '⚡ Unlimited early access to all features',
         '🏆 Hall of Fame leaderboard status',
         '💎 Exclusive KING Discord role',
-        '🎟️ Unlimited free battle entries',
+        '🎟️ Unlimited free voting (5 WALDO off per vote)',
         '💰 50% off all marketplace fees',
         '🌟 Special KING badge on profile',
         '🎁 Monthly exclusive airdrops',
@@ -291,19 +291,20 @@ export async function getMonthlyPerks(wallet) {
         '⚡ Early access to new features',
         '🏆 VIP leaderboard status',
         '💎 Exclusive Discord role',
-        '🎟️ Free battle entries (3/month)'
+        '🎟️ Free voting for 6 months (180 days)',
+        '🎟️ +3 free votes per month for each additional NFT held'
       ],
       gold: [
         '🎁 30% off minting fees',
         '⚡ Early access to features',
         '🏆 Leaderboard eligibility',
         '💎 Gold Discord role',
-        '🎟️ Discounted battle entries'
+        '🎟️ 20% off voting fees'
       ],
       silver: [
         '🎁 15% off minting fees',
         '💎 Silver Discord role',
-        '🎟️ 10% battle fee discount'
+        '🎟️ 10% off voting fees'
       ],
       none: []
     };
@@ -440,6 +441,93 @@ export async function isKingNFTHolder(wallet) {
   }
 }
 
+// ============================================================================
+// VOTING DISCOUNT SYSTEM
+// ============================================================================
+
+export async function getVotingDiscount(wallet) {
+  try {
+    const tier = await getHolderTier(wallet);
+
+    // Voting fee discount based on tier
+    const discounts = {
+      king: 1.0,      // 100% off (free)
+      platinum: 0.0,  // Will be handled by free voting allowance
+      gold: 0.20,     // 20% off
+      silver: 0.10,   // 10% off
+      none: 0
+    };
+
+    return discounts[tier.tier] || 0;
+  } catch (error) {
+    console.error('❌ Error getting voting discount:', error);
+    return 0;
+  }
+}
+
+export async function getPlatinumFreeVotingAllowance(wallet) {
+  try {
+    const tier = await getHolderTier(wallet);
+
+    // Only Platinum gets free voting allowance
+    if (tier.tier !== 'platinum') {
+      return { freeVotesRemaining: 0, totalAllowance: 0, nftBonus: 0 };
+    }
+
+    // Get NFT count for bonus calculation
+    const nftCount = parseInt(await redis.get(`wallet:nft_count:${wallet}`) || 0);
+
+    // Base: 6 months of free voting (180 days)
+    // Bonus: +3 free votes per month for each NFT beyond the first 10
+    const baseAllowance = 180; // 6 months
+    const nftBonus = Math.max(0, nftCount - 10) * 3; // +3 per NFT after 10
+    const totalAllowance = baseAllowance + nftBonus;
+
+    // Get votes used this period
+    const votesUsedKey = `wallet:platinum_free_votes_used:${wallet}`;
+    const votesUsed = parseInt(await redis.get(votesUsedKey) || 0);
+    const freeVotesRemaining = Math.max(0, totalAllowance - votesUsed);
+
+    return {
+      freeVotesRemaining,
+      totalAllowance,
+      nftBonus,
+      votesUsed,
+      nftCount
+    };
+  } catch (error) {
+    console.error('❌ Error getting Platinum free voting allowance:', error);
+    return { freeVotesRemaining: 0, totalAllowance: 0, nftBonus: 0 };
+  }
+}
+
+export async function usePlatinumFreeVote(wallet) {
+  try {
+    const allowance = await getPlatinumFreeVotingAllowance(wallet);
+
+    if (allowance.freeVotesRemaining <= 0) {
+      return { success: false, error: 'No free votes remaining' };
+    }
+
+    // Increment votes used
+    const votesUsedKey = `wallet:platinum_free_votes_used:${wallet}`;
+    await redis.incr(votesUsedKey);
+
+    // Set expiration to 6 months from first use
+    const firstUseKey = `wallet:platinum_free_votes_start:${wallet}`;
+    const firstUse = await redis.get(firstUseKey);
+    if (!firstUse) {
+      await redis.set(firstUseKey, Date.now().toString(), { EX: 15552000 }); // 6 months
+      await redis.set(votesUsedKey, '1', { EX: 15552000 });
+    }
+
+    return { success: true, freeVotesRemaining: allowance.freeVotesRemaining - 1 };
+  } catch (error) {
+    console.error('❌ Error using Platinum free vote:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export default {
   getHolderTier,
   applyHolderXPBoost,
@@ -457,6 +545,9 @@ export default {
   assignKingNFT,
   revokeKingNFT,
   getKingNFTHolders,
-  isKingNFTHolder
+  isKingNFTHolder,
+  getVotingDiscount,
+  getPlatinumFreeVotingAllowance,
+  usePlatinumFreeVote
 };
 
