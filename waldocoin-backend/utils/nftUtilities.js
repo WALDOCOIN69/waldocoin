@@ -12,6 +12,12 @@ import { redis } from "../redisClient.js";
 
 export async function getHolderTier(wallet) {
   try {
+    // Check if wallet holds a King NFT (automatic VIP tier)
+    const kingNftCount = await redis.get(`wallet:king_nft_count:${wallet}`) || 0;
+    if (parseInt(kingNftCount) > 0) {
+      return { tier: 'king', name: '👑 KING', shares: 10, xpBoost: 0.50, claimFeeDiscount: 0.25, isKing: true };
+    }
+
     const nftCount = await redis.get(`wallet:nft_count:${wallet}`) || 0;
     const count = parseInt(nftCount);
 
@@ -162,15 +168,16 @@ export async function canAccessHolderBattle(wallet) {
 export async function getHolderBattleDiscount(wallet) {
   try {
     const tier = await getHolderTier(wallet);
-    
+
     // Discount based on tier
     const discounts = {
+      king: 0.50,     // 50% off (King NFT)
       platinum: 0.30, // 30% off
       gold: 0.20,     // 20% off
       silver: 0.10,   // 10% off
       none: 0
     };
-    
+
     return discounts[tier.tier] || 0;
   } catch (error) {
     console.error('❌ Error getting battle discount:', error);
@@ -185,15 +192,16 @@ export async function getHolderBattleDiscount(wallet) {
 export async function getStakingBoost(wallet) {
   try {
     const tier = await getHolderTier(wallet);
-    
+
     // APY boost based on tier
     const boosts = {
+      king: 0.15,      // +15% APY (King NFT)
       platinum: 0.05,  // +5% APY
       gold: 0.03,      // +3% APY
       silver: 0.01,    // +1% APY
       none: 0
     };
-    
+
     return boosts[tier.tier] || 0;
   } catch (error) {
     console.error('❌ Error getting staking boost:', error);
@@ -239,15 +247,16 @@ export async function getTopNFTHolders(limit = 10) {
 export async function getNFTVotingPower(wallet) {
   try {
     const tier = await getHolderTier(wallet);
-    
+
     // Voting power multiplier
     const multipliers = {
+      king: 3.0,      // 3.0× voting power (King NFT)
       platinum: 1.5,  // 1.5× voting power
       gold: 1.25,     // 1.25× voting power
       silver: 1.1,    // 1.1× voting power
       none: 1.0
     };
-    
+
     return multipliers[tier.tier] || 1.0;
   } catch (error) {
     console.error('❌ Error getting voting power:', error);
@@ -265,6 +274,18 @@ export async function getMonthlyPerks(wallet) {
     const month = new Date().toISOString().slice(0, 7);
     
     const perks = {
+      king: [
+        '👑 KING Status (Limited to 5)',
+        '🎁 100% off minting fees (FREE)',
+        '⚡ Unlimited early access to all features',
+        '🏆 Hall of Fame leaderboard status',
+        '💎 Exclusive KING Discord role',
+        '🎟️ Unlimited free battle entries',
+        '💰 50% off all marketplace fees',
+        '🌟 Special KING badge on profile',
+        '🎁 Monthly exclusive airdrops',
+        '🔮 Voting power: 3.0× multiplier'
+      ],
       platinum: [
         '🎁 50% off minting fees',
         '⚡ Early access to new features',
@@ -339,6 +360,86 @@ export async function trackNFTUtilityUsage(wallet, utilityType) {
   }
 }
 
+// ============================================================================
+// 9️⃣ KING NFT SYSTEM (Limited to 5)
+// ============================================================================
+
+export async function assignKingNFT(wallet, nftId) {
+  try {
+    // Check current King count
+    const kingCount = await redis.get('system:king_nft_count') || 0;
+    if (parseInt(kingCount) >= 5) {
+      return { success: false, error: 'Maximum 5 King NFTs already assigned' };
+    }
+
+    // Assign King NFT to wallet
+    await redis.set(`wallet:king_nft:${wallet}`, nftId);
+    await redis.incr(`wallet:king_nft_count:${wallet}`);
+    await redis.incr('system:king_nft_count');
+
+    // Track King NFT
+    await redis.sAdd('system:king_nfts', `${wallet}:${nftId}`);
+
+    console.log(`👑 King NFT assigned to ${wallet}: ${nftId}`);
+    return { success: true, message: 'King NFT assigned' };
+  } catch (error) {
+    console.error('❌ Error assigning King NFT:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function revokeKingNFT(wallet) {
+  try {
+    const nftId = await redis.get(`wallet:king_nft:${wallet}`);
+    if (!nftId) {
+      return { success: false, error: 'Wallet does not hold a King NFT' };
+    }
+
+    // Revoke King NFT
+    await redis.del(`wallet:king_nft:${wallet}`);
+    await redis.decr(`wallet:king_nft_count:${wallet}`);
+    await redis.decr('system:king_nft_count');
+    await redis.sRem('system:king_nfts', `${wallet}:${nftId}`);
+
+    console.log(`👑 King NFT revoked from ${wallet}`);
+    return { success: true, message: 'King NFT revoked' };
+  } catch (error) {
+    console.error('❌ Error revoking King NFT:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getKingNFTHolders() {
+  try {
+    const kingNfts = await redis.sMembers('system:king_nfts');
+    const holders = [];
+
+    for (const entry of kingNfts) {
+      const [wallet, nftId] = entry.split(':');
+      holders.push({
+        wallet: wallet.substring(0, 10) + '...' + wallet.substring(wallet.length - 6),
+        nftId,
+        fullWallet: wallet
+      });
+    }
+
+    return holders;
+  } catch (error) {
+    console.error('❌ Error getting King NFT holders:', error);
+    return [];
+  }
+}
+
+export async function isKingNFTHolder(wallet) {
+  try {
+    const kingNftCount = await redis.get(`wallet:king_nft_count:${wallet}`) || 0;
+    return parseInt(kingNftCount) > 0;
+  } catch (error) {
+    console.error('❌ Error checking King NFT status:', error);
+    return false;
+  }
+}
+
 export default {
   getHolderTier,
   applyHolderXPBoost,
@@ -352,6 +453,10 @@ export default {
   getNFTVotingPower,
   getMonthlyPerks,
   claimMonthlyPerks,
-  trackNFTUtilityUsage
+  trackNFTUtilityUsage,
+  assignKingNFT,
+  revokeKingNFT,
+  getKingNFTHolders,
+  isKingNFTHolder
 };
 
