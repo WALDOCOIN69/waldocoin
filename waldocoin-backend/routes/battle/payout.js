@@ -127,8 +127,8 @@ router.post("/", async (req, res) => {
     const totalVotingPool = winningVoteFees + losingVoteFees;
 
     // House fees only apply to betting pool, not meme creator fees
-    const burnAmount = Math.floor(totalVotingPool * 0.0025); // 0.25% of betting pool
-    const treasuryAmount = Math.floor(totalVotingPool * 0.0175); // 1.75% of betting pool
+    const burnAmount = Math.floor(totalVotingPool * 0.001); // 0.1% of betting pool
+    const treasuryAmount = Math.floor(totalVotingPool * 0.019); // 1.9% of betting pool
     const availableVotingPool = totalVotingPool - burnAmount - treasuryAmount;
 
     const totalPot = memeCreatorFees + totalVotingPool;
@@ -142,7 +142,7 @@ router.post("/", async (req, res) => {
 
     console.log(`💰 Battle payout: Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters share ${totalVoterAmount} WLO (${voterSplit} each)`);
     console.log(`📊 Meme creator fees: ${memeCreatorFees} WLO (no house fees), Betting pool: ${totalVotingPool} WLO`);
-    console.log(`🏦 Voter house fees (2% total): Burn ${burnAmount} WLO (0.25%), Treasury ${treasuryAmount} WLO (1.75%)`);
+    console.log(`🏦 Voter house fees (2% total): Burn ${burnAmount} WLO (0.1%), Treasury ${treasuryAmount} WLO (1.9%)`);
     console.log(`📊 Losing side contributed ${losingVoteFees} WLO (${losingVoters.length} voters) to winning voters`);
 
     // Import treasury wallet functionality
