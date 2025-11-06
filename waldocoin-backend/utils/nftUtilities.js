@@ -280,7 +280,7 @@ export async function getMonthlyPerks(wallet) {
         '⚡ Unlimited early access to all features',
         '🏆 Hall of Fame leaderboard status',
         '💎 Exclusive KING Discord role',
-        '🎟️ Unlimited free voting (5 WALDO off per vote)',
+        '🎟️ Unlimited free voting (200 WALDO off per vote)',
         '💰 50% off all marketplace fees',
         '🌟 Special KING badge on profile',
         '🎁 Monthly exclusive airdrops',
@@ -291,7 +291,7 @@ export async function getMonthlyPerks(wallet) {
         '⚡ Early access to new features',
         '🏆 VIP leaderboard status',
         '💎 Exclusive Discord role',
-        '🎟️ Free voting for 6 months (180 days)',
+        '🎟️ Free voting for 6 months (180 days - 36,000 WALDO value)',
         '🎟️ +3 free votes per month for each additional NFT held'
       ],
       gold: [
@@ -299,12 +299,12 @@ export async function getMonthlyPerks(wallet) {
         '⚡ Early access to features',
         '🏆 Leaderboard eligibility',
         '💎 Gold Discord role',
-        '🎟️ 20% off voting fees'
+        '🎟️ 20% off voting fees (160 WALDO per vote)'
       ],
       silver: [
         '🎁 15% off minting fees',
         '💎 Silver Discord role',
-        '🎟️ 10% off voting fees'
+        '🎟️ 10% off voting fees (180 WALDO per vote)'
       ],
       none: []
     };
