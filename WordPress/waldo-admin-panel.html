@@ -4451,27 +4451,37 @@
                   <th>APY</th>
                   <th>Rewards</th>
                   <th>Unlock Date</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                ${data.positions.slice(0, 20).map(pos => `
-                  <tr>
-                    <td><code>${pos.wallet.slice(0, 8)}...${pos.wallet.slice(-6)}</code></td>
-                    <td>${pos.amount} WALDO</td>
-                    <td>${pos.duration} days</td>
-                    <td>${(pos.apy * 100).toFixed(1)}%</td>
-                    <td>${pos.currentRewards.toFixed(2)} WALDO</td>
-                    <td>${new Date(pos.unlockDate).toLocaleDateString()}</td>
-                  </tr>
-                `).join('')}
+                ${data.positions.slice(0, 20).map(pos => {
+                  const apy = parseFloat(pos.apy);
+                  const apyDisplay = apy > 1 ? apy.toFixed(1) : (apy * 100).toFixed(1);
+                  const rewards = parseFloat(pos.currentRewards) || 0;
+                  const unlockDate = new Date(pos.unlockDate);
+                  return `
+                    <tr>
+                      <td><code>${pos.wallet.slice(0, 8)}...${pos.wallet.slice(-6)}</code></td>
+                      <td>${parseFloat(pos.amount).toFixed(2)} WALDO</td>
+                      <td>${pos.duration}</td>
+                      <td>${apyDisplay}%</td>
+                      <td>${rewards.toFixed(2)} WALDO</td>
+                      <td>${unlockDate.toLocaleDateString()}</td>
+                      <td><span class="status-badge ${pos.status}">${pos.status}</span></td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           `;
         } else {
-          positionsDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No staking positions</div>';
+          positionsDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No staking positions found</div>';
         }
       } catch (error) {
         console.error('Error loading staking data:', error);
+        const positionsDiv = document.getElementById('stakingPositions');
+        positionsDiv.innerHTML = `<div style="color: #d32f2f; padding: 20px;">❌ Error loading staking positions: ${error.message}</div>`;
       }
     }
 
