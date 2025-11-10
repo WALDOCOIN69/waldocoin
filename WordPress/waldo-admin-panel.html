@@ -4433,14 +4433,14 @@
       try {
         const data = await apiCall('/api/staking/positions?limit=20');
 
-        if (data.success) {
-          document.getElementById('totalStakingPositions').textContent = data.data.totalPositions || '0';
-          document.getElementById('totalStakingValue').textContent = (data.data.totalValue / 1000).toFixed(1) + 'K';
-          document.getElementById('totalStakingRewards').textContent = (data.data.totalRewards / 1000).toFixed(1) + 'K';
+        if (data.success && data.summary) {
+          document.getElementById('totalStakingPositions').textContent = data.summary.totalPositions || '0';
+          document.getElementById('totalStakingValue').textContent = (parseFloat(data.summary.totalStaked) / 1000).toFixed(1) + 'K';
+          document.getElementById('totalStakingRewards').textContent = (parseFloat(data.summary.totalRewards) / 1000).toFixed(1) + 'K';
         }
 
         const positionsDiv = document.getElementById('stakingPositions');
-        if (data.success && data.data.positions.length > 0) {
+        if (data.success && data.positions && data.positions.length > 0) {
           positionsDiv.innerHTML = `
             <table class="data-table">
               <thead>
@@ -4454,7 +4454,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${data.data.positions.slice(0, 20).map(pos => `
+                ${data.positions.slice(0, 20).map(pos => `
                   <tr>
                     <td><code>${pos.wallet.slice(0, 8)}...${pos.wallet.slice(-6)}</code></td>
                     <td>${pos.amount} WALDO</td>
