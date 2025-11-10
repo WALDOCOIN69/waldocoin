@@ -1855,7 +1855,15 @@ router.post('/redeem', async (req, res) => {
       }
     }, 20000);
 
-    return res.json({ success: true, uuid: created.uuid, refs: created.refs, next: created.next });
+    console.log(`[REDEEM] XUMM payload created: ${created.uuid}`);
+    return res.json({
+      success: true,
+      uuid: created.uuid,
+      refs: created.refs,
+      next: created.next,
+      qr_png: created.refs?.qr_png,
+      qr_uri: created.refs?.qr_uri
+    });
   } catch (e) {
     console.error('redeem init error', e);
     return res.status(500).json({ success: false, error: e.message });
