@@ -4456,21 +4456,27 @@
               </thead>
               <tbody>
                 ${data.positions.slice(0, 20).map(pos => {
-                  const apy = parseFloat(pos.apy);
-                  const apyDisplay = apy > 1 ? apy.toFixed(1) : (apy * 100).toFixed(1);
-                  const rewards = parseFloat(pos.currentRewards) || 0;
-                  const unlockDate = new Date(pos.unlockDate);
-                  return `
-                    <tr>
-                      <td><code>${pos.wallet.slice(0, 8)}...${pos.wallet.slice(-6)}</code></td>
-                      <td>${parseFloat(pos.amount).toFixed(2)} WALDO</td>
-                      <td>${pos.duration}</td>
-                      <td>${apyDisplay}%</td>
-                      <td>${rewards.toFixed(2)} WALDO</td>
-                      <td>${unlockDate.toLocaleDateString()}</td>
-                      <td><span class="status-badge ${pos.status}">${pos.status}</span></td>
-                    </tr>
-                  `;
+                  try {
+                    const apy = parseFloat(pos.apy) || 0;
+                    const apyDisplay = apy > 1 ? apy.toFixed(1) : (apy * 100).toFixed(1);
+                    const amount = parseFloat(pos.amount) || 0;
+                    const rewards = parseFloat(pos.currentRewards) || 0;
+                    const unlockDate = new Date(pos.unlockDate);
+                    return `
+                      <tr>
+                        <td><code>${pos.wallet.slice(0, 8)}...${pos.wallet.slice(-6)}</code></td>
+                        <td>${amount.toFixed(2)} WALDO</td>
+                        <td>${pos.duration}</td>
+                        <td>${apyDisplay}%</td>
+                        <td>${rewards.toFixed(2)} WALDO</td>
+                        <td>${unlockDate.toLocaleDateString()}</td>
+                        <td><span class="status-badge ${pos.status}">${pos.status}</span></td>
+                      </tr>
+                    `;
+                  } catch (e) {
+                    console.error('Error rendering position:', pos, e);
+                    return `<tr><td colspan="7" style="color: red;">Error rendering position</td></tr>`;
+                  }
                 }).join('')}
               </tbody>
             </table>
