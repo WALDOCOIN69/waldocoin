@@ -2266,6 +2266,30 @@
             <div id="stakingPositions" class="loading">
               <div class="spinner"></div> Loading staking positions...
             </div>
+
+            <!-- Active Stakes Section -->
+            <div style="margin-top: 20px;">
+              <h4 style="color: #25c2a0; margin-bottom: 10px;">✅ Active Stakes</h4>
+              <div id="activeStakesTable" style="font-size: 0.9em; overflow-x: auto;">
+                <div style="color: #666; text-align: center; padding: 10px;">Loading...</div>
+              </div>
+            </div>
+
+            <!-- Pending Signature Section -->
+            <div style="margin-top: 20px;">
+              <h4 style="color: #f39c12; margin-bottom: 10px;">⏳ Pending Signature</h4>
+              <div id="pendingStakesTable" style="font-size: 0.9em; overflow-x: auto;">
+                <div style="color: #666; text-align: center; padding: 10px;">None</div>
+              </div>
+            </div>
+
+            <!-- Redeemed & Completed Section -->
+            <div style="margin-top: 20px;">
+              <h4 style="color: #27ae60; margin-bottom: 10px;">✨ Redeemed & Completed</h4>
+              <div id="redeemedStakesTable" style="font-size: 0.9em; overflow-x: auto;">
+                <div style="color: #666; text-align: center; padding: 10px;">None</div>
+              </div>
+            </div>
           </div>
 
           <!-- Manual Unstaking Controls -->
@@ -4431,7 +4455,7 @@
     // Staking functions - Production Ready
     async function loadStakingData() {
       try {
-        const data = await apiCall('/api/staking/positions?limit=20');
+        const data = await apiCall('/api/staking/positions?limit=100');
 
         if (data.success && data.summary) {
           document.getElementById('totalStakingPositions').textContent = data.summary.totalPositions || '0';
@@ -4439,10 +4463,30 @@
           document.getElementById('totalStakingRewards').textContent = (parseFloat(data.summary.totalRewards) / 1000).toFixed(1) + 'K';
         }
 
-        const positionsDiv = document.getElementById('stakingPositions');
+        // Organize stakes by status
+        const activeStakes = [];
+        const pendingStakes = [];
+        const redeemedStakes = [];
+
         if (data.success && data.positions && data.positions.length > 0) {
-          positionsDiv.innerHTML = `
-            <table class="data-table">
+          data.positions.forEach(pos => {
+            if (pos.status === 'active' || pos.status === 'long_term') {
+              activeStakes.push(pos);
+            } else if (pos.status === 'pending_sig' || pos.status === 'pending') {
+              pendingStakes.push(pos);
+            } else if (pos.status === 'redeemed' || pos.status === 'completed') {
+              redeemedStakes.push(pos);
+            }
+          });
+        }
+
+        // Helper function to render table
+        const renderStakesTable = (stakes) => {
+          if (!stakes || stakes.length === 0) {
+            return '<div style="color: #666; text-align: center; padding: 10px;">None</div>';
+          }
+          return `
+            <table class="data-table" style="font-size: 0.85em;">
               <thead>
                 <tr>
                   <th>Wallet</th>
@@ -4455,7 +4499,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${data.positions.slice(0, 20).map(pos => {
+                ${stakes.map(pos => {
                   try {
                     const apy = parseFloat(pos.apy) || 0;
                     const apyDisplay = apy > 1 ? apy.toFixed(1) : (apy * 100).toFixed(1);
@@ -4465,25 +4509,32 @@
                     return `
                       <tr>
                         <td><code>${pos.wallet.slice(0, 8)}...${pos.wallet.slice(-6)}</code></td>
-                        <td>${amount.toFixed(2)} WALDO</td>
-                        <td>${pos.duration}</td>
+                        <td>${amount.toFixed(2)}</td>
+                        <td>${pos.duration}d</td>
                         <td>${apyDisplay}%</td>
-                        <td>${rewards.toFixed(2)} WALDO</td>
+                        <td>${rewards.toFixed(2)}</td>
                         <td>${unlockDate.toLocaleDateString()}</td>
                         <td><span class="status-badge ${pos.status}">${pos.status}</span></td>
                       </tr>
                     `;
                   } catch (e) {
                     console.error('Error rendering position:', pos, e);
-                    return `<tr><td colspan="7" style="color: red;">Error rendering position</td></tr>`;
+                    return `<tr><td colspan="7" style="color: red;">Error rendering</td></tr>`;
                   }
                 }).join('')}
               </tbody>
             </table>
           `;
-        } else {
-          positionsDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No staking positions found</div>';
-        }
+        };
+
+        // Update sections
+        document.getElementById('activeStakesTable').innerHTML = renderStakesTable(activeStakes);
+        document.getElementById('pendingStakesTable').innerHTML = renderStakesTable(pendingStakes);
+        document.getElementById('redeemedStakesTable').innerHTML = renderStakesTable(redeemedStakes);
+
+        // Hide the old combined table
+        document.getElementById('stakingPositions').style.display = 'none';
+
       } catch (error) {
         console.error('Error loading staking data:', error);
         const positionsDiv = document.getElementById('stakingPositions');
