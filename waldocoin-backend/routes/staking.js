@@ -1037,12 +1037,14 @@ router.get('/positions', async (req, res) => {
     const positions = [];
 
     for (const key of stakingKeys) {
-      if (key.includes(':position:')) {
+      // Skip non-position keys (like staking:total_amount, staking:active_count, etc)
+      if (key.includes(':') && !key.includes(':total_') && !key.includes(':active_') && !key.includes(':user:')) {
         const positionData = await redis.hGetAll(key);
 
         if (positionData && Object.keys(positionData).length > 0) {
-          const walletAddress = key.split(':')[1];
-          const positionId = key.split(':')[3];
+          // Extract stakeId from key (format: staking:${stakeId})
+          const stakeId = key.split(':')[1];
+          const walletAddress = positionData.wallet || 'unknown';
 
           // Calculate current value and time remaining
           const startTime = new Date(positionData.startTime);
@@ -1060,13 +1062,16 @@ router.get('/positions', async (req, res) => {
           const currentRewards = baseAmount * (apy / 100); // Simple percentage bonus
 
           const position = {
-            id: positionId,
+            id: stakeId,
+            wallet: walletAddress,
             walletAddress: walletAddress,
             amount: baseAmount,
             tier: positionData.tier || 'unknown',
             apy: apy,
+            duration: positionData.duration || 'unknown',
             startTime: positionData.startTime,
             endTime: positionData.endTime,
+            unlockDate: positionData.endTime,
             status: positionData.status || 'active',
             progress: progress.toFixed(1),
             timeRemaining: timeRemaining,
