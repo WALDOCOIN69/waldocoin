@@ -198,6 +198,16 @@ async function processRedemptionIfComplete(uuid) {
     await redis.set(processedKey, '1', { EX: 604800 });
     await redis.del(`stake:redeem_offer:${uuid}`);
 
+    // NOW SEND THE ACTUAL PAYOUT
+    try {
+      const { xrpSendWaldo } = await import("../utils/sendWaldo.js");
+      await xrpSendWaldo(wallet, totalAmount);
+      console.log(`💰 [REDEEM-PAYOUT] Sent ${totalAmount.toFixed(2)} WALDO to ${wallet} for stake ${stakeId}`);
+    } catch (payoutError) {
+      console.error(`❌ [REDEEM-PAYOUT] Failed to send WALDO to ${wallet}:`, payoutError.message);
+      // Don't fail the whole process - stake is marked as redeemed, payout can be retried
+    }
+
     console.log(`✅ [FALLBACK] Stake redeemed: ${wallet} received ${totalAmount.toFixed(2)} WALDO (${stakeId})`);
     return true;
   } catch (e) {
@@ -1959,6 +1969,16 @@ router.get('/redeem/status/:uuid', async (req, res) => {
 
     // Clean up offer
     await redis.del(`stake:redeem_offer:${uuid}`);
+
+    // NOW SEND THE ACTUAL PAYOUT
+    try {
+      const { xrpSendWaldo } = await import("../utils/sendWaldo.js");
+      await xrpSendWaldo(wallet, totalAmount);
+      console.log(`💰 [REDEEM-STATUS-PAYOUT] Sent ${totalAmount.toFixed(2)} WALDO to ${wallet} for stake ${stakeId}`);
+    } catch (payoutError) {
+      console.error(`❌ [REDEEM-STATUS-PAYOUT] Failed to send WALDO to ${wallet}:`, payoutError.message);
+      // Don't fail the whole process - stake is marked as redeemed, payout can be retried
+    }
 
     console.log(`✅ Stake redeemed: ${wallet} received ${totalAmount.toFixed(2)} WALDO (${stakeId})`);
     return res.json({
