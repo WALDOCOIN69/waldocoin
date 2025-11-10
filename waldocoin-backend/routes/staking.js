@@ -1040,16 +1040,26 @@ router.get('/positions', async (req, res) => {
     for (const key of stakingKeys) {
       // Skip non-position keys (like staking:total_amount, staking:active_count, etc)
       if (key.includes(':') && !key.includes(':total_') && !key.includes(':active_') && !key.includes(':user:')) {
-        const positionData = await redis.hGetAll(key);
-        console.log(`📦 Key: ${key}, Data keys:`, Object.keys(positionData));
+        try {
+          // Check the type of the key first
+          const keyType = await redis.type(key);
+          console.log(`📦 Key: ${key}, Type: ${keyType}`);
 
-        if (positionData && Object.keys(positionData).length > 0) {
-          // Extract stakeId from key (format: staking:${stakeId})
-          const stakeId = key.split(':')[1];
-          const walletAddress = positionData.wallet || 'unknown';
+          // Only process hash types
+          if (keyType !== 'hash') {
+            console.warn(`⚠️ Skipping ${key} - not a hash (type: ${keyType})`);
+            continue;
+          }
 
-          // Calculate current value and time remaining
-          try {
+          const positionData = await redis.hGetAll(key);
+          console.log(`📦 Key: ${key}, Data keys:`, Object.keys(positionData));
+
+          if (positionData && Object.keys(positionData).length > 0) {
+            // Extract stakeId from key (format: staking:${stakeId})
+            const stakeId = key.split(':')[1];
+            const walletAddress = positionData.wallet || 'unknown';
+
+            // Calculate current value and time remaining
             const startTime = new Date(positionData.startTime);
             const endTime = new Date(positionData.endTime);
             const now = new Date();
@@ -1057,47 +1067,46 @@ router.get('/positions', async (req, res) => {
             // Validate dates
             if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
               console.warn(`⚠️ Invalid dates for ${key}: startTime=${positionData.startTime}, endTime=${positionData.endTime}`);
-              continue; // Skip this position
+            } else {
+              const timeRemaining = Math.max(0, endTime - now);
+              const totalDuration = endTime - startTime;
+              const elapsed = now - startTime;
+              const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
+
+              // Calculate current rewards as flat bonus (not annualized)
+              const baseAmount = parseFloat(positionData.amount) || 0;
+              const apy = parseFloat(positionData.apy) || 0;
+              const currentRewards = baseAmount * (apy / 100); // Simple percentage bonus
+
+              const position = {
+                id: stakeId,
+                wallet: walletAddress,
+                walletAddress: walletAddress,
+                amount: baseAmount,
+                tier: positionData.tier || 'unknown',
+                apy: apy,
+                duration: positionData.duration || 'unknown',
+                startTime: positionData.startTime,
+                endTime: positionData.endTime,
+                unlockDate: positionData.endTime,
+                status: positionData.status || 'active',
+                progress: progress.toFixed(1),
+                timeRemaining: timeRemaining,
+                currentRewards: currentRewards.toFixed(2),
+                totalValue: (baseAmount + currentRewards).toFixed(2),
+                canUnstake: positionData.status === 'active' && timeRemaining <= 0,
+                earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%'
+              };
+
+              // Filter by status if specified
+              if (status === 'all' || position.status === status) {
+                positions.push(position);
+              }
             }
-
-            const timeRemaining = Math.max(0, endTime - now);
-            const totalDuration = endTime - startTime;
-            const elapsed = now - startTime;
-            const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
-
-            // Calculate current rewards as flat bonus (not annualized)
-            const baseAmount = parseFloat(positionData.amount) || 0;
-            const apy = parseFloat(positionData.apy) || 0;
-            const currentRewards = baseAmount * (apy / 100); // Simple percentage bonus
-
-            const position = {
-              id: stakeId,
-              wallet: walletAddress,
-              walletAddress: walletAddress,
-              amount: baseAmount,
-              tier: positionData.tier || 'unknown',
-              apy: apy,
-              duration: positionData.duration || 'unknown',
-              startTime: positionData.startTime,
-              endTime: positionData.endTime,
-              unlockDate: positionData.endTime,
-              status: positionData.status || 'active',
-              progress: progress.toFixed(1),
-              timeRemaining: timeRemaining,
-              currentRewards: currentRewards.toFixed(2),
-              totalValue: (baseAmount + currentRewards).toFixed(2),
-              canUnstake: positionData.status === 'active' && timeRemaining <= 0,
-              earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%'
-            };
-
-            // Filter by status if specified
-            if (status === 'all' || position.status === status) {
-              positions.push(position);
-            }
-          } catch (err) {
-            console.error(`❌ Error processing position ${key}:`, err.message);
-            continue; // Skip this position on error
           }
+        } catch (err) {
+          console.error(`❌ Error processing key ${key}:`, err.message);
+          continue; // Skip this key on error
         }
       }
     }
