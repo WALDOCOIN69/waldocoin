@@ -710,7 +710,8 @@ async function sendWaldoTokens(buyerWallet, waldoAmount, calculation, originalTx
     const xrpl = await import('xrpl');
 
     // Create wallet from distributor secret
-    const distributorWallet = xrpl.Wallet.fromSeed(process.env.WALDO_DISTRIBUTOR_SECRET);
+    const distributorSecret = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
+    const distributorWallet = xrpl.Wallet.fromSeed(distributorSecret);
 
     // Connect to XRPL
     const client = new xrpl.Client("wss://xrplcluster.com");

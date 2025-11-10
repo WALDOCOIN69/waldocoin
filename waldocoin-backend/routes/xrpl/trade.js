@@ -180,7 +180,7 @@ router.get('/status/:uuid', async (req, res) => {
         return res.json({ ok: true, signed: true, account, txid, delivered: false, processing: true });
       }
       const EXPECTED = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
-      const distSecret = process.env.WALDO_DISTRIBUTOR_SECRET || null;
+      const distSecret = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET || null;
       const altSecret = process.env.WALDO_SENDER_SECRET || null;
       let chosenSecret = distSecret || altSecret;
       let distAddr = null, altAddr = null;
@@ -249,7 +249,7 @@ router.get('/status/:uuid', async (req, res) => {
 
     // Choose the correct sender secret, preferring the one that matches the expected distributor wallet
     const EXPECTED = process.env.WALDO_DISTRIBUTOR_WALLET || process.env.WALDO_DISTRIBUTOR_ADDRESS || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
-    const distSecret = process.env.WALDO_DISTRIBUTOR_SECRET || null;
+    const distSecret = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET || null;
     const altSecret = process.env.WALDO_SENDER_SECRET || null;
 
     let chosenSecret = distSecret || altSecret;

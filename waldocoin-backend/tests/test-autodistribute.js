@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const distributorWallet = process.env.DISTRIBUTOR_WALLET;
-const distributorSecret = process.env.WALDO_DISTRIBUTOR_SECRET || process.env.DISTRIBUTOR_SECRET;
+const distributorSecret = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET || process.env.DISTRIBUTOR_SECRET;
 
 console.log("🔍 Testing Autodistribute System");
 console.log("================================");
