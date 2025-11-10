@@ -39,6 +39,7 @@ import feesRoute from "./routes/fees.js";
 
 // 🕐 Cron Jobs
 import { startExpiredBattleRefunder } from "./cron/expiredBattleRefunder.js";
+import { startStakingMaturityProcessor } from "./cron/stakingMaturityProcessor.js";
 
 // Buy bot completely removed - using volume trading bot only
 // No Telegram bot imports to prevent conflicts
@@ -439,6 +440,7 @@ const startServer = async () => {
     // Start cron jobs
     console.log("🕐 Starting cron jobs...");
     startExpiredBattleRefunder();
+    startStakingMaturityProcessor();
     console.log("✅ All cron jobs started");
   });
 };
