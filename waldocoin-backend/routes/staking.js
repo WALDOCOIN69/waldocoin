@@ -1034,12 +1034,14 @@ router.get('/positions', async (req, res) => {
 
     // Get all staking position keys
     const stakingKeys = await redis.keys("staking:*");
+    console.log(`🔍 Found ${stakingKeys.length} staking keys:`, stakingKeys.slice(0, 10));
     const positions = [];
 
     for (const key of stakingKeys) {
       // Skip non-position keys (like staking:total_amount, staking:active_count, etc)
       if (key.includes(':') && !key.includes(':total_') && !key.includes(':active_') && !key.includes(':user:')) {
         const positionData = await redis.hGetAll(key);
+        console.log(`📦 Key: ${key}, Data keys:`, Object.keys(positionData));
 
         if (positionData && Object.keys(positionData).length > 0) {
           // Extract stakeId from key (format: staking:${stakeId})
