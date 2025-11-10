@@ -4457,12 +4457,6 @@
       try {
         const data = await apiCall('/api/staking/positions?limit=100');
 
-        if (data.success && data.summary) {
-          document.getElementById('totalStakingPositions').textContent = data.summary.totalPositions || '0';
-          document.getElementById('totalStakingValue').textContent = (parseFloat(data.summary.totalStaked) / 1000).toFixed(1) + 'K';
-          document.getElementById('totalStakingRewards').textContent = (parseFloat(data.summary.totalRewards) / 1000).toFixed(1) + 'K';
-        }
-
         // Organize stakes by status
         const activeStakes = [];
         const pendingStakes = [];
@@ -4478,6 +4472,17 @@
               redeemedStakes.push(pos);
             }
           });
+        }
+
+        // Calculate totals from filtered data
+        const totalActive = activeStakes.length;
+        const totalValue = activeStakes.reduce((sum, pos) => sum + parseFloat(pos.amount || 0), 0);
+        const totalRewards = activeStakes.reduce((sum, pos) => sum + parseFloat(pos.currentRewards || 0), 0);
+
+        if (data.success) {
+          document.getElementById('totalStakingPositions').textContent = totalActive;
+          document.getElementById('totalStakingValue').textContent = (totalValue / 1000).toFixed(1) + 'K';
+          document.getElementById('totalStakingRewards').textContent = (totalRewards / 1000).toFixed(1) + 'K';
         }
 
         // Helper function to render table
