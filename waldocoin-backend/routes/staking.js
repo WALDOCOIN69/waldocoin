@@ -1049,43 +1049,54 @@ router.get('/positions', async (req, res) => {
           const walletAddress = positionData.wallet || 'unknown';
 
           // Calculate current value and time remaining
-          const startTime = new Date(positionData.startTime);
-          const endTime = new Date(positionData.endTime);
-          const now = new Date();
+          try {
+            const startTime = new Date(positionData.startTime);
+            const endTime = new Date(positionData.endTime);
+            const now = new Date();
 
-          const timeRemaining = Math.max(0, endTime - now);
-          const totalDuration = endTime - startTime;
-          const elapsed = now - startTime;
-          const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
+            // Validate dates
+            if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+              console.warn(`⚠️ Invalid dates for ${key}: startTime=${positionData.startTime}, endTime=${positionData.endTime}`);
+              continue; // Skip this position
+            }
 
-          // Calculate current rewards as flat bonus (not annualized)
-          const baseAmount = parseFloat(positionData.amount) || 0;
-          const apy = parseFloat(positionData.apy) || 0;
-          const currentRewards = baseAmount * (apy / 100); // Simple percentage bonus
+            const timeRemaining = Math.max(0, endTime - now);
+            const totalDuration = endTime - startTime;
+            const elapsed = now - startTime;
+            const progress = totalDuration > 0 ? Math.min(100, (elapsed / totalDuration) * 100) : 0;
 
-          const position = {
-            id: stakeId,
-            wallet: walletAddress,
-            walletAddress: walletAddress,
-            amount: baseAmount,
-            tier: positionData.tier || 'unknown',
-            apy: apy,
-            duration: positionData.duration || 'unknown',
-            startTime: positionData.startTime,
-            endTime: positionData.endTime,
-            unlockDate: positionData.endTime,
-            status: positionData.status || 'active',
-            progress: progress.toFixed(1),
-            timeRemaining: timeRemaining,
-            currentRewards: currentRewards.toFixed(2),
-            totalValue: (baseAmount + currentRewards).toFixed(2),
-            canUnstake: positionData.status === 'active' && timeRemaining <= 0,
-            earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%'
-          };
+            // Calculate current rewards as flat bonus (not annualized)
+            const baseAmount = parseFloat(positionData.amount) || 0;
+            const apy = parseFloat(positionData.apy) || 0;
+            const currentRewards = baseAmount * (apy / 100); // Simple percentage bonus
 
-          // Filter by status if specified
-          if (status === 'all' || position.status === status) {
-            positions.push(position);
+            const position = {
+              id: stakeId,
+              wallet: walletAddress,
+              walletAddress: walletAddress,
+              amount: baseAmount,
+              tier: positionData.tier || 'unknown',
+              apy: apy,
+              duration: positionData.duration || 'unknown',
+              startTime: positionData.startTime,
+              endTime: positionData.endTime,
+              unlockDate: positionData.endTime,
+              status: positionData.status || 'active',
+              progress: progress.toFixed(1),
+              timeRemaining: timeRemaining,
+              currentRewards: currentRewards.toFixed(2),
+              totalValue: (baseAmount + currentRewards).toFixed(2),
+              canUnstake: positionData.status === 'active' && timeRemaining <= 0,
+              earlyUnstakePenalty: timeRemaining > 0 ? '15%' : '0%'
+            };
+
+            // Filter by status if specified
+            if (status === 'all' || position.status === status) {
+              positions.push(position);
+            }
+          } catch (err) {
+            console.error(`❌ Error processing position ${key}:`, err.message);
+            continue; // Skip this position on error
           }
         }
       }
