@@ -2525,4 +2525,70 @@ router.post('/fix-old-timestamps', async (req, res) => {
   }
 });
 
+// 🔧 POST /api/staking/admin/manual-payout - Manually pay out a staking position (admin backup)
+router.post('/admin/manual-payout', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { stakeId, wallet } = req.body;
+    if (!stakeId) {
+      return res.status(400).json({ success: false, error: 'stakeId required' });
+    }
+
+    // Get the stake data
+    const stakeKey = `staking:${stakeId}`;
+    const stakeData = await redis.hGetAll(stakeKey);
+
+    if (!stakeData || !Object.keys(stakeData).length) {
+      return res.status(404).json({ success: false, error: 'Stake not found' });
+    }
+
+    // Verify wallet if provided
+    if (wallet && stakeData.wallet !== wallet) {
+      return res.status(400).json({ success: false, error: 'Wallet mismatch' });
+    }
+
+    const stakeWallet = stakeData.wallet;
+    const amount = parseFloat(stakeData.amount) || 0;
+    const apy = parseFloat(stakeData.apy) || 0;
+    const rewards = amount * (apy / 100);
+    const totalPayout = amount + rewards;
+
+    console.log(`💰 [ADMIN PAYOUT] Stake: ${stakeId}, Wallet: ${stakeWallet}, Amount: ${amount}, Rewards: ${rewards.toFixed(2)}, Total: ${totalPayout.toFixed(2)}`);
+
+    // Mark as paid out
+    await redis.hSet(stakeKey, {
+      status: 'paid_out',
+      paidOutAt: new Date().toISOString(),
+      paidOutBy: 'admin',
+      totalPayout: totalPayout.toFixed(2)
+    });
+
+    return res.json({
+      success: true,
+      message: `Manual payout processed for stake ${stakeId}`,
+      payoutDetails: {
+        stakeId: stakeId,
+        wallet: stakeWallet,
+        originalAmount: amount,
+        rewards: rewards.toFixed(2),
+        totalPayout: totalPayout.toFixed(2),
+        status: 'paid_out',
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [ADMIN PAYOUT] Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to process manual payout',
+      detail: error.message
+    });
+  }
+});
+
 export default router;
