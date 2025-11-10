@@ -1038,8 +1038,8 @@ router.get('/positions', async (req, res) => {
     const positions = [];
 
     for (const key of stakingKeys) {
-      // Skip non-position keys (like staking:total_amount, staking:active_count, etc)
-      if (key.includes(':') && !key.includes(':total_') && !key.includes(':active_') && !key.includes(':user:')) {
+      // Skip non-position keys (like staking:total_amount, staking:active_count, staking:active, etc)
+      if (key.includes(':') && !key.includes(':total') && !key.includes(':active') && !key.includes(':user:') && !key.includes(':offer:')) {
         try {
           // Check the type of the key first
           const keyType = await redis.type(key);
@@ -1060,13 +1060,14 @@ router.get('/positions', async (req, res) => {
             const walletAddress = positionData.wallet || 'unknown';
 
             // Calculate current value and time remaining
-            const startTime = new Date(positionData.startTime);
-            const endTime = new Date(positionData.endTime);
+            // Note: Redis stores as startDate/endDate, not startTime/endTime
+            const startTime = new Date(positionData.startDate || positionData.startTime);
+            const endTime = new Date(positionData.endDate || positionData.endTime);
             const now = new Date();
 
             // Validate dates
             if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-              console.warn(`⚠️ Invalid dates for ${key}: startTime=${positionData.startTime}, endTime=${positionData.endTime}`);
+              console.warn(`⚠️ Invalid dates for ${key}: startDate=${positionData.startDate}, endDate=${positionData.endDate}`);
             } else {
               const timeRemaining = Math.max(0, endTime - now);
               const totalDuration = endTime - startTime;
@@ -1086,9 +1087,9 @@ router.get('/positions', async (req, res) => {
                 tier: positionData.tier || 'unknown',
                 apy: apy,
                 duration: positionData.duration || 'unknown',
-                startTime: positionData.startTime,
-                endTime: positionData.endTime,
-                unlockDate: positionData.endTime,
+                startTime: positionData.startDate || positionData.startTime,
+                endTime: positionData.endDate || positionData.endTime,
+                unlockDate: positionData.endDate || positionData.endTime,
                 status: positionData.status || 'active',
                 progress: progress.toFixed(1),
                 timeRemaining: timeRemaining,
