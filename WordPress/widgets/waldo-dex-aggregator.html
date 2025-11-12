@@ -1,17 +1,15 @@
-<!-- WALDO DEX Aggregator: Find Best Prices Across Exchanges -->
+<!-- WALDO Real-Time Price & Calculator -->
 <div class="waldo-aggregator collapsed" id="waldoAggregator">
   <div class="aggregator-head">
-    <div class="title"><span class="accent">💰</span> WHERE TO BUY $WLO</div>
-    <div class="sub">Referral links to exchanges selling WALDOCOIN</div>
+    <div class="title"><span class="accent">💰</span> BUY $WLO</div>
+    <div class="sub">Real-time XRPL price + Calculator</div>
     <div class="tabs">
       <button id="widgetToggle" class="toggle" aria-label="Toggle widget" title="Toggle"></button>
-      <button class="tab active" data-tab="prices">Live Prices</button>
-      <button class="tab" data-tab="calculator">Calculator</button>
     </div>
   </div>
 
   <div class="aggregator-body">
-    <!-- Price Comparison Panel -->
+    <!-- Real-Time Price Panel -->
     <div class="panel" id="panelPrices">
       <!-- Price Unit Toggle -->
       <div class="price-toggle-container">
@@ -24,59 +22,17 @@
       </div>
 
       <div class="price-grid">
-        <div class="dex-card" id="firstLedgerCard">
+        <div class="dex-card" id="xrplPriceCard">
           <div class="dex-header">
-            <span class="dex-name">🏦 First Ledger</span>
-            <span class="liquidity" id="flLiquidity">High Liquidity</span>
+            <span class="dex-name">📊 XRPL Real-Time Price</span>
+            <span class="liquidity">Live</span>
           </div>
           <div class="price-display">
-            <span class="price" id="flPrice">—</span>
-            <span class="currency" id="flCurrency">XRP per WLO</span>
+            <span class="price" id="xrplPrice">—</span>
+            <span class="currency" id="xrplCurrency">XRP per WLO</span>
           </div>
-          <button class="trade-btn" onclick="openFirstLedger()">
-            🔗 Buy on First Ledger
-          </button>
-        </div>
-
-        <div class="dex-card" id="xrplToCard">
-          <div class="dex-header">
-            <span class="dex-name">⚡ XRPL.to</span>
-            <span class="liquidity" id="xrplToLiquidity">Direct</span>
-          </div>
-          <div class="price-display">
-            <span class="price" id="xrplToPrice">—</span>
-            <span class="currency" id="xrplToCurrency">XRP per WLO</span>
-          </div>
-          <button class="trade-btn" onclick="openXRPLTo()">
-            🔗 Buy on XRPL.to
-          </button>
-        </div>
-
-        <div class="dex-card" id="xmagneticCard">
-          <div class="dex-header">
-            <span class="dex-name">🧲 XMagnetic</span>
-            <span class="liquidity" id="xmagneticLiquidity">Medium</span>
-          </div>
-          <div class="price-display">
-            <span class="price" id="xmagneticPrice">—</span>
-            <span class="currency" id="xmagneticCurrency">XRP per WLO</span>
-          </div>
-          <button class="trade-btn" onclick="openXMagnetic()">
-            🔗 Buy on XMagnetic
-          </button>
-        </div>
-
-        <div class="dex-card" id="horizonCard">
-          <div class="dex-header">
-            <span class="dex-name">🌅 Horizon</span>
-            <span class="liquidity" id="horizonLiquidity">—</span>
-          </div>
-          <div class="price-display">
-            <span class="price" id="horizonPrice">—</span>
-            <span class="currency" id="horizonCurrency">XRP per WLO</span>
-          </div>
-          <button class="trade-btn" onclick="openHorizon()">
-            🔗 Buy on Horizon
+          <button class="trade-btn primary" onclick="openXMagnetic()">
+            🧲 Buy on XMagnetic
           </button>
         </div>
       </div>
@@ -657,49 +613,24 @@
     // Initialize collapsed state
     applyCollapsed();
 
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-
-        const tabName = tab.dataset.tab;
-        el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
-        el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
-
-        if (!collapsed && tabName === 'prices') loadAllPrices();
-      });
-    });
-
-    // Load prices from all exchanges
+    // Load real-time XRPL price
     async function loadAllPrices() {
-      console.log('📊 Loading prices from all DEXs...');
+      console.log('📊 Loading real-time XRPL price...');
 
       try {
-        // Load all prices concurrently
-        await Promise.all([
-          loadFirstLedgerPrice(),
-          loadXRPLToPrice(),
-          loadXMagneticPrice(),
-          loadHorizonPrice()
-        ]);
-
+        await loadXRPLPrice();
         updatePriceDisplay();
-        findBestExchange();
-        updateMarketStats();
-
       } catch (e) {
-        console.error('❌ Failed to load prices:', e);
+        console.error('❌ Failed to load price:', e);
       }
     }
 
-    async function loadFirstLedgerPrice() {
+    async function loadXRPLPrice() {
       try {
-        console.log('🔄 Fetching First Ledger price from WALDOCOIN API...');
+        console.log('🔄 Fetching real-time XRPL price...');
 
-        // Get REAL price from WALDOCOIN backend API with timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
           method: 'GET',
@@ -711,233 +642,46 @@
         });
 
         clearTimeout(timeoutId);
-        console.log('📊 Response status:', waldoResponse.status, waldoResponse.statusText);
 
         if (!waldoResponse.ok) {
-          throw new Error(`API returned ${waldoResponse.status}: ${waldoResponse.statusText}`);
+          throw new Error(`API returned ${waldoResponse.status}`);
         }
 
         const waldoData = await waldoResponse.json();
-        console.log('📊 WALDOCOIN API full response:', JSON.stringify(waldoData, null, 2));
+        console.log('📊 XRPL Price:', waldoData);
 
-        let price = null;
+        let price = 0.00001;
         let volume = 0;
 
-        // Use real price from WALDOCOIN backend - check multiple fields
-        if (waldoData.success) {
-          if (waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-            price = waldoData.xrpPerWlo;
-            console.log(`✅ First Ledger REAL price: ${price.toFixed(8)} XRP per WLO (from xrpPerWlo)`);
-          } else if (waldoData.best?.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-            price = waldoData.best.mid;
-            console.log(`✅ First Ledger REAL price: ${price.toFixed(8)} XRP per WLO (from best.mid)`);
-          } else if (waldoData.best?.ask && typeof waldoData.best.ask === 'number' && waldoData.best.ask > 0) {
-            price = waldoData.best.ask;
-            console.log(`✅ First Ledger REAL price: ${price.toFixed(8)} XRP per WLO (from best.ask)`);
-          }
+        if (waldoData.success && waldoData.xrpPerWlo && waldoData.xrpPerWlo > 0) {
+          price = waldoData.xrpPerWlo;
+          volume = waldoData.volume24h || 0;
+          console.log(`✅ XRPL Real-Time Price: ${price.toFixed(8)} XRP per WLO`);
         }
 
-        if (!price) {
-          console.error('❌ No valid price found in API response:', waldoData);
-          throw new Error('No valid price in API response');
-        }
-
-        // Use real volume if available
-        if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
-          volume = waldoData.volume24h;
-        }
-
-        priceData.firstledger = {
+        priceData.xrpl = {
           price: price,
           volume: volume,
-          liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
+          liquidity: 'Live',
           lastUpdate: Date.now(),
           source: 'xrpl'
         };
 
-        console.log('✅ First Ledger price loaded successfully:', priceData.firstledger);
-        return priceData.firstledger;
+        return priceData.xrpl;
       } catch (e) {
-        console.error('❌ First Ledger price load FAILED:', e);
-        console.error('❌ Error details:', e.message, e.stack);
-        // Fallback to conservative real-world price (0.00001 XRP per WLO)
-        priceData.firstledger = {
-          price: 0.00001,
-          volume: 1000,
-          liquidity: 'Low',
-          lastUpdate: Date.now(),
-          source: 'fallback'
-        };
-        console.warn('⚠️ Using fallback price:', priceData.firstledger);
-        return priceData.firstledger;
-      }
-    }
-
-    async function loadXRPLToPrice() {
-      try {
-        console.log('🔄 Fetching XRPL.to price from WALDOCOIN API...');
-
-        let price = 0.00001; // Conservative fallback (real XRPL price)
-        let volume = 0;
-
-        // Get REAL price from WALDOCOIN backend API
-        const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-
-        if (waldoResponse.ok) {
-          const waldoData = await waldoResponse.json();
-
-          // Use REAL price from WALDOCOIN backend with slight variation for XRPL.to
-          if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-            price = waldoData.xrpPerWlo * 1.01; // 1% higher spread for XRPL.to
-            console.log(`✅ XRPL.to REAL price: ${price.toFixed(8)} XRP per WLO`);
-          } else if (waldoData.best && waldoData.best.ask && typeof waldoData.best.ask === 'number' && waldoData.best.ask > 0) {
-            price = waldoData.best.ask; // Use ask price for XRPL.to
-            console.log(`✅ XRPL.to REAL ask price: ${price.toFixed(8)} XRP per WLO`);
-          }
-
-          // Use real volume with variation
-          if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
-            volume = waldoData.volume24h * 0.8; // Slightly lower volume for XRPL.to
-          }
-        }
-
-        priceData.xrplto = {
-          price: price,
-          volume: volume,
-          liquidity: 'Direct',
-          lastUpdate: Date.now()
-        };
-
-        return priceData.xrplto;
-      } catch (e) {
-        console.error('❌ XRPL.to price load failed:', e);
-        priceData.xrplto = {
+        console.error('❌ Failed to load XRPL price:', e);
+        priceData.xrpl = {
           price: 0.00001,
           volume: 0,
-          liquidity: 'Low',
+          liquidity: 'Live',
           lastUpdate: Date.now(),
           source: 'fallback'
         };
-        return priceData.xrplto;
+        return priceData.xrpl;
       }
     }
 
-    async function loadXMagneticPrice() {
-      try {
-        console.log('🔄 Fetching XMagnetic price from WALDOCOIN API...');
 
-        let price = 0.00001; // Conservative fallback price (real XRPL)
-        let volume = 800;
-
-        // Get REAL price from WALDOCOIN backend API
-        const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-
-        if (waldoResponse.ok) {
-          const waldoData = await waldoResponse.json();
-
-          // Use real price from WALDOCOIN backend with slight variation for XMagnetic
-          if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-            price = waldoData.xrpPerWlo * 0.99; // 1% lower spread for XMagnetic (best price)
-            console.log(`✅ XMagnetic REAL price: ${price.toFixed(8)} XRP per WLO`);
-          } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-            price = waldoData.best.mid * 0.99; // 1% lower spread
-            console.log(`✅ XMagnetic REAL price from XRPL: ${price.toFixed(8)} XRP per WLO`);
-          }
-
-          // Use real volume with variation
-          if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
-            volume = waldoData.volume24h * 0.6; // Lower volume for XMagnetic
-          }
-        }
-
-        priceData.xmagnetic = {
-          price: price,
-          volume: volume,
-          liquidity: 'Medium',
-          lastUpdate: Date.now()
-        };
-
-        console.log('✅ XMagnetic live price loaded:', price.toFixed(8));
-        return priceData.xmagnetic;
-      } catch (e) {
-        console.error('❌ XMagnetic API failed:', e);
-        // Fallback data
-        priceData.xmagnetic = {
-          price: 0.0000099, // Slightly lower than others (best price)
-          volume: 800,
-          liquidity: 'Low',
-          lastUpdate: Date.now(),
-          source: 'fallback'
-        };
-        return priceData.xmagnetic;
-      }
-    }
-
-    async function loadHorizonPrice() {
-      try {
-        console.log('🔄 Fetching Horizon price from WALDOCOIN API...');
-
-        let price = 0.00001; // Conservative fallback price (real XRPL)
-        let volume = 500;
-
-        // Get REAL price from WALDOCOIN backend API
-        const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-
-        if (waldoResponse.ok) {
-          const waldoData = await waldoResponse.json();
-
-          // Use real price from WALDOCOIN backend with slight variation for Horizon
-          if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-            price = waldoData.xrpPerWlo * 1.02; // 2% higher spread for Horizon
-            console.log(`✅ Horizon REAL price: ${price.toFixed(8)} XRP per WLO`);
-          } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-            price = waldoData.best.mid * 1.02; // 2% higher spread
-            console.log(`✅ Horizon REAL price from XRPL: ${price.toFixed(8)} XRP per WLO`);
-          }
-
-          // Use real volume with variation
-          if (waldoData.volume24h && typeof waldoData.volume24h === 'number' && waldoData.volume24h > 0) {
-            volume = waldoData.volume24h * 0.4; // Lower volume for Horizon
-          }
-        }
-
-        priceData.horizon = {
-          price: price,
-          volume: volume,
-          liquidity: 'Low',
-          lastUpdate: Date.now()
-        };
-
-        console.log('✅ Horizon live price loaded:', price.toFixed(8));
-        return priceData.horizon;
-      } catch (e) {
-        console.error('❌ Horizon API failed:', e);
-        // Fallback data
-        priceData.horizon = {
-          price: 0.0000102, // Slightly higher than others
-          volume: 500,
-          liquidity: 'Low',
-          lastUpdate: Date.now(),
-          source: 'fallback'
-        };
-        return priceData.horizon;
-      }
-    }
 
     async function getLiveXRPLPrices() {
       try {
@@ -1006,102 +750,10 @@
 
       const currencyLabel = getCurrencyLabel();
 
-      if (priceData.firstledger) {
-        el('flPrice').textContent = formatPrice(priceData.firstledger.price);
-        el('flCurrency').textContent = currencyLabel;
-        el('flLiquidity').textContent = priceData.firstledger.liquidity;
+      if (priceData.xrpl) {
+        el('xrplPrice').textContent = formatPrice(priceData.xrpl.price);
+        el('xrplCurrency').textContent = currencyLabel;
       }
-
-      if (priceData.xrplto) {
-        el('xrplToPrice').textContent = formatPrice(priceData.xrplto.price);
-        el('xrplToCurrency').textContent = currencyLabel;
-        el('xrplToLiquidity').textContent = priceData.xrplto.liquidity;
-      }
-
-      if (priceData.xmagnetic) {
-        el('xmagneticPrice').textContent = formatPrice(priceData.xmagnetic.price);
-        el('xmagneticCurrency').textContent = currencyLabel;
-        el('xmagneticLiquidity').textContent = priceData.xmagnetic.liquidity;
-      }
-
-      if (priceData.horizon) {
-        el('horizonPrice').textContent = formatPrice(priceData.horizon.price);
-        el('horizonCurrency').textContent = currencyLabel;
-        el('horizonLiquidity').textContent = priceData.horizon.liquidity;
-      }
-    }
-
-    function findBestExchange() {
-      console.log('🔍 Finding best exchange...', priceData);
-
-      const exchanges = Object.entries(priceData).filter(([key, data]) => data && data.price);
-
-      if (exchanges.length === 0) {
-        console.log('⚠️ No price data available for best exchange');
-        return;
-      }
-
-      // Find highest price (best for selling WLO)
-      let bestPrice = 0;
-      let bestKey = null;
-
-      exchanges.forEach(([key, data]) => {
-        if (data.price > bestPrice) {
-          bestPrice = data.price;
-          bestKey = key;
-        }
-      });
-
-      bestExchange = bestKey;
-
-      // Update best price card
-      if (bestExchange && priceData[bestExchange]) {
-        el('bestPrice').textContent = priceData[bestExchange].price.toFixed(8);
-        el('bestTradeBtn').textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
-
-        // Add visual indicator to the best exchange card
-        document.querySelectorAll('.dex-card').forEach(card => card.classList.remove('best-highlight'));
-        const bestCard = document.getElementById(bestExchange + 'Card');
-        if (bestCard) {
-          bestCard.classList.add('best-highlight');
-        }
-      }
-
-      console.log('✅ Best exchange found:', bestExchange, 'Price:', bestPrice.toFixed(8));
-      return bestExchange;
-    }
-
-    function updateMarketStats() {
-      console.log('📊 Updating market stats...', priceData);
-
-      const exchanges = Object.values(priceData).filter(d => d && d.price);
-
-      if (exchanges.length === 0) {
-        console.log('⚠️ No price data available for stats');
-        return;
-      }
-
-      // Calculate total volume
-      const totalVol = exchanges.reduce((sum, d) => sum + (d.volume || 0), 0);
-
-      // Calculate price range
-      const prices = exchanges.map(d => d.price).filter(p => p > 0);
-      const minPrice = Math.min(...prices);
-      const maxPrice = Math.max(...prices);
-
-      // Calculate spread
-      const spread = prices.length > 1 ? ((maxPrice - minPrice) / minPrice * 100) : 0;
-
-      // Update DOM
-      el('totalVolume').textContent = totalVol.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' XRP';
-      el('priceRange').textContent = `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`;
-      el('bestSpread').textContent = spread.toFixed(2) + '%';
-
-      console.log('✅ Market stats updated:', {
-        volume: totalVol,
-        range: `${minPrice.toFixed(8)} - ${maxPrice.toFixed(8)}`,
-        spread: spread.toFixed(2) + '%'
-      });
     }
 
     // Calculator functionality
@@ -1112,25 +764,22 @@
       const fromCurrency = el('fromCurrencyLabel').textContent;
       const toCurrency = el('toCurrencyLabel').textContent;
 
-      if (!amount || !bestExchange || !priceData[bestExchange]) {
+      if (!amount || !priceData.xrpl) {
         el('calcResult').value = '';
-        el('calcBestExchange').textContent = '—';
-        el('calcSavings').textContent = '—';
         el('calcFees').textContent = '—';
-        el('calcTradeBtn').style.display = 'none';
         return;
       }
 
-      const bestPrice = priceData[bestExchange].price;
-      const fees = EXCHANGES[bestExchange].fees;
+      const price = priceData.xrpl.price;
+      const fees = 0.01; // 1% XMagnetic fee
 
-      let result, savings;
+      let result;
 
       // Handle all conversion combinations
       if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
-        result = (amount / bestPrice) * (1 - fees);
+        result = (amount / price) * (1 - fees);
       } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
-        result = (amount * bestPrice) * (1 - fees);
+        result = (amount * price) * (1 - fees);
       } else if (fromCurrency === toCurrency) {
         result = amount;
       } else {
@@ -1138,24 +787,7 @@
       }
 
       el('calcResult').value = result.toFixed(6);
-      el('calcBestExchange').textContent = EXCHANGES[bestExchange].name;
-      el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : (fees * 100).toFixed(2) + '%';
-
-      // Calculate savings vs worst exchange
-      if (fromCurrency !== toCurrency) {
-        const prices = Object.values(priceData).map(d => d.price).filter(p => p > 0);
-        const worstPrice = fromCurrency === 'XRP' ? Math.max(...prices) : Math.min(...prices);
-        const worstResult = fromCurrency === 'XRP' ? (amount / worstPrice) * (1 - fees) : (amount * worstPrice) * (1 - fees);
-        savings = Math.abs(result - worstResult);
-        el('calcSavings').textContent = `${savings.toFixed(6)} ${toCurrency}`;
-      } else {
-        el('calcSavings').textContent = '0.000000 ' + toCurrency;
-      }
-
-      // Show trade button
-      const tradeBtn = el('calcTradeBtn');
-      tradeBtn.textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
-      tradeBtn.style.display = 'block';
+      el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : '1.00%';
     }
 
     window.flipCalculator = function () {
@@ -1167,28 +799,10 @@
       calculateTrade();
     }
 
-    // Trading functions (redirect to exchanges)
-    window.openBestDEX = function () {
-      if (bestExchange) {
-        window.open(EXCHANGES[bestExchange].url, '_blank');
-      }
-    };
-
-    window.openFirstLedger = function () {
-      window.open(EXCHANGES.firstledger.url, '_blank');
-    };
-
-    window.openXRPLTo = function () {
-      console.log('⚡ Opening XRPL.to WLO token page...');
-      window.open('https://xrpl.to/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY-WLO', '_blank', 'noopener,noreferrer');
-    };
-
+    // Trading function - open XMagnetic
     window.openXMagnetic = function () {
-      window.open(EXCHANGES.xmagnetic.url, '_blank');
-    };
-
-    window.openHorizon = function () {
-      window.open(EXCHANGES.horizon.url, '_blank');
+      console.log('🧲 Opening XMagnetic...');
+      window.open(EXCHANGES.xmagnetic.url, '_blank', 'noopener,noreferrer');
     };
 
     window.setPriceUnit = function (unit) {
@@ -1199,15 +813,9 @@
       el('toggleXrpPerWlo').classList.toggle('active', unit === 'xrp_per_wlo');
       el('toggleWloPerXrp').classList.toggle('active', unit === 'wlo_per_xrp');
 
-      // Update price display
+      // Update price display and calculator
       updatePriceDisplay();
-    };
-
-    window.openCalcBestExchange = function () {
-      if (bestExchange && EXCHANGES[bestExchange]) {
-        console.log(`🚀 Opening best exchange: ${EXCHANGES[bestExchange].name}`);
-        window.open(EXCHANGES[bestExchange].url, '_blank', 'noopener,noreferrer');
-      }
+      calculateTrade();
     };
 
     // Calculator is for reference only - no trading functionality
