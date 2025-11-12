@@ -86,7 +86,7 @@
     <!-- Calculator Panel -->
     <div class="panel" id="panelCalculator" style="display:none;">
       <div class="calc-card">
-        <h3>💰 Trade Calculator</h3>
+        <h3 class="calc-title">💰 Trade Calculator</h3>
         <div class="calc-row">
           <div class="input-group">
             <label>I want to spend</label>
@@ -458,6 +458,19 @@
     border-radius: 12px;
     padding: 24px;
     text-align: center;
+  }
+
+  .calc-title {
+    background: linear-gradient(90deg, var(--neonMagenta), var(--neonAqua), var(--neonMagenta));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 300% 100%;
+    animation: shimmer 5s linear infinite;
+    text-shadow: 0 0 12px rgba(255, 61, 247, .35), 0 0 20px rgba(0, 247, 255, .25);
+    font-size: 18px;
+    font-weight: 900;
+    margin-bottom: 20px;
   }
 
   .calc-row {
@@ -1112,7 +1125,7 @@
       const fromCurrency = el('fromCurrencyLabel').textContent;
       const toCurrency = el('toCurrencyLabel').textContent;
 
-      if (!amount || !bestExchange || !priceData[bestExchange]) {
+      if (!amount || amount <= 0) {
         el('calcResult').value = '';
         el('calcBestExchange').textContent = '—';
         el('calcSavings').textContent = '—';
@@ -1121,32 +1134,68 @@
         return;
       }
 
-      const bestPrice = priceData[bestExchange].price;
-      const fees = EXCHANGES[bestExchange].fees;
+      // Find best exchange for this specific conversion
+      const exchanges = Object.entries(priceData).filter(([key, data]) => data && data.price && data.price > 0);
 
-      let result, savings;
-
-      // Handle all conversion combinations
-      if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
-        result = (amount / bestPrice) * (1 - fees);
-      } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
-        result = (amount * bestPrice) * (1 - fees);
-      } else if (fromCurrency === toCurrency) {
-        result = amount;
-      } else {
-        result = 0;
+      if (exchanges.length === 0) {
+        el('calcResult').value = '';
+        el('calcBestExchange').textContent = '—';
+        el('calcSavings').textContent = '—';
+        el('calcFees').textContent = '—';
+        el('calcTradeBtn').style.display = 'none';
+        return;
       }
 
-      el('calcResult').value = result.toFixed(6);
-      el('calcBestExchange').textContent = EXCHANGES[bestExchange].name;
+      // Calculate result for each exchange and find the best one
+      let bestKey = null;
+      let bestResult = null;
+      let worstResult = null;
+
+      exchanges.forEach(([key, data]) => {
+        const fees = EXCHANGES[key].fees;
+        let result;
+
+        // Calculate result for this exchange
+        if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
+          result = (amount / data.price) * (1 - fees);
+        } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
+          result = (amount * data.price) * (1 - fees);
+        } else if (fromCurrency === toCurrency) {
+          result = amount;
+        } else {
+          result = 0;
+        }
+
+        // Track best (highest result = best deal)
+        if (bestResult === null || result > bestResult) {
+          bestResult = result;
+          bestKey = key;
+        }
+
+        // Track worst for savings calculation
+        if (worstResult === null || result < worstResult) {
+          worstResult = result;
+        }
+      });
+
+      if (!bestKey) {
+        el('calcResult').value = '';
+        el('calcBestExchange').textContent = '—';
+        el('calcSavings').textContent = '—';
+        el('calcFees').textContent = '—';
+        el('calcTradeBtn').style.display = 'none';
+        return;
+      }
+
+      const fees = EXCHANGES[bestKey].fees;
+
+      el('calcResult').value = bestResult.toFixed(6);
+      el('calcBestExchange').textContent = EXCHANGES[bestKey].name;
       el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : (fees * 100).toFixed(2) + '%';
 
       // Calculate savings vs worst exchange
-      if (fromCurrency !== toCurrency) {
-        const prices = Object.values(priceData).map(d => d.price).filter(p => p > 0);
-        const worstPrice = fromCurrency === 'XRP' ? Math.max(...prices) : Math.min(...prices);
-        const worstResult = fromCurrency === 'XRP' ? (amount / worstPrice) * (1 - fees) : (amount * worstPrice) * (1 - fees);
-        savings = Math.abs(result - worstResult);
+      if (fromCurrency !== toCurrency && worstResult !== null) {
+        const savings = bestResult - worstResult;
         el('calcSavings').textContent = `${savings.toFixed(6)} ${toCurrency}`;
       } else {
         el('calcSavings').textContent = '0.000000 ' + toCurrency;
@@ -1154,7 +1203,7 @@
 
       // Show trade button
       const tradeBtn = el('calcTradeBtn');
-      tradeBtn.textContent = `Trade on ${EXCHANGES[bestExchange].name}`;
+      tradeBtn.textContent = `Trade on ${EXCHANGES[bestKey].name}`;
       tradeBtn.style.display = 'block';
     }
 
