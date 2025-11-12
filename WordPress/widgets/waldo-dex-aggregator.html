@@ -66,14 +66,6 @@
             <span>Current Price:</span>
             <span id="calcPrice">—</span>
           </div>
-          <div class="result-row">
-            <span>You Save:</span>
-            <span id="calcSavings" class="savings">—</span>
-          </div>
-          <div class="result-row">
-            <span>Estimated Fees:</span>
-            <span id="calcFees">—</span>
-          </div>
         </div>
 
         <button class="trade-btn primary" id="calcTradeBtn" onclick="openXMagnetic()">
@@ -785,38 +777,27 @@
       if (!amount || !priceData.xrpl) {
         el('calcResult').value = '';
         el('calcPrice').textContent = '—';
-        el('calcSavings').textContent = '—';
-        el('calcFees').textContent = '—';
         return;
       }
 
       const price = priceData.xrpl.price;
       const fees = 0.01; // 1% XMagnetic fee
 
-      let result, savings;
+      let result;
 
       // Handle all conversion combinations
       if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
         result = (amount / price) * (1 - fees);
-        // Savings: what you'd get without fees vs with fees
-        const resultWithoutFees = amount / price;
-        savings = resultWithoutFees - result;
       } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
         result = (amount * price) * (1 - fees);
-        const resultWithoutFees = amount * price;
-        savings = resultWithoutFees - result;
       } else if (fromCurrency === toCurrency) {
         result = amount;
-        savings = 0;
       } else {
         result = 0;
-        savings = 0;
       }
 
       el('calcResult').value = result.toFixed(6);
       el('calcPrice').textContent = formatPrice(price);
-      el('calcSavings').textContent = savings > 0 ? `${savings.toFixed(6)} ${toCurrency}` : '—';
-      el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : '1.00%';
     }
 
     window.flipCalculator = function () {
