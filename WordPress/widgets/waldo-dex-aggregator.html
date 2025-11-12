@@ -42,10 +42,10 @@
     <!-- Calculator Panel -->
     <div class="panel" id="panelCalculator">
       <div class="calc-card">
-        <h3>💰 Trade Calculator</h3>
+        <h3 class="calc-title">💰 Trade Calculator</h3>
         <div class="calc-row">
           <div class="input-group">
-            <label>I want to spend</label>
+            <label for="calcAmount">I want to spend</label>
             <div class="input-box">
               <input type="number" id="calcAmount" placeholder="100" min="0" step="0.000001">
               <span class="currency-label" id="fromCurrencyLabel">XRP</span>
@@ -53,7 +53,7 @@
           </div>
           <button class="flip-btn" onclick="flipCalculator()">⇅</button>
           <div class="input-group">
-            <label>I will receive</label>
+            <label for="calcResult">I will receive</label>
             <div class="input-box">
               <input type="text" id="calcResult" readonly placeholder="0">
               <span class="currency-label" id="toCurrencyLabel">WLO</span>
@@ -63,8 +63,8 @@
 
         <div class="calc-results">
           <div class="result-row">
-            <span>Best Exchange:</span>
-            <span id="calcBestExchange">—</span>
+            <span>Current Price:</span>
+            <span id="calcPrice">—</span>
           </div>
           <div class="result-row">
             <span>You Save:</span>
@@ -76,13 +76,12 @@
           </div>
         </div>
 
-        <button class="trade-btn primary" id="calcTradeBtn" onclick="openCalcBestExchange()" style="display:none;">
-          🔗 Buy on Best Exchange
+        <button class="trade-btn primary" id="calcTradeBtn" onclick="openXMagnetic()">
+          🧲 Buy on XMagnetic
         </button>
 
         <div class="calc-note">
-          <p>💡 <strong>Live Calculator:</strong> Shows real-time best prices and takes you directly to the optimal
-            exchange.</p>
+          <p>💡 <strong>Live Calculator:</strong> Real-time XRPL price with 1% XMagnetic fee.</p>
         </div>
       </div>
     </div>
@@ -414,6 +413,19 @@
     border-radius: 12px;
     padding: 24px;
     text-align: center;
+  }
+
+  .calc-title {
+    background: linear-gradient(90deg, var(--neonMagenta), var(--neonAqua), var(--neonMagenta));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 300% 100%;
+    animation: shimmer 5s linear infinite;
+    text-shadow: 0 0 12px rgba(255, 61, 247, .35), 0 0 20px rgba(0, 247, 255, .25);
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
   }
 
   .calc-row {
@@ -772,6 +784,8 @@
 
       if (!amount || !priceData.xrpl) {
         el('calcResult').value = '';
+        el('calcPrice').textContent = '—';
+        el('calcSavings').textContent = '—';
         el('calcFees').textContent = '—';
         return;
       }
@@ -779,20 +793,29 @@
       const price = priceData.xrpl.price;
       const fees = 0.01; // 1% XMagnetic fee
 
-      let result;
+      let result, savings;
 
       // Handle all conversion combinations
       if (fromCurrency === 'XRP' && toCurrency === 'WLO') {
         result = (amount / price) * (1 - fees);
+        // Savings: what you'd get without fees vs with fees
+        const resultWithoutFees = amount / price;
+        savings = resultWithoutFees - result;
       } else if (fromCurrency === 'WLO' && toCurrency === 'XRP') {
         result = (amount * price) * (1 - fees);
+        const resultWithoutFees = amount * price;
+        savings = resultWithoutFees - result;
       } else if (fromCurrency === toCurrency) {
         result = amount;
+        savings = 0;
       } else {
         result = 0;
+        savings = 0;
       }
 
       el('calcResult').value = result.toFixed(6);
+      el('calcPrice').textContent = formatPrice(price);
+      el('calcSavings').textContent = savings > 0 ? `${savings.toFixed(6)} ${toCurrency}` : '—';
       el('calcFees').textContent = fromCurrency === toCurrency ? '0.00%' : '1.00%';
     }
 
