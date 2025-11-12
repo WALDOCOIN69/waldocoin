@@ -603,11 +603,21 @@
 
 <script>
   (function () {
-    const el = (id) => document.getElementById(id);
-    const priceData = {};
-    let bestExchange = null;
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initWidget);
+    } else {
+      initWidget();
+    }
 
-    const EXCHANGES = {
+    function initWidget() {
+      console.log('🚀 Initializing WALDO DEX Aggregator...');
+
+      const el = (id) => document.getElementById(id);
+      const priceData = {};
+      let bestExchange = null;
+
+      const EXCHANGES = {
       firstledger: {
         name: 'First Ledger',
         url: 'https://firstledger.net/token/rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY/WLO',
@@ -641,48 +651,62 @@
     // Price unit toggle state
     let priceUnit = 'xrp_per_wlo'; // 'xrp_per_wlo' or 'wlo_per_xrp'
 
-    // Collapsible functionality
-    const root = el('waldoAggregator');
-    const toggle = el('widgetToggle');
-    let collapsed = true;
+      // Collapsible functionality
+      const root = el('waldoAggregator');
+      const toggle = el('widgetToggle');
+      let collapsed = true;
 
-    const applyCollapsed = () => {
-      if (root) {
-        if (collapsed) {
-          root.classList.add('collapsed');
-        } else {
-          root.classList.remove('collapsed');
+      console.log('🔍 Found elements:', { root: !!root, toggle: !!toggle });
+
+      const applyCollapsed = () => {
+        if (root) {
+          if (collapsed) {
+            root.classList.add('collapsed');
+          } else {
+            root.classList.remove('collapsed');
+          }
         }
+      };
+
+      if (toggle) {
+        toggle.addEventListener('click', () => {
+          console.log('🔄 Toggle clicked, collapsed:', collapsed);
+          collapsed = !collapsed;
+          applyCollapsed();
+          if (!collapsed) {
+            console.log('🔍 Widget opened, loading prices...');
+            loadAllPrices();
+          }
+        });
+      } else {
+        console.error('❌ Toggle button not found!');
       }
-    };
 
-    if (toggle) {
-      toggle.addEventListener('click', () => {
-        collapsed = !collapsed;
-        applyCollapsed();
-        if (!collapsed) {
-          console.log('🔍 Widget opened, loading prices...');
-          loadAllPrices();
-        }
+      // Initialize collapsed state
+      applyCollapsed();
+
+      // Tab switching
+      const tabs = document.querySelectorAll('.tab');
+      console.log('🔍 Found tabs:', tabs.length);
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          console.log('🔄 Tab clicked:', tab.dataset.tab);
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+
+          const tabName = tab.dataset.tab;
+          const pricesPanel = el('panelPrices');
+          const calcPanel = el('panelCalculator');
+
+          console.log('🔍 Found panels:', { prices: !!pricesPanel, calc: !!calcPanel });
+
+          if (pricesPanel) pricesPanel.style.display = tabName === 'prices' ? 'block' : 'none';
+          if (calcPanel) calcPanel.style.display = tabName === 'calculator' ? 'block' : 'none';
+
+          if (!collapsed && tabName === 'prices') loadAllPrices();
+        });
       });
-    }
-
-    // Initialize collapsed state
-    applyCollapsed();
-
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-
-        const tabName = tab.dataset.tab;
-        el('panelPrices').style.display = tabName === 'prices' ? 'block' : 'none';
-        el('panelCalculator').style.display = tabName === 'calculator' ? 'block' : 'none';
-
-        if (!collapsed && tabName === 'prices') loadAllPrices();
-      });
-    });
 
     // Load prices from all exchanges
     async function loadAllPrices() {
@@ -1295,5 +1319,6 @@
       loadAllPrices();
     }, 1000);
 
+    } // End initWidget function
   })();
 </script>
