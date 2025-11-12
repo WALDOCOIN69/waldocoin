@@ -602,7 +602,8 @@
 </style>
 
 <script>
-  (function () {
+  // Wait for DOM to be ready before initializing
+  function initWaldoWidget() {
     const el = (id) => document.getElementById(id);
     const priceData = {};
     let bestExchange = null;
@@ -1276,6 +1277,12 @@
       console.log('🚀 Initial price load...');
       loadAllPrices();
     }, 1000);
+  }
 
-  })();
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWaldoWidget);
+  } else {
+    initWaldoWidget();
+  }
 </script>
