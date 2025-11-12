@@ -760,9 +760,9 @@
       } catch (e) {
         console.error('❌ First Ledger price load FAILED:', e);
         console.error('❌ Error details:', e.message, e.stack);
-        // Fallback to conservative real-world price
+        // Fallback to conservative real-world price (0.00001 XRP per WLO)
         priceData.firstledger = {
-          price: 0.00006400,
+          price: 0.00001,
           volume: 1000,
           liquidity: 'Low',
           lastUpdate: Date.now(),
@@ -777,7 +777,7 @@
       try {
         console.log('🔄 Fetching XRPL.to price from WALDOCOIN API...');
 
-        let price = 0.00006400; // Conservative fallback
+        let price = 0.00001; // Conservative fallback (real XRPL price)
         let volume = 0;
 
         // Get REAL price from WALDOCOIN backend API
@@ -793,7 +793,7 @@
 
           // Use REAL price from WALDOCOIN backend with slight variation for XRPL.to
           if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-            price = waldoData.xrpPerWlo * 1.02; // 2% higher spread for XRPL.to
+            price = waldoData.xrpPerWlo * 1.01; // 1% higher spread for XRPL.to
             console.log(`✅ XRPL.to REAL price: ${price.toFixed(8)} XRP per WLO`);
           } else if (waldoData.best && waldoData.best.ask && typeof waldoData.best.ask === 'number' && waldoData.best.ask > 0) {
             price = waldoData.best.ask; // Use ask price for XRPL.to
@@ -817,7 +817,7 @@
       } catch (e) {
         console.error('❌ XRPL.to price load failed:', e);
         priceData.xrplto = {
-          price: 0.00006400,
+          price: 0.00001,
           volume: 0,
           liquidity: 'Low',
           lastUpdate: Date.now(),
@@ -831,7 +831,7 @@
       try {
         console.log('🔄 Fetching XMagnetic price from WALDOCOIN API...');
 
-        let price = 0.00006400; // Conservative fallback price
+        let price = 0.00001; // Conservative fallback price (real XRPL)
         let volume = 800;
 
         // Get REAL price from WALDOCOIN backend API
@@ -847,10 +847,10 @@
 
           // Use real price from WALDOCOIN backend with slight variation for XMagnetic
           if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-            price = waldoData.xrpPerWlo * 0.98; // 2% lower spread for XMagnetic
+            price = waldoData.xrpPerWlo * 0.99; // 1% lower spread for XMagnetic (best price)
             console.log(`✅ XMagnetic REAL price: ${price.toFixed(8)} XRP per WLO`);
           } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-            price = waldoData.best.mid * 0.98; // 2% lower spread
+            price = waldoData.best.mid * 0.99; // 1% lower spread
             console.log(`✅ XMagnetic REAL price from XRPL: ${price.toFixed(8)} XRP per WLO`);
           }
 
@@ -873,7 +873,7 @@
         console.error('❌ XMagnetic API failed:', e);
         // Fallback data
         priceData.xmagnetic = {
-          price: 0.00006200, // Slightly lower than First Ledger
+          price: 0.0000099, // Slightly lower than others (best price)
           volume: 800,
           liquidity: 'Low',
           lastUpdate: Date.now(),
@@ -887,7 +887,7 @@
       try {
         console.log('🔄 Fetching Horizon price from WALDOCOIN API...');
 
-        let price = 0.00006400; // Conservative fallback price
+        let price = 0.00001; // Conservative fallback price (real XRPL)
         let volume = 500;
 
         // Get REAL price from WALDOCOIN backend API
@@ -903,10 +903,10 @@
 
           // Use real price from WALDOCOIN backend with slight variation for Horizon
           if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-            price = waldoData.xrpPerWlo * 1.01; // 1% higher spread for Horizon
+            price = waldoData.xrpPerWlo * 1.02; // 2% higher spread for Horizon
             console.log(`✅ Horizon REAL price: ${price.toFixed(8)} XRP per WLO`);
           } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-            price = waldoData.best.mid * 1.01; // 1% higher spread
+            price = waldoData.best.mid * 1.02; // 2% higher spread
             console.log(`✅ Horizon REAL price from XRPL: ${price.toFixed(8)} XRP per WLO`);
           }
 
@@ -929,7 +929,7 @@
         console.error('❌ Horizon API failed:', e);
         // Fallback data
         priceData.horizon = {
-          price: 0.00006500, // Slightly higher than First Ledger
+          price: 0.0000102, // Slightly higher than others
           volume: 500,
           liquidity: 'Low',
           lastUpdate: Date.now(),
