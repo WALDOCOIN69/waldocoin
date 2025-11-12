@@ -89,7 +89,7 @@
         <h3 class="calc-title">💰 Trade Calculator</h3>
         <div class="calc-row">
           <div class="input-group">
-            <label>I want to spend</label>
+            <label for="calcAmount">I want to spend</label>
             <div class="input-box">
               <input type="number" id="calcAmount" placeholder="100" min="0" step="0.000001">
               <span class="currency-label" id="fromCurrencyLabel">XRP</span>
@@ -97,7 +97,7 @@
           </div>
           <button class="flip-btn" onclick="flipCalculator()">⇅</button>
           <div class="input-group">
-            <label>I will receive</label>
+            <label for="calcResult">I will receive</label>
             <div class="input-box">
               <input type="text" id="calcResult" readonly placeholder="0">
               <span class="currency-label" id="toCurrencyLabel">WLO</span>
