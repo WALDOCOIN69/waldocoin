@@ -40,7 +40,7 @@
     </div>
 
     <!-- Calculator Panel -->
-    <div class="panel" id="panelCalculator" style="display:none;">
+    <div class="panel" id="panelCalculator">
       <div class="calc-card">
         <h3>💰 Trade Calculator</h3>
         <div class="calc-row">
@@ -650,13 +650,19 @@
         const waldoData = await waldoResponse.json();
         console.log('📊 XRPL Price:', waldoData);
 
-        let price = 0.00001;
+        let price = 0.00006;
         let volume = 0;
 
-        if (waldoData.success && waldoData.xrpPerWlo && waldoData.xrpPerWlo > 0) {
-          price = waldoData.xrpPerWlo;
+        if (waldoData.success) {
+          // Use best.ask price (what you pay to buy WLO)
+          if (waldoData.best?.ask && waldoData.best.ask > 0) {
+            price = waldoData.best.ask;
+            console.log(`✅ XRPL Real-Time Ask Price: ${price.toFixed(8)} XRP per WLO`);
+          } else if (waldoData.xrpPerWlo && waldoData.xrpPerWlo > 0) {
+            price = waldoData.xrpPerWlo;
+            console.log(`✅ XRPL Real-Time Price: ${price.toFixed(8)} XRP per WLO`);
+          }
           volume = waldoData.volume24h || 0;
-          console.log(`✅ XRPL Real-Time Price: ${price.toFixed(8)} XRP per WLO`);
         }
 
         priceData.xrpl = {
@@ -671,7 +677,7 @@
       } catch (e) {
         console.error('❌ Failed to load XRPL price:', e);
         priceData.xrpl = {
-          price: 0.00001,
+          price: 0.00006,
           volume: 0,
           liquidity: 'Live',
           lastUpdate: Date.now(),
