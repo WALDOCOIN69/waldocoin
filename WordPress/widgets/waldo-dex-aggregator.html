@@ -631,14 +631,20 @@
       try {
         console.log('🔄 Fetching First Ledger price from WALDOCOIN API...');
 
-        // Get REAL price from WALDOCOIN backend API
+        // Get REAL price from WALDOCOIN backend API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         const waldoResponse = await fetch('https://waldocoin-backend-api.onrender.com/api/market/wlo', {
           method: 'GET',
           headers: {
-            'Accept': 'application/json'
-          }
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
         console.log('📊 Response status:', waldoResponse.status, waldoResponse.statusText);
 
         if (!waldoResponse.ok) {
@@ -651,14 +657,21 @@
         let price = null;
         let volume = 0;
 
-        // Use real price from WALDOCOIN backend
-        if (waldoData.success && waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
-          price = waldoData.xrpPerWlo;
-          console.log(`✅ First Ledger REAL price: ${price.toFixed(8)} XRP per WLO`);
-        } else if (waldoData.best && waldoData.best.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
-          price = waldoData.best.mid;
-          console.log(`✅ First Ledger REAL price from orderbook: ${price.toFixed(8)} XRP per WLO`);
-        } else {
+        // Use real price from WALDOCOIN backend - check multiple fields
+        if (waldoData.success) {
+          if (waldoData.xrpPerWlo && typeof waldoData.xrpPerWlo === 'number' && waldoData.xrpPerWlo > 0) {
+            price = waldoData.xrpPerWlo;
+            console.log(`✅ First Ledger REAL price: ${price.toFixed(8)} XRP per WLO (from xrpPerWlo)`);
+          } else if (waldoData.best?.mid && typeof waldoData.best.mid === 'number' && waldoData.best.mid > 0) {
+            price = waldoData.best.mid;
+            console.log(`✅ First Ledger REAL price: ${price.toFixed(8)} XRP per WLO (from best.mid)`);
+          } else if (waldoData.best?.ask && typeof waldoData.best.ask === 'number' && waldoData.best.ask > 0) {
+            price = waldoData.best.ask;
+            console.log(`✅ First Ledger REAL price: ${price.toFixed(8)} XRP per WLO (from best.ask)`);
+          }
+        }
+
+        if (!price) {
           console.error('❌ No valid price found in API response:', waldoData);
           throw new Error('No valid price in API response');
         }
@@ -672,7 +685,8 @@
           price: price,
           volume: volume,
           liquidity: volume > 10 ? 'High' : volume > 1 ? 'Medium' : 'Low',
-          lastUpdate: Date.now()
+          lastUpdate: Date.now(),
+          source: 'xrpl'
         };
 
         console.log('✅ First Ledger price loaded successfully:', priceData.firstledger);
