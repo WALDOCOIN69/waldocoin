@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import './AIBot.css'
 
-function AIBot({ user, isPremium }) {
+function AIBot() {
+  const { user, tier } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -61,7 +63,7 @@ function AIBot({ user, isPremium }) {
             <label>AI Model:</label>
             <select value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
               <option value="groq">⚡ Groq (Free, Fast)</option>
-              {isPremium && <option value="claude">✨ Claude (Premium, Best)</option>}
+              {tier === 'premium' && <option value="claude">✨ Claude (Premium, Best)</option>}
               <option value="ollama">🏠 Ollama (Free, Local)</option>
             </select>
           </div>

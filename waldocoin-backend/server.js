@@ -37,6 +37,9 @@ import activityRoute from "./routes/activity.js";
 import paymentRoute from "./routes/payment.js";
 import feesRoute from "./routes/fees.js";
 
+// 🎨 Memeology Routes
+import memeologyRoute from "./routes/memeology.js";
+
 // 🕐 Cron Jobs
 import { startExpiredBattleRefunder } from "./cron/expiredBattleRefunder.js";
 import { startStakingMaturityProcessor } from "./cron/stakingMaturityProcessor.js";
@@ -101,8 +104,8 @@ const startServer = async () => {
     windowMs: 60 * 1000,
     max: 100,
   });
-  // CORS: Allow waldocoin.live and waldo.live domains and subdomains
-  const allowedDomains = ["waldocoin.live", "waldo.live", "waldocoin.onrender.com", "waldocoin-backend-api.onrender.com"];
+  // CORS: Allow waldocoin.live, waldo.live, and memeology.fun domains and subdomains
+  const allowedDomains = ["waldocoin.live", "waldo.live", "memeology.fun", "waldocoin.onrender.com", "waldocoin-backend-api.onrender.com"];
   const corsOriginCheck = (origin) => {
     console.log(`🔍 CORS Check: origin="${origin}"`);
 
@@ -205,6 +208,10 @@ const startServer = async () => {
   app.use("/api/fees", feesRoute);
   app.use("/api/referral", (await import("./routes/referral.js")).default);
   app.use("/api/system", (await import("./routes/system.js")).default);
+
+  // 🎨 Memeology Routes
+  console.log("🎨 Registering Memeology routes...");
+  app.use("/api/memeology", memeologyRoute);
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
   app.use("/api/market/price-history", (await import("./routes/market/price-history.js")).default);
   app.use("/api/xrpl/trade", (await import("./routes/xrpl/trade.js")).default);

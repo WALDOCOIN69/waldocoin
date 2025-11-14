@@ -115,6 +115,15 @@ services:
       # Additional environment variables used in code
       - key: NFT_STORAGE_API_KEY
         sync: false
+      # Memeology Configuration
+      - key: IMGFLIP_USERNAME
+        value: waldolabs
+      - key: IMGFLIP_PASSWORD
+        value: waldolabs123
+      - key: WLO_ISSUER
+        value: rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY
+      - key: XRPL_SERVER
+        value: https://s1.ripple.com:51234
 
   # === WALDO Trading Bot Worker ===
   - type: worker
