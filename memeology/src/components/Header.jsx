@@ -20,7 +20,7 @@ function Header() {
       <div className="header-content">
         <div className="logo">
           <div className="logo-main">
-            <span className="logo-icon">🧬</span>
+            <img src="/memeology-logo.png" alt="Memeology" className="logo-image" />
             <div className="logo-text">
               <h1>MEMEOLOGY.FUN</h1>
               <p className="tagline">Brought to you by <span className="waldo-labs">WALDOlabs</span></p>

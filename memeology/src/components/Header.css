@@ -25,6 +25,14 @@
   gap: 15px;
 }
 
+.logo-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 10px rgba(0, 247, 255, 0.5));
+  animation: pulse 2s ease-in-out infinite;
+}
+
 .logo-icon {
   font-size: 48px;
   filter: drop-shadow(0 0 10px rgba(0, 247, 255, 0.5));
