@@ -282,17 +282,24 @@ function MemeGenerator() {
   const fetchTemplates = async () => {
     try {
       setLoading(true)
-      // Try to fetch from API, but use mock data if it fails
-      try {
-        const response = await fetch(`/api/memeology/templates/imgflip?tier=${tier}`)
-        const data = await response.json()
-        setTemplates(data.memes || [])
-        setTemplateCount(data.count || data.memes?.length || 0)
-        setUpgradeMessage(data.upgrade_message || '')
-        setTierFeatures(data.features || null)
-      } catch (apiError) {
-        // Use mock data when backend is not available - expanded to 50 templates
-        const mockTemplates = [
+      const response = await fetch(`/api/memeology/templates/imgflip?tier=${tier}`)
+      const data = await response.json()
+
+      // Filter out any templates with broken images
+      const validTemplates = (data.memes || []).filter(template => {
+        // Remove templates that commonly have CORS issues
+        const brokenIds = ['252600902', '226297822', '161865971'] // Always Has Been, Panik Kalm, Marked Safe
+        return !brokenIds.includes(template.id)
+      })
+
+      setTemplates(validTemplates)
+      setTemplateCount(validTemplates.length)
+      setUpgradeMessage(data.upgrade_message || '')
+      setTierFeatures(data.features || null)
+    } catch (error) {
+      console.error('Error fetching templates:', error)
+      // Fallback to a few guaranteed working templates
+      const fallbackTemplates = [
           { id: '181913649', name: 'Drake Hotline Bling', url: 'https://i.imgflip.com/30b1gx.jpg' },
           { id: '87743020', name: 'Two Buttons', url: 'https://i.imgflip.com/1g8my4.jpg' },
           { id: '112126428', name: 'Distracted Boyfriend', url: 'https://i.imgflip.com/1ur9b0.jpg' },
@@ -344,20 +351,9 @@ function MemeGenerator() {
           { id: '14371066', name: 'Star Wars Yoda', url: 'https://i.imgflip.com/8k0sa.jpg' },
           { id: '61556', name: 'Grandma Finds The Internet', url: 'https://i.imgflip.com/1bhk.jpg' },
         ]
-        setTemplates(mockTemplates)
-        setTemplateCount(mockTemplates.length)
+        setTemplates(fallbackTemplates)
+        setTemplateCount(fallbackTemplates.length)
 
-        // Set upgrade message based on tier
-        if (tier === 'free') {
-          setUpgradeMessage('🪙 Hold WALDOCOIN for 100 more templates + small fees OR 💎 Premium for unlimited!')
-        } else if (tier === 'waldocoin') {
-          setUpgradeMessage('⬆️ Upgrade to Premium for 50+ more templates and no fees!')
-        } else {
-          setUpgradeMessage('')
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching templates:', error)
     } finally {
       setLoading(false)
     }
