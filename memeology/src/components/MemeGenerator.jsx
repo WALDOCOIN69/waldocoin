@@ -284,7 +284,7 @@ function MemeGenerator() {
       setLoading(true)
       // Try to fetch from API, but use mock data if it fails
       try {
-        const response = await fetch(`/api/templates/imgflip?tier=${tier}`)
+        const response = await fetch(`/api/memeology/templates/imgflip?tier=${tier}`)
         const data = await response.json()
         setTemplates(data.memes || [])
         setTemplateCount(data.count || data.memes?.length || 0)
