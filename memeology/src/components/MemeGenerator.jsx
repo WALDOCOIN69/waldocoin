@@ -282,7 +282,8 @@ function MemeGenerator() {
   const fetchTemplates = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/memeology/templates/imgflip?tier=${tier}`)
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://waldo-api.onrender.com'
+      const response = await fetch(`${apiUrl}/api/memeology/templates/imgflip?tier=${tier}`)
       const data = await response.json()
 
       // Filter out any templates with broken images
@@ -480,7 +481,14 @@ function MemeGenerator() {
                   className={`template-item ${selectedTemplate?.id === template.id ? 'selected' : ''}`}
                   onClick={() => handleTemplateSelect(template)}
                 >
-                  <img src={template.url} alt={template.name} />
+                  <img
+                    src={template.url}
+                    alt={template.name}
+                    onError={(e) => {
+                      // Hide broken images
+                      e.target.parentElement.style.display = 'none'
+                    }}
+                  />
                   <p>{template.name}</p>
                 </div>
               ))
