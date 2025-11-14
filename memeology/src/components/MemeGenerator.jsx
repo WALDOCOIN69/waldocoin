@@ -282,7 +282,7 @@ function MemeGenerator() {
   const fetchTemplates = async () => {
     try {
       setLoading(true)
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://waldo-api.onrender.com'
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
       const response = await fetch(`${apiUrl}/api/memeology/templates/imgflip?tier=${tier}`)
       const data = await response.json()
 
