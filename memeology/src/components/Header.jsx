@@ -46,7 +46,7 @@ function Header() {
             </div>
           ) : (
             <button className="btn-primary" onClick={loginWithXUMM}>
-              🔐 Login with XUMM
+              🔐 Login with Xaman
             </button>
           )}
         </div>
