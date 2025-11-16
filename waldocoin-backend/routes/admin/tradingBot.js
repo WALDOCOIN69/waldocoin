@@ -14,6 +14,9 @@ console.log("🤖 Loaded: routes/admin/tradingBot.js");
 // GET /api/admin/trading-bot/status - Get trading bot status and metrics
 router.get("/status", requireAdmin, async (req, res) => {
   try {
+    console.log('🤖 Trading bot status endpoint called');
+    console.log('📋 Admin key present:', !!req.headers['x-admin-key']);
+
     // Get bot status from Redis (use volume_bot: prefix to match bot.js)
     const botStatus = await redis.get('volume_bot:status') || 'Unknown';
     const lastTrade = await redis.get('volume_bot:last_trade');

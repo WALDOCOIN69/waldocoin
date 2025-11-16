@@ -23,9 +23,18 @@ export function checkAdmin(req) {
  */
 export function requireAdmin(req, res, next) {
   const adminKey = req.headers['x-admin-key'];
-  if (!adminKey || adminKey !== process.env.X_ADMIN_KEY) {
+  const expectedKey = process.env.X_ADMIN_KEY;
+
+  console.log('🔐 Admin auth check:');
+  console.log('  - Admin key provided:', !!adminKey);
+  console.log('  - Expected key configured:', !!expectedKey);
+  console.log('  - Keys match:', adminKey === expectedKey);
+
+  if (!adminKey || adminKey !== expectedKey) {
+    console.log('❌ Admin auth failed - returning 401');
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
+  console.log('✅ Admin auth passed');
   next();
 }
 
