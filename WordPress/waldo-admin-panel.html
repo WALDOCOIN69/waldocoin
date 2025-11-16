@@ -5526,26 +5526,7 @@ This action cannot be undone. Continue?`;
     }
 
     // Admin Key Management Functions
-    function saveAdminKey() {
-      const adminKey = document.getElementById('adminKeyInput').value.trim();
 
-      if (!adminKey) {
-        showAlert('Please enter an admin key', 'warning');
-        return;
-      }
-
-      localStorage.setItem('adminKey', adminKey);
-      showAlert('Admin key saved successfully', 'success');
-      document.getElementById('adminKeyInput').value = '';
-    }
-
-    function clearAdminKey() {
-      const confirm = window.confirm('⚠️ Clear stored admin key?\n\nYou will need to re-enter it to access admin functions.');
-      if (!confirm) return;
-
-      localStorage.removeItem('adminKey');
-      showAlert('Admin key cleared', 'success');
-    }
 
 
 
@@ -6090,58 +6071,7 @@ This action cannot be undone. Continue?`;
       }
     }
 
-    function blockUser(wallet) {
-      if (confirm(`🚨 SECURITY OVERRIDE: Block user ${wallet}?\n\nThis will immediately prevent them from:\n- Claiming rewards\n- Participating in battles\n- Receiving airdrops\n\nUse only if automated fraud detection failed.`)) {
-        showAlert(`🚫 User ${wallet} blocked via manual override`, 'warning');
-        // In production, this would call the security API
-      }
-    }
 
-    function unblockUser(wallet) {
-      if (confirm(`🔓 SECURITY OVERRIDE: Unblock user ${wallet}?\n\nThis will restore their access to all WALDO features.\n\nOnly unblock if you're certain they're legitimate.`)) {
-        showAlert(`✅ User ${wallet} unblocked via manual override`, 'success');
-        // In production, this would call the security API
-      }
-    }
-
-    function endCurrentBattle() {
-      if (confirm('🚨 BATTLE EMERGENCY OVERRIDE\n\nForce end the current battle?\n\nThis will:\n- Immediately end voting\n- Calculate winner based on current votes\n- Distribute rewards\n- Affect all active participants\n\nUse only if automated battle system failed.')) {
-        showAlert('⚔️ Battle force-ended via emergency override', 'warning');
-        // In production, this would call the battle API
-      }
-    }
-
-    function cancelCurrentBattle() {
-      if (confirm('🚨 BATTLE EMERGENCY CANCEL\n\nCancel the current battle entirely?\n\nThis will:\n- Cancel the battle without a winner\n- Refund all participants\n- Cannot be undone\n\nUse only in critical situations.')) {
-        showAlert('❌ Battle cancelled via emergency override', 'error');
-        // In production, this would call the battle API
-      }
-    }
-
-    function refreshAllData() {
-      if (confirm('🔄 FORCE DATA REFRESH\n\nThis will reload all dashboard data and may cause temporary slowdowns.\n\nContinue?')) {
-        showAlert('🔄 Forcing data refresh...', 'success');
-        loadSectionData(currentSection);
-      }
-    }
-
-    function clearCache() {
-      if (confirm('🗑️ EMERGENCY CACHE CLEAR\n\nThis will clear all system caches and may cause temporary performance issues.\n\nUse only if system is behaving unexpectedly.\n\nContinue?')) {
-        showAlert('🗑️ Emergency cache clear initiated', 'warning');
-        // In production, this would call the cache clear API
-      }
-    }
-
-    function emergencyStop() {
-      const confirmation = prompt('🚨 SYSTEM EMERGENCY STOP\n\nThis will halt ALL WALDOCOIN operations:\n- Stop all battles\n- Disable airdrops\n- Block all transactions\n- Affect all users\n\nType "EMERGENCY STOP" to confirm:');
-
-      if (confirmation === 'EMERGENCY STOP') {
-        showAlert('🛑 SYSTEM EMERGENCY STOP ACTIVATED', 'error');
-        // In production, this would call the emergency stop API
-      } else if (confirmation !== null) {
-        showAlert('❌ Emergency stop cancelled - incorrect confirmation', 'warning');
-      }
-    }
 
 
 
