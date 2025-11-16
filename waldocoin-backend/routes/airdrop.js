@@ -649,7 +649,7 @@ router.get("/trustline-count", async (req, res) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            method: 'account_lines',
+            method: 'gateway_balances',
             params: [{
               account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
               ledger_index: 'validated'
@@ -669,7 +669,7 @@ router.get("/trustline-count", async (req, res) => {
       } catch (serverError) {
         console.log(`❌ Failed to connect to ${server}:`, serverError.name, serverError.message);
         if (serverError.name === 'AbortError') {
-          console.log(`⏰ ${server} timed out after 2 seconds`);
+          console.log(`⏰ ${server} timed out after 5 seconds`);
         }
         lastError = serverError;
         continue; // Try next server
@@ -683,44 +683,61 @@ router.get("/trustline-count", async (req, res) => {
     const data = await response.json();
     console.log(`📡 XRPL Response structure:`, {
       hasResult: !!data.result,
-      hasLines: !!(data.result && data.result.lines),
-      linesCount: data.result?.lines?.length || 0,
+      hasAssets: !!(data.result && data.result.assets),
+      assetsCount: data.result?.assets?.length || 0,
       error: data.error || null
     });
 
-    if (data.result && data.result.lines) {
-      console.log(`🔍 Found ${data.result.lines.length} total trustlines from issuer`);
+    if (data.result && data.result.assets) {
+      console.log(`🔍 Found ${data.result.assets.length} total asset holders`);
 
-      // Show first few currencies for debugging
-      const sampleCurrencies = data.result.lines.slice(0, 10).map(line => ({
-        currency: line.currency,
-        balance: line.balance,
-        account: line.account?.slice(0, 10) + '...'
-      }));
-      console.log(`📋 Sample trustlines:`, sampleCurrencies);
+      // gateway_balances returns assets array with currency and holders
+      // Each asset has: currency, issuer, and balances object with account: balance pairs
+      let trustlineCount = 0;
+      let walletsWithBalance = 0;
+      let totalWaldoHeld = 0;
 
-      // Filter for WLO trustlines only
-      const wloTrustlines = data.result.lines.filter(line =>
-        line.currency === 'WLO'
-      );
+      // Find WLO asset in the assets array
+      const wloAsset = data.result.assets.find(asset => asset.currency === 'WLO');
 
-      console.log(`🎯 WALDO/WLO trustlines found: ${wloTrustlines.length}`);
+      if (wloAsset && wloAsset.balances) {
+        console.log(`🎯 Found WLO asset with ${Object.keys(wloAsset.balances).length} holders`);
 
-      const trustlineCount = wloTrustlines.length;
-      const walletsWithBalance = wloTrustlines.filter(line => parseFloat(line.balance || 0) > 0).length;
-      const totalWaldoHeld = wloTrustlines.reduce((sum, line) => sum + parseFloat(line.balance || 0), 0);
+        trustlineCount = Object.keys(wloAsset.balances).length;
 
-      console.log(`✅ Real-time XRPL trustline data: ${trustlineCount} trustlines, ${walletsWithBalance} with balance, ${totalWaldoHeld.toFixed(2)} total WLO`);
+        // Count wallets with balance > 0
+        Object.entries(wloAsset.balances).forEach(([account, balance]) => {
+          const balanceNum = parseFloat(balance);
+          if (balanceNum > 0) {
+            walletsWithBalance++;
+            totalWaldoHeld += balanceNum;
+          }
+        });
 
-      clearTimeout(globalTimeout);
-      res.json({
-        success: true,
-        trustlineCount: trustlineCount,
-        walletsWithBalance: walletsWithBalance,
-        totalWaldoHeld: Math.round(totalWaldoHeld),
-        source: "Real-time XRPL query",
-        timestamp: new Date().toISOString()
-      });
+        console.log(`✅ Real-time XRPL trustline data: ${trustlineCount} trustlines, ${walletsWithBalance} with balance, ${totalWaldoHeld.toFixed(2)} total WLO`);
+
+        clearTimeout(globalTimeout);
+        res.json({
+          success: true,
+          trustlineCount: trustlineCount,
+          walletsWithBalance: walletsWithBalance,
+          totalWaldoHeld: Math.round(totalWaldoHeld),
+          source: "Real-time XRPL query (gateway_balances)",
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.log('⚠️ WLO asset not found in gateway_balances response');
+        clearTimeout(globalTimeout);
+        res.json({
+          success: true,
+          trustlineCount: 0,
+          walletsWithBalance: 0,
+          totalWaldoHeld: 0,
+          source: "Fallback data (WLO not found - please refresh)",
+          timestamp: new Date().toISOString(),
+          warning: "Could not find WLO asset data. Please refresh the page."
+        });
+      }
     } else {
       console.log('⚠️ XRPL query failed, returning zero values');
       clearTimeout(globalTimeout);
