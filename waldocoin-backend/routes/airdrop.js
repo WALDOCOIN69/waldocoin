@@ -688,6 +688,12 @@ router.get("/trustline-count", async (req, res) => {
       error: data.error || null
     });
 
+    // Debug: log the actual response structure
+    if (data.result) {
+      console.log(`🔍 XRPL Result keys:`, Object.keys(data.result));
+      console.log(`🔍 Full result:`, JSON.stringify(data.result, null, 2).substring(0, 500));
+    }
+
     if (data.result && data.result.assets) {
       console.log(`🔍 Found ${data.result.assets.length} total asset holders`);
 
