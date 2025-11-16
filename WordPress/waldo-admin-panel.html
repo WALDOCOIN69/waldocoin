@@ -5394,55 +5394,7 @@ This action cannot be undone. Continue?`;
     }
 
     // Airdrop Password Management Functions
-    async function getCurrentAirdropPassword() {
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/airdrop/current-password`, {
-          headers: { 'x-admin-key': adminKey }
-        });
 
-        const data = await response.json();
-        if (data.success) {
-          showAlert(`Current password: ${data.password}`, 'info');
-        } else {
-          showAlert(`Failed to get password: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Get password error:', error);
-        showAlert('Error getting current password', 'error');
-      }
-    }
-
-    // Duplicate functions removed - using original implementations above
-
-    async function clearPasswordOverride() {
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/airdrop/set-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          },
-          body: JSON.stringify({
-            password: ''
-          })
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          document.getElementById('newDailyPassword').value = '';
-          showAlert('Password override cleared', 'success');
-        } else {
-          showAlert(`Failed to clear override: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Clear override error:', error);
-        showAlert('Error clearing password override', 'error');
-      }
-    }
-
-    // Duplicate updateAirdropPassword function removed - using enhanced version above
 
     // Battle Management Functions
     async function endCurrentBattle() {
@@ -5595,62 +5547,7 @@ This action cannot be undone. Continue?`;
       showAlert('Admin key cleared', 'success');
     }
 
-    async function testEnvironmentKeys() {
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        if (!adminKey) {
-          showAlert('Please save an admin key first', 'warning');
-          return;
-        }
 
-        const response = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
-          headers: { 'x-admin-key': adminKey }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          showAlert('✅ Admin key is valid and working', 'success');
-        } else {
-          showAlert('❌ Admin key validation failed', 'error');
-        }
-      } catch (error) {
-        console.error('Test keys error:', error);
-        showAlert('Error testing admin key', 'error');
-      }
-    }
-
-    // Reset System Function
-    async function resetAirdropSystem() {
-      const confirm = window.confirm('⚠️ RESET AIRDROP SYSTEM?\n\nThis will:\n- Reset claim counter to 0\n- Clear all claimed wallets\n- Reset to default configuration\n\nThis action CANNOT be undone!');
-      if (!confirm) return;
-
-      const doubleConfirm = window.confirm('🚨 FINAL CONFIRMATION\n\nAre you absolutely sure?\n\nAll airdrop progress will be lost!');
-      if (!doubleConfirm) return;
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/airdrop/reset`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          showAlert('🔄 Airdrop system reset successfully', 'success');
-          // Refresh dashboard data
-          loadDashboardData();
-          loadAirdropConfig();
-        } else {
-          showAlert(`Failed to reset system: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Reset system error:', error);
-        showAlert('Error resetting airdrop system', 'error');
-      }
-    }
 
     // 🤖 AI Fraud Detection Functions
     async function loadFraudAnalytics() {
