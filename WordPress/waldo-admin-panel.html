@@ -7980,376 +7980,62 @@ This action cannot be undone. Continue?`;
       showAlert(`Set to ${hours} hours from now`, 'info');
     }
 
-    // ===== VOLUME BOT FUNCTIONS =====
+    // ===== VOLUME BOT FUNCTIONS (REDIRECTS TO TRADING BOT) =====
     async function loadVolumeBotData() {
-      await loadBotStatus();
-      await loadRecentTrades();
+      // The "volumebot" section now shows the Trading Bot
+      // Redirect to the correct trading bot functions
+      await loadTradingBotStatus();
+      await loadTradingBotTrades();
     }
 
+    // Legacy function - kept for compatibility but redirects to trading bot
     async function loadBotStatus() {
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/status`, {
-          headers: { 'x-admin-key': adminKey }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          document.getElementById('botStatus').textContent = data.status || 'Unknown';
-          document.getElementById('botBalance').textContent = data.balance || '-';
-          document.getElementById('botTrades').textContent = data.tradesCount || '0';
-          document.getElementById('botVolume').textContent = data.volume24h || '0 XRP';
-
-          // Update form values with current settings
-          if (data.settings) {
-            document.getElementById('tradingFrequency').value = data.settings.frequency || '60';
-            document.getElementById('minTradeSize').value = data.settings.minSize || '1';
-            document.getElementById('maxTradeSize').value = data.settings.maxSize || '3';
-            document.getElementById('priceSpread').value = data.settings.spread || '0';
-            if (data.settings.priceFloor) document.getElementById('priceFloor').value = data.settings.priceFloor;
-            if (data.settings.priceMultiplier) document.getElementById('priceMultiplier').value = data.settings.priceMultiplier;
-          }
-        } else {
-          document.getElementById('botStatus').textContent = 'Error';
-          showAlert('Failed to load bot status', 'error');
-        }
-      } catch (error) {
-        console.error('Error loading bot status:', error);
-        document.getElementById('botStatus').textContent = 'Offline';
-        showAlert('Error connecting to volume bot', 'error');
-      }
+      // This function is deprecated - use loadTradingBotStatus instead
+      await loadTradingBotStatus();
     }
 
+    // Legacy function - redirects to trading bot
     async function updateBotSettings() {
-      const frequency = document.getElementById('tradingFrequency').value;
-      const tradingMode = document.getElementById('tradingMode').value;
-      const minSize = document.getElementById('minTradeSize').value;
-      const maxSize = document.getElementById('maxTradeSize').value;
-      const spread = document.getElementById('priceSpread').value;
-
-      const resultDiv = document.getElementById('botControlResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">🔄 Updating bot settings...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/settings`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          },
-          body: JSON.stringify({
-            frequency: parseInt(frequency),
-            tradingMode: tradingMode,
-            minTradeSize: parseFloat(minSize) || 1,
-            maxTradeSize: parseFloat(maxSize) || 3,
-            priceSpread: parseFloat(spread) || 0,
-            priceFloor: parseFloat(document.getElementById('priceFloor').value) || undefined,
-            priceMultiplier: parseFloat(document.getElementById('priceMultiplier').value) || undefined
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = '<div style="color: #27ae60;">✅ Bot settings updated successfully!</div>';
-          showAlert('Volume bot settings updated', 'success');
-          await loadBotStatus(); // Refresh status
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
-          showAlert(`Failed to update settings: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error updating bot settings:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error updating settings</div>';
-        showAlert('Network error updating bot settings', 'error');
-      }
+      await updateTradingBotSettings();
     }
 
+    // Legacy functions - redirect to trading bot
     async function pauseBot() {
-      if (!confirm('⏸️ Pause the volume bot?\n\nThis will stop all automated trading until resumed.')) return;
-
-      const resultDiv = document.getElementById('botControlResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">⏸️ Pausing bot...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/pause`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = '<div style="color: #f39c12;">⏸️ Bot paused successfully</div>';
-          showAlert('Volume bot paused', 'success');
-          await loadBotStatus();
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
-          showAlert(`Failed to pause bot: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error pausing bot:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error pausing bot</div>';
-        showAlert('Network error pausing bot', 'error');
-      }
+      await pauseTradingBot();
     }
 
     async function resumeBot() {
-      const resultDiv = document.getElementById('botControlResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">▶️ Resuming bot...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/resume`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = '<div style="color: #27ae60;">▶️ Bot resumed successfully</div>';
-          showAlert('Volume bot resumed', 'success');
-          await loadBotStatus();
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
-          showAlert(`Failed to resume bot: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error resuming bot:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error resuming bot</div>';
-        showAlert('Network error resuming bot', 'error');
-      }
+      await resumeTradingBot();
     }
 
     async function restartBot() {
-      if (!confirm('🔄 Restart the volume bot?\n\nThis will stop and restart the bot service.')) return;
-
-      const resultDiv = document.getElementById('botControlResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">🔄 Restarting bot...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/restart`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = '<div style="color: #27ae60;">🔄 Bot restarted successfully</div>';
-          showAlert('Volume bot restarted', 'success');
-          setTimeout(() => loadBotStatus(), 3000); // Wait 3 seconds before refreshing
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
-          showAlert(`Failed to restart bot: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error restarting bot:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error restarting bot</div>';
-        showAlert('Network error restarting bot', 'error');
-      }
+      // Trading bot doesn't have a restart function, just pause and resume
+      await pauseTradingBot();
+      setTimeout(() => resumeTradingBot(), 2000);
     }
 
+    // Legacy function - no longer needed for trading bot
     async function resetVolume() {
-      if (!confirm('🔄 Reset daily volume counters?\n\nThis will reset volume and trade count to 0. Current data will be archived.')) return;
-
-      const resultDiv = document.getElementById('botControlResult');
-      resultDiv.innerHTML = '<div style="color: #ffd93d;">🔄 Resetting volume...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/reset-volume`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = '<div style="color: #27ae60;">✅ Volume counters reset successfully!</div>';
-          showAlert('Volume counters reset', 'success');
-          await loadBotStatus(); // Refresh status to show 0 volume
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
-          showAlert(`Failed to reset volume: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error resetting volume:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error resetting volume</div>';
-        showAlert('Network error resetting volume', 'error');
-      }
+      showAlert('Volume reset is not available for the trading bot', 'info');
     }
 
+    // Legacy function - redirects to trading bot
     async function loadRecentTrades() {
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/trades`, {
-          headers: { 'x-admin-key': adminKey }
-        });
-
-        const data = await response.json();
-        const tradesDiv = document.getElementById('recentTrades');
-
-        if (data.success && data.trades && data.trades.length > 0) {
-          let tradesHtml = '';
-          data.trades.forEach(trade => {
-            const timestamp = new Date(trade.timestamp).toLocaleString();
-            const typeColor = trade.type === 'BUY' ? '#27ae60' : '#e74c3c';
-            const typeIcon = trade.type === 'BUY' ? '🟢' : '🔴';
-
-            tradesHtml += `
-              <div style="background: #333; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${typeColor};">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <div style="color: ${typeColor}; font-weight: bold;">${typeIcon} ${trade.type}</div>
-                    <div style="color: #ccc; font-size: 0.9em;">${trade.amount} ${trade.currency}</div>
-                  </div>
-                  <div style="text-align: right;">
-                    <div style="color: #fff; font-weight: bold;">${trade.price} XRP</div>
-                    <div style="color: #666; font-size: 0.8em;">${timestamp}</div>
-                  </div>
-                </div>
-                ${trade.hash ? `<div style="color: #3498db; font-size: 0.8em; margin-top: 5px;">TX: ${trade.hash.substring(0, 16)}...</div>` : ''}
-              </div>
-            `;
-          });
-          tradesDiv.innerHTML = tradesHtml;
-        } else {
-          tradesDiv.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">No recent trades found</div>';
-        }
-      } catch (error) {
-        console.error('Error loading recent trades:', error);
-        document.getElementById('recentTrades').innerHTML = '<div style="color: #e74c3c; text-align: center; padding: 20px;">Error loading trades</div>';
-      }
+      await loadTradingBotTrades();
     }
 
+    // Legacy function - redirects to trading bot
     async function emergencyStop() {
-      if (!confirm('🛑 EMERGENCY STOP\n\nThis will immediately halt all trading activity and cannot be undone easily.\n\nAre you sure?')) return;
-
-      const resultDiv = document.getElementById('emergencyResult');
-      resultDiv.innerHTML = '<div style="color: #e74c3c;">🛑 Executing emergency stop...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/emergency-stop`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = '<div style="color: #e74c3c; font-weight: bold;">🛑 EMERGENCY STOP ACTIVATED</div>';
-          showAlert('Emergency stop activated - all trading halted', 'error');
-          await loadBotStatus();
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
-          showAlert(`Failed to execute emergency stop: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error executing emergency stop:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error executing emergency stop</div>';
-        showAlert('Network error executing emergency stop', 'error');
-      }
+      await emergencyStopTradingBot();
     }
 
+    // Legacy functions - no longer needed for trading bot
     async function withdrawFunds() {
-      if (!confirm('💰 WITHDRAW ALL FUNDS\n\nThis will attempt to withdraw all XRP and WLO from the trading wallet to the main distributor wallet.\n\nContinue?')) return;
-
-      const resultDiv = document.getElementById('emergencyResult');
-      resultDiv.innerHTML = '<div style="color: #f39c12;">💰 Withdrawing funds...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-        const response = await fetch(`${API_BASE}/api/admin/volume-bot/withdraw`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          resultDiv.innerHTML = `
-            <div style="color: #27ae60; font-weight: bold;">💰 Funds withdrawn successfully!</div>
-            <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
-              ${data.xrpWithdrawn || 0} XRP and ${data.wloWithdrawn || 0} WLO transferred
-            </div>
-          `;
-          showAlert('Funds withdrawn successfully', 'success');
-          await loadBotStatus();
-        } else {
-          resultDiv.innerHTML = `<div style="color: #e74c3c;">❌ Failed: ${data.error}</div>`;
-          showAlert(`Failed to withdraw funds: ${data.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error withdrawing funds:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Network error withdrawing funds</div>';
-        showAlert('Network error withdrawing funds', 'error');
-      }
+      showAlert('Withdraw funds is not available for the trading bot', 'info');
     }
 
     async function optimizeFor10XRP() {
-      if (!confirm('🚀 OPTIMIZE FOR 10 XRP PERPETUAL TRADING\n\nThis will configure the bot for optimal performance with minimal funds:\n\n• Set trade sizes to 0.5-1.5 XRP\n• Enable 65% buy bias for price lifting\n• Reduce reserves for maximum efficiency\n• Switch to perpetual trading mode\n\nContinue?')) return;
-
-      const resultDiv = document.getElementById('emergencyResult');
-      resultDiv.innerHTML = '<div style="color: #f39c12;">🚀 Optimizing bot for 10 XRP operation...</div>';
-
-      try {
-        const adminKey = localStorage.getItem('adminKey');
-
-        // Set optimal trade sizes for 10 XRP
-        await fetch(`${API_BASE}/api/admin/volume-bot/settings`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey
-          },
-          body: JSON.stringify({
-            minTradeSize: '0.5',
-            maxTradeSize: '1.5',
-            tradingMode: 'perpetual'
-          })
-        });
-
-        resultDiv.innerHTML = `
-          <div style="color: #27ae60; font-weight: bold;">🚀 Bot optimized for 10 XRP perpetual trading!</div>
-          <div style="color: #ccc; margin-top: 5px; font-size: 0.9em;">
-            ✅ Trade sizes: 0.5-1.5 XRP<br>
-            ✅ Mode: Perpetual with price lifting bias<br>
-            ✅ Reserves: Minimized for efficiency<br>
-            ✅ Target: 60% XRP, 40% WLO balance
-          </div>
-        `;
-        showAlert('Bot optimized for 10 XRP perpetual trading with price lifting!', 'success');
-        await loadBotStatus();
-      } catch (error) {
-        console.error('Error optimizing bot:', error);
-        resultDiv.innerHTML = '<div style="color: #e74c3c;">❌ Error optimizing bot settings</div>';
-        showAlert('Error optimizing bot settings', 'error');
-      }
+      showAlert('Optimization presets are not available for the trading bot', 'info');
     }
 
     // ===== TRADING BOT FUNCTIONS =====
