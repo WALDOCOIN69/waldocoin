@@ -7710,28 +7710,45 @@ This action cannot be undone. Continue?`;
         const data = await response.json();
 
         if (data.success) {
-          // Update status displays
-          document.getElementById('tradingBotStatus').textContent = data.status || 'Unknown';
-          document.getElementById('tradingBotBalance').textContent = `${data.balance?.xrp || '0'} XRP`;
-          document.getElementById('tradingBotWLO').textContent = `${data.balance?.wlo || '0'} WLO`;
-          document.getElementById('tradingBotProfit').textContent = `${data.profit?.xrp || '0'} XRP (${data.profit?.percentage || '0'}%)`;
-          document.getElementById('tradingBotTrades').textContent = data.activity?.tradesCount || '0';
-          document.getElementById('tradingBotVolume').textContent = data.activity?.volume24h || '0 XRP';
+          // Update status displays - use correct element IDs
+          const botStatusEl = document.getElementById('botStatus');
+          const botBalanceEl = document.getElementById('botBalance');
+          const botTradesEl = document.getElementById('botTrades');
+          const botVolumeEl = document.getElementById('botVolume');
+
+          if (botStatusEl) botStatusEl.textContent = data.status || 'Unknown';
+          if (botBalanceEl) botBalanceEl.textContent = `${data.balance?.xrp || '0'} XRP`;
+          if (botTradesEl) botTradesEl.textContent = data.activity?.tradesCount || '0';
+          if (botVolumeEl) botVolumeEl.textContent = data.activity?.volume24h || '0 XRP';
+
+          // Update profit and WLO displays
+          const profitEl = document.getElementById('tradingBotProfit');
+          const wloEl = document.getElementById('tradingBotWLO');
+          if (profitEl) profitEl.textContent = `${data.profit?.xrp || '0'} XRP (${data.profit?.percentage || '0'}%)`;
+          if (wloEl) wloEl.textContent = `${data.balance?.wlo || '0'} WLO`;
 
           // Display trading wallet address
           if (data.tradingWallet) {
-            document.getElementById('tradingWalletAddress').textContent = data.tradingWallet;
+            const walletEl = document.getElementById('tradingWalletAddress');
+            if (walletEl) walletEl.textContent = data.tradingWallet;
           }
 
           // Update form fields with current settings
           if (data.settings) {
             const tradingMode = data.settings.tradingMode || 'automated';
-            document.getElementById('tbTradingMode').value = tradingMode;
-            document.getElementById('tbTradingFrequency').value = data.settings.frequency || '30';
-            document.getElementById('tbMinTradeSize').value = data.settings.minTradeSize || '0.5';
-            document.getElementById('tbMaxTradeSize').value = data.settings.maxTradeSize || '2.0';
-            document.getElementById('tbPriceSpread').value = data.settings.priceSpread || '0';
-            document.getElementById('tbMaxDailyVolume').value = data.settings.maxDailyVolume || '500';
+            const modeEl = document.getElementById('tbTradingMode');
+            const freqEl = document.getElementById('tbTradingFrequency');
+            const minEl = document.getElementById('tbMinTradeSize');
+            const maxEl = document.getElementById('tbMaxTradeSize');
+            const spreadEl = document.getElementById('tbPriceSpread');
+            const volumeEl = document.getElementById('tbMaxDailyVolume');
+
+            if (modeEl) modeEl.value = tradingMode;
+            if (freqEl) freqEl.value = data.settings.frequency || '30';
+            if (minEl) minEl.value = data.settings.minTradeSize || '0.5';
+            if (maxEl) maxEl.value = data.settings.maxTradeSize || '2.0';
+            if (spreadEl) spreadEl.value = data.settings.priceSpread || '0';
+            if (volumeEl) volumeEl.value = data.settings.maxDailyVolume || '500';
 
             // Display current trading mode in readable format
             const modeLabels = {
@@ -7741,7 +7758,8 @@ This action cannot be undone. Continue?`;
               'sell_only': '📉 Sell Only',
               'buy_sell': '↔️ Buy & Sell (Balanced)'
             };
-            document.getElementById('currentTradingMode').textContent = modeLabels[tradingMode] || tradingMode;
+            const modeDisplayEl = document.getElementById('currentTradingMode');
+            if (modeDisplayEl) modeDisplayEl.textContent = modeLabels[tradingMode] || tradingMode;
           }
         } else {
           showAlert(`Error loading trading bot status: ${data.error}`, 'error');
