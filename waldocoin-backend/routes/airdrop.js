@@ -709,10 +709,51 @@ router.get("/trustline-count", async (req, res) => {
     }
 
     if (data.result && data.result.lines && Array.isArray(data.result.lines)) {
-      console.log(`🔍 Found ${data.result.lines.length} total trustlines`);
+      console.log(`🔍 Found ${data.result.lines.length} trustlines in this batch`);
+      console.log(`📍 Marker present: ${!!data.result.marker}`);
+
+      // Collect all trustlines (handle pagination with marker)
+      let allLines = [...data.result.lines];
+      let marker = data.result.marker;
+      let pageCount = 1;
+
+      // Fetch additional pages if marker exists
+      while (marker) {
+        console.log(`📄 Fetching page ${pageCount + 1} with marker...`);
+        try {
+          const nextResponse = await fetch(server, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              method: 'account_lines',
+              params: [{
+                account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY',
+                ledger_index: 'validated',
+                marker: marker
+              }]
+            }),
+            signal: controller.signal
+          });
+
+          const nextData = await nextResponse.json();
+          if (nextData.result && nextData.result.lines) {
+            allLines = allLines.concat(nextData.result.lines);
+            console.log(`📄 Page ${pageCount + 1}: Added ${nextData.result.lines.length} more trustlines (total: ${allLines.length})`);
+            marker = nextData.result.marker;
+            pageCount++;
+          } else {
+            marker = null;
+          }
+        } catch (paginationError) {
+          console.log('⚠️ Error fetching next page:', paginationError.message);
+          marker = null;
+        }
+      }
+
+      console.log(`✅ Total trustlines fetched: ${allLines.length} across ${pageCount} pages`);
 
       // Filter for WLO trustlines (currency = 'WLO')
-      const wloTrustlines = data.result.lines.filter(line => line.currency === 'WLO');
+      const wloTrustlines = allLines.filter(line => line.currency === 'WLO');
       console.log(`🔍 Found ${wloTrustlines.length} WLO trustlines`);
 
       if (wloTrustlines.length > 0) {
@@ -737,7 +778,7 @@ router.get("/trustline-count", async (req, res) => {
           trustlineCount: wloTrustlines.length,
           walletsWithBalance: walletsWithBalance,
           totalWaldoHeld: Math.round(totalWaldoHeld),
-          source: "Real-time XRPL query (account_lines)",
+          source: "Real-time XRPL query (account_lines with pagination)",
           timestamp: new Date().toISOString()
         });
       } else {
