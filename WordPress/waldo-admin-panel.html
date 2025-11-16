@@ -7988,55 +7988,9 @@ This action cannot be undone. Continue?`;
       await loadTradingBotTrades();
     }
 
-    // Legacy function - kept for compatibility but redirects to trading bot
-    async function loadBotStatus() {
-      // This function is deprecated - use loadTradingBotStatus instead
-      await loadTradingBotStatus();
-    }
 
-    // Legacy function - redirects to trading bot
-    async function updateBotSettings() {
-      await updateTradingBotSettings();
-    }
 
-    // Legacy functions - redirect to trading bot
-    async function pauseBot() {
-      await pauseTradingBot();
-    }
 
-    async function resumeBot() {
-      await resumeTradingBot();
-    }
-
-    async function restartBot() {
-      // Trading bot doesn't have a restart function, just pause and resume
-      await pauseTradingBot();
-      setTimeout(() => resumeTradingBot(), 2000);
-    }
-
-    // Legacy function - no longer needed for trading bot
-    async function resetVolume() {
-      showAlert('Volume reset is not available for the trading bot', 'info');
-    }
-
-    // Legacy function - redirects to trading bot
-    async function loadRecentTrades() {
-      await loadTradingBotTrades();
-    }
-
-    // Legacy function - redirects to trading bot
-    async function emergencyStop() {
-      await emergencyStopTradingBot();
-    }
-
-    // Legacy functions - no longer needed for trading bot
-    async function withdrawFunds() {
-      showAlert('Withdraw funds is not available for the trading bot', 'info');
-    }
-
-    async function optimizeFor10XRP() {
-      showAlert('Optimization presets are not available for the trading bot', 'info');
-    }
 
     // ===== TRADING BOT FUNCTIONS =====
     async function loadTradingBotStatus() {
