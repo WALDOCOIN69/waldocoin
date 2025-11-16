@@ -3972,7 +3972,8 @@
 
       try {
         console.log('📡 Making API call to /api/airdrop/trustline-count');
-        const trustlineData = await apiCall('/api/airdrop/trustline-count');
+        // Add cache-busting parameter to force fresh data
+        const trustlineData = await apiCall(`/api/airdrop/trustline-count?t=${Date.now()}`);
         console.log('✅ Trustline data received:', trustlineData);
 
         if (trustlineData.success) {
