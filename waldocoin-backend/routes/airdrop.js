@@ -638,6 +638,7 @@ router.get("/trustline-count", async (req, res) => {
 
     let response = null;
     let lastError = null;
+    let successServer = null;
 
     for (const server of servers) {
       try {
@@ -662,6 +663,7 @@ router.get("/trustline-count", async (req, res) => {
 
         if (response.ok) {
           console.log(`✅ Successfully connected to ${server}`);
+          successServer = server; // Save the working server for pagination
           break; // Success, exit loop
         } else {
           console.log(`❌ ${server} returned status:`, response.status, response.statusText);
@@ -721,7 +723,10 @@ router.get("/trustline-count", async (req, res) => {
       while (marker) {
         console.log(`📄 Fetching page ${pageCount + 1} with marker...`);
         try {
-          const nextResponse = await fetch(server, {
+          const paginationController = new AbortController();
+          const paginationTimeoutId = setTimeout(() => paginationController.abort(), 5000);
+
+          const nextResponse = await fetch(successServer, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -732,8 +737,10 @@ router.get("/trustline-count", async (req, res) => {
                 marker: marker
               }]
             }),
-            signal: controller.signal
+            signal: paginationController.signal
           });
+
+          clearTimeout(paginationTimeoutId);
 
           const nextData = await nextResponse.json();
           if (nextData.result && nextData.result.lines) {
