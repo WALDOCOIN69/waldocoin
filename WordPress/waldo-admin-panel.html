@@ -2491,7 +2491,17 @@
               <div class="stat-label">24h Volume</div>
             </div>
           </div>
-          <button onclick="loadBotStatus()" class="btn btn-primary margin-top-15">🔄 Refresh Status</button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #25c2a0;">
+              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🔑 Trading Wallet Address:</div>
+              <div style="font-family: monospace; color: #25c2a0; font-weight: bold; word-break: break-all; font-size: 0.85em;" id="tradingWalletAddress">Loading...</div>
+            </div>
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12;">
+              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🎛️ Current Trading Mode:</div>
+              <div style="color: #f39c12; font-weight: bold; font-size: 1.1em;" id="currentTradingMode">Loading...</div>
+            </div>
+          </div>
+          <button onclick="loadTradingBotStatus()" class="btn btn-primary margin-top-15">🔄 Refresh Status</button>
         </div>
 
         <!-- Bot Controls -->
@@ -2500,7 +2510,7 @@
 
           <div class="form-group">
             <label class="form-label">Trading Frequency</label>
-            <select id="tradingFrequency" class="form-control">
+            <select id="tbTradingFrequency" class="form-control">
               <option value="5">Every 5 minutes</option>
               <option value="10">Every 10 minutes</option>
               <option value="15">Every 15 minutes</option>
@@ -2514,7 +2524,7 @@
 
           <div class="form-group">
             <label class="form-label">Trading Mode</label>
-            <select id="tradingMode" class="form-control">
+            <select id="tbTradingMode" class="form-control">
               <option value="automated" selected>Automated Mode (Smart Emergency Detection)</option>
               <option value="buy_only">Buy Only Mode</option>
               <option value="buy_sell">Buy & Sell Mode</option>
@@ -2528,37 +2538,29 @@
           <div class="form-group">
             <label class="form-label">Trade Size Range (XRP)</label>
             <div style="display: flex; gap: 10px;">
-              <input type="number" id="minTradeSize" class="form-control" placeholder="1" min="1" max="10" step="0.1">
+              <input type="number" id="tbMinTradeSize" class="form-control" placeholder="1" min="1" max="10" step="0.1">
               <span style="color: #ccc; align-self: center;">to</span>
-              <input type="number" id="maxTradeSize" class="form-control" placeholder="3" min="1" max="10" step="0.1">
+              <input type="number" id="tbMaxTradeSize" class="form-control" placeholder="3" min="1" max="10" step="0.1">
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Price Spread (%)</label>
-            <input type="number" id="priceSpread" class="form-control" placeholder="0" min="0" max="5" step="0.1">
+            <input type="number" id="tbPriceSpread" class="form-control" placeholder="0" min="0" max="5" step="0.1">
             <small class="help-text">0% = No spread loss (recommended for longevity)</small>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Price Controls</label>
-            <div style="display: flex; gap: 10px;">
-              <input type="number" id="priceFloor" class="form-control" placeholder="Price Floor (XRP per WLO)" min="0"
-                step="0.00000001">
-              <input type="number" id="priceMultiplier" class="form-control" placeholder="Price Multiplier (e.g., 1.25)"
-                min="0" step="0.01">
-            </div>
-            <small class="help-text">Leave blank to keep current. Floor enforces a minimum XRP/WLO; Multiplier scales
-              the base market price.</small>
+            <label class="form-label">Max Daily Volume (XRP)</label>
+            <input type="number" id="tbMaxDailyVolume" class="form-control" placeholder="500" min="10" max="10000" step="10">
+            <small class="help-text">Maximum trading volume per day</small>
           </div>
 
-
           <div class="button-group">
-            <button onclick="updateBotSettings()" class="btn btn-primary">💾 Update Settings</button>
-            <button onclick="pauseBot()" class="btn btn-warning">⏸️ Pause Bot</button>
-            <button onclick="resumeBot()" class="btn btn-success">▶️ Resume Bot</button>
-            <button onclick="restartBot()" class="btn btn-danger">🔄 Restart Bot</button>
-            <button onclick="resetVolume()" class="btn btn-secondary">🔄 Reset Volume</button>
+            <button onclick="updateTradingBotSettings()" class="btn btn-primary">💾 Update Settings</button>
+            <button onclick="pauseTradingBot()" class="btn btn-warning">⏸️ Pause Bot</button>
+            <button onclick="resumeTradingBot()" class="btn btn-success">▶️ Resume Bot</button>
+            <button onclick="emergencyStopTradingBot()" class="btn btn-danger">🛑 Emergency Stop</button>
           </div>
 
           <div id="botControlResult" class="margin-top-15"></div>
@@ -2567,26 +2569,26 @@
         <!-- Recent Trades -->
         <div class="admin-card margin-bottom-30">
           <div class="card-title">📈 Recent Trades</div>
-          <div id="recentTrades" style="max-height: 300px; overflow-y: auto;">
+          <div id="tradingBotTradesList" style="max-height: 300px; overflow-y: auto;">
             Loading recent trades...
           </div>
-          <button onclick="loadRecentTrades()" class="btn btn-secondary margin-top-15">🔄 Refresh Trades</button>
+          <button onclick="loadTradingBotTrades()" class="btn btn-secondary margin-top-15">🔄 Refresh Trades</button>
         </div>
 
-        <!-- Emergency Controls -->
+        <!-- Profit Tracking -->
         <div class="admin-card margin-bottom-30">
-          <div class="card-title">🚨 Emergency Controls</div>
-          <div class="alert alert-error margin-bottom-15">
-            <strong>WARNING:</strong> These controls can stop all trading activity immediately.
+          <div class="card-title">💰 Profit Tracking</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="tradingBotProfit">-</div>
+              <div class="stat-label">Total Profit</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="tradingBotWLO">-</div>
+              <div class="stat-label">WLO Holdings</div>
+            </div>
           </div>
-
-          <div class="button-group">
-            <button onclick="emergencyStop()" class="btn btn-danger">🛑 Emergency Stop</button>
-            <button onclick="withdrawFunds()" class="btn btn-warning">💰 Withdraw All Funds</button>
-            <button onclick="optimizeFor10XRP()" class="btn btn-success">🚀 Optimize for 10 XRP</button>
-          </div>
-
-          <div id="emergencyResult" class="margin-top-15"></div>
+          <button onclick="resetTradingBotProfit()" class="btn btn-secondary margin-top-15">🔄 Reset Profit Tracking</button>
         </div>
       </div>
     </div>
@@ -8369,14 +8371,30 @@ This action cannot be undone. Continue?`;
           document.getElementById('tradingBotTrades').textContent = data.activity?.tradesCount || '0';
           document.getElementById('tradingBotVolume').textContent = data.activity?.volume24h || '0 XRP';
 
+          // Display trading wallet address
+          if (data.tradingWallet) {
+            document.getElementById('tradingWalletAddress').textContent = data.tradingWallet;
+          }
+
           // Update form fields with current settings
           if (data.settings) {
-            document.getElementById('tbTradingMode').value = data.settings.tradingMode || 'automated';
-            document.getElementById('tbTradingFrequency').value = data.settings.frequency || '3';
+            const tradingMode = data.settings.tradingMode || 'automated';
+            document.getElementById('tbTradingMode').value = tradingMode;
+            document.getElementById('tbTradingFrequency').value = data.settings.frequency || '30';
             document.getElementById('tbMinTradeSize').value = data.settings.minTradeSize || '0.5';
             document.getElementById('tbMaxTradeSize').value = data.settings.maxTradeSize || '2.0';
             document.getElementById('tbPriceSpread').value = data.settings.priceSpread || '0';
             document.getElementById('tbMaxDailyVolume').value = data.settings.maxDailyVolume || '500';
+
+            // Display current trading mode in readable format
+            const modeLabels = {
+              'automated': '🤖 Automated (Smart Emergency Detection)',
+              'perpetual': '♾️ Perpetual (Weighted Balance)',
+              'buy_only': '📈 Buy Only',
+              'sell_only': '📉 Sell Only',
+              'buy_sell': '↔️ Buy & Sell (Balanced)'
+            };
+            document.getElementById('currentTradingMode').textContent = modeLabels[tradingMode] || tradingMode;
           }
         } else {
           showAlert(`Error loading trading bot status: ${data.error}`, 'error');

@@ -1066,7 +1066,7 @@ async function createAutomatedTrade() {
     const currentPrice = await getCurrentWaldoPrice();
 
     // Get admin-controlled trading mode
-    const tradingMode = await redis.get('volume_bot:trading_mode') || 'automated';
+    const tradingMode = await redis.get('trading_bot:trading_mode') || 'automated';
     const emergencyPriceThreshold = 0.00005; // Below 0.00005 XRP = emergency
 
     let tradeType;

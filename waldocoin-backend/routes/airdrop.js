@@ -611,19 +611,19 @@ router.post("/reset", async (req, res) => {
 router.get("/trustline-count", async (req, res) => {
   // Set a global timeout for the entire request
   const globalTimeout = setTimeout(() => {
-    console.log('⏰ Global timeout reached, returning updated fallback data');
+    console.log('⏰ Global timeout reached, returning cached fallback data');
     if (!res.headersSent) {
       res.json({
         success: true,
-        trustlineCount: 486, // Updated to current XRPL Services count
-        walletsWithBalance: 420,
-        totalWaldoHeld: 6500000,
-        dexOffers: 30,
-        source: "Updated fallback data (XRPL timeout)",
-        timestamp: new Date().toISOString()
+        trustlineCount: 0,
+        walletsWithBalance: 0,
+        totalWaldoHeld: 0,
+        source: "Fallback data (XRPL timeout - please refresh)",
+        timestamp: new Date().toISOString(),
+        warning: "Could not reach XRPL servers. Data may be outdated."
       });
     }
-  }, 8000); // Reduced timeout to 8 seconds
+  }, 30000); // Increased timeout to 30 seconds
 
   try {
     console.log('🔍 Querying XRPL for real-time WLO trustline count...');
@@ -643,7 +643,7 @@ router.get("/trustline-count", async (req, res) => {
       try {
         console.log(`🔗 Trying XRPL server: ${server}`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout (very aggressive)
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout per server
 
         response = await fetch(server, {
           method: 'POST',
@@ -722,16 +722,16 @@ router.get("/trustline-count", async (req, res) => {
         timestamp: new Date().toISOString()
       });
     } else {
-      console.log('⚠️ XRPL query failed, using updated fallback count');
+      console.log('⚠️ XRPL query failed, returning zero values');
       clearTimeout(globalTimeout);
       res.json({
         success: true,
-        trustlineCount: 394,
-        walletsWithBalance: 350,
-        totalWaldoHeld: 5000000,
-        dexOffers: 25,
-        source: "Fallback data (XRPL failed)",
-        timestamp: new Date().toISOString()
+        trustlineCount: 0,
+        walletsWithBalance: 0,
+        totalWaldoHeld: 0,
+        source: "Fallback data (XRPL failed - please refresh)",
+        timestamp: new Date().toISOString(),
+        warning: "Could not retrieve trustline data. Please refresh the page."
       });
     }
   } catch (error) {
@@ -739,12 +739,12 @@ router.get("/trustline-count", async (req, res) => {
     clearTimeout(globalTimeout);
     res.json({
       success: true,
-      trustlineCount: 394,
-      walletsWithBalance: 350,
-      totalWaldoHeld: 5000000,
-      dexOffers: 25,
-      source: "Fallback data (error)",
-      timestamp: new Date().toISOString()
+      trustlineCount: 0,
+      walletsWithBalance: 0,
+      totalWaldoHeld: 0,
+      source: "Fallback data (error - please refresh)",
+      timestamp: new Date().toISOString(),
+      warning: "Error querying XRPL. Please refresh the page."
     });
   }
 });

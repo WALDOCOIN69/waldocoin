@@ -14,39 +14,43 @@ console.log("🤖 Loaded: routes/admin/tradingBot.js");
 // GET /api/admin/trading-bot/status - Get trading bot status and metrics
 router.get("/status", requireAdmin, async (req, res) => {
   try {
-    // Get bot status from Redis
-    const botStatus = await redis.get('trading_bot:status') || 'Unknown';
-    const lastTrade = await redis.get('trading_bot:last_trade');
-    const tradesCount = await redis.get('trading_bot:trades_today') || '0';
-    const volume24h = await redis.get('trading_bot:volume_24h') || '0';
-    const currentBalance = await redis.get('trading_bot:current_balance') || '0';
-    const totalProfit = await redis.get('trading_bot:total_profit') || '0';
-    const startingBalance = await redis.get('trading_bot:starting_balance') || '70';
+    // Get bot status from Redis (use volume_bot: prefix to match bot.js)
+    const botStatus = await redis.get('volume_bot:status') || 'Unknown';
+    const lastTrade = await redis.get('volume_bot:last_trade');
+    const tradesCount = await redis.get('volume_bot:trades_today') || '0';
+    const volume24h = await redis.get('volume_bot:volume_24h') || '0';
+    const currentBalance = await redis.get('volume_bot:current_balance') || '0';
+    const totalProfit = await redis.get('volume_bot:total_profit') || '0';
+    const startingBalance = await redis.get('volume_bot:starting_balance') || '70';
 
     // Get current settings
     const settings = {
-      tradingMode: await redis.get('trading_bot:trading_mode') || 'automated',
-      frequency: await redis.get('trading_bot:frequency') || '3',
-      minTradeSize: await redis.get('trading_bot:min_trade_size') || '0.5',
-      maxTradeSize: await redis.get('trading_bot:max_trade_size') || '2.0',
-      priceSpread: await redis.get('trading_bot:price_spread') || '0',
-      profitReserveThreshold: await redis.get('trading_bot:profit_reserve_threshold') || '200',
-      profitReservePercentage: await redis.get('trading_bot:profit_reserve_percentage') || '50',
-      maxDailyVolume: await redis.get('trading_bot:max_daily_volume') || '500'
+      tradingMode: await redis.get('volume_bot:trading_mode') || 'automated',
+      frequency: await redis.get('volume_bot:frequency') || '30',
+      minTradeSize: await redis.get('volume_bot:min_trade_size') || '0.5',
+      maxTradeSize: await redis.get('volume_bot:max_trade_size') || '2.0',
+      priceSpread: await redis.get('volume_bot:price_spread') || '0',
+      profitReserveThreshold: await redis.get('volume_bot:profit_reserve_threshold') || '200',
+      profitReservePercentage: await redis.get('volume_bot:profit_reserve_percentage') || '50',
+      maxDailyVolume: await redis.get('volume_bot:max_daily_volume') || '500'
     };
 
     // Get wallet balances
-    const xrpBalance = await redis.get('trading_bot:xrp_balance') || '0';
-    const wloBalance = await redis.get('trading_bot:wlo_balance') || '0';
+    const xrpBalance = await redis.get('volume_bot:xrp_balance') || '0';
+    const wloBalance = await redis.get('volume_bot:wlo_balance') || '0';
+
+    // Get trading wallet address from environment
+    const tradingWallet = process.env.TRADING_WALLET_ADDRESS || 'Not configured';
 
     // Calculate profit metrics
     const profitXrp = parseFloat(totalProfit);
-    const profitPercentage = parseFloat(startingBalance) > 0 ? 
+    const profitPercentage = parseFloat(startingBalance) > 0 ?
       ((profitXrp / parseFloat(startingBalance)) * 100).toFixed(2) : '0';
 
     res.json({
       success: true,
       status: botStatus,
+      tradingWallet: tradingWallet,
       balance: {
         xrp: parseFloat(xrpBalance).toFixed(4),
         wlo: parseFloat(wloBalance).toFixed(0),
@@ -114,18 +118,18 @@ router.post("/settings", requireAdmin, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Price spread must be between 0 and 5%' });
     }
 
-    // Update settings in Redis
-    if (tradingMode) await redis.set('trading_bot:trading_mode', tradingMode);
-    if (frequency) await redis.set('trading_bot:frequency', frequency.toString());
-    if (minTradeSize) await redis.set('trading_bot:min_trade_size', minTradeSize.toString());
-    if (maxTradeSize) await redis.set('trading_bot:max_trade_size', maxTradeSize.toString());
-    if (priceSpread !== undefined) await redis.set('trading_bot:price_spread', priceSpread.toString());
-    if (profitReserveThreshold) await redis.set('trading_bot:profit_reserve_threshold', profitReserveThreshold.toString());
-    if (profitReservePercentage) await redis.set('trading_bot:profit_reserve_percentage', profitReservePercentage.toString());
-    if (maxDailyVolume) await redis.set('trading_bot:max_daily_volume', maxDailyVolume.toString());
+    // Update settings in Redis (use volume_bot: prefix to match bot.js)
+    if (tradingMode) await redis.set('volume_bot:trading_mode', tradingMode);
+    if (frequency) await redis.set('volume_bot:frequency', frequency.toString());
+    if (minTradeSize) await redis.set('volume_bot:min_trade_size', minTradeSize.toString());
+    if (maxTradeSize) await redis.set('volume_bot:max_trade_size', maxTradeSize.toString());
+    if (priceSpread !== undefined) await redis.set('volume_bot:price_spread', priceSpread.toString());
+    if (profitReserveThreshold) await redis.set('volume_bot:profit_reserve_threshold', profitReserveThreshold.toString());
+    if (profitReservePercentage) await redis.set('volume_bot:profit_reserve_percentage', profitReservePercentage.toString());
+    if (maxDailyVolume) await redis.set('volume_bot:max_daily_volume', maxDailyVolume.toString());
 
     // Log the settings change
-    await redis.lpush('trading_bot:admin_log', JSON.stringify({
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
       action: 'settings_updated',
       changes: { tradingMode, frequency, minTradeSize, maxTradeSize, priceSpread, profitReserveThreshold, profitReservePercentage, maxDailyVolume },
@@ -146,11 +150,11 @@ router.post("/settings", requireAdmin, async (req, res) => {
 // POST /api/admin/trading-bot/pause - Pause the trading bot
 router.post("/pause", requireAdmin, async (req, res) => {
   try {
-    await redis.set('trading_bot:status', 'paused');
-    await redis.set('trading_bot:pause_timestamp', new Date().toISOString());
+    await redis.set('volume_bot:status', 'paused');
+    await redis.set('volume_bot:pause_timestamp', new Date().toISOString());
 
     // Log the pause action
-    await redis.lpush('trading_bot:admin_log', JSON.stringify({
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
       action: 'paused',
       admin: 'admin_panel'
@@ -169,11 +173,11 @@ router.post("/pause", requireAdmin, async (req, res) => {
 // POST /api/admin/trading-bot/resume - Resume the trading bot
 router.post("/resume", requireAdmin, async (req, res) => {
   try {
-    await redis.set('trading_bot:status', 'running');
-    await redis.del('trading_bot:pause_timestamp');
+    await redis.set('volume_bot:status', 'running');
+    await redis.del('volume_bot:pause_timestamp');
 
     // Log the resume action
-    await redis.lpush('trading_bot:admin_log', JSON.stringify({
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
       action: 'resumed',
       admin: 'admin_panel'
@@ -192,11 +196,11 @@ router.post("/resume", requireAdmin, async (req, res) => {
 // POST /api/admin/trading-bot/emergency-stop - Emergency stop trading
 router.post("/emergency-stop", requireAdmin, async (req, res) => {
   try {
-    await redis.set('trading_bot:status', 'emergency_stopped');
-    await redis.set('trading_bot:emergency_stop_timestamp', new Date().toISOString());
+    await redis.set('volume_bot:status', 'emergency_stopped');
+    await redis.set('volume_bot:emergency_stop_timestamp', new Date().toISOString());
 
     // Log the emergency stop
-    await redis.lpush('trading_bot:admin_log', JSON.stringify({
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
       action: 'emergency_stop',
       admin: 'admin_panel'
@@ -215,7 +219,7 @@ router.post("/emergency-stop", requireAdmin, async (req, res) => {
 // GET /api/admin/trading-bot/trades - Get recent trades
 router.get("/trades", requireAdmin, async (req, res) => {
   try {
-    const trades = await redis.lrange('trading_bot:recent_trades', 0, 19); // Get last 20 trades
+    const trades = await redis.lrange('volume_bot:recent_trades', 0, 19); // Get last 20 trades
 
     const parsedTrades = trades.map(trade => {
       try {
@@ -248,13 +252,13 @@ router.post("/reset-profit", requireAdmin, async (req, res) => {
     }
 
     const startingBalance = newStartingBalance || 70;
-    
-    await redis.set('trading_bot:starting_balance', startingBalance.toString());
-    await redis.set('trading_bot:total_profit', '0');
-    await redis.set('trading_bot:profit_reset_timestamp', new Date().toISOString());
+
+    await redis.set('volume_bot:starting_balance', startingBalance.toString());
+    await redis.set('volume_bot:total_profit', '0');
+    await redis.set('volume_bot:profit_reset_timestamp', new Date().toISOString());
 
     // Log the profit reset
-    await redis.lpush('trading_bot:admin_log', JSON.stringify({
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
       action: 'profit_reset',
       newStartingBalance: startingBalance,
