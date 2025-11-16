@@ -681,9 +681,12 @@ router.get("/trustline-count", async (req, res) => {
     }
 
     const data = await response.json();
+    console.log(`📡 XRPL Full Response:`, JSON.stringify(data, null, 2));
     console.log(`📡 XRPL Response structure:`, {
       hasResult: !!data.result,
       hasObligations: !!(data.result && data.result.obligations),
+      hasBalances: !!(data.result && data.result.balances),
+      hasAssets: !!(data.result && data.result.assets),
       error: data.error || null
     });
 
@@ -691,6 +694,21 @@ router.get("/trustline-count", async (req, res) => {
     // - obligations: total amounts issued (what we need for trustline count)
     // - balances: amounts in hotwallet addresses
     // - assets: amounts held by the issuer from others
+
+    if (data.error) {
+      console.log('❌ XRPL returned an error:', data.error);
+      clearTimeout(globalTimeout);
+      res.json({
+        success: true,
+        trustlineCount: 0,
+        walletsWithBalance: 0,
+        totalWaldoHeld: 0,
+        source: "Fallback data (XRPL error)",
+        timestamp: new Date().toISOString(),
+        warning: `XRPL error: ${data.error.message || JSON.stringify(data.error)}`
+      });
+      return;
+    }
 
     if (data.result && data.result.obligations) {
       console.log(`🔍 XRPL obligations:`, data.result.obligations);
@@ -700,15 +718,10 @@ router.get("/trustline-count", async (req, res) => {
 
       if (wloAmount) {
         // The obligations object shows total WLO issued
-        // To get trustline count, we need to query account_lines for the issuer
-        // But for now, we can use the total WLO amount as an indicator
         const totalWaldoHeld = parseFloat(wloAmount);
 
         console.log(`✅ Found WLO obligations: ${totalWaldoHeld} total WLO issued`);
-        console.log(`🔍 Full obligations:`, JSON.stringify(data.result.obligations, null, 2));
 
-        // Since gateway_balances doesn't directly give us trustline count,
-        // we need to use account_lines instead
         clearTimeout(globalTimeout);
 
         // For now, return the WLO amount we found
@@ -736,7 +749,7 @@ router.get("/trustline-count", async (req, res) => {
       }
     } else {
       console.log('⚠️ XRPL query failed - no obligations in response');
-      console.log('📡 Full response:', JSON.stringify(data, null, 2).substring(0, 500));
+      console.log('📡 Full response:', JSON.stringify(data, null, 2));
       clearTimeout(globalTimeout);
       res.json({
         success: true,
