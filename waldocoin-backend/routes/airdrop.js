@@ -649,7 +649,7 @@ router.get("/trustline-count", async (req, res) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            method: 'gateway_balances',
+            method: 'account_lines',
             params: [{
               account: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDO issuer
               ledger_index: 'validated'
@@ -684,16 +684,14 @@ router.get("/trustline-count", async (req, res) => {
     console.log(`📡 XRPL Full Response:`, JSON.stringify(data, null, 2));
     console.log(`📡 XRPL Response structure:`, {
       hasResult: !!data.result,
-      hasObligations: !!(data.result && data.result.obligations),
-      hasBalances: !!(data.result && data.result.balances),
-      hasAssets: !!(data.result && data.result.assets),
+      hasLines: !!(data.result && data.result.lines),
+      linesCount: data.result?.lines?.length || 0,
       error: data.error || null
     });
 
-    // gateway_balances returns:
-    // - obligations: total amounts issued (what we need for trustline count)
-    // - balances: amounts in hotwallet addresses
-    // - assets: amounts held by the issuer from others
+    // account_lines returns:
+    // - lines: array of trustlines from the account
+    // Each line has: account, balance, currency, limit, etc.
 
     if (data.error) {
       console.log('❌ XRPL returned an error:', data.error);
@@ -710,45 +708,53 @@ router.get("/trustline-count", async (req, res) => {
       return;
     }
 
-    if (data.result && data.result.obligations) {
-      console.log(`🔍 XRPL obligations:`, data.result.obligations);
+    if (data.result && data.result.lines && Array.isArray(data.result.lines)) {
+      console.log(`🔍 Found ${data.result.lines.length} total trustlines`);
 
-      // Find WLO in obligations
-      const wloAmount = data.result.obligations['WLO'];
+      // Filter for WLO trustlines (currency = 'WLO')
+      const wloTrustlines = data.result.lines.filter(line => line.currency === 'WLO');
+      console.log(`🔍 Found ${wloTrustlines.length} WLO trustlines`);
 
-      if (wloAmount) {
-        // The obligations object shows total WLO issued
-        const totalWaldoHeld = parseFloat(wloAmount);
+      if (wloTrustlines.length > 0) {
+        // Count wallets with balance > 0
+        let walletsWithBalance = 0;
+        let totalWaldoHeld = 0;
 
-        console.log(`✅ Found WLO obligations: ${totalWaldoHeld} total WLO issued`);
+        wloTrustlines.forEach(line => {
+          const balance = parseFloat(line.balance);
+          if (balance > 0) {
+            walletsWithBalance++;
+            totalWaldoHeld += balance;
+          }
+        });
+
+        console.log(`✅ Found ${wloTrustlines.length} WLO trustlines, ${walletsWithBalance} with balance, ${totalWaldoHeld.toFixed(2)} total WLO`);
 
         clearTimeout(globalTimeout);
 
-        // For now, return the WLO amount we found
         res.json({
           success: true,
-          trustlineCount: 0,
-          walletsWithBalance: 0,
+          trustlineCount: wloTrustlines.length,
+          walletsWithBalance: walletsWithBalance,
           totalWaldoHeld: Math.round(totalWaldoHeld),
-          source: "Real-time XRPL query (gateway_balances - obligations)",
-          timestamp: new Date().toISOString(),
-          warning: "Trustline count requires additional query. Using obligations data."
+          source: "Real-time XRPL query (account_lines)",
+          timestamp: new Date().toISOString()
         });
       } else {
-        console.log('⚠️ WLO not found in obligations');
+        console.log('⚠️ No WLO trustlines found');
         clearTimeout(globalTimeout);
         res.json({
           success: true,
           trustlineCount: 0,
           walletsWithBalance: 0,
           totalWaldoHeld: 0,
-          source: "Fallback data (WLO not in obligations)",
+          source: "Fallback data (no WLO trustlines)",
           timestamp: new Date().toISOString(),
-          warning: "Could not find WLO in obligations. Please refresh the page."
+          warning: "No WLO trustlines found. Please refresh the page."
         });
       }
     } else {
-      console.log('⚠️ XRPL query failed - no obligations in response');
+      console.log('⚠️ XRPL query failed - no lines in response');
       console.log('📡 Full response:', JSON.stringify(data, null, 2));
       clearTimeout(globalTimeout);
       res.json({
