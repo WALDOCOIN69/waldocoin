@@ -1051,20 +1051,10 @@ async function createAutomatedTrade() {
     } else if (tradingMode === 'automated' || tradingMode === 'perpetual') {
       // PERPETUAL WEIGHTED TRADING MODE
 
-      // Emergency price protection - smart recovery strategy
+      // Emergency price protection - ALWAYS BUY to lift price
       if (currentPrice < emergencyPriceThreshold) {
-        // If we have insufficient XRP for safe trading but lots of WLO, SELL first to get XRP for buying
-        const minXrpReserve = 2.0;
-        const needsMoreXrp = xrpBalance < (0.5 + minXrpReserve); // Need at least 0.5 XRP for trade + 2.0 reserve
-
-        if (needsMoreXrp && wloBalance > 1000) {
-          tradeType = 'SELL';
-          logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - INSUFFICIENT XRP (${xrpBalance.toFixed(2)}), SELLING WLO first to get XRP`);
-        } else {
-          // Otherwise buy to lift the price
-          tradeType = 'BUY';
-          logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - FORCED BUY to lift price`);
-        }
+        tradeType = 'BUY';
+        logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - FORCED BUY to lift price`);
       }
       // If we have too much XRP (over 70%), favor buying WLO
       else if (xrpRatio > 0.70) {
@@ -1146,8 +1136,12 @@ async function createAutomatedTrade() {
     const minXrpReserve = 2.0; // Keep at least 2 XRP for fees and future trades (optimized for low balance)
     const minWloReserve = 500; // Keep at least 500 WLO for future trades (reduced for efficiency)
 
-    if (tradeType === 'BUY' && xrpBalance < (tradeAmount + minXrpReserve)) {
-      logger.warn(`⚠️ Insufficient XRP for safe trading: ${xrpBalance.toFixed(2)} XRP, need ${(tradeAmount + minXrpReserve).toFixed(2)} XRP`);
+    // In emergency mode, relax the XRP reserve requirement to allow price recovery
+    const isEmergency = currentPrice < emergencyPriceThreshold;
+    const requiredXrpReserve = isEmergency ? 0.5 : minXrpReserve; // In emergency, only keep 0.5 XRP reserve
+
+    if (tradeType === 'BUY' && xrpBalance < (tradeAmount + requiredXrpReserve)) {
+      logger.warn(`⚠️ Insufficient XRP for safe trading: ${xrpBalance.toFixed(2)} XRP, need ${(tradeAmount + requiredXrpReserve).toFixed(2)} XRP`);
       logger.info(`🛡️ SAFETY: Skipping BUY trade to preserve XRP reserves`);
       return;
     }
