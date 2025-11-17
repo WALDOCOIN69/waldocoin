@@ -588,9 +588,9 @@ async function buyWaldo(userAddress, xrpAmount) {
         try {
           const prepared = await client.autofill(offer);
           // Increase LastLedgerSequence buffer to avoid ledger sequence errors
-          prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 10;
+          prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 15;
           const signed = tradingWallet.sign(prepared);
-          const result = await client.submitAndWait(signed.tx_blob, { timeout: 20000 });
+          const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
 
           const code = result.result?.meta?.TransactionResult;
           if (code === 'tesSUCCESS') {
@@ -600,6 +600,23 @@ async function buyWaldo(userAddress, xrpAmount) {
           }
           throw new Error(`Passive offer failed: ${code || 'unknown'}`);
         } catch (offerError) {
+          // If ledger sequence error, try once more with fresh autofill
+          if ((offerError.message || '').includes('LastLedgerSequence')) {
+            logger.warn(`⚠️ Ledger sequence error on buy offer, retrying with fresh autofill...`);
+            try {
+              const prepared2 = await client.autofill(offer);
+              prepared2.LastLedgerSequence = (prepared2.LastLedgerSequence || 0) + 20;
+              const signed2 = tradingWallet.sign(prepared2);
+              const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
+
+              const code2 = result2.result?.meta?.TransactionResult;
+              if (code2 === 'tesSUCCESS') {
+                await recordTrade('BUY', userAddress, xrpAmount, wantAmount, price);
+                logger.info(`✅ Passive buy offer created (retry): ${wantAmount.toFixed(0)} WLO for ${xrpAmount.toFixed(4)} XRP`);
+                return { success: true, hash: result2.result.hash, waldoAmount: wantAmount, price };
+              }
+            } catch (_) { }
+          }
           logger.warn(`⚠️ Passive buy offer also failed: ${offerError.message}`);
           throw e1; // Throw original error
         }
@@ -654,21 +671,40 @@ async function sellWaldo(userAddress, waldoAmount) {
         // Note: Removed Expiration to avoid ledger sequence issues
       };
 
-      const prepared = await client.autofill(offer);
-      // Increase LastLedgerSequence buffer to avoid ledger sequence errors
-      prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 10;
-      const signed = tradingWallet.sign(prepared);
-      const result = await client.submitAndWait(signed.tx_blob, { timeout: 20000 });
+      try {
+        const prepared = await client.autofill(offer);
+        // Increase LastLedgerSequence buffer to avoid ledger sequence errors
+        prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 15;
+        const signed = tradingWallet.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
 
-      const code = result.result?.meta?.TransactionResult;
-      if (code === 'tesSUCCESS') {
-        // Record the trade even if it's a passive offer
-        await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
-        logger.info(`✅ Passive sell offer created: ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
-        return { success: true, hash: result.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
+        const code = result.result?.meta?.TransactionResult;
+        if (code === 'tesSUCCESS') {
+          // Record the trade even if it's a passive offer
+          await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
+          logger.info(`✅ Passive sell offer created: ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
+          return { success: true, hash: result.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
+        }
+
+        throw new Error(`Passive offer failed: ${code || 'unknown'}`);
+      } catch (innerError) {
+        // If ledger sequence error, try once more with fresh autofill
+        if ((innerError.message || '').includes('LastLedgerSequence')) {
+          logger.warn(`⚠️ Ledger sequence error, retrying with fresh autofill...`);
+          const prepared2 = await client.autofill(offer);
+          prepared2.LastLedgerSequence = (prepared2.LastLedgerSequence || 0) + 20;
+          const signed2 = tradingWallet.sign(prepared2);
+          const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
+
+          const code2 = result2.result?.meta?.TransactionResult;
+          if (code2 === 'tesSUCCESS') {
+            await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
+            logger.info(`✅ Passive sell offer created (retry): ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
+            return { success: true, hash: result2.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
+          }
+        }
+        throw innerError;
       }
-
-      throw new Error(`Passive offer failed: ${code || 'unknown'}`);
     };
 
     // For automated trades, use micro-sells approach
