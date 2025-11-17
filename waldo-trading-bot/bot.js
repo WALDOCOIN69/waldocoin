@@ -586,10 +586,15 @@ async function buyWaldo(userAddress, xrpAmount) {
         };
 
         try {
-          const prepared = await client.autofill(offer);
-          // Increase LastLedgerSequence buffer to avoid ledger sequence errors
-          prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 15;
-          const signed = tradingWallet.sign(prepared);
+          // Get current ledger info to set proper sequence numbers
+          const ledgerIndex = await client.getLedgerIndex();
+
+          // Manually set all required fields to avoid autofill delays
+          offer.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+          offer.Fee = '12'; // Standard fee in drops
+          offer.LastLedgerSequence = ledgerIndex + 30; // 30 ledgers = ~150 seconds
+
+          const signed = tradingWallet.sign(offer);
           const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
 
           const code = result.result?.meta?.TransactionResult;
@@ -600,13 +605,17 @@ async function buyWaldo(userAddress, xrpAmount) {
           }
           throw new Error(`Passive offer failed: ${code || 'unknown'}`);
         } catch (offerError) {
-          // If ledger sequence error, try once more with fresh autofill
-          if ((offerError.message || '').includes('LastLedgerSequence')) {
-            logger.warn(`⚠️ Ledger sequence error on buy offer, retrying with fresh autofill...`);
+          // If ledger sequence error, try once more with fresh sequence
+          if ((offerError.message || '').includes('LastLedgerSequence') || (offerError.message || '').includes('Sequence')) {
+            logger.warn(`⚠️ Ledger sequence error on buy offer, retrying with fresh sequence...`);
             try {
-              const prepared2 = await client.autofill(offer);
-              prepared2.LastLedgerSequence = (prepared2.LastLedgerSequence || 0) + 20;
-              const signed2 = tradingWallet.sign(prepared2);
+              const ledgerIndex2 = await client.getLedgerIndex();
+              const offer2 = { ...offer };
+              offer2.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+              offer2.Fee = '12';
+              offer2.LastLedgerSequence = ledgerIndex2 + 30;
+
+              const signed2 = tradingWallet.sign(offer2);
               const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
 
               const code2 = result2.result?.meta?.TransactionResult;
@@ -672,10 +681,15 @@ async function sellWaldo(userAddress, waldoAmount) {
       };
 
       try {
-        const prepared = await client.autofill(offer);
-        // Increase LastLedgerSequence buffer to avoid ledger sequence errors
-        prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 15;
-        const signed = tradingWallet.sign(prepared);
+        // Get current ledger info to set proper sequence numbers
+        const ledgerIndex = await client.getLedgerIndex();
+
+        // Manually set all required fields to avoid autofill delays
+        offer.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+        offer.Fee = '12'; // Standard fee in drops
+        offer.LastLedgerSequence = ledgerIndex + 30; // 30 ledgers = ~150 seconds
+
+        const signed = tradingWallet.sign(offer);
         const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
 
         const code = result.result?.meta?.TransactionResult;
@@ -688,19 +702,27 @@ async function sellWaldo(userAddress, waldoAmount) {
 
         throw new Error(`Passive offer failed: ${code || 'unknown'}`);
       } catch (innerError) {
-        // If ledger sequence error, try once more with fresh autofill
-        if ((innerError.message || '').includes('LastLedgerSequence')) {
-          logger.warn(`⚠️ Ledger sequence error, retrying with fresh autofill...`);
-          const prepared2 = await client.autofill(offer);
-          prepared2.LastLedgerSequence = (prepared2.LastLedgerSequence || 0) + 20;
-          const signed2 = tradingWallet.sign(prepared2);
-          const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
+        // If ledger sequence error, try once more with fresh sequence
+        if ((innerError.message || '').includes('LastLedgerSequence') || (innerError.message || '').includes('Sequence')) {
+          logger.warn(`⚠️ Ledger sequence error, retrying with fresh sequence...`);
+          try {
+            const ledgerIndex2 = await client.getLedgerIndex();
+            const offer2 = { ...offer };
+            offer2.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+            offer2.Fee = '12';
+            offer2.LastLedgerSequence = ledgerIndex2 + 30;
 
-          const code2 = result2.result?.meta?.TransactionResult;
-          if (code2 === 'tesSUCCESS') {
-            await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
-            logger.info(`✅ Passive sell offer created (retry): ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
-            return { success: true, hash: result2.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
+            const signed2 = tradingWallet.sign(offer2);
+            const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
+
+            const code2 = result2.result?.meta?.TransactionResult;
+            if (code2 === 'tesSUCCESS') {
+              await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
+              logger.info(`✅ Passive sell offer created (retry): ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
+              return { success: true, hash: result2.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
+            }
+          } catch (retryError) {
+            logger.warn(`⚠️ Retry also failed: ${retryError.message}`);
           }
         }
         throw innerError;
