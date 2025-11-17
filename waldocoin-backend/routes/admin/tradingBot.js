@@ -42,8 +42,9 @@ router.get("/status", requireAdmin, async (req, res) => {
     const xrpBalance = await redis.get('volume_bot:xrp_balance') || '0';
     const wloBalance = await redis.get('volume_bot:wlo_balance') || '0';
 
-    // Get trading wallet address from environment
+    // Get trading wallet addresses from environment
     const tradingWallet = process.env.TRADING_WALLET_ADDRESS || 'Not configured';
+    const tradingWallet2 = process.env.TRADING_WALLET_ADDRESS_2 || null;
 
     // Calculate profit metrics
     const profitXrp = parseFloat(totalProfit);
@@ -54,6 +55,7 @@ router.get("/status", requireAdmin, async (req, res) => {
       success: true,
       status: botStatus,
       tradingWallet: tradingWallet,
+      tradingWallet2: tradingWallet2,
       balance: {
         xrp: parseFloat(xrpBalance).toFixed(4),
         wlo: parseFloat(wloBalance).toFixed(0),

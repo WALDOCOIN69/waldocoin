@@ -2493,12 +2493,22 @@
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
             <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #25c2a0;">
-              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🔑 Trading Wallet Address:</div>
+              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🔑 Trading Wallet 1:</div>
               <div style="font-family: monospace; color: #25c2a0; font-weight: bold; word-break: break-all; font-size: 0.85em;" id="tradingWalletAddress">Loading...</div>
             </div>
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #3498db;">
+              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🔑 Trading Wallet 2:</div>
+              <div style="font-family: monospace; color: #3498db; font-weight: bold; word-break: break-all; font-size: 0.85em;" id="tradingWalletAddress2">Not configured</div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
             <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12;">
               <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🎛️ Current Trading Mode:</div>
               <div style="color: #f39c12; font-weight: bold; font-size: 1.1em;" id="currentTradingMode">Loading...</div>
+            </div>
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60;">
+              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🤖 Active Bots:</div>
+              <div style="color: #27ae60; font-weight: bold; font-size: 1.1em;" id="activeBots">1 Bot</div>
             </div>
           </div>
           <button onclick="loadTradingBotStatus()" class="btn btn-primary margin-top-15">🔄 Refresh Status</button>
@@ -7727,11 +7737,22 @@ This action cannot be undone. Continue?`;
           if (profitEl) profitEl.textContent = `${data.profit?.xrp || '0'} XRP (${data.profit?.percentage || '0'}%)`;
           if (wloEl) wloEl.textContent = `${data.balance?.wlo || '0'} WLO`;
 
-          // Display trading wallet address
+          // Display trading wallet addresses
           if (data.tradingWallet) {
             const walletEl = document.getElementById('tradingWalletAddress');
             if (walletEl) walletEl.textContent = data.tradingWallet;
           }
+
+          // Display second wallet if available
+          if (data.tradingWallet2) {
+            const wallet2El = document.getElementById('tradingWalletAddress2');
+            if (wallet2El) wallet2El.textContent = data.tradingWallet2;
+          }
+
+          // Update active bots count
+          const botsCount = data.tradingWallet2 ? '2 Bots' : '1 Bot';
+          const botsEl = document.getElementById('activeBots');
+          if (botsEl) botsEl.textContent = botsCount;
 
           // Update form fields with current settings
           if (data.settings) {
