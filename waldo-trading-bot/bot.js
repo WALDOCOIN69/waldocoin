@@ -19,6 +19,7 @@ const XRPL_NODES = [
 ];
 const XRPL_NODE = process.env.XRPL_NODE || XRPL_NODES[0];
 const TRADING_WALLET_SECRET = process.env.TRADING_WALLET_SECRET;
+const TRADING_WALLET_SECRET_2 = process.env.TRADING_WALLET_SECRET_2; // Second bot wallet
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WALDO_CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
 const STEALTH_MODE = process.env.STEALTH_MODE === 'true';
@@ -54,6 +55,7 @@ let client = new xrpl.Client(XRPL_NODE);
 const redis = createClient({ url: process.env.REDIS_URL });
 
 let tradingWallet = null;
+let tradingWallet2 = null; // Second bot wallet
 let currentPrice = 0;
 let dailyVolume = 0;
 let currentNodeIndex = 0;
@@ -227,12 +229,22 @@ async function connectXRPL() {
     }
 
     tradingWallet = xrpl.Wallet.fromSeed(TRADING_WALLET_SECRET);
-    logger.info(`🔗 Connected to XRPL - Trading wallet: ${tradingWallet.classicAddress}`);
+    logger.info(`🔗 Connected to XRPL - Trading wallet 1: ${tradingWallet.classicAddress}`);
+
+    // Load second wallet if available
+    if (TRADING_WALLET_SECRET_2) {
+      tradingWallet2 = xrpl.Wallet.fromSeed(TRADING_WALLET_SECRET_2);
+      logger.info(`🔗 Connected to XRPL - Trading wallet 2: ${tradingWallet2.classicAddress}`);
+    }
+
     logger.info(`🪙 WALDO token configured: currency=${WALDO_CURRENCY} issuer=${WALDO_ISSUER}`);
 
-    // Ensure WLO trustline exists and is sufficient
+    // Ensure WLO trustline exists and is sufficient for both wallets
     try {
-      await ensureWLOTrustline();
+      await ensureWLOTrustline(tradingWallet);
+      if (tradingWallet2) {
+        await ensureWLOTrustline(tradingWallet2);
+      }
     } catch (e) {
       logger.warn('⚠️ Trustline verification failed:', e);
     }
@@ -245,15 +257,15 @@ async function connectXRPL() {
 }
 
 // Ensure the trading wallet has a trustline to the WALDO issuer (WLO)
-async function ensureWLOTrustline() {
+async function ensureWLOTrustline(wallet = tradingWallet) {
   try {
     if (STEALTH_MODE) return;
-    if (!tradingWallet || !client.isConnected()) return;
+    if (!wallet || !client.isConnected()) return;
 
     // Check existing trustlines
     const lines = await client.request({
       command: 'account_lines',
-      account: tradingWallet.classicAddress,
+      account: wallet.classicAddress,
       ledger_index: 'validated'
     });
 
@@ -269,7 +281,7 @@ async function ensureWLOTrustline() {
     // Create trustline with a generous limit so trades don't get blocked by trust limit
     const trustSet = {
       TransactionType: 'TrustSet',
-      Account: tradingWallet.classicAddress,
+      Account: wallet.classicAddress,
       LimitAmount: {
         currency: WALDO_CURRENCY,
         issuer: WALDO_ISSUER,
@@ -500,7 +512,7 @@ async function getWLOBalance(address) {
 }
 
 // ===== TRADING FUNCTIONS =====
-async function buyWaldo(userAddress, xrpAmount) {
+async function buyWaldo(userAddress, xrpAmount, wallet = tradingWallet) {
   try {
     // Ensure XRPL connection is active before attempting trade
     if (!client.isConnected() && !isReconnecting) {
@@ -542,7 +554,7 @@ async function buyWaldo(userAddress, xrpAmount) {
       // Build Partial Payment to allow fills instead of failing with tecPATH_PARTIAL
       const payment = {
         TransactionType: 'Payment',
-        Account: tradingWallet.classicAddress,
+        Account: wallet.classicAddress,
         Destination: userAddress,
         Amount: { currency: WALDO_CURRENCY, value: wantAmount.toFixed(6), issuer: WALDO_ISSUER },
         SendMax: xrpl.xrpToDrops(amountXrp.toString()),
@@ -552,7 +564,7 @@ async function buyWaldo(userAddress, xrpAmount) {
       if (bestPaths) payment.Paths = bestPaths;
 
       const prepared = await client.autofill(payment);
-      const signed = tradingWallet.sign(prepared);
+      const signed = wallet.sign(prepared);
       const result = await client.submitAndWait(signed.tx_blob);
 
       const code = result.result?.meta?.TransactionResult;
@@ -575,7 +587,7 @@ async function buyWaldo(userAddress, xrpAmount) {
         const wantAmount = parseFloat(((xrpAmount / price) * (1 - PRICE_SPREAD / 100)).toFixed(6));
         const offer = {
           TransactionType: 'OfferCreate',
-          Account: tradingWallet.classicAddress,
+          Account: wallet.classicAddress,
           TakerGets: { // WLO we want to receive
             currency: WALDO_CURRENCY,
             value: wantAmount.toFixed(6),
@@ -590,11 +602,11 @@ async function buyWaldo(userAddress, xrpAmount) {
           const ledgerIndex = await client.getLedgerIndex();
 
           // Manually set all required fields to avoid autofill delays
-          offer.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+          offer.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
           offer.Fee = '12'; // Standard fee in drops
           offer.LastLedgerSequence = ledgerIndex + 30; // 30 ledgers = ~150 seconds
 
-          const signed = tradingWallet.sign(offer);
+          const signed = wallet.sign(offer);
           const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
 
           const code = result.result?.meta?.TransactionResult;
@@ -611,11 +623,11 @@ async function buyWaldo(userAddress, xrpAmount) {
             try {
               const ledgerIndex2 = await client.getLedgerIndex();
               const offer2 = { ...offer };
-              offer2.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+              offer2.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
               offer2.Fee = '12';
               offer2.LastLedgerSequence = ledgerIndex2 + 30;
 
-              const signed2 = tradingWallet.sign(offer2);
+              const signed2 = wallet.sign(offer2);
               const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
 
               const code2 = result2.result?.meta?.TransactionResult;
@@ -638,7 +650,7 @@ async function buyWaldo(userAddress, xrpAmount) {
   }
 }
 
-async function sellWaldo(userAddress, waldoAmount) {
+async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
   try {
     // Ensure XRPL connection is active before attempting trade
     if (!client.isConnected() && !isReconnecting) {
@@ -669,7 +681,7 @@ async function sellWaldo(userAddress, waldoAmount) {
 
       const offer = {
         TransactionType: 'OfferCreate',
-        Account: tradingWallet.classicAddress,
+        Account: wallet.classicAddress,
         TakerGets: xrpl.xrpToDrops(xrpTarget.toString()), // XRP we want to receive
         TakerPays: { // WLO we're offering to sell
           currency: WALDO_CURRENCY,
@@ -685,11 +697,11 @@ async function sellWaldo(userAddress, waldoAmount) {
         const ledgerIndex = await client.getLedgerIndex();
 
         // Manually set all required fields to avoid autofill delays
-        offer.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+        offer.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
         offer.Fee = '12'; // Standard fee in drops
         offer.LastLedgerSequence = ledgerIndex + 30; // 30 ledgers = ~150 seconds
 
-        const signed = tradingWallet.sign(offer);
+        const signed = wallet.sign(offer);
         const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
 
         const code = result.result?.meta?.TransactionResult;
@@ -708,11 +720,11 @@ async function sellWaldo(userAddress, waldoAmount) {
           try {
             const ledgerIndex2 = await client.getLedgerIndex();
             const offer2 = { ...offer };
-            offer2.Sequence = await client.getAccountInfo(tradingWallet.classicAddress).then(info => info.account_data.Sequence);
+            offer2.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
             offer2.Fee = '12';
             offer2.LastLedgerSequence = ledgerIndex2 + 30;
 
-            const signed2 = tradingWallet.sign(offer2);
+            const signed2 = wallet.sign(offer2);
             const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
 
             const code2 = result2.result?.meta?.TransactionResult;
@@ -730,7 +742,7 @@ async function sellWaldo(userAddress, waldoAmount) {
     };
 
     // For automated trades, use micro-sells approach
-    if (userAddress === tradingWallet.classicAddress) {
+    if (userAddress === wallet.classicAddress) {
       // Break large sells into tiny amounts that are more likely to fill
       const microSellAmount = Math.min(waldoAmount, 1000); // Max 1000 WLO per micro-sell
 
@@ -763,7 +775,7 @@ async function sellWaldo(userAddress, waldoAmount) {
 
       const payment = {
         TransactionType: 'Payment',
-        Account: tradingWallet.classicAddress,
+        Account: wallet.classicAddress,
         Destination: userAddress,
         Amount: xrpl.xrpToDrops((smallAmount * price * 0.95).toFixed(6)), // 5% discount for quick fill
         SendMax: {
@@ -889,10 +901,23 @@ if (MARKET_MAKING) {
       if (shouldTrade) {
         logger.info(`⏰ Executing trade (Frequency: ${frequencySetting === 'random' ? 'Random' : frequencySetting + 'min'}, Next: ${new Date(nextTradeTime).toLocaleTimeString()})`);
 
+        // Execute trade with Bot 1
+        await createAutomatedTrade();
+
+        // Execute trade with Bot 2 if available (with slight delay to avoid conflicts)
+        if (tradingWallet2) {
+          setTimeout(async () => {
+            try {
+              await createAutomatedTrade(tradingWallet2);
+              logger.info('🤖 Bot 2 trade executed');
+            } catch (error) {
+              logger.error('❌ Bot 2 trade error:', error);
+            }
+          }, 1000); // 1 second delay
+        }
+
         // Rarely do multiple trades in sequence (3% chance only)
         const multiTrade = Math.random() < 0.03;
-
-        await createAutomatedTrade();
 
         if (multiTrade) {
           // Wait 2-5 minutes then do another trade
@@ -900,6 +925,15 @@ if (MARKET_MAKING) {
           setTimeout(async () => {
             try {
               await createAutomatedTrade();
+              if (tradingWallet2) {
+                setTimeout(async () => {
+                  try {
+                    await createAutomatedTrade(tradingWallet2);
+                  } catch (error) {
+                    logger.error('❌ Bot 2 multi-trade error:', error);
+                  }
+                }, 1000);
+              }
               logger.info('🎲 Multi-trade sequence executed');
             } catch (error) {
               logger.error('❌ Multi-trade error:', error);
@@ -1050,7 +1084,7 @@ async function processPendingMicroSells() {
 }
 
 // ===== AUTOMATED TRADING FUNCTIONS =====
-async function createAutomatedTrade() {
+async function createAutomatedTrade(wallet = tradingWallet) {
   try {
     // Double-check admin control status before executing trade
     const botStatus = await redis.get('volume_bot:status') || 'running';
@@ -1070,8 +1104,8 @@ async function createAutomatedTrade() {
 
     // NEW WEIGHTED PERPETUAL TRADING STRATEGY
     // Check current wallet balances to determine optimal trade direction
-    const xrpBalance = await getXRPBalance(tradingWallet.classicAddress);
-    const wloBalance = await getWLOBalance(tradingWallet.classicAddress);
+    const xrpBalance = await getXRPBalance(wallet.classicAddress);
+    const wloBalance = await getWLOBalance(wallet.classicAddress);
 
     // Calculate balance ratios and target allocations
     const wloValueInXrp = wloBalance * currentPrice;
@@ -1257,7 +1291,7 @@ async function createAutomatedTrade() {
       }
 
       // Check XRP balance before buying
-      const xrpBalance = await getXRPBalance(tradingWallet.classicAddress);
+      const xrpBalance = await getXRPBalance(wallet.classicAddress);
       // In emergency mode, only require 0.1 XRP for fees; otherwise require 1 XRP
       const feeBuffer = currentPrice < emergencyPriceThreshold ? 0.1 : 1.0;
       if (xrpBalance < tradeAmount + feeBuffer) {
@@ -1268,7 +1302,7 @@ async function createAutomatedTrade() {
       // Execute REAL BUY trade on XRPL
       try {
         logger.info(`🔄 Executing REAL BUY trade: ${tradeAmount} XRP for ${waldoAmount.toFixed(0)} WLO`);
-        const result = await buyWaldo(tradingWallet.classicAddress, tradeAmount);
+        const result = await buyWaldo(wallet.classicAddress, tradeAmount, wallet);
         if (result.success) {
           logger.info(`✅ REAL BUY executed: ${result.hash}`);
           message += `\n🔗 TX: ${result.hash}`;
@@ -1316,7 +1350,7 @@ async function createAutomatedTrade() {
       }
 
       // Check WLO balance before selling
-      const wloBalance = await getWLOBalance(tradingWallet.classicAddress);
+      const wloBalance = await getWLOBalance(wallet.classicAddress);
       if (wloBalance < waldoAmount) {
         logger.warn(`⚠️ Insufficient WLO balance: ${wloBalance} WLO, need ${waldoAmount} WLO`);
         return;
@@ -1325,7 +1359,7 @@ async function createAutomatedTrade() {
       // Execute REAL SELL trade on XRPL
       try {
         logger.info(`🔄 Executing REAL SELL trade: ${waldoAmount} WLO for ${xrpAmount.toFixed(4)} XRP`);
-        const result = await sellWaldo(tradingWallet.classicAddress, waldoAmount);
+        const result = await sellWaldo(wallet.classicAddress, waldoAmount, wallet);
         if (result.success) {
           logger.info(`✅ REAL SELL executed: ${result.hash}`);
           message += `\n🔗 TX: ${result.hash}`;
