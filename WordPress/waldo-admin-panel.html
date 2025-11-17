@@ -7848,6 +7848,13 @@ This action cannot be undone. Continue?`;
 
           // Show/hide Bot 2 controls based on whether Bot 2 is configured
           const bot2ControlsCard = document.getElementById('bot2ControlsCard');
+          if (DEBUG_MODE) {
+            console.log('🤖 Bot 2 Debug:', {
+              tradingWallet2: data.tradingWallet2,
+              bot2ControlsCard: !!bot2ControlsCard,
+              bot2Data: data.bot2
+            });
+          }
           if (bot2ControlsCard) {
             if (data.tradingWallet2) {
               bot2ControlsCard.style.display = 'block';
@@ -7857,8 +7864,10 @@ This action cannot be undone. Continue?`;
                 const bot2Status = data.settings?.bot2Enabled ? '✅ Enabled' : '❌ Disabled';
                 bot2StatusDisplay.textContent = bot2Status;
               }
+              if (DEBUG_MODE) console.log('✅ Bot 2 controls shown');
             } else {
               bot2ControlsCard.style.display = 'none';
+              if (DEBUG_MODE) console.log('❌ Bot 2 controls hidden - tradingWallet2 not configured');
             }
           }
 
