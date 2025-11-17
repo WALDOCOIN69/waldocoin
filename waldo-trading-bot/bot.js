@@ -1275,8 +1275,9 @@ async function createAutomatedTrade(wallet = tradingWallet) {
     let tradeAmount = parseFloat((minTradeSize + Math.random() * (maxTradeSize - minTradeSize)).toFixed(2));
 
     // Clamp to admin min/max to respect panel controls and avoid validation errors
-    const effMin = baseMinTradeSize;
-    const effMax = baseMaxTradeSize;
+    // Use the actual admin settings from Redis, not the base defaults
+    const effMin = adminMinSize ? parseFloat(adminMinSize) : baseMinTradeSize;
+    const effMax = adminMaxSize ? parseFloat(adminMaxSize) : baseMaxTradeSize;
     if (tradeAmount < effMin) tradeAmount = effMin;
     if (tradeAmount > effMax) tradeAmount = effMax;
 
