@@ -1053,10 +1053,13 @@ async function createAutomatedTrade() {
 
       // Emergency price protection - smart recovery strategy
       if (currentPrice < emergencyPriceThreshold) {
-        // If we have low XRP but lots of WLO, SELL first to get XRP for buying
-        if (xrpBalance < 1.0 && wloBalance > 1000) {
+        // If we have insufficient XRP for safe trading but lots of WLO, SELL first to get XRP for buying
+        const minXrpReserve = 2.0;
+        const needsMoreXrp = xrpBalance < (0.5 + minXrpReserve); // Need at least 0.5 XRP for trade + 2.0 reserve
+
+        if (needsMoreXrp && wloBalance > 1000) {
           tradeType = 'SELL';
-          logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - LOW XRP (${xrpBalance.toFixed(2)}), SELLING WLO first to get XRP`);
+          logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - INSUFFICIENT XRP (${xrpBalance.toFixed(2)}), SELLING WLO first to get XRP`);
         } else {
           // Otherwise buy to lift the price
           tradeType = 'BUY';
