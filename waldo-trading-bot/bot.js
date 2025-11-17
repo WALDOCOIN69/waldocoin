@@ -933,6 +933,7 @@ if (MARKET_MAKING) {
         logger.info(`⏰ Executing trade (Frequency: ${frequencySetting === 'random' ? 'Random' : frequencySetting + 'min'}, Next: ${new Date(nextTradeTime).toLocaleTimeString()})`);
 
         // Execute trade with Bot 1
+        logger.info('🤖 BOT 1 (Primary): Executing trade...');
         await createAutomatedTrade();
 
         // Execute trade with Bot 2 if available and enabled (with slight delay to avoid conflicts)
@@ -943,16 +944,19 @@ if (MARKET_MAKING) {
           if (bot2Enabled && !bot2Paused) {
             setTimeout(async () => {
               try {
+                logger.info('🤖 BOT 2 (Secondary): Executing trade...');
                 await createAutomatedTrade(tradingWallet2);
-                logger.info('🤖 Bot 2 trade executed');
+                logger.info('✅ BOT 2 trade executed successfully');
               } catch (error) {
-                logger.error('❌ Bot 2 trade error:', error);
+                logger.error('❌ BOT 2 trade error:', error);
               }
             }, 1000); // 1 second delay
           } else {
             const reason = !bot2Enabled ? 'disabled' : 'paused';
-            logger.info(`⏭️ Bot 2 skipped (${reason})`);
+            logger.info(`⏭️ BOT 2 skipped (${reason})`);
           }
+        } else {
+          logger.info('⏭️ BOT 2 not configured');
         }
 
         // Rarely do multiple trades in sequence (3% chance only)
@@ -1727,6 +1731,16 @@ async function startBot() {
 
   // Update wallet balance for admin panel
   await updateWalletBalance();
+
+  // Show which bots are configured
+  logger.info('🤖 ========== BOT CONFIGURATION ==========');
+  logger.info(`✅ Bot 1 (Primary): ${tradingWallet?.classicAddress}`);
+  if (tradingWallet2) {
+    logger.info(`✅ Bot 2 (Secondary): ${tradingWallet2.classicAddress}`);
+  } else {
+    logger.info('❌ Bot 2: NOT CONFIGURED');
+  }
+  logger.info('🤖 ========================================');
 
   logger.info('✅ WALDO Trading Bot is running!');
 }
