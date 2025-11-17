@@ -1401,6 +1401,10 @@ async function updateWalletBalance() {
       }
     }
 
+    // Store individual balances for admin panel
+    await redis.set('volume_bot:xrp_balance', xrpBalance.toFixed(4));
+    await redis.set('volume_bot:wlo_balance', waldoBalance.toFixed(0));
+
     const balanceString = `${xrpBalance.toFixed(2)} XRP + ${waldoBalance.toFixed(0)} WLO`;
     await redis.set('volume_bot:wallet_balance', balanceString);
 
