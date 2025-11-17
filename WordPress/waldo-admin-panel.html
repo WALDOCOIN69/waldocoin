@@ -7790,9 +7790,13 @@ This action cannot be undone. Continue?`;
     let currentBotSelected = 'bot1';
 
     function switchBot(botId) {
+      console.log('🔄 Switching to bot:', botId);
       currentBotSelected = botId;
       const bot1Controls = document.getElementById('bot1ControlsSection');
       const bot2Controls = document.getElementById('bot2ControlsCard');
+
+      console.log('Bot 1 Controls found:', !!bot1Controls);
+      console.log('Bot 2 Controls found:', !!bot2Controls);
 
       if (botId === 'bot1') {
         if (bot1Controls) bot1Controls.style.display = 'block';
@@ -7861,10 +7865,15 @@ This action cannot be undone. Continue?`;
           if (botsEl) botsEl.textContent = botsCount;
 
           // Show Bot 2 option in dropdown if Bot 2 is configured
+          console.log('📊 Trading Bot Status Response:', data);
+          console.log('🤖 Trading Wallet 2:', data.tradingWallet2);
+
           const bot2Option = document.getElementById('bot2Option');
           if (data.tradingWallet2) {
+            console.log('✅ Bot 2 is configured, showing option');
             if (bot2Option) bot2Option.style.display = 'block';
           } else {
+            console.log('❌ Bot 2 is NOT configured');
             if (bot2Option) bot2Option.style.display = 'none';
           }
 
