@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = 3000;
-const ADMIN_FILE = path.join(__dirname, 'WordPress', 'waldo-admin-panel.html');
+const ADMIN_FILE = path.join(__dirname, '..', 'WordPress', 'waldo-admin-panel.html');
 
 const server = http.createServer((req, res) => {
   // Only serve the admin panel
