@@ -623,7 +623,11 @@ async function buyWaldo(userAddress, xrpAmount, wallet = tradingWallet) {
             try {
               const ledgerIndex2 = await client.getLedgerIndex();
               const offer2 = { ...offer };
-              offer2.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
+              const accountInfo2 = await client.request({
+                command: 'account_info',
+                account: wallet.classicAddress
+              });
+              offer2.Sequence = accountInfo2.result.account_data.Sequence;
               offer2.Fee = '12';
               offer2.LastLedgerSequence = ledgerIndex2 + 30;
 
@@ -697,7 +701,11 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
         const ledgerIndex = await client.getLedgerIndex();
 
         // Manually set all required fields to avoid autofill delays
-        offer.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
+        const accountInfo = await client.request({
+          command: 'account_info',
+          account: wallet.classicAddress
+        });
+        offer.Sequence = accountInfo.result.account_data.Sequence;
         offer.Fee = '12'; // Standard fee in drops
         offer.LastLedgerSequence = ledgerIndex + 30; // 30 ledgers = ~150 seconds
 
@@ -720,7 +728,11 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
           try {
             const ledgerIndex2 = await client.getLedgerIndex();
             const offer2 = { ...offer };
-            offer2.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
+            const accountInfo2 = await client.request({
+              command: 'account_info',
+              account: wallet.classicAddress
+            });
+            offer2.Sequence = accountInfo2.result.account_data.Sequence;
             offer2.Fee = '12';
             offer2.LastLedgerSequence = ledgerIndex2 + 30;
 
