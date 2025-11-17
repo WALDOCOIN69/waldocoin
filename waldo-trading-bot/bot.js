@@ -821,29 +821,42 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   dailyVolume += xrpAmount;
   await redis.set('waldo:daily_volume', dailyVolume.toString());
 
+  // Determine which bot made the trade based on wallet address
+  const isBot2 = userAddress === tradingWallet2?.classicAddress;
+  const botId = isBot2 ? 'bot2' : 'bot1';
+
   // Store data for admin panel (volume bot controls)
-  await redis.lPush('volume_bot:recent_trades', JSON.stringify({
+  const tradeRecord = {
     type: type,
     amount: parseFloat(waldoAmount.toFixed(6)), // show up to 6 decimals instead of rounding to 0
     currency: 'WLO',
     price: parseFloat(xrpAmount.toFixed(6)),
     timestamp: new Date().toISOString(),
-    hash: trade.hash || null
-  }));
+    hash: trade.hash || null,
+    bot: botId // Track which bot made the trade
+  };
+
+  await redis.lPush('volume_bot:recent_trades', JSON.stringify(tradeRecord));
 
   // Keep only last 50 trades for admin panel
   await redis.lTrim('volume_bot:recent_trades', 0, 49);
 
-  // Update daily counters for admin panel
+  // Update daily counters for admin panel (combined)
   const today = new Date().toISOString().split('T')[0];
   await redis.incr(`volume_bot:trades_${today}`);
   await redis.set('volume_bot:trades_today', await redis.get(`volume_bot:trades_${today}`) || '0');
   await redis.set('volume_bot:volume_24h', dailyVolume.toString());
 
+  // Track per-bot trades
+  await redis.incr(`volume_bot:${botId}:trades_${today}`);
+  const botTodayTrades = await redis.get(`volume_bot:${botId}:trades_${today}`) || '0';
+  await redis.set(`volume_bot:${botId}:trades_today`, botTodayTrades);
+
   // Update last trade timestamp for admin panel
   await redis.set('volume_bot:last_trade', new Date().toISOString());
+  await redis.set(`volume_bot:${botId}:last_trade`, new Date().toISOString());
 
-  logger.info(`📊 Trade recorded: ${type} ${waldoAmount} WLO for ${xrpAmount} XRP`);
+  logger.info(`📊 Trade recorded [${botId.toUpperCase()}]: ${type} ${waldoAmount} WLO for ${xrpAmount} XRP`);
 }
 
 // ===== AUTOMATED MARKET MAKING (Admin-controlled via API) =====
@@ -1456,43 +1469,84 @@ async function updateWalletBalance() {
       return;
     }
 
-    // Get wallet balance from XRPL
+    // Get Bot 1 wallet balance from XRPL
     if (!tradingWallet || !client.isConnected()) {
       await redis.set('volume_bot:wallet_balance', 'Wallet not connected');
       return;
     }
 
-    const accountInfo = await client.request({
+    // Update Bot 1 balance
+    const accountInfo1 = await client.request({
       command: 'account_info',
       account: tradingWallet.classicAddress
     });
 
-    const xrpBalance = parseFloat(accountInfo.result.account_data.Balance) / 1000000;
+    const xrpBalance1 = parseFloat(accountInfo1.result.account_data.Balance) / 1000000;
 
-    // Get WLO balance
-    const accountLines = await client.request({
+    // Get WLO balance for Bot 1
+    const accountLines1 = await client.request({
       command: 'account_lines',
       account: tradingWallet.classicAddress
     });
 
-    let waldoBalance = 0;
-    if (accountLines.result.lines) {
-      const waldoLine = accountLines.result.lines.find(line =>
+    let waldoBalance1 = 0;
+    if (accountLines1.result.lines) {
+      const waldoLine = accountLines1.result.lines.find(line =>
         line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
       );
       if (waldoLine) {
-        waldoBalance = parseFloat(waldoLine.balance);
+        waldoBalance1 = parseFloat(waldoLine.balance);
       }
     }
 
-    // Store individual balances for admin panel
-    await redis.set('volume_bot:xrp_balance', xrpBalance.toFixed(4));
-    await redis.set('volume_bot:wlo_balance', waldoBalance.toFixed(0));
+    // Store Bot 1 balances
+    await redis.set('volume_bot:bot1:xrp_balance', xrpBalance1.toFixed(4));
+    await redis.set('volume_bot:bot1:wlo_balance', waldoBalance1.toFixed(0));
 
-    const balanceString = `${xrpBalance.toFixed(2)} XRP + ${waldoBalance.toFixed(0)} WLO`;
-    await redis.set('volume_bot:wallet_balance', balanceString);
+    const balanceString1 = `${xrpBalance1.toFixed(2)} XRP + ${waldoBalance1.toFixed(0)} WLO`;
+    await redis.set('volume_bot:bot1:wallet_balance', balanceString1);
 
-    logger.info(`💰 Wallet balance updated: ${balanceString}`);
+    logger.info(`💰 Bot 1 balance updated: ${balanceString1}`);
+
+    // Update Bot 2 balance if available
+    if (tradingWallet2) {
+      const accountInfo2 = await client.request({
+        command: 'account_info',
+        account: tradingWallet2.classicAddress
+      });
+
+      const xrpBalance2 = parseFloat(accountInfo2.result.account_data.Balance) / 1000000;
+
+      // Get WLO balance for Bot 2
+      const accountLines2 = await client.request({
+        command: 'account_lines',
+        account: tradingWallet2.classicAddress
+      });
+
+      let waldoBalance2 = 0;
+      if (accountLines2.result.lines) {
+        const waldoLine = accountLines2.result.lines.find(line =>
+          line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
+        );
+        if (waldoLine) {
+          waldoBalance2 = parseFloat(waldoLine.balance);
+        }
+      }
+
+      // Store Bot 2 balances
+      await redis.set('volume_bot:bot2:xrp_balance', xrpBalance2.toFixed(4));
+      await redis.set('volume_bot:bot2:wlo_balance', waldoBalance2.toFixed(0));
+
+      const balanceString2 = `${xrpBalance2.toFixed(2)} XRP + ${waldoBalance2.toFixed(0)} WLO`;
+      await redis.set('volume_bot:bot2:wallet_balance', balanceString2);
+
+      logger.info(`💰 Bot 2 balance updated: ${balanceString2}`);
+    }
+
+    // Store combined balance for backward compatibility
+    await redis.set('volume_bot:xrp_balance', (parseFloat(xrpBalance1.toFixed(4)) + (tradingWallet2 ? parseFloat((await redis.get('volume_bot:bot2:xrp_balance') || '0')) : 0)).toFixed(4));
+    await redis.set('volume_bot:wlo_balance', (parseFloat(waldoBalance1.toFixed(0)) + (tradingWallet2 ? parseFloat((await redis.get('volume_bot:bot2:wlo_balance') || '0')) : 0)).toFixed(0));
+
   } catch (error) {
     logger.error('❌ Error updating wallet balance:', error);
     await redis.set('volume_bot:wallet_balance', 'Error loading balance');

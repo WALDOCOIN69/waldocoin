@@ -42,6 +42,16 @@ router.get("/status", requireAdmin, async (req, res) => {
     const xrpBalance = await redis.get('volume_bot:xrp_balance') || '0';
     const wloBalance = await redis.get('volume_bot:wlo_balance') || '0';
 
+    // Get Bot 1 balances
+    const bot1XrpBalance = await redis.get('volume_bot:bot1:xrp_balance') || '0';
+    const bot1WloBalance = await redis.get('volume_bot:bot1:wlo_balance') || '0';
+    const bot1Trades = await redis.get('volume_bot:bot1:trades_today') || '0';
+
+    // Get Bot 2 balances
+    const bot2XrpBalance = await redis.get('volume_bot:bot2:xrp_balance') || '0';
+    const bot2WloBalance = await redis.get('volume_bot:bot2:wlo_balance') || '0';
+    const bot2Trades = await redis.get('volume_bot:bot2:trades_today') || '0';
+
     // Get trading wallet addresses from environment
     const tradingWallet = process.env.TRADING_WALLET_ADDRESS || 'Not configured';
     const tradingWallet2 = process.env.TRADING_WALLET_ADDRESS_2 || null;
@@ -61,6 +71,20 @@ router.get("/status", requireAdmin, async (req, res) => {
         wlo: parseFloat(wloBalance).toFixed(0),
         total: parseFloat(currentBalance).toFixed(4)
       },
+      bot1: {
+        balance: {
+          xrp: parseFloat(bot1XrpBalance).toFixed(4),
+          wlo: parseFloat(bot1WloBalance).toFixed(0)
+        },
+        trades: parseInt(bot1Trades)
+      },
+      bot2: tradingWallet2 ? {
+        balance: {
+          xrp: parseFloat(bot2XrpBalance).toFixed(4),
+          wlo: parseFloat(bot2WloBalance).toFixed(0)
+        },
+        trades: parseInt(bot2Trades)
+      } : null,
       profit: {
         xrp: profitXrp.toFixed(4),
         percentage: profitPercentage,

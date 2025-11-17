@@ -2479,16 +2479,46 @@
               <div class="stat-label">Bot Status</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value" id="botBalance">-</div>
-              <div class="stat-label">Trading Wallet Balance</div>
-            </div>
-            <div class="stat-card">
               <div class="stat-value" id="botTrades">-</div>
               <div class="stat-label">Trades Today</div>
             </div>
             <div class="stat-card">
               <div class="stat-value" id="botVolume">-</div>
               <div class="stat-label">24h Volume</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="activeBots">1 Bot</div>
+              <div class="stat-label">Active Bots</div>
+            </div>
+          </div>
+
+          <!-- Bot 1 Metrics -->
+          <div style="background: #2a2a2a; padding: 15px; border-radius: 6px; margin-top: 15px; border-left: 4px solid #25c2a0;">
+            <div style="font-size: 1.1em; color: #25c2a0; font-weight: bold; margin-bottom: 10px;">🤖 Bot 1 Metrics</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <div style="color: #999; font-size: 0.9em;">Wallet Balance:</div>
+                <div style="color: #25c2a0; font-weight: bold;" id="bot1Balance">-</div>
+              </div>
+              <div>
+                <div style="color: #999; font-size: 0.9em;">Trades:</div>
+                <div style="color: #25c2a0; font-weight: bold;" id="bot1Trades">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bot 2 Metrics -->
+          <div style="background: #2a2a2a; padding: 15px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #3498db;">
+            <div style="font-size: 1.1em; color: #3498db; font-weight: bold; margin-bottom: 10px;">🤖 Bot 2 Metrics</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <div style="color: #999; font-size: 0.9em;">Wallet Balance:</div>
+                <div style="color: #3498db; font-weight: bold;" id="bot2Balance">Not configured</div>
+              </div>
+              <div>
+                <div style="color: #999; font-size: 0.9em;">Trades:</div>
+                <div style="color: #3498db; font-weight: bold;" id="bot2Trades">-</div>
+              </div>
             </div>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
@@ -2501,15 +2531,9 @@
               <div style="font-family: monospace; color: #3498db; font-weight: bold; word-break: break-all; font-size: 0.85em;" id="tradingWalletAddress2">Not configured</div>
             </div>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
-            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12;">
-              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🎛️ Current Trading Mode:</div>
-              <div style="color: #f39c12; font-weight: bold; font-size: 1.1em;" id="currentTradingMode">Loading...</div>
-            </div>
-            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60;">
-              <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🤖 Active Bots:</div>
-              <div style="color: #27ae60; font-weight: bold; font-size: 1.1em;" id="activeBots">1 Bot</div>
-            </div>
+          <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12; margin-top: 15px;">
+            <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🎛️ Current Trading Mode:</div>
+            <div style="color: #f39c12; font-weight: bold; font-size: 1.1em;" id="currentTradingMode">Loading...</div>
           </div>
           <button onclick="loadTradingBotStatus()" class="btn btn-primary margin-top-15">🔄 Refresh Status</button>
         </div>
@@ -7753,6 +7777,22 @@ This action cannot be undone. Continue?`;
           const botsCount = data.tradingWallet2 ? '2 Bots' : '1 Bot';
           const botsEl = document.getElementById('activeBots');
           if (botsEl) botsEl.textContent = botsCount;
+
+          // Display Bot 1 metrics
+          if (data.bot1) {
+            const bot1BalanceEl = document.getElementById('bot1Balance');
+            const bot1TradesEl = document.getElementById('bot1Trades');
+            if (bot1BalanceEl) bot1BalanceEl.textContent = `${data.bot1.balance.xrp} XRP + ${data.bot1.balance.wlo} WLO`;
+            if (bot1TradesEl) bot1TradesEl.textContent = data.bot1.trades || '0';
+          }
+
+          // Display Bot 2 metrics if available
+          if (data.bot2) {
+            const bot2BalanceEl = document.getElementById('bot2Balance');
+            const bot2TradesEl = document.getElementById('bot2Trades');
+            if (bot2BalanceEl) bot2BalanceEl.textContent = `${data.bot2.balance.xrp} XRP + ${data.bot2.balance.wlo} WLO`;
+            if (bot2TradesEl) bot2TradesEl.textContent = data.bot2.trades || '0';
+          }
 
           // Update form fields with current settings
           if (data.settings) {
