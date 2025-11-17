@@ -1273,15 +1273,6 @@ async function createAutomatedTrade() {
       }
     }
 
-    // Send as personal message to channel (looks like you posted it)
-    if (CHANNEL_ID && PERSONAL_MODE) {
-      // In personal mode, you would manually post these messages
-      // Or use a different method to post as yourself
-      logger.info(`📝 Personal message ready: ${message}`);
-    } else if (CHANNEL_ID) {
-      await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
-    }
-
     logger.info(`🤖 Automated ${tradeType} trade created: ${tradeAmount} XRP`);
 
   } catch (error) {
@@ -1318,12 +1309,6 @@ async function announcePriceUpdate() {
         `🔄 **Trades**: ${tradesCount}`;
     }
 
-    if (CHANNEL_ID && !PERSONAL_MODE) {
-      await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
-    } else if (PERSONAL_MODE) {
-      logger.info(`📝 Personal update ready: ${message}`);
-    }
-
     logger.info('📊 Price update prepared');
 
   } catch (error) {
@@ -1355,10 +1340,6 @@ async function announceVolumeUpdate() {
       `🤖 **Market Making**: Active\n\n` +
       `🎯 **Trade WALDO**: Use @WALDOTradingBot\n` +
       `💬 **Join Community**: @waldocoin`;
-
-    if (CHANNEL_ID) {
-      await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
-    }
 
     logger.info(`📈 Volume update announced: ${volumeNum.toFixed(2)} XRP`);
 
@@ -1446,15 +1427,6 @@ async function resetDailyStats() {
     logger.info(`🔄 Daily stats reset - Archived ${currentVolume} XRP volume, ${currentTrades} trades`);
 
     // Announce new day
-    if (CHANNEL_ID && !PERSONAL_MODE) {
-      const message = `🌅 **New Trading Day Started**\n\n` +
-        `📊 **Yesterday**: ${parseFloat(currentVolume).toFixed(2)} XRP volume, ${currentTrades} trades\n` +
-        `🎯 **Today**: Fresh start - let's build volume!\n\n` +
-        `🤖 **Market Making**: Active 24/7`;
-
-      await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
-    }
-
   } catch (error) {
     logger.error('❌ Daily reset failed:', error);
   }
