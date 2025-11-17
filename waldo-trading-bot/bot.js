@@ -1200,8 +1200,10 @@ async function createAutomatedTrade() {
 
       // Check XRP balance before buying
       const xrpBalance = await getXRPBalance(tradingWallet.classicAddress);
-      if (xrpBalance < tradeAmount + 1) { // +1 XRP for transaction fees
-        logger.warn(`⚠️ Insufficient XRP balance: ${xrpBalance} XRP, need ${tradeAmount + 1} XRP`);
+      // In emergency mode, only require 0.1 XRP for fees; otherwise require 1 XRP
+      const feeBuffer = currentPrice < emergencyPriceThreshold ? 0.1 : 1.0;
+      if (xrpBalance < tradeAmount + feeBuffer) {
+        logger.warn(`⚠️ Insufficient XRP balance: ${xrpBalance} XRP, need ${tradeAmount + feeBuffer} XRP`);
         return;
       }
 
