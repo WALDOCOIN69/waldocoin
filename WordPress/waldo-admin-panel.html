@@ -8064,12 +8064,19 @@ This action cannot be undone. Continue?`;
 
       try {
         const adminKey = localStorage.getItem('adminKey');
+        console.log('🤖 Enabling Bot 2...');
+        console.log('Admin key present:', !!adminKey);
+        console.log('API Base:', API_BASE);
+
         const response = await fetch(`${API_BASE}/api/admin/trading-bot/bot2/enable`, {
           method: 'POST',
           headers: { 'x-admin-key': adminKey }
         });
 
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
+
         if (data.success) {
           showAlert('Bot 2 enabled successfully', 'success');
           await loadTradingBotStatus();
@@ -8078,7 +8085,7 @@ This action cannot be undone. Continue?`;
         }
       } catch (error) {
         console.error('Error enabling Bot 2:', error);
-        showAlert('Network error enabling Bot 2', 'error');
+        showAlert('Network error enabling Bot 2: ' + error.message, 'error');
       }
     }
 
