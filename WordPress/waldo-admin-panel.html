@@ -2470,18 +2470,13 @@
           Manage the XRPL trading bot that generates real volume for WALDOCOIN.
         </div>
 
-        <!-- Wallet Selector -->
-        <div class="admin-card margin-bottom-30" id="walletSelectorCard" style="display: none;">
-          <div class="card-title">🔄 Switch Trading Wallet</div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="switchToBot1()" class="btn btn-primary" id="bot1SwitchBtn" style="flex: 1; min-width: 150px;">
-              🤖 Bot 1 (Primary)
-            </button>
-            <button onclick="switchToBot2()" class="btn btn-secondary" id="bot2SwitchBtn" style="flex: 1; min-width: 150px; display: none;">
-              🤖 Bot 2 (Secondary)
-            </button>
-          </div>
-          <small class="help-text" style="margin-top: 10px;">Switch between bots to view and control them independently</small>
+        <!-- Simple Bot Selector -->
+        <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+          <label style="font-weight: bold; color: #fff;">Select Bot:</label>
+          <select id="botSelector" onchange="switchBot(this.value)" style="padding: 8px 12px; background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-size: 1em;">
+            <option value="bot1">🤖 Bot 1 (Primary)</option>
+            <option value="bot2" id="bot2Option" style="display: none;">🤖 Bot 2 (Secondary)</option>
+          </select>
         </div>
 
         <!-- Bot Status -->
@@ -7791,38 +7786,15 @@ This action cannot be undone. Continue?`;
       showAlert(`Set to ${hours} hours from now`, 'info');
     }
 
-    // ===== WALLET SWITCHING =====
-    let currentBotSelected = 'bot1'; // Track which bot is currently selected
+    // ===== SIMPLE BOT SWITCHING =====
+    let currentBotSelected = 'bot1';
 
-    function switchToBot1() {
-      currentBotSelected = 'bot1';
-      const bot1Btn = document.getElementById('bot1SwitchBtn');
-      const bot2Btn = document.getElementById('bot2SwitchBtn');
-      if (bot1Btn) bot1Btn.className = 'btn btn-primary';
-      if (bot2Btn) bot2Btn.className = 'btn btn-secondary';
-
-      // Update controls visibility
-      updateBotControlsVisibility();
-      loadTradingBotStatus();
-    }
-
-    function switchToBot2() {
-      currentBotSelected = 'bot2';
-      const bot1Btn = document.getElementById('bot1SwitchBtn');
-      const bot2Btn = document.getElementById('bot2SwitchBtn');
-      if (bot1Btn) bot1Btn.className = 'btn btn-secondary';
-      if (bot2Btn) bot2Btn.className = 'btn btn-primary';
-
-      // Update controls visibility
-      updateBotControlsVisibility();
-      loadTradingBotStatus();
-    }
-
-    function updateBotControlsVisibility() {
+    function switchBot(botId) {
+      currentBotSelected = botId;
       const bot1Controls = document.getElementById('bot1ControlsSection');
       const bot2Controls = document.getElementById('bot2ControlsCard');
 
-      if (currentBotSelected === 'bot1') {
+      if (botId === 'bot1') {
         if (bot1Controls) bot1Controls.style.display = 'block';
         if (bot2Controls) bot2Controls.style.display = 'none';
       } else {
@@ -7888,15 +7860,12 @@ This action cannot be undone. Continue?`;
           const botsEl = document.getElementById('activeBots');
           if (botsEl) botsEl.textContent = botsCount;
 
-          // Show wallet selector if Bot 2 is configured
-          const walletSelectorCard = document.getElementById('walletSelectorCard');
-          const bot2SwitchBtn = document.getElementById('bot2SwitchBtn');
+          // Show Bot 2 option in dropdown if Bot 2 is configured
+          const bot2Option = document.getElementById('bot2Option');
           if (data.tradingWallet2) {
-            if (walletSelectorCard) walletSelectorCard.style.display = 'block';
-            if (bot2SwitchBtn) bot2SwitchBtn.style.display = 'block';
+            if (bot2Option) bot2Option.style.display = 'block';
           } else {
-            if (walletSelectorCard) walletSelectorCard.style.display = 'none';
-            if (bot2SwitchBtn) bot2SwitchBtn.style.display = 'none';
+            if (bot2Option) bot2Option.style.display = 'none';
           }
 
           // Display Bot 1 metrics
