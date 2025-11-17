@@ -644,13 +644,13 @@ async function sellWaldo(userAddress, waldoAmount) {
           value: parseFloat(wloAmount).toFixed(6),
           issuer: WALDO_ISSUER
         },
-        Flags: 0x00000001 | 0x00010000, // tfSell | tfPassive
-        Expiration: Math.floor(Date.now() / 1000) + (60 * 60) // Expires in 1 hour
+        Flags: 0x00000001 | 0x00010000 // tfSell | tfPassive
+        // Note: Removed Expiration to avoid ledger sequence issues
       };
 
       const prepared = await client.autofill(offer);
       const signed = tradingWallet.sign(prepared);
-      const result = await client.submitAndWait(signed.tx_blob);
+      const result = await client.submitAndWait(signed.tx_blob, { timeout: 20000 });
 
       const code = result.result?.meta?.TransactionResult;
       if (code === 'tesSUCCESS') {
