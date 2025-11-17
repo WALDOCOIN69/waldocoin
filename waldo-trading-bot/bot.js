@@ -568,34 +568,38 @@ async function buyWaldo(userAddress, xrpAmount) {
     try {
       return await attempt(xrpAmount, 0.50); // accept 50% of expected WLO on first try
     } catch (e1) {
-      if ((e1.message || '').includes('tecPATH_PARTIAL')) {
-        logger.warn('⚠️ tecPATH_PARTIAL on buy - retrying with smaller amount and lower DeliverMin');
+      if ((e1.message || '').includes('tecPATH_DRY') || (e1.message || '').includes('tecPATH_PARTIAL')) {
+        logger.warn(`⚠️ ${e1.message?.includes('tecPATH_DRY') ? 'tecPATH_DRY' : 'tecPATH_PARTIAL'} on buy - falling back to passive buy offer`);
 
-        // 1) Try ~75% of the original, clamped by admin min
-        const mid = Math.max(effectiveMin, parseFloat((xrpAmount * 0.75).toFixed(2)));
-        if (mid < xrpAmount) {
-          try { return await attempt(mid, 0.25); } catch (e2) { }
-        }
+        // Fallback: Create a passive buy offer on the order book
+        const wantAmount = parseFloat(((xrpAmount / price) * (1 - PRICE_SPREAD / 100)).toFixed(6));
+        const offer = {
+          TransactionType: 'OfferCreate',
+          Account: tradingWallet.classicAddress,
+          TakerGets: { // WLO we want to receive
+            currency: WALDO_CURRENCY,
+            value: wantAmount.toFixed(6),
+            issuer: WALDO_ISSUER
+          },
+          TakerPays: xrpl.xrpToDrops(xrpAmount.toString()), // XRP we're offering
+          Flags: 0x00010000 // tfPassive
+        };
 
-        // 2) Try ~50% of the original, clamped by admin min
-        const half = Math.max(effectiveMin, parseFloat((xrpAmount * 0.50).toFixed(2)));
-        if (half < xrpAmount) {
-          try { return await attempt(half, 0.15); } catch (e3) { }
-        }
+        try {
+          const prepared = await client.autofill(offer);
+          const signed = tradingWallet.sign(prepared);
+          const result = await client.submitAndWait(signed.tx_blob, { timeout: 20000 });
 
-        // 3) If large enough, split into two sequential half orders (best chance on thin books)
-        if (xrpAmount >= 2 * effectiveMin) {
-          const part = Math.max(effectiveMin, parseFloat((xrpAmount / 2).toFixed(2)));
-          try {
-            const first = await attempt(part, 0.15);
-            try { await attempt(part, 0.15); } catch (_) { }
-            return first;
-          } catch (_) { }
-        }
-
-        // 4) Final attempt with admin minimum and very low DeliverMin
-        if (effectiveMin < xrpAmount) {
-          return await attempt(effectiveMin, 0.05);
+          const code = result.result?.meta?.TransactionResult;
+          if (code === 'tesSUCCESS') {
+            await recordTrade('BUY', userAddress, xrpAmount, wantAmount, price);
+            logger.info(`✅ Passive buy offer created: ${wantAmount.toFixed(0)} WLO for ${xrpAmount.toFixed(4)} XRP`);
+            return { success: true, hash: result.result.hash, waldoAmount: wantAmount, price };
+          }
+          throw new Error(`Passive offer failed: ${code || 'unknown'}`);
+        } catch (offerError) {
+          logger.warn(`⚠️ Passive buy offer also failed: ${offerError.message}`);
+          throw e1; // Throw original error
         }
       }
       throw e1;
