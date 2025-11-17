@@ -72,6 +72,8 @@ services:
         sync: false
       - key: TRADING_WALLET_SECRET
         sync: false
+      - key: TRADING_WALLET_SECRET_2
+        sync: false
       - key: TRADING_WALLET_ADDRESS
         value: rNGY9xXoGmSukMizW19qAHdHjz7SAAuyVR
       - key: TRADING_WALLET_ADDRESS_2
@@ -156,6 +158,8 @@ services:
       - key: XRPL_NODE
         sync: false
       - key: TRADING_WALLET_SECRET
+        sync: false
+      - key: TRADING_WALLET_SECRET_2
         sync: false
       - key: TRADING_WALLET_ADDRESS
         value: rNGY9xXoGmSukMizW19qAHdHjz7SAAuyVR
