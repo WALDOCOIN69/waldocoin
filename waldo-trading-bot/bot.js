@@ -1051,10 +1051,17 @@ async function createAutomatedTrade() {
     } else if (tradingMode === 'automated' || tradingMode === 'perpetual') {
       // PERPETUAL WEIGHTED TRADING MODE
 
-      // Emergency price protection - always buy when price crashes
+      // Emergency price protection - smart recovery strategy
       if (currentPrice < emergencyPriceThreshold) {
-        tradeType = 'BUY';
-        logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - FORCED BUY`);
+        // If we have low XRP but lots of WLO, SELL first to get XRP for buying
+        if (xrpBalance < 1.0 && wloBalance > 1000) {
+          tradeType = 'SELL';
+          logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - LOW XRP (${xrpBalance.toFixed(2)}), SELLING WLO first to get XRP`);
+        } else {
+          // Otherwise buy to lift the price
+          tradeType = 'BUY';
+          logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - FORCED BUY to lift price`);
+        }
       }
       // If we have too much XRP (over 70%), favor buying WLO
       else if (xrpRatio > 0.70) {
