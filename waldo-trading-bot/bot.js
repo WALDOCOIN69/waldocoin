@@ -1,6 +1,5 @@
 // 🤖 WALDOCOIN TRADING BOT - Buy/Sell WLO Tokens
 
-import TelegramBot from 'node-telegram-bot-api';
 import xrpl from 'xrpl';
 import { createClient } from 'redis';
 import cron from 'node-cron';
@@ -11,7 +10,6 @@ import winston from 'winston';
 dotenv.config();
 
 // ===== CONFIGURATION =====
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 // Use multiple XRPL nodes for better reliability
 const XRPL_NODES = [
   'wss://xrplcluster.com',
@@ -23,9 +21,6 @@ const XRPL_NODE = process.env.XRPL_NODE || XRPL_NODES[0];
 const TRADING_WALLET_SECRET = process.env.TRADING_WALLET_SECRET;
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WALDO_CURRENCY = process.env.WALDO_CURRENCY || 'WLO';
-const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
-const ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
-const PERSONAL_MODE = process.env.PERSONAL_ACCOUNT_MODE === 'true';
 const STEALTH_MODE = process.env.STEALTH_MODE === 'true';
 
 // ===== PROFIT MANAGEMENT CONFIGURATION =====
@@ -55,7 +50,6 @@ const logger = winston.createLogger({
 });
 
 // ===== INITIALIZE SERVICES =====
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 let client = new xrpl.Client(XRPL_NODE);
 const redis = createClient({ url: process.env.REDIS_URL });
 
@@ -771,73 +765,10 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   // Update last trade timestamp for admin panel
   await redis.set('volume_bot:last_trade', new Date().toISOString());
 
-  // Announce trade if enabled
-  if (process.env.ANNOUNCE_TRADES === 'true' && CHANNEL_ID) {
-    const message = `🔄 **WALDO Trade Alert**\n\n` +
-      `**${type}**: ${waldoAmount.toFixed(0)} WLO\n` +
-      `**Price**: ${price.toFixed(8)} XRP per WLO\n` +
-      `**Volume**: ${xrpAmount.toFixed(2)} XRP\n` +
-      `**Hash**: \`${trade.hash || 'Processing...'}\`\n\n` +
-      `💹 Daily Volume: ${dailyVolume.toFixed(2)} XRP`;
-
-    try {
-      await bot.sendMessage(CHANNEL_ID, message, { parse_mode: 'Markdown' });
-    } catch (error) {
-      logger.error('❌ Failed to announce trade:', error);
-    }
-  }
-
   logger.info(`📊 Trade recorded: ${type} ${waldoAmount} WLO for ${xrpAmount} XRP`);
 }
 
-// ===== BOT COMMANDS =====
-bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
-
-  // Only respond to admin
-  if (chatId.toString() !== ADMIN_ID) {
-    bot.sendMessage(chatId, '🤖 WALDO Volume Bot is running! Check @waldocoin for trading activity.');
-    return;
-  }
-
-  const welcomeMessage = `🤖 **WALDO Volume Bot - Admin Panel**\n\n` +
-    `**Volume Bot Status**: ✅ Active\n` +
-    `**Trading Wallet**: ${TRADING_WALLET_ADDRESS || 'Not configured'}\n\n` +
-    `**Available Commands:**\n` +
-    `📊 /price - Current WLO price\n` +
-    `📈 /stats - Trading statistics\n` +
-    `⚙️ /status - Bot status\n` +
-    `🛑 /emergency - Emergency stop\n\n` +
-    `**Volume Generation**: Every 60 minutes\n` +
-    `**Daily Target**: ${process.env.MAX_DAILY_VOLUME_XRP || 150} XRP`;
-
-  bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
-});
-
-bot.onText(/\/price/, async (msg) => {
-  const chatId = msg.chat.id;
-  try {
-    const price = await getCurrentWaldoPrice();
-    const volume = await redis.get('waldo:daily_volume') || '0';
-
-    const message = `📊 **WALDO Price Info**\n\n` +
-      `💰 **Current Price**: ${price.toFixed(8)} XRP per WLO\n` +
-      `📈 **24h Volume**: ${parseFloat(volume).toFixed(2)} XRP\n` +
-      `🎯 **Spread**: ${PRICE_SPREAD}%\n\n` +
-      `**Buy Price**: ${(price * (1 + PRICE_SPREAD / 100)).toFixed(8)} XRP\n` +
-      `**Sell Price**: ${(price * (1 - PRICE_SPREAD / 100)).toFixed(8)} XRP`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error fetching price data');
-  }
-});
-
-// Remove user trading commands - this is a volume bot only
-bot.onText(/\/buy|\/sell|\/wallet|\/balance/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, '🤖 This is a volume generation bot. Check @waldocoin for trading activity updates!');
-});
+// ===== AUTOMATED MARKET MAKING (Admin-controlled via API) =====
 
 // ===== AUTOMATED MARKET MAKING =====
 if (MARKET_MAKING) {
@@ -1592,359 +1523,11 @@ async function recordProfitReserve(amount) {
 }
 
 // ===== WALLET MANAGEMENT =====
-async function getUserWallet(userId) {
-  try {
-    const wallet = await redis.get(`user:${userId}:wallet`);
-    return wallet;
-  } catch (error) {
-    logger.error('❌ Error getting user wallet:', error);
-    return null;
-  }
-}
+// Removed: getUserWallet and setUserWallet (Telegram bot functions)
 
-async function setUserWallet(userId, walletAddress) {
-  try {
-    await redis.set(`user:${userId}:wallet`, walletAddress);
-    return true;
-  } catch (error) {
-    logger.error('❌ Error setting user wallet:', error);
-    return false;
-  }
-}
-
-// ===== ADDITIONAL BOT COMMANDS =====
-bot.onText(/\/wallet (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  const walletAddress = match[1].trim();
-
-  // Validate XRPL address
-  if (!/^r[1-9A-HJ-NP-Za-km-z]{25,34}$/.test(walletAddress)) {
-    bot.sendMessage(chatId, '❌ Invalid XRPL wallet address format');
-    return;
-  }
-
-  const success = await setUserWallet(userId, walletAddress);
-  if (success) {
-    bot.sendMessage(chatId, `✅ Wallet connected: \`${walletAddress}\`\n\nYou can now use /buy and /sell commands!`,
-      { parse_mode: 'Markdown' });
-  } else {
-    bot.sendMessage(chatId, '❌ Failed to connect wallet. Please try again.');
-  }
-});
-
-bot.onText(/\/sell (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const waldoAmount = parseFloat(match[1]);
-
-  if (isNaN(waldoAmount)) {
-    bot.sendMessage(chatId, '❌ Invalid amount. Use: /sell [WLO amount]');
-    return;
-  }
-
-  const userWallet = await getUserWallet(msg.from.id);
-  if (!userWallet) {
-    bot.sendMessage(chatId, '❌ Please connect your wallet first with /wallet [address]');
-    return;
-  }
-
-  bot.sendMessage(chatId, '⏳ Processing your sell order...');
-
-  const result = await sellWaldo(userWallet, waldoAmount);
-
-  if (result.success) {
-    const message = `✅ **Sell Order Successful!**\n\n` +
-      `💸 **Sold**: ${waldoAmount.toFixed(0)} WLO\n` +
-      `💰 **Received**: ${result.xrpAmount.toFixed(4)} XRP\n` +
-      `📊 **Price**: ${result.price.toFixed(8)} XRP per WLO\n` +
-      `🔗 **Hash**: \`${result.hash}\``;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } else {
-    bot.sendMessage(chatId, `❌ Sell order failed: ${result.error}`);
-  }
-});
-
-bot.onText(/\/stats/, async (msg) => {
-  const chatId = msg.chat.id;
-  try {
-    const volume = await redis.get('waldo:daily_volume') || '0';
-    const tradesCount = await redis.lLen('waldo:trades');
-    const price = currentPrice;
-
-    // Get current XRPL node info
-    const currentNode = XRPL_NODES[currentNodeIndex];
-    const connectionStatus = client.isConnected() ? '🟢 Connected' : '🔴 Disconnected';
-
-    const message = `📈 **WALDO Trading Statistics**\n\n` +
-      `💰 **Current Price**: ${price.toFixed(8)} XRP per WLO\n` +
-      `📊 **24h Volume**: ${parseFloat(volume).toFixed(2)} XRP\n` +
-      `🔄 **Total Trades**: ${tradesCount}\n` +
-      `🎯 **Spread**: ${PRICE_SPREAD}%\n` +
-      `⚡ **Min Trade**: ${MIN_TRADE_XRP} XRP\n` +
-      `🚀 **Max Trade**: ${MAX_TRADE_XRP} XRP\n\n` +
-      `🌐 **XRPL Node**: ${currentNode}\n` +
-      `🔗 **Connection**: ${connectionStatus}\n` +
-      `🔄 **Reconnect Attempts**: ${reconnectAttempts}\n\n` +
-      `🤖 **Market Making**: ${MARKET_MAKING ? 'Active' : 'Inactive'}`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error fetching statistics');
-  }
-});
-
-bot.onText(/\/balance/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userWallet = await getUserWallet(msg.from.id);
-
-  if (!userWallet) {
-    bot.sendMessage(chatId, '❌ Please connect your wallet first with /wallet [address]');
-    return;
-  }
-
-  try {
-    // Get XRP balance
-    const accountInfo = await client.request({
-      command: 'account_info',
-      account: userWallet,
-      ledger_index: 'validated'
-    });
-    const xrpBalance = xrpl.dropsToXrp(accountInfo.result.account_data.Balance);
-
-    // Get WALDO balance
-    let waldoBalance = 0;
-    try {
-      const accountLines = await client.request({
-        command: 'account_lines',
-        account: userWallet,
-        ledger_index: 'validated'
-      });
-
-      const waldoLine = accountLines.result.lines.find(line =>
-        line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
-      );
-
-      if (waldoLine) {
-        waldoBalance = parseFloat(waldoLine.balance);
-      }
-    } catch (error) {
-      logger.warn('Could not fetch WALDO balance:', error.message);
-    }
-
-    const message = `💼 **Your Wallet Balance**\n\n` +
-      `**Address**: \`${userWallet}\`\n\n` +
-      `💰 **XRP**: ${parseFloat(xrpBalance).toFixed(4)} XRP\n` +
-      `🎯 **WALDO**: ${waldoBalance.toFixed(0)} WLO\n\n` +
-      `💵 **WALDO Value**: ${(waldoBalance * currentPrice).toFixed(4)} XRP`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error fetching balance. Make sure your wallet address is correct.');
-  }
-});
-
-bot.onText(/\/profits/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  // Only respond to admin
-  if (chatId.toString() !== ADMIN_ID) {
-    return;
-  }
-
-  try {
-    // Get profit tracking data
-    const currentBalance = await redis.get('waldo:current_balance') || STARTING_BALANCE.toString();
-    const totalProfit = await redis.get('waldo:total_profit') || '0';
-    const totalReserved = await redis.get('waldo:total_reserved') || '0';
-
-    // Get profit reserves history
-    const profitReserves = await redis.lRange('waldo:profit_reserves', 0, -1);
-    const reserves = profitReserves.map(reserve => JSON.parse(reserve));
-    const recentReserves = reserves.slice(-5); // Last 5 reserves
-
-    const profitNum = parseFloat(totalProfit);
-    const balanceNum = parseFloat(currentBalance);
-    const reservedNum = parseFloat(totalReserved);
-
-    const message = `💰 **Volume Bot Profit Report**\n\n` +
-      `💼 **Current Balance**: ${balanceNum.toFixed(4)} XRP\n` +
-      `🚀 **Starting Balance**: ${STARTING_BALANCE.toFixed(4)} XRP\n` +
-      `📈 **Total Profit**: ${profitNum >= 0 ? '+' : ''}${profitNum.toFixed(4)} XRP\n` +
-      `💎 **Reserved Profits**: ${reservedNum.toFixed(4)} XRP\n` +
-      `🎯 **Reserve Threshold**: ${PROFIT_RESERVE_THRESHOLD} XRP\n` +
-      `📊 **Reserve Percentage**: ${PROFIT_RESERVE_PERCENTAGE}%\n\n` +
-      `**Recent Reserves:**\n` +
-      (recentReserves.length > 0 ?
-        recentReserves.map(reserve =>
-          `• ${reserve.amount.toFixed(4)} XRP - ${new Date(reserve.timestamp).toLocaleDateString()}`
-        ).join('\n') : '• No reserves yet') +
-      `\n\n🤖 **Profit Tracking**: ${PROFIT_TRACKING ? 'Enabled' : 'Disabled'}\n` +
-      `💡 **Note**: All profits stay in trading wallet`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error fetching profit data');
-  }
-});
-
-bot.onText(/\/balances/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  // Only respond to admin
-  if (chatId.toString() !== ADMIN_ID) {
-    return;
-  }
-
-  try {
-    if (STEALTH_MODE) {
-      bot.sendMessage(chatId, '🥷 **Stealth Mode**: Balance details hidden for security');
-      return;
-    }
-
-    const xrpBalance = await getXRPBalance(tradingWallet.classicAddress);
-    const wloBalance = await getWLOBalance(tradingWallet.classicAddress);
-    const currentPrice = await getCurrentWaldoPrice();
-
-    const wloValueInXrp = wloBalance * currentPrice;
-    const totalValueXrp = xrpBalance + wloValueInXrp;
-    const xrpRatio = (xrpBalance / totalValueXrp) * 100;
-    const wloRatio = (wloValueInXrp / totalValueXrp) * 100;
-
-    const message = `💰 **Trading Wallet Balances**\n\n` +
-      `**XRP Balance**: ${xrpBalance.toFixed(2)} XRP (${xrpRatio.toFixed(1)}%)\n` +
-      `**WLO Balance**: ${wloBalance.toFixed(0)} WLO (${wloRatio.toFixed(1)}%)\n` +
-      `**WLO Value**: ${wloValueInXrp.toFixed(2)} XRP\n` +
-      `**Total Value**: ${totalValueXrp.toFixed(2)} XRP\n\n` +
-      `**Target Allocation**:\n` +
-      `🎯 XRP: 60% (${(totalValueXrp * 0.6).toFixed(2)} XRP)\n` +
-      `🎯 WLO: 40% (${(totalValueXrp * 0.4).toFixed(2)} XRP value)\n\n` +
-      `**Status**: ${xrpRatio > 70 ? '⚖️ Rebalancing toward WLO' : wloRatio > 50 ? '⚖️ Rebalancing toward XRP' : '✅ Well balanced'}\n` +
-      `**Current Price**: ${currentPrice.toFixed(8)} XRP per WLO`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error fetching balance data');
-  }
-});
-
-bot.onText(/\/pending/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  // Only respond to admin
-  if (chatId.toString() !== ADMIN_ID) {
-    return;
-  }
-
-  try {
-    const pendingAmount = await redis.get('volume_bot:pending_sell_amount') || '0';
-    const pending = parseFloat(pendingAmount);
-
-    const message = `📋 **Pending Micro-Sells**\n\n` +
-      `💰 **Remaining Amount**: ${pending.toFixed(0)} WLO\n` +
-      `🔄 **Processing**: Every 3 minutes\n` +
-      `📦 **Batch Size**: 500 WLO per batch\n` +
-      `⏱️ **Estimated Time**: ${Math.ceil(pending / 500) * 3} minutes\n\n` +
-      `${pending > 0 ? '🟡 **Status**: Processing...' : '✅ **Status**: All sells completed'}`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error fetching pending sells data');
-  }
-});
-
-bot.onText(/\/emergency/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  // Only respond to admin
-  if (chatId.toString() !== ADMIN_ID) {
-    return;
-  }
-
-  try {
-    // Set emergency stop status
-    await redis.set('volume_bot:status', 'emergency_stopped');
-    await redis.set('volume_bot:emergency_stop_timestamp', new Date().toISOString());
-
-    const message = `🚨 **EMERGENCY STOP ACTIVATED**\n\n` +
-      `🛑 **Status**: All trading halted immediately\n` +
-      `⏰ **Time**: ${new Date().toLocaleString()}\n` +
-      `🔧 **Action**: Manual restart required\n\n` +
-      `**To Resume Trading:**\n` +
-      `1. Check system status\n` +
-      `2. Use admin panel to restart\n` +
-      `3. Or use /resume command`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-    logger.error('🚨 EMERGENCY STOP activated via Telegram by admin');
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error activating emergency stop');
-    logger.error('❌ Emergency stop command failed:', error);
-  }
-});
-
-bot.onText(/\/resume/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  // Only respond to admin
-  if (chatId.toString() !== ADMIN_ID) {
-    return;
-  }
-
-  try {
-    // Resume bot operation
-    await redis.set('volume_bot:status', 'running');
-    await redis.del('volume_bot:emergency_stop_timestamp');
-
-    const message = `✅ **TRADING RESUMED**\n\n` +
-      `🟢 **Status**: Bot is now active\n` +
-      `⏰ **Time**: ${new Date().toLocaleString()}\n` +
-      `🔄 **Mode**: Perpetual weighted trading\n\n` +
-      `**Next Actions:**\n` +
-      `• Check /balances for current allocation\n` +
-      `• Monitor /stats for activity\n` +
-      `• Use /emergency if issues arise`;
-
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-    logger.info('✅ Trading resumed via Telegram by admin');
-  } catch (error) {
-    bot.sendMessage(chatId, '❌ Error resuming trading');
-    logger.error('❌ Resume command failed:', error);
-  }
-});
-
-bot.onText(/\/help/, (msg) => {
-  const chatId = msg.chat.id;
-
-  // Only respond to admin
-  if (chatId.toString() !== ADMIN_ID) {
-    bot.sendMessage(chatId, '🤖 WALDO Volume Bot is running! Check @waldocoin for trading activity.');
-    return;
-  }
-
-  const helpMessage = `🤖 **WALDO Volume Bot - Admin Commands**\n\n` +
-    `**Information:**\n` +
-    `📊 /price - Current WLO price\n` +
-    `📈 /stats - Trading statistics\n` +
-    `💰 /profits - Profit skimming report\n` +
-    `⚖️ /balances - Wallet balances & allocation\n` +
-    `📋 /pending - Pending micro-sells status\n` +
-    `⚙️ /status - Bot status\n\n` +
-    `**Emergency Controls:**\n` +
-    `🚨 /emergency - EMERGENCY STOP (immediate halt)\n` +
-    `✅ /resume - Resume trading after stop\n\n` +
-    `**Perpetual Trading:**\n` +
-    `🎯 **Target**: 60% XRP, 40% WLO\n` +
-    `⚖️ **Strategy**: Weighted rebalancing\n` +
-    `🔄 **Mode**: Self-sustaining trades\n\n` +
-    `**Settings:**\n` +
-    `🚀 **Starting Balance**: ${STARTING_BALANCE} XRP\n` +
-    `🎯 **Reserve Threshold**: ${PROFIT_RESERVE_THRESHOLD} XRP\n` +
-    `📈 **Reserve Percentage**: ${PROFIT_RESERVE_PERCENTAGE}%\n` +
-    `🤖 **Profit Tracking**: ${PROFIT_TRACKING ? 'Enabled' : 'Disabled'}`;
-
-  bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
-});
+// ===== REMOVED: TELEGRAM BOT COMMANDS =====
+// All Telegram bot commands have been removed
+// Bot is now controlled via admin panel API only
 
 // ===== STARTUP =====
 async function startBot() {
