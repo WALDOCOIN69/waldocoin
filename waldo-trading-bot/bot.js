@@ -587,6 +587,8 @@ async function buyWaldo(userAddress, xrpAmount) {
 
         try {
           const prepared = await client.autofill(offer);
+          // Increase LastLedgerSequence buffer to avoid ledger sequence errors
+          prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 10;
           const signed = tradingWallet.sign(prepared);
           const result = await client.submitAndWait(signed.tx_blob, { timeout: 20000 });
 
@@ -653,6 +655,8 @@ async function sellWaldo(userAddress, waldoAmount) {
       };
 
       const prepared = await client.autofill(offer);
+      // Increase LastLedgerSequence buffer to avoid ledger sequence errors
+      prepared.LastLedgerSequence = (prepared.LastLedgerSequence || 0) + 10;
       const signed = tradingWallet.sign(prepared);
       const result = await client.submitAndWait(signed.tx_blob, { timeout: 20000 });
 
