@@ -115,8 +115,6 @@ services:
         value: WLO
       - key: WALDO_DISTRIBUTOR_SECRET
         sync: false
-      - key: TRADING_WALLET_ADDRESS
-        value: rNGY9xXoGmSukMizW19qAHdHjz7SAAuyVR
       # NFT Minting Configuration
       - key: MINTING_WALLET_SECRET
         sync: false
