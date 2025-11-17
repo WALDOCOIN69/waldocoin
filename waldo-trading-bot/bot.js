@@ -504,7 +504,13 @@ async function getWLOBalance(address) {
       line => line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
     );
 
-    return wloLine ? parseFloat(wloLine.balance) : 0;
+    if (wloLine) {
+      const balance = parseFloat(wloLine.balance);
+      // WLO balance can be negative (liability) or positive (asset)
+      // We want the absolute value for trading purposes
+      return Math.abs(balance);
+    }
+    return 0;
   } catch (error) {
     logger.error('❌ Error getting WLO balance:', error);
     return 0;
