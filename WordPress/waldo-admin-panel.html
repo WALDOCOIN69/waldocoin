@@ -7907,9 +7907,17 @@ This action cannot be undone. Continue?`;
               bot2ControlsCard.style.display = 'block';
               // Update Bot 2 status display
               const bot2StatusDisplay = document.getElementById('bot2StatusDisplay');
-              if (bot2StatusDisplay) {
-                const bot2Status = data.settings?.bot2Enabled ? '✅ Enabled' : '❌ Disabled';
-                bot2StatusDisplay.textContent = bot2Status;
+              if (bot2StatusDisplay && data.bot2) {
+                const bot2Status = data.bot2.enabled ? '✅ Enabled' : '❌ Disabled';
+                const pausedStatus = data.bot2.paused ? ' (⏸️ Paused)' : '';
+                bot2StatusDisplay.textContent = bot2Status + pausedStatus;
+
+                // Update Bot 2 form fields
+                if (data.bot2.settings) {
+                  document.getElementById('tbBot2TradingMode').value = data.bot2.settings.tradingMode || 'automated';
+                  document.getElementById('tbBot2MinTradeSize').value = data.bot2.settings.minTradeSize || '0.5';
+                  document.getElementById('tbBot2MaxTradeSize').value = data.bot2.settings.maxTradeSize || '2.0';
+                }
               }
               if (DEBUG_MODE) console.log('✅ Bot 2 controls shown');
             } else {

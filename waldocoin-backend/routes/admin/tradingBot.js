@@ -38,6 +38,13 @@ router.get("/status", requireAdmin, async (req, res) => {
       maxDailyVolume: await redis.get('volume_bot:max_daily_volume') || '500'
     };
 
+    // Get Bot 2 status
+    const bot2Enabled = await redis.get('volume_bot:bot2_enabled') !== 'false';
+    const bot2Paused = await redis.get('volume_bot:bot2_paused') === 'true';
+    const bot2TradingMode = await redis.get('volume_bot:bot2_trading_mode') || 'automated';
+    const bot2MinTradeSize = await redis.get('volume_bot:bot2_min_trade_size') || '0.5';
+    const bot2MaxTradeSize = await redis.get('volume_bot:bot2_max_trade_size') || '2.0';
+
     // Get wallet balances
     const xrpBalance = await redis.get('volume_bot:xrp_balance') || '0';
     const wloBalance = await redis.get('volume_bot:wlo_balance') || '0';
@@ -79,11 +86,18 @@ router.get("/status", requireAdmin, async (req, res) => {
         trades: parseInt(bot1Trades)
       },
       bot2: tradingWallet2 ? {
+        enabled: bot2Enabled,
+        paused: bot2Paused,
         balance: {
           xrp: parseFloat(bot2XrpBalance).toFixed(4),
           wlo: parseFloat(bot2WloBalance).toFixed(0)
         },
-        trades: parseInt(bot2Trades)
+        trades: parseInt(bot2Trades),
+        settings: {
+          tradingMode: bot2TradingMode,
+          minTradeSize: parseFloat(bot2MinTradeSize),
+          maxTradeSize: parseFloat(bot2MaxTradeSize)
+        }
       } : null,
       profit: {
         xrp: profitXrp.toFixed(4),
