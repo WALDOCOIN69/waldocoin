@@ -1053,10 +1053,11 @@ async function createAutomatedTrade() {
 
       // Emergency price protection - perpetual trading to recover price
       if (currentPrice < emergencyPriceThreshold) {
-        // In emergency, use weighted probability to buy more often (70% buy, 30% sell)
+        // In emergency, use weighted probability to buy more often (60% buy, 40% sell)
         // This creates upward pressure while still generating volume
-        tradeType = Math.random() < 0.70 ? 'BUY' : 'SELL';
-        logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - ${tradeType} trade (70% buy bias for recovery)`);
+        const rand = Math.random();
+        tradeType = rand < 0.60 ? 'BUY' : 'SELL';
+        logger.warn(`🚨 EMERGENCY: Price ${currentPrice.toFixed(8)} below ${emergencyPriceThreshold} - ${tradeType} trade (60% buy, 40% sell for recovery) [rand=${rand.toFixed(3)}]`);
       }
       // If we have too much XRP (over 70%), favor buying WLO
       else if (xrpRatio > 0.70) {
