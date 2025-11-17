@@ -929,16 +929,24 @@ if (MARKET_MAKING) {
         // Execute trade with Bot 1
         await createAutomatedTrade();
 
-        // Execute trade with Bot 2 if available (with slight delay to avoid conflicts)
+        // Execute trade with Bot 2 if available and enabled (with slight delay to avoid conflicts)
         if (tradingWallet2) {
-          setTimeout(async () => {
-            try {
-              await createAutomatedTrade(tradingWallet2);
-              logger.info('🤖 Bot 2 trade executed');
-            } catch (error) {
-              logger.error('❌ Bot 2 trade error:', error);
-            }
-          }, 1000); // 1 second delay
+          const bot2Enabled = await redis.get('volume_bot:bot2_enabled') !== 'false';
+          const bot2Paused = await redis.get('volume_bot:bot2_paused') === 'true';
+
+          if (bot2Enabled && !bot2Paused) {
+            setTimeout(async () => {
+              try {
+                await createAutomatedTrade(tradingWallet2);
+                logger.info('🤖 Bot 2 trade executed');
+              } catch (error) {
+                logger.error('❌ Bot 2 trade error:', error);
+              }
+            }, 1000); // 1 second delay
+          } else {
+            const reason = !bot2Enabled ? 'disabled' : 'paused';
+            logger.info(`⏭️ Bot 2 skipped (${reason})`);
+          }
         }
 
         // Rarely do multiple trades in sequence (3% chance only)
@@ -1218,8 +1226,17 @@ async function createAutomatedTrade(wallet = tradingWallet) {
     }
 
     // GET ADMIN SETTINGS FROM REDIS - RESPECT USER CONTROLS
-    const adminMinSize = await redis.get('volume_bot:min_trade_size');
-    const adminMaxSize = await redis.get('volume_bot:max_trade_size');
+    // Check if this is Bot 2 and use Bot 2 specific settings if available
+    const isBot2 = wallet?.classicAddress === tradingWallet2?.classicAddress;
+
+    let adminMinSize, adminMaxSize;
+    if (isBot2) {
+      adminMinSize = await redis.get('volume_bot:bot2_min_trade_size');
+      adminMaxSize = await redis.get('volume_bot:bot2_max_trade_size');
+    } else {
+      adminMinSize = await redis.get('volume_bot:min_trade_size');
+      adminMaxSize = await redis.get('volume_bot:max_trade_size');
+    }
 
     // Use admin settings if available, otherwise use optimized defaults for low balance perpetual trading
     const baseMinTradeSize = adminMinSize ? parseFloat(adminMinSize) : 0.5; // Reduced for 10 XRP perpetual trading

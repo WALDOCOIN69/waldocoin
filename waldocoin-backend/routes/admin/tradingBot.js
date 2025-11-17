@@ -304,4 +304,99 @@ router.post("/reset-profit", requireAdmin, async (req, res) => {
   }
 });
 
+// ===== BOT 2 CONTROL ENDPOINTS =====
+
+// POST /api/admin/trading-bot/bot2/enable - Enable Bot 2
+router.post("/bot2/enable", requireAdmin, async (req, res) => {
+  try {
+    await redis.set('volume_bot:bot2_enabled', 'true');
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      action: 'bot2_enabled',
+      admin: 'admin_panel'
+    }));
+    res.json({ success: true, message: 'Bot 2 enabled' });
+  } catch (error) {
+    console.error("❌ Error enabling Bot 2:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/admin/trading-bot/bot2/disable - Disable Bot 2
+router.post("/bot2/disable", requireAdmin, async (req, res) => {
+  try {
+    await redis.set('volume_bot:bot2_enabled', 'false');
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      action: 'bot2_disabled',
+      admin: 'admin_panel'
+    }));
+    res.json({ success: true, message: 'Bot 2 disabled' });
+  } catch (error) {
+    console.error("❌ Error disabling Bot 2:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/admin/trading-bot/bot2/pause - Pause Bot 2
+router.post("/bot2/pause", requireAdmin, async (req, res) => {
+  try {
+    await redis.set('volume_bot:bot2_paused', 'true');
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      action: 'bot2_paused',
+      admin: 'admin_panel'
+    }));
+    res.json({ success: true, message: 'Bot 2 paused' });
+  } catch (error) {
+    console.error("❌ Error pausing Bot 2:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/admin/trading-bot/bot2/resume - Resume Bot 2
+router.post("/bot2/resume", requireAdmin, async (req, res) => {
+  try {
+    await redis.set('volume_bot:bot2_paused', 'false');
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      action: 'bot2_resumed',
+      admin: 'admin_panel'
+    }));
+    res.json({ success: true, message: 'Bot 2 resumed' });
+  } catch (error) {
+    console.error("❌ Error resuming Bot 2:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/admin/trading-bot/bot2/settings - Update Bot 2 settings
+router.post("/bot2/settings", requireAdmin, async (req, res) => {
+  try {
+    const { bot2TradingMode, bot2MinTradeSize, bot2MaxTradeSize } = req.body;
+
+    if (bot2TradingMode) {
+      await redis.set('volume_bot:bot2_trading_mode', bot2TradingMode);
+    }
+    if (bot2MinTradeSize !== undefined) {
+      await redis.set('volume_bot:bot2_min_trade_size', bot2MinTradeSize.toString());
+    }
+    if (bot2MaxTradeSize !== undefined) {
+      await redis.set('volume_bot:bot2_max_trade_size', bot2MaxTradeSize.toString());
+    }
+
+    await redis.lpush('volume_bot:admin_log', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      action: 'bot2_settings_updated',
+      settings: { bot2TradingMode, bot2MinTradeSize, bot2MaxTradeSize },
+      admin: 'admin_panel'
+    }));
+
+    res.json({ success: true, message: 'Bot 2 settings updated' });
+  } catch (error) {
+    console.error("❌ Error updating Bot 2 settings:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;
