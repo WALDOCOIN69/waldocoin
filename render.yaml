@@ -74,6 +74,8 @@ services:
         sync: false
       - key: TRADING_WALLET_ADDRESS
         value: rNGY9xXoGmSukMizW19qAHdHjz7SAAuyVR
+      - key: TRADING_WALLET_ADDRESS_2
+        value: rNNUUC8v8jgvpnqGKfywhCWKqbu5o2SQrn
       - key: NFT_STORAGE_API_KEY
         sync: false
       - key: BOT_TOKEN
@@ -157,6 +159,8 @@ services:
         sync: false
       - key: TRADING_WALLET_ADDRESS
         value: rNGY9xXoGmSukMizW19qAHdHjz7SAAuyVR
+      - key: TRADING_WALLET_ADDRESS_2
+        value: rNNUUC8v8jgvpnqGKfywhCWKqbu5o2SQrn
       - key: WALDO_ISSUER
         sync: false
       - key: WALDO_CURRENCY

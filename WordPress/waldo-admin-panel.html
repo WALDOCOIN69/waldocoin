@@ -2470,6 +2470,20 @@
           Manage the XRPL trading bot that generates real volume for WALDOCOIN.
         </div>
 
+        <!-- Wallet Selector -->
+        <div class="admin-card margin-bottom-30" id="walletSelectorCard" style="display: none;">
+          <div class="card-title">🔄 Switch Trading Wallet</div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="switchToBot1()" class="btn btn-primary" id="bot1SwitchBtn" style="flex: 1; min-width: 150px;">
+              🤖 Bot 1 (Primary)
+            </button>
+            <button onclick="switchToBot2()" class="btn btn-secondary" id="bot2SwitchBtn" style="flex: 1; min-width: 150px; display: none;">
+              🤖 Bot 2 (Secondary)
+            </button>
+          </div>
+          <small class="help-text" style="margin-top: 10px;">Switch between bots to view and control them independently</small>
+        </div>
+
         <!-- Bot Status -->
         <div class="admin-card margin-bottom-30">
           <div class="card-title">📊 Bot Status & Metrics</div>
@@ -2538,9 +2552,11 @@
           <button onclick="loadTradingBotStatus()" class="btn btn-primary margin-top-15">🔄 Refresh Status</button>
         </div>
 
+        <!-- Bot 1 Controls Section -->
+        <div id="bot1ControlsSection">
         <!-- Bot Controls -->
         <div class="admin-card margin-bottom-30">
-          <div class="card-title">🎛️ Trading Controls</div>
+          <div class="card-title">🎛️ Bot 1 Trading Controls</div>
 
           <div class="form-group">
             <label class="form-label">Trading Frequency</label>
@@ -2599,6 +2615,8 @@
 
           <div id="botControlResult" class="margin-top-15"></div>
         </div>
+        </div>
+        <!-- End Bot 1 Controls Section -->
 
         <!-- Bot 2 Controls (Second Wallet) -->
         <div class="admin-card margin-bottom-30" id="bot2ControlsCard" style="display: none; border-left: 4px solid #3498db;">
@@ -7773,6 +7791,46 @@ This action cannot be undone. Continue?`;
       showAlert(`Set to ${hours} hours from now`, 'info');
     }
 
+    // ===== WALLET SWITCHING =====
+    let currentBotSelected = 'bot1'; // Track which bot is currently selected
+
+    function switchToBot1() {
+      currentBotSelected = 'bot1';
+      const bot1Btn = document.getElementById('bot1SwitchBtn');
+      const bot2Btn = document.getElementById('bot2SwitchBtn');
+      if (bot1Btn) bot1Btn.className = 'btn btn-primary';
+      if (bot2Btn) bot2Btn.className = 'btn btn-secondary';
+
+      // Update controls visibility
+      updateBotControlsVisibility();
+      loadTradingBotStatus();
+    }
+
+    function switchToBot2() {
+      currentBotSelected = 'bot2';
+      const bot1Btn = document.getElementById('bot1SwitchBtn');
+      const bot2Btn = document.getElementById('bot2SwitchBtn');
+      if (bot1Btn) bot1Btn.className = 'btn btn-secondary';
+      if (bot2Btn) bot2Btn.className = 'btn btn-primary';
+
+      // Update controls visibility
+      updateBotControlsVisibility();
+      loadTradingBotStatus();
+    }
+
+    function updateBotControlsVisibility() {
+      const bot1Controls = document.getElementById('bot1ControlsSection');
+      const bot2Controls = document.getElementById('bot2ControlsCard');
+
+      if (currentBotSelected === 'bot1') {
+        if (bot1Controls) bot1Controls.style.display = 'block';
+        if (bot2Controls) bot2Controls.style.display = 'none';
+      } else {
+        if (bot1Controls) bot1Controls.style.display = 'none';
+        if (bot2Controls) bot2Controls.style.display = 'block';
+      }
+    }
+
     // ===== VOLUME BOT FUNCTIONS (REDIRECTS TO TRADING BOT) =====
     async function loadVolumeBotData() {
       // The "volumebot" section now shows the Trading Bot
@@ -7829,6 +7887,17 @@ This action cannot be undone. Continue?`;
           const botsCount = data.tradingWallet2 ? '2 Bots' : '1 Bot';
           const botsEl = document.getElementById('activeBots');
           if (botsEl) botsEl.textContent = botsCount;
+
+          // Show wallet selector if Bot 2 is configured
+          const walletSelectorCard = document.getElementById('walletSelectorCard');
+          const bot2SwitchBtn = document.getElementById('bot2SwitchBtn');
+          if (data.tradingWallet2) {
+            if (walletSelectorCard) walletSelectorCard.style.display = 'block';
+            if (bot2SwitchBtn) bot2SwitchBtn.style.display = 'block';
+          } else {
+            if (walletSelectorCard) walletSelectorCard.style.display = 'none';
+            if (bot2SwitchBtn) bot2SwitchBtn.style.display = 'none';
+          }
 
           // Display Bot 1 metrics
           if (data.bot1) {
