@@ -892,7 +892,9 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
 // ===== AUTOMATED MARKET MAKING =====
 if (MARKET_MAKING) {
   // Dynamic trading schedule based on admin settings
-  let nextTradeTime = Date.now();
+  // Separate next trade times for each bot to support independent frequencies
+  let nextTradeTimeBot1 = Date.now();
+  let nextTradeTimeBot2 = Date.now();
 
   // Check for trades every minute and execute based on frequency settings
   cron.schedule('* * * * *', async () => { // Check every minute
@@ -905,53 +907,85 @@ if (MARKET_MAKING) {
         return;
       }
 
-      // Check if it's time to trade based on frequency setting
-      if (Date.now() < nextTradeTime) {
-        return; // Not time yet
-      }
-
-      // Get frequency setting from Redis (default to 30 minutes)
-      const frequencySetting = await redis.get('volume_bot:frequency') || '30';
-
-      let intervalMinutes;
-      if (frequencySetting === 'random') {
-        // Random interval between 5-45 minutes
-        intervalMinutes = 5 + Math.random() * 40; // 5-45 minutes
-        logger.info(`🎲 Random trading interval: ${intervalMinutes.toFixed(1)} minutes`);
-      } else {
-        intervalMinutes = parseInt(frequencySetting);
-      }
-
-      // Set next trade time
-      nextTradeTime = Date.now() + (intervalMinutes * 60 * 1000);
-
       // Check if we're in emergency price recovery mode
       const currentPrice = await getCurrentWaldoPrice();
       const emergencyMode = currentPrice < 0.00005;
 
-      // Execute trade with probability based on frequency and emergency mode
-      let tradeProbability = Math.min(0.8, 30 / intervalMinutes); // Scale probability inversely with frequency
+      // ===== BOT 1 TRADING =====
+      if (Date.now() >= nextTradeTimeBot1) {
+        // Get Bot 1 frequency setting from Redis (default to 30 minutes)
+        const bot1FrequencySetting = await redis.get('volume_bot:frequency') || '30';
 
-      if (emergencyMode) {
-        tradeProbability = Math.min(0.95, tradeProbability * 3); // 3x higher probability during emergency
-        logger.warn(`🚨 EMERGENCY MODE: Increased trade probability to ${(tradeProbability * 100).toFixed(1)}%`);
+        let bot1IntervalMinutes;
+        if (bot1FrequencySetting === 'random') {
+          // Random interval between 5-45 minutes
+          bot1IntervalMinutes = 5 + Math.random() * 40; // 5-45 minutes
+          logger.info(`🎲 BOT 1 Random trading interval: ${bot1IntervalMinutes.toFixed(1)} minutes`);
+        } else {
+          bot1IntervalMinutes = parseInt(bot1FrequencySetting);
+        }
+
+        // Set next trade time for Bot 1
+        nextTradeTimeBot1 = Date.now() + (bot1IntervalMinutes * 60 * 1000);
+
+        // Execute trade with probability based on frequency and emergency mode
+        let bot1TradeProbability = Math.min(0.8, 30 / bot1IntervalMinutes); // Scale probability inversely with frequency
+
+        if (emergencyMode) {
+          bot1TradeProbability = Math.min(0.95, bot1TradeProbability * 3); // 3x higher probability during emergency
+        }
+
+        const shouldTradeBot1 = Math.random() < bot1TradeProbability;
+
+        if (shouldTradeBot1) {
+          logger.info(`⏰ BOT 1 Executing trade (Frequency: ${bot1FrequencySetting === 'random' ? 'Random' : bot1FrequencySetting + 'min'}, Next: ${new Date(nextTradeTimeBot1).toLocaleTimeString()})`);
+
+          try {
+            logger.info('🤖 BOT 1 (Primary): Executing trade...');
+            await createAutomatedTrade();
+            logger.info('✅ BOT 1 trade executed successfully');
+          } catch (error) {
+            logger.error('❌ BOT 1 trade error:', error);
+          }
+        } else {
+          logger.info(`⏳ BOT 1 Next trade scheduled for: ${new Date(nextTradeTimeBot1).toLocaleTimeString()} (${bot1FrequencySetting === 'random' ? 'Random' : bot1FrequencySetting + 'min'} interval)`);
+        }
       }
 
-      const shouldTrade = Math.random() < tradeProbability;
+      // ===== BOT 2 TRADING =====
+      if (tradingWallet2 && Date.now() >= nextTradeTimeBot2) {
+        const bot2Enabled = await redis.get('volume_bot:bot2_enabled') !== 'false';
+        const bot2Paused = await redis.get('volume_bot:bot2_paused') === 'true';
 
-      if (shouldTrade) {
-        logger.info(`⏰ Executing trade (Frequency: ${frequencySetting === 'random' ? 'Random' : frequencySetting + 'min'}, Next: ${new Date(nextTradeTime).toLocaleTimeString()})`);
+        if (bot2Enabled && !bot2Paused) {
+          // Get Bot 2 frequency setting from Redis (default to 30 minutes)
+          const bot2FrequencySetting = await redis.get('volume_bot:bot2_frequency') || '30';
 
-        // Execute trade with Bot 1
-        logger.info('🤖 BOT 1 (Primary): Executing trade...');
-        await createAutomatedTrade();
+          let bot2IntervalMinutes;
+          if (bot2FrequencySetting === 'random') {
+            // Random interval between 5-45 minutes
+            bot2IntervalMinutes = 5 + Math.random() * 40; // 5-45 minutes
+            logger.info(`🎲 BOT 2 Random trading interval: ${bot2IntervalMinutes.toFixed(1)} minutes`);
+          } else {
+            bot2IntervalMinutes = parseInt(bot2FrequencySetting);
+          }
 
-        // Execute trade with Bot 2 if available and enabled (with slight delay to avoid conflicts)
-        if (tradingWallet2) {
-          const bot2Enabled = await redis.get('volume_bot:bot2_enabled') !== 'false';
-          const bot2Paused = await redis.get('volume_bot:bot2_paused') === 'true';
+          // Set next trade time for Bot 2
+          nextTradeTimeBot2 = Date.now() + (bot2IntervalMinutes * 60 * 1000);
 
-          if (bot2Enabled && !bot2Paused) {
+          // Execute trade with probability based on frequency and emergency mode
+          let bot2TradeProbability = Math.min(0.8, 30 / bot2IntervalMinutes); // Scale probability inversely with frequency
+
+          if (emergencyMode) {
+            bot2TradeProbability = Math.min(0.95, bot2TradeProbability * 3); // 3x higher probability during emergency
+          }
+
+          const shouldTradeBot2 = Math.random() < bot2TradeProbability;
+
+          if (shouldTradeBot2) {
+            logger.info(`⏰ BOT 2 Executing trade (Frequency: ${bot2FrequencySetting === 'random' ? 'Random' : bot2FrequencySetting + 'min'}, Next: ${new Date(nextTradeTimeBot2).toLocaleTimeString()})`);
+
+            // Execute with 1 second delay to avoid conflicts
             setTimeout(async () => {
               try {
                 logger.info('🤖 BOT 2 (Secondary): Executing trade...');
@@ -962,40 +996,18 @@ if (MARKET_MAKING) {
               }
             }, 1000); // 1 second delay
           } else {
-            const reason = !bot2Enabled ? 'disabled' : 'paused';
-            logger.info(`⏭️ BOT 2 skipped (${reason})`);
+            logger.info(`⏳ BOT 2 Next trade scheduled for: ${new Date(nextTradeTimeBot2).toLocaleTimeString()} (${bot2FrequencySetting === 'random' ? 'Random' : bot2FrequencySetting + 'min'} interval)`);
           }
         } else {
-          logger.info('⏭️ BOT 2 not configured');
+          const reason = !bot2Enabled ? 'disabled' : 'paused';
+          logger.info(`⏭️ BOT 2 skipped (${reason})`);
         }
-
-        // Rarely do multiple trades in sequence (3% chance only)
-        const multiTrade = Math.random() < 0.03;
-
-        if (multiTrade) {
-          // Wait 2-5 minutes then do another trade
-          const delay = (2 + Math.random() * 3) * 60 * 1000; // 2-5 minutes
-          setTimeout(async () => {
-            try {
-              await createAutomatedTrade();
-              if (tradingWallet2) {
-                setTimeout(async () => {
-                  try {
-                    await createAutomatedTrade(tradingWallet2);
-                  } catch (error) {
-                    logger.error('❌ Bot 2 multi-trade error:', error);
-                  }
-                }, 1000);
-              }
-              logger.info('🎲 Multi-trade sequence executed');
-            } catch (error) {
-              logger.error('❌ Multi-trade error:', error);
-            }
-          }, delay);
-        }
-      } else {
-        logger.info(`⏳ Next trade scheduled for: ${new Date(nextTradeTime).toLocaleTimeString()} (${frequencySetting === 'random' ? 'Random' : frequencySetting + 'min'} interval)`);
       }
+
+      if (emergencyMode) {
+        logger.warn(`🚨 EMERGENCY MODE: Increased trade probability for all bots`);
+      }
+
     } catch (error) {
       logger.error('❌ Automated trading error:', error);
     }

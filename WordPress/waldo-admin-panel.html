@@ -8148,6 +8148,7 @@ This action cannot be undone. Continue?`;
     async function updateBot2Settings() {
       try {
         const settings = {
+          bot2TradingFrequency: parseInt(document.getElementById('tbBot2TradingFrequency').value),
           bot2TradingMode: document.getElementById('tbBot2TradingMode').value,
           bot2MinTradeSize: parseFloat(document.getElementById('tbBot2MinTradeSize').value),
           bot2MaxTradeSize: parseFloat(document.getElementById('tbBot2MaxTradeSize').value)

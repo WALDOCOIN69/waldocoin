@@ -41,6 +41,7 @@ router.get("/status", requireAdmin, async (req, res) => {
     // Get Bot 2 status
     const bot2Enabled = await redis.get('volume_bot:bot2_enabled') !== 'false';
     const bot2Paused = await redis.get('volume_bot:bot2_paused') === 'true';
+    const bot2TradingFrequency = await redis.get('volume_bot:bot2_frequency') || '30';
     const bot2TradingMode = await redis.get('volume_bot:bot2_trading_mode') || 'automated';
     const bot2MinTradeSize = await redis.get('volume_bot:bot2_min_trade_size') || '0.5';
     const bot2MaxTradeSize = await redis.get('volume_bot:bot2_max_trade_size') || '2.0';
@@ -94,6 +95,7 @@ router.get("/status", requireAdmin, async (req, res) => {
         },
         trades: parseInt(bot2Trades),
         settings: {
+          frequency: parseInt(bot2TradingFrequency),
           tradingMode: bot2TradingMode,
           minTradeSize: parseFloat(bot2MinTradeSize),
           maxTradeSize: parseFloat(bot2MaxTradeSize)
@@ -387,8 +389,19 @@ router.post("/bot2/resume", requireAdmin, async (req, res) => {
 // POST /api/admin/trading-bot/bot2/settings - Update Bot 2 settings
 router.post("/bot2/settings", requireAdmin, async (req, res) => {
   try {
-    const { bot2TradingMode, bot2MinTradeSize, bot2MaxTradeSize } = req.body;
+    const { bot2TradingFrequency, bot2TradingMode, bot2MinTradeSize, bot2MaxTradeSize } = req.body;
 
+    // Validate frequency (minutes)
+    if (bot2TradingFrequency && (bot2TradingFrequency < 1 || bot2TradingFrequency > 60)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Frequency must be between 1 and 60 minutes'
+      });
+    }
+
+    if (bot2TradingFrequency) {
+      await redis.set('volume_bot:bot2_frequency', bot2TradingFrequency.toString());
+    }
     if (bot2TradingMode) {
       await redis.set('volume_bot:bot2_trading_mode', bot2TradingMode);
     }
@@ -402,7 +415,7 @@ router.post("/bot2/settings", requireAdmin, async (req, res) => {
     await redis.lpush('volume_bot:admin_log', JSON.stringify({
       timestamp: new Date().toISOString(),
       action: 'bot2_settings_updated',
-      settings: { bot2TradingMode, bot2MinTradeSize, bot2MaxTradeSize },
+      settings: { bot2TradingFrequency, bot2TradingMode, bot2MinTradeSize, bot2MaxTradeSize },
       admin: 'admin_panel'
     }));
 
