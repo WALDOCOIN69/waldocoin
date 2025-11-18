@@ -806,7 +806,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
       };
 
       const prepared = await client.autofill(payment);
-      const signed = tradingWallet.sign(prepared);
+      const signed = wallet.sign(prepared);
       const result = await client.submitAndWait(signed.tx_blob);
 
       const code = result.result?.meta?.TransactionResult;
@@ -1544,7 +1544,7 @@ async function updateWalletBalance() {
         line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
       );
       if (waldoLine) {
-        waldoBalance1 = parseFloat(waldoLine.balance);
+        waldoBalance1 = Math.abs(parseFloat(waldoLine.balance)); // Use absolute value
       }
     }
 
@@ -1578,7 +1578,7 @@ async function updateWalletBalance() {
           line.currency === WALDO_CURRENCY && line.account === WALDO_ISSUER
         );
         if (waldoLine) {
-          waldoBalance2 = parseFloat(waldoLine.balance);
+          waldoBalance2 = Math.abs(parseFloat(waldoLine.balance)); // Use absolute value
         }
       }
 
