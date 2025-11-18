@@ -528,9 +528,19 @@ async function buyWaldo(userAddress, xrpAmount, wallet = tradingWallet) {
         throw new Error('Failed to establish XRPL connection for buy trade');
       }
     }
+    // Determine which bot this is
+    const isBot2 = wallet?.classicAddress === tradingWallet2?.classicAddress;
+
     // Read admin-configured min/max from Redis (fallback to defaults)
-    const adminMinRaw = await redis.get('volume_bot:min_trade_size');
-    const adminMaxRaw = await redis.get('volume_bot:max_trade_size');
+    // Use bot-specific settings if Bot 2
+    let adminMinRaw, adminMaxRaw;
+    if (isBot2) {
+      adminMinRaw = await redis.get('volume_bot:bot2_min_trade_size');
+      adminMaxRaw = await redis.get('volume_bot:bot2_max_trade_size');
+    } else {
+      adminMinRaw = await redis.get('volume_bot:min_trade_size');
+      adminMaxRaw = await redis.get('volume_bot:max_trade_size');
+    }
     const effectiveMin = adminMinRaw ? parseFloat(adminMinRaw) : MIN_TRADE_XRP;
     const effectiveMax = adminMaxRaw ? parseFloat(adminMaxRaw) : MAX_TRADE_XRP;
 
