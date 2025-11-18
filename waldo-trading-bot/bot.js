@@ -1170,8 +1170,12 @@ async function createAutomatedTrade(wallet = tradingWallet) {
     if (isBot2) {
       tradingMode = await redis.get('volume_bot:bot2_trading_mode') || 'automated';
     } else {
-      tradingMode = await redis.get('trading_bot:trading_mode') || 'automated';
+      tradingMode = await redis.get('volume_bot:trading_mode') || 'automated';
     }
+
+    // Log the actual trading mode being used (for verification)
+    logger.info(`🎛️ ${isBot2 ? 'BOT 2' : 'BOT 1'} Trading Mode: ${tradingMode} (from Redis key: ${isBot2 ? 'volume_bot:bot2_trading_mode' : 'volume_bot:trading_mode'})`);
+
     const emergencyPriceThreshold = 0.00005; // Below 0.00005 XRP = emergency
 
     let tradeType;

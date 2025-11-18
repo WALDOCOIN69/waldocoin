@@ -2533,9 +2533,24 @@
               <div style="font-family: monospace; color: #3498db; font-weight: bold; word-break: break-all; font-size: 0.85em;" id="tradingWalletAddress2">Not configured</div>
             </div>
           </div>
-          <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12; margin-top: 15px;">
-            <div style="font-size: 0.9em; color: #ccc; margin-bottom: 5px;">🎛️ Current Trading Mode:</div>
-            <div style="color: #f39c12; font-weight: bold; font-size: 1.1em;" id="currentTradingMode">Loading...</div>
+          <!-- Trading Mode Display - Both Bots -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+            <!-- Bot 1 Trading Mode -->
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #f39c12;">
+              <div style="font-size: 0.85em; color: #ccc; margin-bottom: 5px;">🎛️ Bot 1 Trading Mode:</div>
+              <div style="color: #f39c12; font-weight: bold; font-size: 1em;" id="currentTradingMode">Loading...</div>
+              <div style="font-size: 0.75em; color: #888; margin-top: 5px;">
+                <span id="bot1ModeVerified" style="color: #888;">Verifying...</span>
+              </div>
+            </div>
+            <!-- Bot 2 Trading Mode -->
+            <div style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #00bcd4;">
+              <div style="font-size: 0.85em; color: #ccc; margin-bottom: 5px;">🎛️ Bot 2 Trading Mode:</div>
+              <div style="color: #00bcd4; font-weight: bold; font-size: 1em;" id="currentBot2TradingMode">Loading...</div>
+              <div style="font-size: 0.75em; color: #888; margin-top: 5px;">
+                <span id="bot2ModeVerified" style="color: #888;">Verifying...</span>
+              </div>
+            </div>
           </div>
           <button onclick="loadTradingBotStatus()" class="btn btn-primary margin-top-15">🔄 Refresh Status</button>
         </div>
@@ -7930,8 +7945,31 @@ This action cannot be undone. Continue?`;
               'sell_only': '📉 Sell Only',
               'buy_sell': '↔️ Buy & Sell (Balanced)'
             };
+
+            // Display Bot 1 trading mode
             const modeDisplayEl = document.getElementById('currentTradingMode');
-            if (modeDisplayEl) modeDisplayEl.textContent = modeLabels[tradingMode] || tradingMode;
+            if (modeDisplayEl) {
+              modeDisplayEl.textContent = modeLabels[tradingMode] || tradingMode;
+              // Add verification status
+              const bot1VerifyEl = document.getElementById('bot1ModeVerified');
+              if (bot1VerifyEl) {
+                bot1VerifyEl.innerHTML = `✅ Active (${tradingMode})`;
+                bot1VerifyEl.style.color = '#4CAF50';
+              }
+            }
+
+            // Display Bot 2 trading mode
+            const bot2TradingMode = data.bot2?.settings?.tradingMode || 'automated';
+            const bot2ModeDisplayEl = document.getElementById('currentBot2TradingMode');
+            if (bot2ModeDisplayEl) {
+              bot2ModeDisplayEl.textContent = modeLabels[bot2TradingMode] || bot2TradingMode;
+              // Add verification status
+              const bot2VerifyEl = document.getElementById('bot2ModeVerified');
+              if (bot2VerifyEl) {
+                bot2VerifyEl.innerHTML = `✅ Active (${bot2TradingMode})`;
+                bot2VerifyEl.style.color = '#4CAF50';
+              }
+            }
           }
         } else {
           showAlert(`Error loading trading bot status: ${data.error}`, 'error');
