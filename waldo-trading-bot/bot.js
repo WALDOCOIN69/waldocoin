@@ -1129,6 +1129,10 @@ async function processPendingMicroSells() {
 // ===== AUTOMATED TRADING FUNCTIONS =====
 async function createAutomatedTrade(wallet = tradingWallet) {
   try {
+    // Determine which bot this is
+    const isBot2 = wallet?.classicAddress === tradingWallet2?.classicAddress;
+    const botId = isBot2 ? 'bot2' : 'bot1';
+
     // Double-check admin control status before executing trade
     const botStatus = await redis.get('volume_bot:status') || 'running';
 
@@ -1139,8 +1143,13 @@ async function createAutomatedTrade(wallet = tradingWallet) {
 
     const currentPrice = await getCurrentWaldoPrice();
 
-    // Get admin-controlled trading mode
-    const tradingMode = await redis.get('trading_bot:trading_mode') || 'automated';
+    // Get admin-controlled trading mode (use bot-specific settings if Bot 2)
+    let tradingMode;
+    if (isBot2) {
+      tradingMode = await redis.get('volume_bot:bot2_trading_mode') || 'automated';
+    } else {
+      tradingMode = await redis.get('trading_bot:trading_mode') || 'automated';
+    }
     const emergencyPriceThreshold = 0.00005; // Below 0.00005 XRP = emergency
 
     let tradeType;
