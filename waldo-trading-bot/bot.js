@@ -1194,10 +1194,11 @@ async function createAutomatedTrade(wallet = tradingWallet) {
       } catch (e) {
         logger.warn('⚠️ Could not read recent trades for balancing, falling back to random');
       }
-      if (buyCount <= sellCount) {
-        tradeType = 'BUY';
-      } else {
+      // If more buys than sells, do a sell to balance. Otherwise do a buy.
+      if (buyCount > sellCount) {
         tradeType = 'SELL';
+      } else {
+        tradeType = 'BUY';
       }
       logger.info(`🎛️ ADMIN MODE: Buy & Sell (balanced) - executing ${tradeType} trade (last50 BUY=${buyCount}, SELL=${sellCount})`);
     } else if (tradingMode === 'automated' || tradingMode === 'perpetual') {
@@ -1245,8 +1246,7 @@ async function createAutomatedTrade(wallet = tradingWallet) {
     }
 
     // GET ADMIN SETTINGS FROM REDIS - RESPECT USER CONTROLS
-    // Check if this is Bot 2 and use Bot 2 specific settings if available
-    const isBot2 = wallet?.classicAddress === tradingWallet2?.classicAddress;
+    // isBot2 already determined above
 
     let adminMinSize, adminMaxSize;
     if (isBot2) {
