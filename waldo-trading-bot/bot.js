@@ -732,18 +732,18 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
         const signed = wallet.sign(prepared);
         logger.info(`📍 SELL: Submitting passive sell offer (attempt ${attempt}) for ${wloAmount} WLO at ~${discountedPrice.toFixed(8)} XRP`);
 
-        // Wrap submitAndWait in our own timeout so we never hang indefinitely
-        const submitPromise = client.submitAndWait(signed.tx_blob, { timeout: 60000 }); // Library-level timeout
         let result;
         try {
-          result = await Promise.race([
-            submitPromise,
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('SELL submit timeout after 20s')), 20000)
-            )
-          ]);
+          // Use xrpl.js submitAndWait with a generous timeout and let it surface errors
+          result = await client.submitAndWait(signed.tx_blob, { timeout: 60000 });
         } catch (submitError) {
-          logger.error(`❌ Passive sell offer submit error (attempt ${attempt}): ${submitError.message}`);
+          const engineErr = submitError?.data?.engine_result || submitError?.result?.engine_result;
+          const txResultErr = submitError?.data?.result?.meta?.TransactionResult ||
+            submitError?.result?.meta?.TransactionResult || engineErr || 'unknown';
+          logger.error(
+            `❌ Passive sell offer submit error (attempt ${attempt}): ${submitError.message} ` +
+            `(engine=${engineErr || 'n/a'}, txResult=${txResultErr})`
+          );
           throw submitError;
         }
 
@@ -1474,6 +1474,7 @@ async function createAutomatedTrade(wallet = tradingWallet) {
 
   } catch (error) {
     logger.error('❌ Automated trade creation failed:', error);
+    throw error;
   }
 }
 
