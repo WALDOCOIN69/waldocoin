@@ -732,7 +732,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
         offer.LastLedgerSequence = ledgerIndex + 300; // 300 ledgers = ~1500 seconds (~25 minutes)
 
         const signed = wallet.sign(offer);
-        const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
+        const result = await client.submitAndWait(signed.tx_blob, { timeout: 60000 }); // 60 second timeout for SELL
 
         const code = result.result?.meta?.TransactionResult;
         if (code === 'tesSUCCESS') {
@@ -759,7 +759,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
             offer2.LastLedgerSequence = ledgerIndex2 + 300;
 
             const signed2 = wallet.sign(offer2);
-            const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
+            const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 60000 }); // 60 second timeout for SELL retry
 
             const code2 = result2.result?.meta?.TransactionResult;
             if (code2 === 'tesSUCCESS') {
