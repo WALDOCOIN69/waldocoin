@@ -698,109 +698,103 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
       throw new Error('Invalid price calculation - cannot execute trade');
     }
 
-    // NEW APPROACH: Create passive sell offers instead of immediate execution
-    // This places orders on the book that buyers can fill gradually
-    const createPassiveSellOffer = async (wloAmount, attempt = 1) => {
-      // Calculate slightly below market price to encourage fills
-      const discountedPrice = price * 0.98; // 2% below market for quick fills
+    // SIMPLIFIED APPROACH: Use Payment transactions for SELL (like BUY does)
+    // This is more reliable than passive offers which seem to hang on submitAndWait
+    const executeSellPayment = async (wloAmount) => {
+      // Calculate XRP we want to receive (slightly below market for quick execution)
+      const discountedPrice = price * 0.95; // 5% below market for reliable fills
       const xrpTarget = parseFloat((wloAmount * discountedPrice).toFixed(6));
 
       if (!isFinite(xrpTarget) || xrpTarget <= 0) {
         throw new Error('Invalid trade amount calculation');
       }
 
-      const baseOffer = {
-        TransactionType: 'OfferCreate',
+      // Check connection before submitting
+      if (!client.isConnected()) {
+        throw new Error('XRPL client not connected before SELL');
+      }
+
+      logger.info(`📍 SELL: Executing payment for ${wloAmount} WLO to receive ~${xrpTarget.toFixed(6)} XRP`);
+
+      // Create a Payment that sends WLO and receives XRP
+      const payment = {
+        TransactionType: 'Payment',
         Account: wallet.classicAddress,
-        TakerGets: xrpl.xrpToDrops(xrpTarget.toString()), // XRP we want to receive
-        TakerPays: { // WLO we're offering to sell
+        Destination: wallet.classicAddress, // Send to self to convert WLO -> XRP
+        Amount: xrpl.xrpToDrops(xrpTarget.toString()), // XRP we want to receive
+        SendMax: { // WLO we're willing to send
           currency: WALDO_CURRENCY,
           value: parseFloat(wloAmount).toFixed(6),
           issuer: WALDO_ISSUER
         },
-        Flags: 0x00000001 | 0x00010000 // tfSell | tfPassive
+        Flags: 0x00020000, // tfPartialPayment
+        DeliverMin: xrpl.xrpToDrops((xrpTarget * 0.5).toFixed(6)) // Accept 50% minimum
       };
 
       try {
-        // Give offers a long enough window to avoid LastLedgerSequence expiry
-        const ledgerIndex = await client.getLedgerIndex();
-        const prepared = await client.autofill({
-          ...baseOffer,
-          LastLedgerSequence: ledgerIndex + 300
-        });
-
+        const prepared = await client.autofill(payment);
         const signed = wallet.sign(prepared);
-        logger.info(`📍 SELL: Submitting passive sell offer (attempt ${attempt}) for ${wloAmount} WLO at ~${discountedPrice.toFixed(8)} XRP`);
 
-        let result;
-        try {
-          // Use xrpl.js submitAndWait with a generous timeout and let it surface errors
-          result = await client.submitAndWait(signed.tx_blob, { timeout: 60000 });
-        } catch (submitError) {
-          const engineErr = submitError?.data?.engine_result || submitError?.result?.engine_result;
-          const txResultErr = submitError?.data?.result?.meta?.TransactionResult ||
-            submitError?.result?.meta?.TransactionResult || engineErr || 'unknown';
-          logger.error(
-            `❌ Passive sell offer submit error (attempt ${attempt}): ${submitError.message} ` +
-            `(engine=${engineErr || 'n/a'}, txResult=${txResultErr})`
-          );
-          throw submitError;
+        // Use Promise.race with aggressive timeout
+        const submitPromise = client.submitAndWait(signed.tx_blob, { timeout: 20000 });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SELL payment timeout after 20s')), 20000)
+        );
+
+        const result = await Promise.race([submitPromise, timeoutPromise]);
+
+        if (!result || !result.result) {
+          throw new Error('SELL payment returned empty result');
         }
 
         const engine = result?.result?.engine_result || 'unknown';
         const code = result?.result?.meta?.TransactionResult || engine;
-        logger.info(`📄 SELL tx result (attempt ${attempt}): engine=${engine}, txResult=${code}`);
+        logger.info(`📄 SELL payment result: engine=${engine}, txResult=${code}`);
 
         if (code === 'tesSUCCESS') {
-          // Record the trade even if it's a passive offer
-          await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
-          logger.info(`✅ Passive sell offer created${attempt > 1 ? ' (retry)' : ''}: ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
-          return { success: true, hash: result.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
+          const actualXrp = parseFloat(xrpl.dropsToXrp(result.result.meta.delivered_amount || payment.Amount));
+          await recordTrade('SELL', userAddress, actualXrp, wloAmount, discountedPrice);
+          logger.info(`✅ SELL payment executed: ${wloAmount} WLO -> ${actualXrp.toFixed(6)} XRP`);
+          return { success: true, hash: result.result.hash, xrpAmount: actualXrp, price: discountedPrice };
         }
 
-        throw new Error(`Passive offer failed: ${code || 'unknown'}`);
-      } catch (innerError) {
-        const msg = innerError.message || '';
-        if (attempt === 1 && (msg.includes('LastLedgerSequence') || msg.includes('temINVALID_FLAG'))) {
-          logger.warn('⚠️ Passive sell offer hit LastLedgerSequence/temINVALID_FLAG, retrying once with fresh ledger index...');
-          return await createPassiveSellOffer(wloAmount, 2);
-        }
-
-        logger.error(`❌ Passive sell offer failed (attempt ${attempt}): ${msg}`);
-        throw innerError;
+        throw new Error(`SELL payment failed: ${code || 'unknown'}`);
+      } catch (error) {
+        logger.error(`❌ SELL payment error: ${error.message}`);
+        throw error;
       }
     };
 
-    // For automated trades, use micro-sells approach
+    // For automated trades, use direct payment execution
     if (userAddress === wallet.classicAddress) {
-      // Break large sells into tiny amounts that are more likely to fill
-      const microSellAmount = Math.min(waldoAmount, 1000); // Max 1000 WLO per micro-sell
+      // Use reasonable sell amounts with Payment transactions
+      const sellAmount = Math.min(waldoAmount, 10000); // Max 10k WLO per sell
 
-      logger.info(`🔄 Creating micro-sell offer: ${microSellAmount} WLO (from ${waldoAmount} requested)`);
+      logger.info(`🔄 Executing SELL payment: ${sellAmount} WLO (from ${waldoAmount} requested)`);
 
       try {
-        const result = await createPassiveSellOffer(microSellAmount);
+        const result = await executeSellPayment(sellAmount);
 
-        // If we have more to sell, schedule additional micro-sells
-        if (waldoAmount > microSellAmount) {
-          const remaining = waldoAmount - microSellAmount;
-          logger.info(`📋 Remaining ${remaining} WLO will be sold in future micro-sells`);
+        // If we have more to sell, schedule additional sells
+        if (waldoAmount > sellAmount) {
+          const remaining = waldoAmount - sellAmount;
+          logger.info(`📋 Remaining ${remaining} WLO will be sold in future trades`);
 
-          // Store remaining amount for future micro-sells
+          // Store remaining amount for future sells
           await redis.set('volume_bot:pending_sell_amount', remaining.toString());
         }
 
         return result;
       } catch (error) {
-        logger.warn(`⚠️ Micro-sell failed: ${error.message}`);
+        logger.warn(`⚠️ SELL payment failed: ${error.message}`);
 
-        // Fallback: try even smaller amount
-        const tinyAmount = Math.min(microSellAmount, 100); // Try just 100 WLO
-        logger.info(`🔄 Fallback: trying tiny sell of ${tinyAmount} WLO`);
+        // Fallback: try smaller amount
+        const smallerAmount = Math.min(sellAmount, 1000); // Try just 1000 WLO
+        logger.info(`🔄 Fallback: trying smaller sell of ${smallerAmount} WLO`);
         try {
-          return await createPassiveSellOffer(tinyAmount);
+          return await executeSellPayment(smallerAmount);
         } catch (fallbackError) {
-          logger.error(`❌ Fallback tiny sell also failed: ${fallbackError.message}`);
+          logger.error(`❌ Fallback sell also failed: ${fallbackError.message}`);
           throw fallbackError;
         }
       }
