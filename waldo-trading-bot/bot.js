@@ -1144,8 +1144,9 @@ async function processPendingMicroSells() {
         logger.info(`✅ Final micro-sell offer created: ${microAmount} WLO, all pending sells processed`);
       }
 
-      // Record the trade
-      await recordTrade('SELL', tradingWallet.classicAddress, xrpTarget, microAmount, discountedPrice);
+      // Record the trade (use the wallet that's actually trading)
+      const tradeWallet = wallet || tradingWallet;
+      await recordTrade('SELL', tradeWallet.classicAddress, xrpTarget, microAmount, discountedPrice);
     } else {
       logger.warn(`⚠️ Micro-sell offer failed: ${code}`);
     }

@@ -8231,6 +8231,8 @@ This action cannot be undone. Continue?`;
             const timestamp = new Date(trade.timestamp).toLocaleString();
             const typeColor = trade.type === 'BUY' ? '#27ae60' : '#e74c3c';
             const typeIcon = trade.type === 'BUY' ? '📈' : '📉';
+            const botLabel = trade.bot === 'bot2' ? '🤖 Bot 2' : '🤖 Bot 1';
+            const botColor = trade.bot === 'bot2' ? '#3498db' : '#f39c12';
 
             tradesHtml += `
               <div style="background: #333; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${typeColor};">
@@ -8238,6 +8240,7 @@ This action cannot be undone. Continue?`;
                   <div>
                     <div style="color: ${typeColor}; font-weight: bold;">${typeIcon} ${trade.type}</div>
                     <div style="color: #ccc; font-size: 0.9em;">${trade.amount} ${trade.currency || 'WLO'}</div>
+                    <div style="color: ${botColor}; font-size: 0.8em; margin-top: 4px;">${botLabel}</div>
                   </div>
                   <div style="text-align: right;">
                     <div style="color: #fff; font-weight: bold;">${trade.price} XRP</div>
