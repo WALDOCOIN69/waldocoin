@@ -696,7 +696,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
 
     // NEW APPROACH: Create passive sell offers instead of immediate execution
     // This places orders on the book that buyers can fill gradually
-    const createPassiveSellOffer = async (wloAmount) => {
+    const createPassiveSellOffer = async (wloAmount, attempt = 1) => {
       // Calculate slightly below market price to encourage fills
       const discountedPrice = price * 0.98; // 2% below market for quick fills
       const xrpTarget = parseFloat((wloAmount * discountedPrice).toFixed(6));
@@ -705,7 +705,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
         throw new Error('Invalid trade amount calculation');
       }
 
-      const offer = {
+      const baseOffer = {
         TransactionType: 'OfferCreate',
         Account: wallet.classicAddress,
         TakerGets: xrpl.xrpToDrops(xrpTarget.toString()), // XRP we want to receive
@@ -718,23 +718,34 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
       };
 
       try {
-        // Use XRPL autofill so Sequence and LastLedgerSequence are always consistent
-        const prepared = await client.autofill(offer);
+        // Give offers a long enough window to avoid LastLedgerSequence expiry
+        const ledgerIndex = await client.getLedgerIndex();
+        const prepared = await client.autofill({
+          ...baseOffer,
+          LastLedgerSequence: ledgerIndex + 300
+        });
+
         const signed = wallet.sign(prepared);
-        logger.info(`📍 SELL: Submitting passive sell offer for ${wloAmount} WLO at ~${discountedPrice.toFixed(8)} XRP`);
+        logger.info(`📍 SELL: Submitting passive sell offer (attempt ${attempt}) for ${wloAmount} WLO at ~${discountedPrice.toFixed(8)} XRP`);
         const result = await client.submitAndWait(signed.tx_blob, { timeout: 60000 }); // 60 second timeout for SELL
 
         const code = result.result?.meta?.TransactionResult;
         if (code === 'tesSUCCESS') {
           // Record the trade even if it's a passive offer
           await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
-          logger.info(`✅ Passive sell offer created: ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
+          logger.info(`✅ Passive sell offer created${attempt > 1 ? ' (retry)' : ''}: ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
           return { success: true, hash: result.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
         }
 
         throw new Error(`Passive offer failed: ${code || 'unknown'}`);
       } catch (innerError) {
-        logger.error(`❌ Passive sell offer failed: ${innerError.message}`);
+        const msg = innerError.message || '';
+        if (attempt === 1 && (msg.includes('LastLedgerSequence') || msg.includes('temINVALID_FLAG'))) {
+          logger.warn('⚠️ Passive sell offer hit LastLedgerSequence/temINVALID_FLAG, retrying once with fresh ledger index...');
+          return await createPassiveSellOffer(wloAmount, 2);
+        }
+
+        logger.error(`❌ Passive sell offer failed (attempt ${attempt}): ${msg}`);
         throw innerError;
       }
     };
