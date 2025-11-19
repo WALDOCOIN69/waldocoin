@@ -12,10 +12,10 @@ dotenv.config();
 // ===== CONFIGURATION =====
 // Use multiple XRPL nodes for better reliability
 const XRPL_NODES = [
-  'wss://xrplcluster.com',
   'wss://s1.ripple.com',
   'wss://s2.ripple.com',
-  'wss://xrpl.ws'
+  'wss://xrpl.ws',
+  'wss://xrplcluster.com' // backup node; may be rate-limited
 ];
 const XRPL_NODE = process.env.XRPL_NODE || XRPL_NODES[0];
 const TRADING_WALLET_SECRET = process.env.TRADING_WALLET_SECRET;
@@ -155,7 +155,9 @@ function setupClientEventHandlers() {
 
   client.on('connectionError', (err) => {
     logger.warn('XRPL connection error:', err);
-    setTimeout(() => connectToNextNode(), 2000);
+    if (!isReconnecting) {
+      setTimeout(() => connectToNextNode(), 2000);
+    }
   });
 
   client.on('disconnected', (code) => {
@@ -164,7 +166,9 @@ function setupClientEventHandlers() {
     // Code 1000 = normal close, don't reconnect immediately
     if (code !== 1000) {
       logger.warn(`⚠️ Unexpected disconnect (code ${code}), attempting reconnection...`);
-      setTimeout(() => connectToNextNode(), 1000);
+      if (!isReconnecting) {
+        setTimeout(() => connectToNextNode(), 1000);
+      }
     } else {
       logger.info('✅ Normal disconnect - no reconnection needed');
     }
@@ -727,9 +731,26 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
 
         const signed = wallet.sign(prepared);
         logger.info(`📍 SELL: Submitting passive sell offer (attempt ${attempt}) for ${wloAmount} WLO at ~${discountedPrice.toFixed(8)} XRP`);
-        const result = await client.submitAndWait(signed.tx_blob, { timeout: 60000 }); // 60 second timeout for SELL
 
-        const code = result.result?.meta?.TransactionResult;
+        // Wrap submitAndWait in our own timeout so we never hang indefinitely
+        const submitPromise = client.submitAndWait(signed.tx_blob, { timeout: 60000 }); // Library-level timeout
+        let result;
+        try {
+          result = await Promise.race([
+            submitPromise,
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('SELL submit timeout after 20s')), 20000)
+            )
+          ]);
+        } catch (submitError) {
+          logger.error(`❌ Passive sell offer submit error (attempt ${attempt}): ${submitError.message}`);
+          throw submitError;
+        }
+
+        const engine = result?.result?.engine_result || 'unknown';
+        const code = result?.result?.meta?.TransactionResult || engine;
+        logger.info(`📄 SELL tx result (attempt ${attempt}): engine=${engine}, txResult=${code}`);
+
         if (code === 'tesSUCCESS') {
           // Record the trade even if it's a passive offer
           await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
