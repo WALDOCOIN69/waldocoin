@@ -1048,16 +1048,24 @@ if (MARKET_MAKING) {
     }
   });
 
-  // Check for profit tracking every hour
-  if (PROFIT_TRACKING) {
-    cron.schedule(`*/${PROFIT_CHECK_INTERVAL} * * * *`, async () => {
-      try {
-        await trackProfits();
-      } catch (error) {
-        logger.error('❌ Profit tracking error:', error);
-      }
-    });
-  }
+  // Check for profit tracking every hour (always enabled for admin panel)
+  cron.schedule(`*/${PROFIT_CHECK_INTERVAL} * * * *`, async () => {
+    try {
+      await trackProfits();
+    } catch (error) {
+      logger.error('❌ Profit tracking error:', error);
+    }
+  });
+
+  // Run profit tracking immediately on startup
+  setTimeout(async () => {
+    try {
+      logger.info('💰 Running initial profit tracking...');
+      await trackProfits();
+    } catch (error) {
+      logger.error('❌ Initial profit tracking error:', error);
+    }
+  }, 5000); // Wait 5 seconds for XRPL connection to be ready
 
   // Reset daily volume at midnight UTC
   cron.schedule('0 0 * * *', async () => {
@@ -1707,10 +1715,7 @@ async function resetDailyStats() {
 
 // ===== PROFIT MANAGEMENT =====
 async function trackProfits() {
-  if (!PROFIT_TRACKING) {
-    return;
-  }
-
+  // Always track profits - this is essential for the admin panel
   try {
     // Get combined balance from both bots
     let bot1XrpBalance = 0;
