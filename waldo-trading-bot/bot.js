@@ -38,6 +38,11 @@ const PROFIT_SKIM_THRESHOLD = parseFloat(process.env.PROFIT_SKIM_THRESHOLD) || 5
 const PROFIT_SKIM_PERCENTAGE = parseFloat(process.env.PROFIT_SKIM_PERCENTAGE) || 80; // Skim 80% of profits
 const MIN_BOT_BALANCE = parseFloat(process.env.MIN_BOT_BALANCE) || 30; // Keep at least 30 XRP per bot for trading
 
+// ===== MICRO-SKIMMING CONFIGURATION =====
+const MICRO_SKIM_ENABLED = process.env.MICRO_SKIM_ENABLED !== 'false'; // Enabled by default
+const MICRO_SKIM_PERCENTAGE = parseFloat(process.env.MICRO_SKIM_PERCENTAGE) || 5; // Skim 5% of each SELL trade
+const MICRO_SKIM_MIN_AMOUNT = parseFloat(process.env.MICRO_SKIM_MIN_AMOUNT) || 0.01; // Only skim if amount >= 0.01 XRP
+
 // ===== TRADING PARAMETERS =====
 const MIN_TRADE_XRP = parseFloat(process.env.MIN_TRADE_AMOUNT_XRP) || 0.5; // Optimized for 10 XRP perpetual trading
 const MAX_TRADE_XRP = parseFloat(process.env.MAX_TRADE_AMOUNT_XRP) || 1.5; // Reduced for sustainability
@@ -1509,6 +1514,11 @@ async function createAutomatedTrade(wallet = tradingWallet) {
         if (result.success) {
           logger.info(`✅ REAL SELL executed: ${result.hash} [${isBot2 ? 'BOT 2' : 'BOT 1'}]`);
           message += `\n🔗 TX: ${result.hash}`;
+
+          // Micro-skim: send small percentage of XRP received to profit wallet
+          if (MICRO_SKIM_ENABLED) {
+            await executeMicroSkim(wallet, xrpAmount, isBot2);
+          }
         } else {
           logger.error(`❌ REAL SELL failed: ${result.error} [${isBot2 ? 'BOT 2' : 'BOT 1'}]`);
           return; // Skip posting if trade failed
@@ -1818,6 +1828,51 @@ async function recordProfitReserve(amount) {
   } catch (error) {
     logger.error('❌ Profit reserve failed:', error);
     return { success: false, error: error.message };
+  }
+}
+
+async function executeMicroSkim(wallet, xrpAmountReceived, isBot2) {
+  try {
+    const botLabel = isBot2 ? 'BOT2' : 'BOT1';
+
+    // Calculate micro-skim amount (percentage of XRP received from SELL)
+    const microSkimAmount = xrpAmountReceived * (MICRO_SKIM_PERCENTAGE / 100);
+
+    // Only skim if amount is above minimum threshold
+    if (microSkimAmount < MICRO_SKIM_MIN_AMOUNT) {
+      logger.info(`💧 ${botLabel} micro-skim too small: ${microSkimAmount.toFixed(4)} XRP (min: ${MICRO_SKIM_MIN_AMOUNT}) - skipping`);
+      return;
+    }
+
+    // Check if bot has enough balance for the skim (safety check)
+    const currentBalance = await getXRPBalance(wallet.classicAddress);
+    if (currentBalance < microSkimAmount + 1.0) { // Keep 1 XRP for fees
+      logger.warn(`⚠️ ${botLabel} insufficient balance for micro-skim: ${currentBalance.toFixed(4)} XRP`);
+      return;
+    }
+
+    logger.info(`💧 ${botLabel} micro-skim: ${microSkimAmount.toFixed(4)} XRP (${MICRO_SKIM_PERCENTAGE}% of ${xrpAmountReceived.toFixed(4)} XRP) → ${PROFIT_SKIM_WALLET}`);
+
+    // Send micro-skim to profit wallet
+    const result = await sendXrpPayment(wallet, PROFIT_SKIM_WALLET, microSkimAmount, botLabel);
+
+    if (result.success) {
+      // Track total micro-skims
+      const totalMicroSkimmed = await redis.get('volume_bot:total_micro_skimmed') || '0';
+      const newTotalMicroSkimmed = parseFloat(totalMicroSkimmed) + microSkimAmount;
+      await redis.set('volume_bot:total_micro_skimmed', newTotalMicroSkimmed.toString());
+
+      // Track micro-skim count
+      const microSkimCount = await redis.get('volume_bot:micro_skim_count') || '0';
+      await redis.set('volume_bot:micro_skim_count', (parseInt(microSkimCount) + 1).toString());
+
+      logger.info(`✅ ${botLabel} micro-skim sent: ${microSkimAmount.toFixed(4)} XRP | Total micro-skimmed: ${newTotalMicroSkimmed.toFixed(4)} XRP`);
+    } else {
+      logger.error(`❌ ${botLabel} micro-skim failed: ${result.error}`);
+    }
+
+  } catch (error) {
+    logger.error(`❌ Micro-skim error:`, error);
   }
 }
 
