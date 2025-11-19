@@ -8364,7 +8364,29 @@ This action cannot be undone. Continue?`;
     }
 
     async function resetTradingBotProfit() {
-      const newBalance = prompt('🔄 Reset Profit Tracking\n\nEnter new starting balance (XRP):', '70');
+      // Calculate current combined balance from both bots
+      let currentCombinedBalance = 70; // Default fallback
+
+      try {
+        // Get current bot balances
+        const bot1XRP = parseFloat(document.getElementById('bot1Balance')?.textContent?.split(' ')[0] || '0');
+        const bot2XRP = parseFloat(document.getElementById('bot2Balance')?.textContent?.split(' ')[0] || '0');
+
+        if (bot1XRP > 0 || bot2XRP > 0) {
+          currentCombinedBalance = bot1XRP + bot2XRP;
+        }
+      } catch (e) {
+        console.warn('Could not auto-calculate current balance, using default');
+      }
+
+      const newBalance = prompt(
+        '🔄 Reset Profit Tracking\n\n' +
+        `Current combined balance: ${currentCombinedBalance.toFixed(4)} XRP\n\n` +
+        'Enter new starting balance (XRP):\n' +
+        '(Press OK to use current balance, or enter a different amount)',
+        currentCombinedBalance.toFixed(4)
+      );
+
       if (!newBalance || isNaN(newBalance)) return;
 
       if (!confirm(`Reset profit tracking with starting balance: ${newBalance} XRP?`)) return;
@@ -8382,7 +8404,7 @@ This action cannot be undone. Continue?`;
 
         const data = await response.json();
         if (data.success) {
-          showAlert(`Profit tracking reset with starting balance: ${newBalance} XRP`, 'success');
+          showAlert(`✅ Profit tracking reset with starting balance: ${newBalance} XRP`, 'success');
           await loadTradingBotStatus();
         } else {
           showAlert(`Failed to reset profit tracking: ${data.error}`, 'error');
