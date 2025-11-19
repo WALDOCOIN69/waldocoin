@@ -801,7 +801,12 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
         // Fallback: try even smaller amount
         const tinyAmount = Math.min(microSellAmount, 100); // Try just 100 WLO
         logger.info(`🔄 Fallback: trying tiny sell of ${tinyAmount} WLO`);
-        return await createPassiveSellOffer(tinyAmount);
+        try {
+          return await createPassiveSellOffer(tinyAmount);
+        } catch (fallbackError) {
+          logger.error(`❌ Fallback tiny sell also failed: ${fallbackError.message}`);
+          throw fallbackError;
+        }
       }
     } else {
       // For user trades, try the original payment approach with very small amounts
@@ -871,6 +876,7 @@ async function recordTrade(type, userAddress, xrpAmount, waldoAmount, price) {
   };
 
   await redis.lPush('volume_bot:recent_trades', JSON.stringify(tradeRecord));
+  logger.info(`📝 Trade stored in Redis [${botId.toUpperCase()}]: ${type} - Recent trades list updated`);
 
   // Keep only last 50 trades for admin panel
   await redis.lTrim('volume_bot:recent_trades', 0, 49);
@@ -1453,17 +1459,17 @@ async function createAutomatedTrade(wallet = tradingWallet) {
 
       // Execute REAL SELL trade on XRPL
       try {
-        logger.info(`🔄 Executing REAL SELL trade: ${waldoAmount} WLO for ${xrpAmount.toFixed(4)} XRP`);
+        logger.info(`🔄 Executing REAL SELL trade: ${waldoAmount} WLO for ${xrpAmount.toFixed(4)} XRP [${isBot2 ? 'BOT 2' : 'BOT 1'}]`);
         const result = await sellWaldo(wallet.classicAddress, waldoAmount, wallet);
         if (result.success) {
-          logger.info(`✅ REAL SELL executed: ${result.hash}`);
+          logger.info(`✅ REAL SELL executed: ${result.hash} [${isBot2 ? 'BOT 2' : 'BOT 1'}]`);
           message += `\n🔗 TX: ${result.hash}`;
         } else {
-          logger.error(`❌ REAL SELL failed: ${result.error}`);
+          logger.error(`❌ REAL SELL failed: ${result.error} [${isBot2 ? 'BOT 2' : 'BOT 1'}]`);
           return; // Skip posting if trade failed
         }
       } catch (error) {
-        logger.error(`❌ REAL SELL error: ${error.message}`);
+        logger.error(`❌ REAL SELL error: ${error.message} [${isBot2 ? 'BOT 2' : 'BOT 1'}]`);
         return; // Skip posting if trade failed
       }
     }
