@@ -715,26 +715,13 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
           issuer: WALDO_ISSUER
         },
         Flags: 0x00000001 | 0x00010000 // tfSell | tfPassive
-        // Note: Removed Expiration to avoid ledger sequence issues
       };
 
       try {
-        // Get current ledger info to set proper sequence numbers
-        const ledgerIndex = await client.getLedgerIndex();
-        logger.info(`📍 SELL: Current ledger index: ${ledgerIndex}`);
-
-        // Manually set all required fields to avoid autofill delays
-        const accountInfo = await client.request({
-          command: 'account_info',
-          account: wallet.classicAddress
-        });
-        offer.Sequence = accountInfo.result.account_data.Sequence;
-        offer.Fee = '12'; // Standard fee in drops
-        offer.LastLedgerSequence = ledgerIndex + 300; // 300 ledgers = ~1500 seconds (~25 minutes)
-        logger.info(`📍 SELL: Set LastLedgerSequence to ${offer.LastLedgerSequence} (ledger ${ledgerIndex} + 300)`);
-
-        const signed = wallet.sign(offer);
-        logger.info(`📍 SELL: Transaction signed, submitting...`);
+        // Use XRPL autofill so Sequence and LastLedgerSequence are always consistent
+        const prepared = await client.autofill(offer);
+        const signed = wallet.sign(prepared);
+        logger.info(`📍 SELL: Submitting passive sell offer for ${wloAmount} WLO at ~${discountedPrice.toFixed(8)} XRP`);
         const result = await client.submitAndWait(signed.tx_blob, { timeout: 60000 }); // 60 second timeout for SELL
 
         const code = result.result?.meta?.TransactionResult;
@@ -747,36 +734,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
 
         throw new Error(`Passive offer failed: ${code || 'unknown'}`);
       } catch (innerError) {
-        // If ledger sequence error, try once more with fresh sequence
-        if ((innerError.message || '').includes('LastLedgerSequence') || (innerError.message || '').includes('Sequence')) {
-          logger.warn(`⚠️ Ledger sequence error, retrying with fresh sequence...`);
-          try {
-            const ledgerIndex2 = await client.getLedgerIndex();
-            logger.info(`📍 SELL RETRY: Current ledger index: ${ledgerIndex2}`);
-            const offer2 = { ...offer };
-            const accountInfo2 = await client.request({
-              command: 'account_info',
-              account: wallet.classicAddress
-            });
-            offer2.Sequence = accountInfo2.result.account_data.Sequence;
-            offer2.Fee = '12';
-            offer2.LastLedgerSequence = ledgerIndex2 + 300;
-            logger.info(`📍 SELL RETRY: Set LastLedgerSequence to ${offer2.LastLedgerSequence} (ledger ${ledgerIndex2} + 300)`);
-
-            const signed2 = wallet.sign(offer2);
-            logger.info(`📍 SELL RETRY: Transaction signed, submitting...`);
-            const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 60000 }); // 60 second timeout for SELL retry
-
-            const code2 = result2.result?.meta?.TransactionResult;
-            if (code2 === 'tesSUCCESS') {
-              await recordTrade('SELL', userAddress, xrpTarget, wloAmount, discountedPrice);
-              logger.info(`✅ Passive sell offer created (retry): ${wloAmount} WLO at ${discountedPrice.toFixed(8)} XRP each`);
-              return { success: true, hash: result2.result.hash, xrpAmount: xrpTarget, price: discountedPrice };
-            }
-          } catch (retryError) {
-            logger.warn(`⚠️ Retry also failed: ${retryError.message}`);
-          }
-        }
+        logger.error(`❌ Passive sell offer failed: ${innerError.message}`);
         throw innerError;
       }
     };
