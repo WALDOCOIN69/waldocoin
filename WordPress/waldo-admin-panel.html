@@ -8286,9 +8286,18 @@ This action cannot be undone. Continue?`;
 
             bot1CountdownEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             bot1CountdownEl.style.color = '#4CAF50';
-          } else {
+          } else if (bot1TimeLeft > -30000) {
+            // Show "Trading..." for up to 30 seconds after countdown expires
             bot1CountdownEl.textContent = 'Trading...';
             bot1CountdownEl.style.color = '#FFA726';
+          } else {
+            // After 30 seconds, refresh to get new next trade time
+            if (!window.bot1RefreshScheduled) {
+              window.bot1RefreshScheduled = true;
+              loadTradingBotStatus().then(() => {
+                window.bot1RefreshScheduled = false;
+              });
+            }
           }
         }
       }
@@ -8306,9 +8315,18 @@ This action cannot be undone. Continue?`;
 
             bot2CountdownEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             bot2CountdownEl.style.color = '#3498db';
-          } else {
+          } else if (bot2TimeLeft > -30000) {
+            // Show "Trading..." for up to 30 seconds after countdown expires
             bot2CountdownEl.textContent = 'Trading...';
             bot2CountdownEl.style.color = '#FFA726';
+          } else {
+            // After 30 seconds, refresh to get new next trade time
+            if (!window.bot2RefreshScheduled) {
+              window.bot2RefreshScheduled = true;
+              loadTradingBotStatus().then(() => {
+                window.bot2RefreshScheduled = false;
+              });
+            }
           }
         }
       }
@@ -8316,6 +8334,13 @@ This action cannot be undone. Continue?`;
 
     // Start countdown timer updates (every second)
     setInterval(updateCountdownTimers, 1000);
+
+    // Also refresh status every 30 seconds to catch any updates
+    setInterval(() => {
+      if (currentSection === 'trading-bot') {
+        loadTradingBotStatus();
+      }
+    }, 30000);
 
     async function loadTradingBotTrades() {
       try {
