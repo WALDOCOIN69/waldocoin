@@ -626,7 +626,7 @@ async function buyWaldo(userAddress, xrpAmount, wallet = tradingWallet) {
           // Manually set all required fields to avoid autofill delays
           offer.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
           offer.Fee = '12'; // Standard fee in drops
-          offer.LastLedgerSequence = ledgerIndex + 100; // 100 ledgers = ~500 seconds (~8 minutes)
+          offer.LastLedgerSequence = ledgerIndex + 300; // 300 ledgers = ~1500 seconds (~25 minutes)
 
           const signed = wallet.sign(offer);
           const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
@@ -651,7 +651,7 @@ async function buyWaldo(userAddress, xrpAmount, wallet = tradingWallet) {
               });
               offer2.Sequence = accountInfo2.result.account_data.Sequence;
               offer2.Fee = '12';
-              offer2.LastLedgerSequence = ledgerIndex2 + 100;
+              offer2.LastLedgerSequence = ledgerIndex2 + 300;
 
               const signed2 = wallet.sign(offer2);
               const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
@@ -729,7 +729,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
         });
         offer.Sequence = accountInfo.result.account_data.Sequence;
         offer.Fee = '12'; // Standard fee in drops
-        offer.LastLedgerSequence = ledgerIndex + 100; // 100 ledgers = ~500 seconds (~8 minutes)
+        offer.LastLedgerSequence = ledgerIndex + 300; // 300 ledgers = ~1500 seconds (~25 minutes)
 
         const signed = wallet.sign(offer);
         const result = await client.submitAndWait(signed.tx_blob, { timeout: 30000 });
@@ -756,7 +756,7 @@ async function sellWaldo(userAddress, waldoAmount, wallet = tradingWallet) {
             });
             offer2.Sequence = accountInfo2.result.account_data.Sequence;
             offer2.Fee = '12';
-            offer2.LastLedgerSequence = ledgerIndex2 + 100;
+            offer2.LastLedgerSequence = ledgerIndex2 + 300;
 
             const signed2 = wallet.sign(offer2);
             const result2 = await client.submitAndWait(signed2.tx_blob, { timeout: 30000 });
