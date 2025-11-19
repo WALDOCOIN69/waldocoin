@@ -1323,54 +1323,51 @@ async function createAutomatedTrade(wallet = tradingWallet) {
       adminMaxSize = await redis.get('volume_bot:max_trade_size');
     }
 
-    // Use admin settings if available, otherwise use optimized defaults for low balance perpetual trading
-    const baseMinTradeSize = adminMinSize ? parseFloat(adminMinSize) : 0.5; // Reduced for 10 XRP perpetual trading
-    const baseMaxTradeSize = adminMaxSize ? parseFloat(adminMaxSize) : 1.5; // Reduced for sustainability
+    // ALWAYS respect admin settings from the panel - these are YOUR manual controls
+    // Only use fallback defaults if admin hasn't set anything yet
+    const baseMinTradeSize = adminMinSize ? parseFloat(adminMinSize) : 0.5;
+    const baseMaxTradeSize = adminMaxSize ? parseFloat(adminMaxSize) : 1.0;
 
-    // DYNAMIC TRADE SIZING FOR PERPETUAL TRADING
-    // Adjust trade sizes based on available balances to ensure sustainability
+    const botLabel = isBot2 ? 'BOT 2' : 'BOT 1';
+    logger.info(`🎛️ ${botLabel} Admin Settings: Min=${baseMinTradeSize} XRP, Max=${baseMaxTradeSize} XRP ${adminMinSize ? '(from admin panel)' : '(using defaults)'}`);
+
+    // RESPECT ADMIN PANEL SETTINGS - use your configured min/max directly
+    // The trade amount will be randomly selected between YOUR min and max settings
     let minTradeSize = baseMinTradeSize;
     let maxTradeSize = baseMaxTradeSize;
 
+    // Only apply balance-based caps if they would prevent overdraft
     if (tradeType === 'BUY') {
-      // For buys, limit based on available XRP (keep 20% reserve for fees and future trades)
-      const maxBuyAmount = Math.max(0.5, (xrpBalance * 0.80) / 10); // Spread over 10 potential trades
-      maxTradeSize = Math.min(baseMaxTradeSize, maxBuyAmount);
-      minTradeSize = Math.min(baseMinTradeSize, maxTradeSize * 0.5);
-
-      logger.info(`💰 BUY sizing: Available XRP=${xrpBalance.toFixed(2)}, Max buy=${maxBuyAmount.toFixed(2)}`);
+      // Cap at available XRP if balance is lower than max setting
+      const availableForTrade = Math.max(0, xrpBalance - 1.0); // Keep 1 XRP for fees
+      if (availableForTrade < maxTradeSize) {
+        maxTradeSize = Math.max(minTradeSize, availableForTrade);
+        logger.info(`💰 BUY capped by balance: ${xrpBalance.toFixed(2)} XRP available, max adjusted to ${maxTradeSize.toFixed(2)}`);
+      }
     } else {
-      // For sells, limit based on available WLO value (keep 20% reserve)
-      const maxSellValueXrp = Math.max(0.5, (wloValueInXrp * 0.80) / 10); // Spread over 10 potential trades
-      maxTradeSize = Math.min(baseMaxTradeSize, maxSellValueXrp);
-      minTradeSize = Math.min(baseMinTradeSize, maxTradeSize * 0.5);
-
-      logger.info(`💰 SELL sizing: Available WLO value=${wloValueInXrp.toFixed(2)} XRP, Max sell=${maxSellValueXrp.toFixed(2)}`);
+      // Cap at available WLO value if balance is lower than max setting
+      const availableForTrade = Math.max(0, wloValueInXrp - 0.1); // Keep small WLO reserve
+      if (availableForTrade < maxTradeSize) {
+        maxTradeSize = Math.max(minTradeSize, availableForTrade);
+        logger.info(`💰 SELL capped by balance: ${wloValueInXrp.toFixed(2)} XRP worth of WLO, max adjusted to ${maxTradeSize.toFixed(2)}`);
+      }
     }
 
-    logger.info(`🎛️ DYNAMIC SIZING: Base range ${baseMinTradeSize}-${baseMaxTradeSize} XRP, Adjusted to ${minTradeSize.toFixed(2)}-${maxTradeSize.toFixed(2)} XRP`);
+    logger.info(`🎯 ${botLabel} Trade range: ${minTradeSize.toFixed(2)}-${maxTradeSize.toFixed(2)} XRP (respecting your admin panel settings)`);
 
-    // Calculate trade amount using DYNAMIC SETTINGS
+    // Calculate random trade amount within YOUR configured min/max range
     let tradeAmount = parseFloat((minTradeSize + Math.random() * (maxTradeSize - minTradeSize)).toFixed(2));
 
-    // Clamp to admin min/max to respect panel controls and avoid validation errors
-    // Use the actual admin settings from Redis, not the base defaults
-    const effMin = adminMinSize ? parseFloat(adminMinSize) : baseMinTradeSize;
-    const effMax = adminMaxSize ? parseFloat(adminMaxSize) : baseMaxTradeSize;
-    if (tradeAmount < effMin) tradeAmount = effMin;
-    if (tradeAmount > effMax) tradeAmount = effMax;
+    logger.info(`💰 ${botLabel} Selected trade amount: ${tradeAmount} XRP (randomly chosen from your ${minTradeSize}-${maxTradeSize} range)`);
 
-    logger.info(`💰 Final trade amount: ${tradeAmount} XRP (after clamping to admin ${effMin}-${effMax})`);
+    // SAFETY CHECKS - ensure minimum reserves for fees and future trades
+    const minXrpReserve = 1.0; // Keep at least 1 XRP for fees
+    const minWloReserve = 100; // Keep at least 100 WLO for future trades
 
-    // SAFETY CHECKS FOR PERPETUAL TRADING
-    // Ensure we have minimum balances to continue trading
-    const minXrpReserve = 2.0; // Keep at least 2 XRP for fees and future trades (optimized for low balance)
-    const minWloReserve = 500; // Keep at least 500 WLO for future trades (reduced for efficiency)
-
-    // In emergency mode, relax the reserve requirements to allow aggressive perpetual trading
+    // In emergency mode, relax the reserve requirements slightly
     const isEmergency = currentPrice < emergencyPriceThreshold;
-    const requiredXrpReserve = isEmergency ? 0.3 : minXrpReserve; // In emergency, only keep 0.3 XRP reserve
-    const requiredWloReserve = isEmergency ? 100 : minWloReserve; // In emergency, only keep 100 WLO reserve
+    const requiredXrpReserve = isEmergency ? 0.5 : minXrpReserve;
+    const requiredWloReserve = isEmergency ? 50 : minWloReserve;
 
     if (tradeType === 'BUY' && xrpBalance < (tradeAmount + requiredXrpReserve)) {
       logger.warn(`⚠️ Insufficient XRP for safe trading: ${xrpBalance.toFixed(2)} XRP, need ${(tradeAmount + requiredXrpReserve).toFixed(2)} XRP`);
