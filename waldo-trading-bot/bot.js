@@ -31,6 +31,13 @@ const PROFIT_RESERVE_THRESHOLD = parseFloat(process.env.PROFIT_RESERVE_THRESHOLD
 const PROFIT_RESERVE_PERCENTAGE = parseFloat(process.env.PROFIT_RESERVE_PERCENTAGE) || 50;
 const PROFIT_CHECK_INTERVAL = parseInt(process.env.PROFIT_CHECK_INTERVAL) || 60;
 
+// ===== PROFIT SKIMMING CONFIGURATION =====
+const PROFIT_SKIM_ENABLED = process.env.PROFIT_SKIM_ENABLED !== 'false'; // Enabled by default
+const PROFIT_SKIM_WALLET = process.env.PROFIT_SKIM_WALLET || 'rfFbyBGrgwmggpEAYXAEQGVyrYRCBAoEWV';
+const PROFIT_SKIM_THRESHOLD = parseFloat(process.env.PROFIT_SKIM_THRESHOLD) || 50; // Skim when profit > 50 XRP
+const PROFIT_SKIM_PERCENTAGE = parseFloat(process.env.PROFIT_SKIM_PERCENTAGE) || 80; // Skim 80% of profits
+const MIN_BOT_BALANCE = parseFloat(process.env.MIN_BOT_BALANCE) || 30; // Keep at least 30 XRP per bot for trading
+
 // ===== TRADING PARAMETERS =====
 const MIN_TRADE_XRP = parseFloat(process.env.MIN_TRADE_AMOUNT_XRP) || 0.5; // Optimized for 10 XRP perpetual trading
 const MAX_TRADE_XRP = parseFloat(process.env.MAX_TRADE_AMOUNT_XRP) || 1.5; // Reduced for sustainability
@@ -1771,6 +1778,11 @@ async function trackProfits() {
       await recordProfitReserve(reserveAmount);
     }
 
+    // Check if we should skim profits to the profit wallet
+    if (PROFIT_SKIM_ENABLED && totalProfit > PROFIT_SKIM_THRESHOLD) {
+      await skimProfits(totalProfit, bot1XrpBalance, bot2XrpBalance, effectiveStartingBalance);
+    }
+
     // Log current status
     logger.info(`💰 Combined balance: ${currentBalance.toFixed(4)} XRP (Bot1: ${bot1XrpBalance.toFixed(4)}, Bot2: ${bot2XrpBalance.toFixed(4)}) | Profit: ${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(4)} XRP`);
 
@@ -1805,6 +1817,130 @@ async function recordProfitReserve(amount) {
     };
   } catch (error) {
     logger.error('❌ Profit reserve failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function skimProfits(totalProfit, bot1Balance, bot2Balance, startingBalance) {
+  try {
+    // Check if we've already skimmed recently (prevent multiple skims in short time)
+    const lastSkimTime = await redis.get('volume_bot:last_skim_time');
+    if (lastSkimTime) {
+      const timeSinceLastSkim = Date.now() - parseInt(lastSkimTime);
+      const minTimeBetweenSkims = 60 * 60 * 1000; // 1 hour minimum between skims
+      if (timeSinceLastSkim < minTimeBetweenSkims) {
+        logger.info(`⏳ Profit skim skipped - last skim was ${Math.round(timeSinceLastSkim / 60000)} minutes ago`);
+        return;
+      }
+    }
+
+    // Calculate how much to skim (percentage of profit)
+    const skimAmount = totalProfit * (PROFIT_SKIM_PERCENTAGE / 100);
+
+    // Make sure we don't skim too much - keep minimum balance in each bot
+    const totalMinBalance = MIN_BOT_BALANCE * (tradingWallet2 ? 2 : 1);
+    const maxSkimAmount = (bot1Balance + bot2Balance) - totalMinBalance;
+
+    const actualSkimAmount = Math.min(skimAmount, maxSkimAmount);
+
+    if (actualSkimAmount < 1) {
+      logger.info(`💰 Profit skim amount too small: ${actualSkimAmount.toFixed(4)} XRP - skipping`);
+      return;
+    }
+
+    logger.info(`💸 Initiating profit skim: ${actualSkimAmount.toFixed(4)} XRP (${PROFIT_SKIM_PERCENTAGE}% of ${totalProfit.toFixed(4)} XRP profit) to ${PROFIT_SKIM_WALLET}`);
+
+    // Determine which bot to skim from (prefer the one with more balance)
+    let skimFromBot1 = 0;
+    let skimFromBot2 = 0;
+
+    if (tradingWallet2) {
+      // Split skim proportionally based on balances
+      const totalBalance = bot1Balance + bot2Balance;
+      skimFromBot1 = Math.min(actualSkimAmount * (bot1Balance / totalBalance), bot1Balance - MIN_BOT_BALANCE);
+      skimFromBot2 = Math.min(actualSkimAmount - skimFromBot1, bot2Balance - MIN_BOT_BALANCE);
+
+      // Adjust if one bot can't contribute enough
+      if (skimFromBot1 < 0) {
+        skimFromBot2 = actualSkimAmount;
+        skimFromBot1 = 0;
+      }
+      if (skimFromBot2 < 0) {
+        skimFromBot1 = actualSkimAmount;
+        skimFromBot2 = 0;
+      }
+    } else {
+      skimFromBot1 = actualSkimAmount;
+    }
+
+    let totalSkimmed = 0;
+
+    // Skim from Bot 1 if needed
+    if (skimFromBot1 > 0.1) {
+      const bot1Skim = await sendXrpPayment(tradingWallet, PROFIT_SKIM_WALLET, skimFromBot1, 'BOT1');
+      if (bot1Skim.success) {
+        totalSkimmed += skimFromBot1;
+        logger.info(`✅ Bot 1 skimmed ${skimFromBot1.toFixed(4)} XRP to profit wallet`);
+      }
+    }
+
+    // Skim from Bot 2 if needed
+    if (skimFromBot2 > 0.1 && tradingWallet2) {
+      const bot2Skim = await sendXrpPayment(tradingWallet2, PROFIT_SKIM_WALLET, skimFromBot2, 'BOT2');
+      if (bot2Skim.success) {
+        totalSkimmed += skimFromBot2;
+        logger.info(`✅ Bot 2 skimmed ${skimFromBot2.toFixed(4)} XRP to profit wallet`);
+      }
+    }
+
+    if (totalSkimmed > 0) {
+      // Record the skim
+      await redis.set('volume_bot:last_skim_time', Date.now().toString());
+      await redis.set('volume_bot:last_skim_amount', totalSkimmed.toString());
+
+      // Update total skimmed
+      const totalSkimmedSoFar = await redis.get('volume_bot:total_skimmed') || '0';
+      const newTotalSkimmed = parseFloat(totalSkimmedSoFar) + totalSkimmed;
+      await redis.set('volume_bot:total_skimmed', newTotalSkimmed.toString());
+
+      logger.info(`💰 PROFIT SKIM COMPLETE: ${totalSkimmed.toFixed(4)} XRP sent to ${PROFIT_SKIM_WALLET} | Total skimmed: ${newTotalSkimmed.toFixed(4)} XRP`);
+
+      // Reset starting balance to current balance after skim
+      const newStartingBalance = (bot1Balance - skimFromBot1) + (bot2Balance - skimFromBot2);
+      await redis.set('volume_bot:starting_balance', newStartingBalance.toString());
+      logger.info(`📊 Starting balance reset to ${newStartingBalance.toFixed(4)} XRP after skim`);
+    }
+
+  } catch (error) {
+    logger.error('❌ Profit skim failed:', error);
+  }
+}
+
+async function sendXrpPayment(fromWallet, toAddress, amount, botLabel) {
+  try {
+    const payment = {
+      TransactionType: 'Payment',
+      Account: fromWallet.classicAddress,
+      Destination: toAddress,
+      Amount: xrpl.xrpToDrops(amount.toString())
+    };
+
+    const prepared = await client.autofill(payment);
+    const signed = fromWallet.sign(prepared);
+
+    logger.info(`📤 ${botLabel} sending ${amount.toFixed(4)} XRP to ${toAddress}...`);
+
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult === 'tesSUCCESS') {
+      logger.info(`✅ ${botLabel} payment successful: ${amount.toFixed(4)} XRP sent`);
+      return { success: true, amount };
+    } else {
+      logger.error(`❌ ${botLabel} payment failed:`, result.result.meta.TransactionResult);
+      return { success: false, error: result.result.meta.TransactionResult };
+    }
+  } catch (error) {
+    logger.error(`❌ ${botLabel} payment error:`, error);
     return { success: false, error: error.message };
   }
 }
