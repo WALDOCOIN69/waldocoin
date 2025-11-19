@@ -2561,6 +2561,20 @@
           <div class="admin-card">
             <div class="card-title">🎛️ Bot 1 Trading Controls</div>
 
+            <!-- Bot 1 Countdown Timer -->
+            <div style="padding: 12px; background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 100%); border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4CAF50;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-size: 11px; color: #81c784; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">⏱️ Next Trade In</div>
+                  <div id="bot1Countdown" style="font-size: 24px; font-weight: bold; color: #4CAF50; font-family: 'Courier New', monospace;">--:--:--</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 11px; color: #81c784; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Last Trade</div>
+                  <div id="bot1LastTrade" style="font-size: 12px; color: #a5d6a7;">Never</div>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">Trading Frequency</label>
               <select id="tbTradingFrequency" class="form-control">
@@ -2623,6 +2637,20 @@
             <div class="card-title">🤖 Bot 2 Trading Controls</div>
             <div style="padding: 10px; background: #2a2a2a; border-radius: 6px; color: #3498db; margin-bottom: 15px;">
               <strong id="bot2StatusDisplay">Not configured</strong>
+            </div>
+
+            <!-- Bot 2 Countdown Timer -->
+            <div style="padding: 12px; background: linear-gradient(135deg, #1a3a52 0%, #2d5f7f 100%); border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3498db;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">⏱️ Next Trade In</div>
+                  <div id="bot2Countdown" style="font-size: 24px; font-weight: bold; color: #3498db; font-family: 'Courier New', monospace;">--:--:--</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Last Trade</div>
+                  <div id="bot2LastTrade" style="font-size: 12px; color: #90caf9;">Never</div>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
@@ -7876,6 +7904,18 @@ This action cannot be undone. Continue?`;
             const bot1TradesEl = document.getElementById('bot1Trades');
             if (bot1BalanceEl) bot1BalanceEl.textContent = `${data.bot1.balance.xrp} XRP + ${data.bot1.balance.wlo} WLO`;
             if (bot1TradesEl) bot1TradesEl.textContent = data.bot1.trades || '0';
+
+            // Update Bot 1 last trade time
+            const bot1LastTradeEl = document.getElementById('bot1LastTrade');
+            if (bot1LastTradeEl && data.bot1.lastTrade) {
+              const lastTradeDate = new Date(data.bot1.lastTrade);
+              bot1LastTradeEl.textContent = lastTradeDate.toLocaleTimeString();
+            }
+
+            // Store next trade time for countdown
+            if (data.bot1.nextTradeTime) {
+              window.bot1NextTradeTime = parseInt(data.bot1.nextTradeTime);
+            }
           }
 
           // Display Bot 2 metrics if available
@@ -7884,6 +7924,18 @@ This action cannot be undone. Continue?`;
             const bot2TradesEl = document.getElementById('bot2Trades');
             if (bot2BalanceEl) bot2BalanceEl.textContent = `${data.bot2.balance.xrp} XRP + ${data.bot2.balance.wlo} WLO`;
             if (bot2TradesEl) bot2TradesEl.textContent = data.bot2.trades || '0';
+
+            // Update Bot 2 last trade time
+            const bot2LastTradeEl = document.getElementById('bot2LastTrade');
+            if (bot2LastTradeEl && data.bot2.lastTrade) {
+              const lastTradeDate = new Date(data.bot2.lastTrade);
+              bot2LastTradeEl.textContent = lastTradeDate.toLocaleTimeString();
+            }
+
+            // Store next trade time for countdown
+            if (data.bot2.nextTradeTime) {
+              window.bot2NextTradeTime = parseInt(data.bot2.nextTradeTime);
+            }
           }
 
           // Show/hide Bot 2 controls based on whether Bot 2 is configured
@@ -8216,6 +8268,54 @@ This action cannot be undone. Continue?`;
         showAlert('Network error updating Bot 2 settings', 'error');
       }
     }
+
+    // ===== COUNTDOWN TIMER FUNCTIONS =====
+    function updateCountdownTimers() {
+      const now = Date.now();
+
+      // Update Bot 1 countdown
+      if (window.bot1NextTradeTime) {
+        const bot1TimeLeft = window.bot1NextTradeTime - now;
+        const bot1CountdownEl = document.getElementById('bot1Countdown');
+
+        if (bot1CountdownEl) {
+          if (bot1TimeLeft > 0) {
+            const hours = Math.floor(bot1TimeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((bot1TimeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((bot1TimeLeft % (1000 * 60)) / 1000);
+
+            bot1CountdownEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            bot1CountdownEl.style.color = '#4CAF50';
+          } else {
+            bot1CountdownEl.textContent = 'Trading...';
+            bot1CountdownEl.style.color = '#FFA726';
+          }
+        }
+      }
+
+      // Update Bot 2 countdown
+      if (window.bot2NextTradeTime) {
+        const bot2TimeLeft = window.bot2NextTradeTime - now;
+        const bot2CountdownEl = document.getElementById('bot2Countdown');
+
+        if (bot2CountdownEl) {
+          if (bot2TimeLeft > 0) {
+            const hours = Math.floor(bot2TimeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((bot2TimeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((bot2TimeLeft % (1000 * 60)) / 1000);
+
+            bot2CountdownEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            bot2CountdownEl.style.color = '#3498db';
+          } else {
+            bot2CountdownEl.textContent = 'Trading...';
+            bot2CountdownEl.style.color = '#FFA726';
+          }
+        }
+      }
+    }
+
+    // Start countdown timer updates (every second)
+    setInterval(updateCountdownTimers, 1000);
 
     async function loadTradingBotTrades() {
       try {

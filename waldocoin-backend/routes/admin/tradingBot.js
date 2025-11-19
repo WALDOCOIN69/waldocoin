@@ -50,15 +50,19 @@ router.get("/status", requireAdmin, async (req, res) => {
     const xrpBalance = await redis.get('volume_bot:xrp_balance') || '0';
     const wloBalance = await redis.get('volume_bot:wlo_balance') || '0';
 
-    // Get Bot 1 balances
+    // Get Bot 1 balances and timing
     const bot1XrpBalance = await redis.get('volume_bot:bot1:xrp_balance') || '0';
     const bot1WloBalance = await redis.get('volume_bot:bot1:wlo_balance') || '0';
     const bot1Trades = await redis.get('volume_bot:bot1:trades_today') || '0';
+    const bot1LastTrade = await redis.get('volume_bot:bot1:last_trade');
+    const bot1NextTradeTime = await redis.get('volume_bot:bot1:next_trade_time');
 
-    // Get Bot 2 balances
+    // Get Bot 2 balances and timing
     const bot2XrpBalance = await redis.get('volume_bot:bot2:xrp_balance') || '0';
     const bot2WloBalance = await redis.get('volume_bot:bot2:wlo_balance') || '0';
     const bot2Trades = await redis.get('volume_bot:bot2:trades_today') || '0';
+    const bot2LastTrade = await redis.get('volume_bot:bot2:last_trade');
+    const bot2NextTradeTime = await redis.get('volume_bot:bot2:next_trade_time');
 
     // Get trading wallet addresses from environment
     const tradingWallet = process.env.TRADING_WALLET_ADDRESS || 'Not configured';
@@ -84,7 +88,9 @@ router.get("/status", requireAdmin, async (req, res) => {
           xrp: parseFloat(bot1XrpBalance).toFixed(4),
           wlo: parseFloat(bot1WloBalance).toFixed(0)
         },
-        trades: parseInt(bot1Trades)
+        trades: parseInt(bot1Trades),
+        lastTrade: bot1LastTrade,
+        nextTradeTime: bot1NextTradeTime
       },
       bot2: tradingWallet2 ? {
         enabled: bot2Enabled,
@@ -94,6 +100,8 @@ router.get("/status", requireAdmin, async (req, res) => {
           wlo: parseFloat(bot2WloBalance).toFixed(0)
         },
         trades: parseInt(bot2Trades),
+        lastTrade: bot2LastTrade,
+        nextTradeTime: bot2NextTradeTime,
         settings: {
           frequency: parseInt(bot2TradingFrequency),
           tradingMode: bot2TradingMode,

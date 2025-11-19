@@ -939,6 +939,9 @@ if (MARKET_MAKING) {
         // Set next trade time for Bot 1
         nextTradeTimeBot1 = Date.now() + (bot1IntervalMinutes * 60 * 1000);
 
+        // Store next trade time in Redis for admin panel countdown
+        await redis.set('volume_bot:bot1:next_trade_time', nextTradeTimeBot1.toString());
+
         // Execute trade with probability based on frequency and emergency mode
         let bot1TradeProbability = Math.min(0.8, 30 / bot1IntervalMinutes); // Scale probability inversely with frequency
 
@@ -983,6 +986,9 @@ if (MARKET_MAKING) {
 
           // Set next trade time for Bot 2
           nextTradeTimeBot2 = Date.now() + (bot2IntervalMinutes * 60 * 1000);
+
+          // Store next trade time in Redis for admin panel countdown
+          await redis.set('volume_bot:bot2:next_trade_time', nextTradeTimeBot2.toString());
 
           // Execute trade with probability based on frequency and emergency mode
           let bot2TradeProbability = Math.min(0.8, 30 / bot2IntervalMinutes); // Scale probability inversely with frequency
