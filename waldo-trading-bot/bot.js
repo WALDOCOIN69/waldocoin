@@ -1111,52 +1111,80 @@ async function processPendingMicroSells() {
     }
 
     const remaining = parseFloat(pendingAmount);
-    const microAmount = Math.min(remaining, 500); // Process 500 WLO at a time
+    const microAmount = Math.min(remaining, 1000); // Process 1000 WLO at a time
 
     logger.info(`🔄 Processing pending micro-sell: ${microAmount} WLO (${remaining} remaining)`);
 
-    // Try to create a small passive sell offer
+    // Check connection before attempting
+    if (!client.isConnected()) {
+      logger.warn('⚠️ Client not connected, skipping micro-sell');
+      return;
+    }
+
+    // Use Payment transaction (same as main SELL function)
     const price = await getCurrentWaldoPrice();
-    const discountedPrice = price * 0.98; // 2% below market
+    const discountedPrice = price * 0.95; // 5% below market
     const xrpTarget = parseFloat((microAmount * discountedPrice).toFixed(6));
 
-    const offer = {
-      TransactionType: 'OfferCreate',
+    const payment = {
+      TransactionType: 'Payment',
       Account: tradingWallet.classicAddress,
-      TakerGets: xrpl.xrpToDrops(xrpTarget.toString()),
-      TakerPays: {
+      Destination: tradingWallet.classicAddress, // Send to self
+      Amount: xrpl.xrpToDrops(xrpTarget.toString()), // XRP to receive
+      SendMax: { // WLO to send
         currency: WALDO_CURRENCY,
         value: parseFloat(microAmount).toFixed(6),
         issuer: WALDO_ISSUER
       },
-      Flags: 0x00000001 | 0x00010000, // tfSell | tfPassive
-      Expiration: Math.floor(Date.now() / 1000) + (30 * 60) // 30 minute expiration
+      Flags: 0x00020000, // tfPartialPayment
+      DeliverMin: xrpl.xrpToDrops((xrpTarget * 0.5).toFixed(6)) // Accept 50% minimum
     };
 
-    const prepared = await client.autofill(offer);
+    // Autofill and submit immediately to avoid LastLedgerSequence expiration
+    const prepared = await client.autofill(payment);
     const signed = tradingWallet.sign(prepared);
-    const result = await client.submitAndWait(signed.tx_blob);
+
+    // Use Promise.race with 20-second timeout
+    const result = await Promise.race([
+      client.submitAndWait(signed.tx_blob, { timeout: 20000 }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Micro-sell payment timeout after 20s')), 20000)
+      )
+    ]);
 
     const code = result.result?.meta?.TransactionResult;
+    const engine = result.result?.engine_result;
+
+    logger.info(`📄 Micro-sell payment result: engine=${engine}, txResult=${code}`);
+
     if (code === 'tesSUCCESS') {
       // Update remaining amount
       const newRemaining = remaining - microAmount;
       if (newRemaining > 0) {
         await redis.set('volume_bot:pending_sell_amount', newRemaining.toString());
-        logger.info(`✅ Micro-sell offer created: ${microAmount} WLO, ${newRemaining} WLO remaining`);
+        logger.info(`✅ Micro-sell executed: ${microAmount} WLO -> ${xrpTarget} XRP, ${newRemaining} WLO remaining`);
       } else {
         await redis.del('volume_bot:pending_sell_amount');
-        logger.info(`✅ Final micro-sell offer created: ${microAmount} WLO, all pending sells processed`);
+        logger.info(`✅ Final micro-sell executed: ${microAmount} WLO -> ${xrpTarget} XRP, all pending sells processed`);
       }
 
-      // Record the trade (use the wallet that's actually trading)
-      const tradeWallet = wallet || tradingWallet;
-      await recordTrade('SELL', tradeWallet.classicAddress, xrpTarget, microAmount, discountedPrice);
+      // Record the trade
+      await recordTrade('SELL', tradingWallet.classicAddress, xrpTarget, microAmount, discountedPrice);
     } else {
-      logger.warn(`⚠️ Micro-sell offer failed: ${code}`);
+      logger.warn(`⚠️ Micro-sell payment failed: ${code} (engine: ${engine})`);
+
+      // If it's a LastLedgerSequence error, don't retry - just wait for next cron run
+      if (engine === 'tefMAX_LEDGER') {
+        logger.info('⏭️ LastLedgerSequence expired, will retry on next cron run');
+      }
     }
   } catch (error) {
     logger.error('❌ Micro-sell processing failed:', error);
+
+    // If it's a LastLedgerSequence error, log it but don't fail completely
+    if (error.message?.includes('LastLedgerSequence')) {
+      logger.info('⏭️ LastLedgerSequence expired, will retry on next cron run');
+    }
   }
 }
 
