@@ -160,8 +160,14 @@ function setupClientEventHandlers() {
 
   client.on('disconnected', (code) => {
     logger.warn(`XRPL disconnected: ${code}`);
-    // Immediate reconnection for unexpected disconnects
-    setTimeout(() => connectToNextNode(), 1000);
+    // Only reconnect if it's an unexpected disconnect (not normal close 1000)
+    // Code 1000 = normal close, don't reconnect immediately
+    if (code !== 1000) {
+      logger.warn(`⚠️ Unexpected disconnect (code ${code}), attempting reconnection...`);
+      setTimeout(() => connectToNextNode(), 1000);
+    } else {
+      logger.info('✅ Normal disconnect - no reconnection needed');
+    }
   });
 }
 
