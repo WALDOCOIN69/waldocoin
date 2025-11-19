@@ -214,6 +214,15 @@ try {
     logger.info(`🎛️ Current trading mode: ${currentTradingMode}`);
   }
 
+  // Initialize profit tracking starting balance if not set
+  const startingBalance = await redis.get('volume_bot:starting_balance');
+  if (!startingBalance) {
+    await redis.set('volume_bot:starting_balance', STARTING_BALANCE.toString());
+    logger.info(`💰 Initialized profit tracking starting balance: ${STARTING_BALANCE} XRP`);
+  } else {
+    logger.info(`💰 Profit tracking starting balance: ${startingBalance} XRP`);
+  }
+
 } catch (error) {
   logger.error('❌ Error loading daily volume:', error);
 }
@@ -1672,31 +1681,54 @@ async function trackProfits() {
   }
 
   try {
-    // Get current trading wallet balance
-    let currentBalance = 0;
+    // Get combined balance from both bots
+    let bot1XrpBalance = 0;
+    let bot2XrpBalance = 0;
+
     if (tradingWallet && client.isConnected()) {
-      const accountInfo = await client.request({
+      // Get Bot 1 balance
+      const accountInfo1 = await client.request({
         command: 'account_info',
         account: tradingWallet.classicAddress,
         ledger_index: 'validated'
       });
-      currentBalance = parseFloat(xrpl.dropsToXrp(accountInfo.result.account_data.Balance));
+      bot1XrpBalance = parseFloat(xrpl.dropsToXrp(accountInfo1.result.account_data.Balance));
+
+      // Get Bot 2 balance if available
+      if (tradingWallet2) {
+        const accountInfo2 = await client.request({
+          command: 'account_info',
+          account: tradingWallet2.classicAddress,
+          ledger_index: 'validated'
+        });
+        bot2XrpBalance = parseFloat(xrpl.dropsToXrp(accountInfo2.result.account_data.Balance));
+      }
     } else {
       // In stealth mode, simulate balance tracking
       const storedBalance = await redis.get('waldo:simulated_balance') || STARTING_BALANCE.toString();
-      currentBalance = parseFloat(storedBalance);
+      bot1XrpBalance = parseFloat(storedBalance);
     }
 
-    // Calculate profits
-    const totalProfit = currentBalance - STARTING_BALANCE;
+    // Calculate combined balance and profit
+    const currentBalance = bot1XrpBalance + bot2XrpBalance;
 
-    // Store profit data
+    // Get starting balance from Redis (set by admin panel reset)
+    const startingBalanceFromRedis = await redis.get('volume_bot:starting_balance');
+    const effectiveStartingBalance = startingBalanceFromRedis ? parseFloat(startingBalanceFromRedis) : STARTING_BALANCE;
+
+    const totalProfit = currentBalance - effectiveStartingBalance;
+
+    // Store profit data using volume_bot: prefix to match admin panel expectations
+    await redis.set('volume_bot:current_balance', currentBalance.toString());
+    await redis.set('volume_bot:total_profit', totalProfit.toString());
+
+    // Also store in legacy keys for backward compatibility
     await redis.set('waldo:current_balance', currentBalance.toString());
     await redis.set('waldo:total_profit', totalProfit.toString());
 
     // Check if we should reserve some profits
     if (currentBalance > PROFIT_RESERVE_THRESHOLD) {
-      const excessAmount = currentBalance - STARTING_BALANCE;
+      const excessAmount = currentBalance - effectiveStartingBalance;
       const reserveAmount = (excessAmount * PROFIT_RESERVE_PERCENTAGE) / 100;
 
       // Record profit reserve (conceptual - money stays in wallet)
@@ -1704,7 +1736,7 @@ async function trackProfits() {
     }
 
     // Log current status
-    logger.info(`💰 Trading wallet balance: ${currentBalance.toFixed(4)} XRP (Profit: ${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(4)} XRP)`);
+    logger.info(`💰 Combined balance: ${currentBalance.toFixed(4)} XRP (Bot1: ${bot1XrpBalance.toFixed(4)}, Bot2: ${bot2XrpBalance.toFixed(4)}) | Profit: ${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(4)} XRP`);
 
   } catch (error) {
     logger.error('❌ Error tracking profits:', error);
