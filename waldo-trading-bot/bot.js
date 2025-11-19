@@ -1905,10 +1905,32 @@ async function skimProfits(totalProfit, bot1Balance, bot2Balance, startingBalanc
 
       logger.info(`💰 PROFIT SKIM COMPLETE: ${totalSkimmed.toFixed(4)} XRP sent to ${PROFIT_SKIM_WALLET} | Total skimmed: ${newTotalSkimmed.toFixed(4)} XRP`);
 
-      // Reset starting balance to current balance after skim
-      const newStartingBalance = (bot1Balance - skimFromBot1) + (bot2Balance - skimFromBot2);
+      // Fetch fresh balances from XRPL after the skim transactions
+      let newBot1Balance = 0;
+      let newBot2Balance = 0;
+
+      if (tradingWallet && client.isConnected()) {
+        const accountInfo1 = await client.request({
+          command: 'account_info',
+          account: tradingWallet.classicAddress,
+          ledger_index: 'validated'
+        });
+        newBot1Balance = parseFloat(xrpl.dropsToXrp(accountInfo1.result.account_data.Balance));
+
+        if (tradingWallet2) {
+          const accountInfo2 = await client.request({
+            command: 'account_info',
+            account: tradingWallet2.classicAddress,
+            ledger_index: 'validated'
+          });
+          newBot2Balance = parseFloat(xrpl.dropsToXrp(accountInfo2.result.account_data.Balance));
+        }
+      }
+
+      // Reset starting balance to actual current balance after skim
+      const newStartingBalance = newBot1Balance + newBot2Balance;
       await redis.set('volume_bot:starting_balance', newStartingBalance.toString());
-      logger.info(`📊 Starting balance reset to ${newStartingBalance.toFixed(4)} XRP after skim`);
+      logger.info(`📊 Starting balance reset to ${newStartingBalance.toFixed(4)} XRP after skim (Bot1: ${newBot1Balance.toFixed(4)}, Bot2: ${newBot2Balance.toFixed(4)})`);
     }
 
   } catch (error) {
