@@ -50,33 +50,39 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserTier = async (walletAddress) => {
     try {
+      console.log('🔍 Checking tier for wallet:', walletAddress)
+
       // Check WLO balance
       const balanceResponse = await fetch(`${API_URL}/api/memeology/wallet/balance?wallet=${walletAddress}`)
       const balanceData = await balanceResponse.json()
+      console.log('💰 Balance data:', balanceData)
 
       if (balanceData.wloBalance !== undefined) {
         const wlo = balanceData.wloBalance || 0
         setWloBalance(wlo)
+        console.log('💎 WLO Balance:', wlo)
 
         // Check premium subscription
         const tierResponse = await fetch(`${API_URL}/api/memeology/user/tier?wallet=${walletAddress}`)
         const tierData = await tierResponse.json()
-        
+        console.log('🎯 Tier data:', tierData)
+
         let userTier = 'free'
-        
+
         if (tierData.tier === 'premium') {
           userTier = 'premium'
         } else if (wlo >= 1000) {
           userTier = 'waldocoin'
         }
-        
+
+        console.log('✅ Final tier:', userTier)
         setTier(userTier)
         localStorage.setItem('memeology_tier', userTier)
-        
+
         return userTier
       }
     } catch (error) {
-      console.error('Error checking tier:', error)
+      console.error('❌ Error checking tier:', error)
       return 'free'
     }
   }
