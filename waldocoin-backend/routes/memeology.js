@@ -12,7 +12,7 @@ const router = express.Router();
 // Configuration
 const IMGFLIP_USERNAME = process.env.IMGFLIP_USERNAME || 'waldolabs';
 const IMGFLIP_PASSWORD = process.env.IMGFLIP_PASSWORD || 'waldolabs123';
-const XRPL_SERVER = process.env.XRPL_SERVER || 'https://s1.ripple.com:51234';
+const XRPL_SERVER = process.env.XRPL_SERVER || 'wss://s1.ripple.com'; // WebSocket for xrpl.js Client
 const WLO_ISSUER = process.env.WLO_ISSUER || process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WLO_CURRENCY = 'WLO';
 
