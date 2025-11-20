@@ -1468,6 +1468,70 @@ async function createAutomatedTrade(wallet = tradingWallet) {
         return;
       }
 
+      // Check order book for sell orders BEFORE trying to buy
+      try {
+        logger.info(`🔍 Checking order book for sell orders...`);
+        const orderbook = await client.request({
+          command: 'book_offers',
+          taker_gets: {
+            currency: WALDO_CURRENCY,
+            issuer: WALDO_ISSUER
+          },
+          taker_pays: {
+            currency: 'XRP'
+          },
+          limit: 10
+        });
+
+        const sellOrders = orderbook.result?.offers || [];
+        logger.info(`📊 Found ${sellOrders.length} sell orders on the book`);
+
+        // If no sell orders or very few, create 1-2 sell orders to provide liquidity
+        if (sellOrders.length < 2) {
+          logger.warn(`⚠️ Low liquidity detected (${sellOrders.length} sell orders) - creating sell orders first`);
+
+          // Create 1-2 sell orders at slightly above market price
+          const numOrdersToCreate = sellOrders.length === 0 ? 2 : 1;
+
+          for (let i = 0; i < numOrdersToCreate; i++) {
+            try {
+              // Price slightly above current market (0.5-1% higher)
+              const sellPrice = currentPrice * (1 + (0.005 + Math.random() * 0.005));
+              const sellAmount = Math.floor(1000 + Math.random() * 2000); // 1000-3000 WLO
+
+              logger.info(`📝 Creating sell order ${i + 1}: ${sellAmount} WLO at ${sellPrice.toFixed(8)} XRP`);
+
+              const sellOffer = {
+                TransactionType: 'OfferCreate',
+                Account: wallet.classicAddress,
+                TakerGets: xrpl.xrpToDrops((sellAmount * sellPrice).toFixed(6)), // XRP they pay
+                TakerPays: { // WLO we're selling
+                  currency: WALDO_CURRENCY,
+                  value: sellAmount.toString(),
+                  issuer: WALDO_ISSUER
+                },
+                Flags: 0x00010000 // tfPassive
+              };
+
+              const prepared = await client.autofill(sellOffer);
+              const signed = wallet.sign(prepared);
+              const result = await client.submitAndWait(signed.tx_blob);
+
+              if (result.result?.meta?.TransactionResult === 'tesSUCCESS') {
+                logger.info(`✅ Sell order created: ${sellAmount} WLO at ${sellPrice.toFixed(8)} XRP`);
+              }
+            } catch (offerError) {
+              logger.warn(`⚠️ Failed to create sell order: ${offerError.message}`);
+            }
+          }
+
+          // Wait 2 seconds for orders to settle
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (bookError) {
+        logger.warn(`⚠️ Failed to check order book: ${bookError.message}`);
+      }
+
       // Execute REAL BUY trade on XRPL
       try {
         logger.info(`🔄 Executing REAL BUY trade: ${tradeAmount} XRP for ${waldoAmount.toFixed(0)} WLO`);
