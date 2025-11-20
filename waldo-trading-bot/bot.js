@@ -628,7 +628,20 @@ async function buyWaldo(userAddress, xrpAmount, wallet = tradingWallet) {
       return await attempt(xrpAmount, 0.50); // accept 50% of expected WLO on first try
     } catch (e1) {
       if ((e1.message || '').includes('tecPATH_DRY') || (e1.message || '').includes('tecPATH_PARTIAL')) {
-        logger.warn(`⚠️ ${e1.message?.includes('tecPATH_DRY') ? 'tecPATH_DRY' : 'tecPATH_PARTIAL'} on buy - falling back to passive buy offer`);
+        logger.warn(`⚠️ ${e1.message?.includes('tecPATH_DRY') ? 'tecPATH_DRY' : 'tecPATH_PARTIAL'} on buy - trying smaller amount first`);
+
+        // Try with 50% of the amount first
+        if (xrpAmount >= effectiveMin * 2) {
+          try {
+            const halfAmount = xrpAmount / 2;
+            logger.info(`💡 Trying buy with half amount: ${halfAmount.toFixed(4)} XRP`);
+            return await attempt(halfAmount, 0.50);
+          } catch (e2) {
+            logger.warn(`⚠️ Half amount also failed, falling back to passive buy offer`);
+          }
+        }
+
+        logger.warn(`⚠️ Falling back to passive buy offer`);
 
         // Fallback: Create a passive buy offer on the order book
         const wantAmount = parseFloat(((xrpAmount / price) * (1 - PRICE_SPREAD / 100)).toFixed(6));
@@ -649,7 +662,11 @@ async function buyWaldo(userAddress, xrpAmount, wallet = tradingWallet) {
           const ledgerIndex = await client.getLedgerIndex();
 
           // Manually set all required fields to avoid autofill delays
-          offer.Sequence = await client.getAccountInfo(wallet.classicAddress).then(info => info.account_data.Sequence);
+          const accountInfo = await client.request({
+            command: 'account_info',
+            account: wallet.classicAddress
+          });
+          offer.Sequence = accountInfo.result.account_data.Sequence;
           offer.Fee = '12'; // Standard fee in drops
           offer.LastLedgerSequence = ledgerIndex + 300; // 300 ledgers = ~1500 seconds (~25 minutes)
 
