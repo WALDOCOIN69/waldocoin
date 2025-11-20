@@ -1332,26 +1332,12 @@ async function createAutomatedTrade(wallet = tradingWallet) {
         tradeType = 'SELL';
         logger.info(`⚖️ REBALANCE: Too much WLO (${(wloRatio * 100).toFixed(1)}%) - executing SELL to acquire XRP`);
       }
-      // If balances are reasonable, use weighted probability
+      // If balances are reasonable, use 50/50 random for perpetual trading
       else {
-        // Calculate trade probability based on how far we are from target
-        // (using ratios below to bias probability)
-
-        // PRICE LIFTING STRATEGY: Bias toward BUY orders to help lift WALDO price
-        // If XRP is below target, higher chance to sell WLO (get more XRP)
-        // If WLO is below target, higher chance to buy WLO
-        let buyProbability = 0.65; // Default 65% buy bias for price lifting
-
-        if (xrpRatio < targetXrpRatio) {
-          // Need more XRP, so favor selling WLO (but still maintain buy bias)
-          buyProbability = 0.45; // 45% buy, 55% sell
-        } else if (wloRatio < targetWloRatio) {
-          // Need more WLO, so strongly favor buying
-          buyProbability = 0.80; // 80% buy, 20% sell (strong price lifting)
-        }
-
-        tradeType = Math.random() < buyProbability ? 'BUY' : 'SELL';
-        logger.info(`🚀 PRICE LIFTING: ${(buyProbability * 100).toFixed(0)}% buy probability - executing ${tradeType} trade`);
+        // PERPETUAL BALANCED TRADING: 50% BUY, 50% SELL (random)
+        // This ensures XRP and WLO balances stay stable over time
+        tradeType = Math.random() < 0.50 ? 'BUY' : 'SELL';
+        logger.info(`🔄 PERPETUAL BALANCED: 50/50 random - executing ${tradeType} trade`);
       }
     }
 
@@ -1797,6 +1783,16 @@ async function resetDailyStats() {
     // Reset daily counters
     dailyVolume = 0;
     await redis.set('waldo:daily_volume', '0');
+
+    // Reset today's trade counters for admin panel
+    const today = new Date().toISOString().split('T')[0];
+    await redis.set('volume_bot:trades_today', '0');
+    await redis.set(`volume_bot:trades_${today}`, '0');
+    await redis.set('volume_bot:bot1:trades_today', '0');
+    await redis.set(`volume_bot:bot1:trades_${today}`, '0');
+    await redis.set('volume_bot:bot2:trades_today', '0');
+    await redis.set(`volume_bot:bot2:trades_${today}`, '0');
+    await redis.set('volume_bot:volume_24h', '0');
 
     // Keep only last 100 trades (don't delete all history)
     const totalTrades = await redis.lLen('waldo:trades');
