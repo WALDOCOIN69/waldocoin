@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './MemeGenerator.css'
 
+// Get API URL from environment variable
+const API_URL = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
+
 function MemeGenerator() {
   const { user, tier, wloBalance } = useAuth()
   const [templates, setTemplates] = useState([])
@@ -40,7 +43,7 @@ function MemeGenerator() {
     if (!user?.wallet) return
 
     try {
-      const response = await fetch(`/api/user/nfts?wallet_address=${user.wallet}`)
+      const response = await fetch(`${API_URL}/api/memeology/user/nfts?wallet=${user.wallet}`)
       const data = await response.json()
       if (data.success) {
         setUserNFTs(data.nfts || [])
@@ -368,7 +371,7 @@ function MemeGenerator() {
 
     try {
       setLoading(true)
-      const response = await fetch('/api/memes/create', {
+      const response = await fetch(`${API_URL}/api/memeology/memes/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

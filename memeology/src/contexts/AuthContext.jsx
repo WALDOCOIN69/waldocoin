@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 
 const AuthContext = createContext()
 
+// Get API URL from environment variable
+const API_URL = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
+
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
@@ -46,15 +49,15 @@ export const AuthProvider = ({ children }) => {
   const checkUserTier = async (walletAddress) => {
     try {
       // Check WLO balance
-      const balanceResponse = await fetch(`/api/wallet/balance?address=${walletAddress}`)
+      const balanceResponse = await fetch(`${API_URL}/api/memeology/wallet/balance?wallet=${walletAddress}`)
       const balanceData = await balanceResponse.json()
-      
-      if (balanceData.success) {
-        const wlo = balanceData.wlo_balance || 0
+
+      if (balanceData.wloBalance !== undefined) {
+        const wlo = balanceData.wloBalance || 0
         setWloBalance(wlo)
-        
+
         // Check premium subscription
-        const tierResponse = await fetch(`/api/user/tier?wallet=${walletAddress}`)
+        const tierResponse = await fetch(`${API_URL}/api/memeology/user/tier?wallet=${walletAddress}`)
         const tierData = await tierResponse.json()
         
         let userTier = 'free'
@@ -79,20 +82,20 @@ export const AuthProvider = ({ children }) => {
   const loginWithXUMM = async () => {
     try {
       // Request XUMM login from backend
-      const response = await fetch('/api/auth/xumm/login', {
+      const response = await fetch(`${API_URL}/api/auth/xumm/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success && data.qr_url) {
         // Open XUMM QR in new window
         window.open(data.qr_url, 'XUMM Login', 'width=400,height=600')
-        
+
         // Poll for login completion
         const checkLogin = setInterval(async () => {
-          const statusResponse = await fetch(`/api/auth/xumm/status?uuid=${data.uuid}`)
+          const statusResponse = await fetch(`${API_URL}/api/auth/xumm/status?uuid=${data.uuid}`)
           const statusData = await statusResponse.json()
           
           if (statusData.success && statusData.signed) {
