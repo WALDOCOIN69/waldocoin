@@ -39,6 +39,7 @@ import feesRoute from "./routes/fees.js";
 
 // 🎨 Memeology Routes
 import memeologyRoute from "./routes/memeology.js";
+import xummAuthRoute from "./routes/auth/xumm.js";
 
 // 🕐 Cron Jobs
 import { startExpiredBattleRefunder } from "./cron/expiredBattleRefunder.js";
@@ -212,6 +213,7 @@ const startServer = async () => {
 
   // 🎨 Memeology Routes
   console.log("🎨 Registering Memeology routes...");
+  app.use("/api/auth/xumm", xummAuthRoute);
   app.use("/api/memeology", memeologyRoute);
   app.use("/api/market/wlo", (await import("./routes/market/wlo.js")).default);
   app.use("/api/market/price-history", (await import("./routes/market/price-history.js")).default);
