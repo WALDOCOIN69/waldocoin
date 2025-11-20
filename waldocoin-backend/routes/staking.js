@@ -17,6 +17,7 @@ import {
   calculateEarlyUnstakePenalty
 } from '../utils/stakingUtils.js';
 import { DISTRIBUTOR_WALLET, TREASURY_WALLET, WALDO_ISSUER } from '../constants.js';
+import { addToHolderRewardPool } from '../utils/nftUtilities.js';
 
 // XRPL connection with fallback nodes for better reliability
 const XRPL_NODES = [
@@ -171,6 +172,13 @@ async function processRedemptionIfComplete(uuid) {
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
+    // 💰 NFT Holder Revenue Share: 1% of staking rewards go to holder reward pool (3+ NFTs only)
+    const holderPoolContribution = Math.floor(expectedReward * 0.01);
+    if (holderPoolContribution > 0) {
+      await addToHolderRewardPool(holderPoolContribution);
+      console.log(`💎 Added ${holderPoolContribution} WALDO to NFT holder reward pool from staking rewards`);
+    }
+
     await redis.hSet(stakeKey, {
       status: 'redeemed',
       redeemedAt: redeemedAt,
@@ -178,7 +186,8 @@ async function processRedemptionIfComplete(uuid) {
       claimed: 'true',
       totalReceived: totalAmount.toString(),
       originalAmount: originalAmount.toString(),
-      rewardAmount: expectedReward.toString()
+      rewardAmount: expectedReward.toString(),
+      holderPoolContribution: holderPoolContribution.toString()
     });
 
     // Remove from active sets and add to redeemed set

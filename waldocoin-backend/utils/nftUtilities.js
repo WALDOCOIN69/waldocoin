@@ -102,39 +102,52 @@ export async function distributeHolderRewards() {
   try {
     const poolKey = 'nft:holder_reward_pool';
     const poolAmount = parseFloat(await redis.get(poolKey)) || 0;
-    
+
     if (poolAmount <= 0) {
       return { success: false, error: 'No rewards to distribute' };
     }
 
-    // Get all NFT holders
+    // Get all NFT holders with 3+ NFTs (Gold tier and above only)
     const holderKeys = await redis.keys('wallet:nft_count:*');
     const holders = [];
 
     for (const key of holderKeys) {
       const wallet = key.replace('wallet:nft_count:', '');
       const nftCount = parseInt(await redis.get(key)) || 0;
-      if (nftCount > 0) {
+
+      // ONLY include holders with 3+ NFTs (Gold, Platinum, KING tiers)
+      // Silver tier (1-2 NFTs) is excluded from revenue sharing
+      if (nftCount >= 3) {
         const tier = await getHolderTier(wallet);
-        holders.push({ wallet, nftCount, shares: tier.shares });
+        holders.push({ wallet, nftCount, tier: tier.name, shares: tier.shares });
+        console.log(`💎 Eligible holder: ${wallet} - ${tier.name} (${nftCount} NFTs, ${tier.shares} shares)`);
       }
     }
 
     // Calculate total shares
     const totalShares = holders.reduce((sum, h) => sum + h.shares, 0);
-    if (totalShares === 0) return { success: false, error: 'No holders found' };
+    if (totalShares === 0) return { success: false, error: 'No eligible holders found (3+ NFTs required)' };
+
+    console.log(`💰 Distributing ${poolAmount.toFixed(2)} WALDO to ${holders.length} holders (total shares: ${totalShares})`);
 
     // Distribute rewards pro-rata
     const distributions = [];
     for (const holder of holders) {
       const reward = (holder.shares / totalShares) * poolAmount;
       await redis.incrByFloat(`wallet:pending_rewards:${holder.wallet}`, reward);
-      distributions.push({ wallet: holder.wallet, reward: parseFloat(reward.toFixed(4)) });
+      distributions.push({
+        wallet: holder.wallet,
+        tier: holder.tier,
+        nftCount: holder.nftCount,
+        shares: holder.shares,
+        reward: parseFloat(reward.toFixed(4))
+      });
+      console.log(`  → ${holder.wallet}: ${reward.toFixed(4)} WALDO (${holder.tier}, ${holder.shares} shares)`);
     }
 
     // Clear pool
     await redis.del(poolKey);
-    
+
     // Log distribution
     const month = new Date().toISOString().slice(0, 7);
     await redis.set(`nft:last_distribution:${month}`, JSON.stringify({
@@ -275,15 +288,15 @@ export async function getMonthlyPerks(wallet) {
     
     const perks = {
       king: [
-        '👑 KING Status (Limited to 5)',
+        '👑 KING Status (Limited to 7)',
         '🎁 100% off minting fees (FREE)',
         '⚡ Unlimited early access to all features',
         '🏆 Hall of Fame leaderboard status',
         '💎 Exclusive KING Discord role',
-        '🎟️ Unlimited free voting (200 WALDO off per vote)',
+        '💰 50% battle entry discount',
         '💰 50% off all marketplace fees',
         '🌟 Special KING badge on profile',
-        '🎁 Monthly exclusive airdrops',
+        '🎁 Monthly revenue share (10× shares)',
         '🔮 Voting power: 3.0× multiplier'
       ],
       platinum: [
@@ -291,13 +304,15 @@ export async function getMonthlyPerks(wallet) {
         '⚡ Early access to new features',
         '🏆 VIP leaderboard status',
         '💎 Exclusive Discord role',
-        '🎟️ Free voting for 6 months (180 days - 36,000 WALDO value)',
-        '🎟️ +3 free votes per month for each additional NFT held'
+        '💰 30% battle entry discount',
+        '🎁 Monthly revenue share (5× shares)'
       ],
       gold: [
         '🎁 30% off minting fees',
         '⚡ Early access to features',
         '🏆 Leaderboard eligibility',
+        '💰 20% battle entry discount',
+        '🎁 Monthly revenue share (2× shares)',
         '💎 Gold Discord role',
         '🎟️ 20% off voting fees (160 WALDO per vote)'
       ],
@@ -367,10 +382,10 @@ export async function trackNFTUtilityUsage(wallet, utilityType) {
 
 export async function assignKingNFT(wallet, nftId) {
   try {
-    // Check current King count
+    // Check current King count (maximum 7 King NFTs in collection)
     const kingCount = await redis.get('system:king_nft_count') || 0;
-    if (parseInt(kingCount) >= 5) {
-      return { success: false, error: 'Maximum 5 King NFTs already assigned' };
+    if (parseInt(kingCount) >= 7) {
+      return { success: false, error: 'Maximum 7 King NFTs already assigned' };
     }
 
     // Assign King NFT to wallet
@@ -445,16 +460,21 @@ export async function isKingNFTHolder(wallet) {
 // VOTING DISCOUNT SYSTEM
 // ============================================================================
 
+// ============================================================================
+// 🗳️ VOTING DISCOUNT SYSTEM (NO FREE VOTES - maintains battle prize pool)
+// ============================================================================
+
 export async function getVotingDiscount(wallet) {
   try {
     const tier = await getHolderTier(wallet);
 
-    // Voting fee discount based on tier
+    // Voting discounts - NO FREE VOTES to maintain prize pool integrity
+    // All votes cost WALDO, but NFT holders get discounts
     const discounts = {
-      king: 1.0,      // 100% off (free)
-      platinum: 0.0,  // Will be handled by free voting allowance
-      gold: 0.20,     // 20% off
-      silver: 0.10,   // 10% off
+      king: 0.0,      // No discount (KING gets battle entry discount instead)
+      platinum: 0.0,  // No discount (Platinum gets battle entry discount instead)
+      gold: 0.0,      // No discount (Gold gets battle entry discount instead)
+      silver: 0.0,    // No discount
       none: 0
     };
 
@@ -462,69 +482,6 @@ export async function getVotingDiscount(wallet) {
   } catch (error) {
     console.error('❌ Error getting voting discount:', error);
     return 0;
-  }
-}
-
-export async function getPlatinumFreeVotingAllowance(wallet) {
-  try {
-    const tier = await getHolderTier(wallet);
-
-    // Only Platinum gets free voting allowance
-    if (tier.tier !== 'platinum') {
-      return { freeVotesRemaining: 0, totalAllowance: 0, nftBonus: 0 };
-    }
-
-    // Get NFT count for bonus calculation
-    const nftCount = parseInt(await redis.get(`wallet:nft_count:${wallet}`) || 0);
-
-    // Base: 6 months of free voting (180 days)
-    // Bonus: +3 free votes per month for each NFT beyond the first 10
-    const baseAllowance = 180; // 6 months
-    const nftBonus = Math.max(0, nftCount - 10) * 3; // +3 per NFT after 10
-    const totalAllowance = baseAllowance + nftBonus;
-
-    // Get votes used this period
-    const votesUsedKey = `wallet:platinum_free_votes_used:${wallet}`;
-    const votesUsed = parseInt(await redis.get(votesUsedKey) || 0);
-    const freeVotesRemaining = Math.max(0, totalAllowance - votesUsed);
-
-    return {
-      freeVotesRemaining,
-      totalAllowance,
-      nftBonus,
-      votesUsed,
-      nftCount
-    };
-  } catch (error) {
-    console.error('❌ Error getting Platinum free voting allowance:', error);
-    return { freeVotesRemaining: 0, totalAllowance: 0, nftBonus: 0 };
-  }
-}
-
-export async function usePlatinumFreeVote(wallet) {
-  try {
-    const allowance = await getPlatinumFreeVotingAllowance(wallet);
-
-    if (allowance.freeVotesRemaining <= 0) {
-      return { success: false, error: 'No free votes remaining' };
-    }
-
-    // Increment votes used
-    const votesUsedKey = `wallet:platinum_free_votes_used:${wallet}`;
-    await redis.incr(votesUsedKey);
-
-    // Set expiration to 6 months from first use
-    const firstUseKey = `wallet:platinum_free_votes_start:${wallet}`;
-    const firstUse = await redis.get(firstUseKey);
-    if (!firstUse) {
-      await redis.set(firstUseKey, Date.now().toString(), { EX: 15552000 }); // 6 months
-      await redis.set(votesUsedKey, '1', { EX: 15552000 });
-    }
-
-    return { success: true, freeVotesRemaining: allowance.freeVotesRemaining - 1 };
-  } catch (error) {
-    console.error('❌ Error using Platinum free vote:', error);
-    return { success: false, error: error.message };
   }
 }
 
@@ -546,8 +503,6 @@ export default {
   revokeKingNFT,
   getKingNFTHolders,
   isKingNFTHolder,
-  getVotingDiscount,
-  getPlatinumFreeVotingAllowance,
-  usePlatinumFreeVote
+  getVotingDiscount
 };
 

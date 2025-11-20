@@ -8,6 +8,7 @@ import { redis } from "../redisClient.js";
 import { xummClient } from "../utils/xummClient.js";
 import { rateLimitMiddleware } from "../utils/rateLimiter.js";
 import { createErrorResponse, logError } from "../utils/errorHandler.js";
+import { addToHolderRewardPool } from "../utils/nftUtilities.js";
 
 dotenv.config();
 
@@ -126,6 +127,13 @@ router.post("/", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet)
     const burn = Math.floor(fee * burnRate);
     const toXRP = fee - burn;
 
+    // 💰 NFT Holder Revenue Share: 2% of claim fees go to holder reward pool
+    const holderPoolContribution = Math.floor(fee * 0.02);
+    if (holderPoolContribution > 0) {
+      await addToHolderRewardPool(holderPoolContribution);
+      console.log(`💰 Added ${holderPoolContribution} WALDO to NFT holder reward pool from claim fee`);
+    }
+
     // For staked claims, tokens go to staking vault instead of user
     const net = finalStake ? 0 : gross - fee; // Immediate payout only for instant claims
     const stakedAmount = finalStake ? gross - fee : 0; // Amount to be staked
@@ -142,6 +150,7 @@ router.post("/", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet)
       toXRP,
       net,
       stakedAmount,
+      holderPoolContribution,
       timestamp: now.toISOString()
     }));
 

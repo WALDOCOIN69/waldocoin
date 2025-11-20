@@ -73,6 +73,17 @@ router.get("/status", requireAdmin, async (req, res) => {
     const profitPercentage = parseFloat(startingBalance) > 0 ?
       ((profitXrp / parseFloat(startingBalance)) * 100).toFixed(2) : '0';
 
+    // Get micro-skim data
+    const totalMicroSkimmed = await redis.get('volume_bot:total_micro_skimmed') || '0';
+    const microSkimCount = await redis.get('volume_bot:micro_skim_count') || '0';
+    const totalLargeSkimmed = await redis.get('volume_bot:total_skimmed') || '0';
+    const lastSkimAmount = await redis.get('volume_bot:last_skim_amount') || '0';
+    const lastSkimTime = await redis.get('volume_bot:last_skim_time') || '0';
+
+    // Calculate average micro-skim
+    const avgMicroSkim = parseInt(microSkimCount) > 0 ?
+      (parseFloat(totalMicroSkimmed) / parseInt(microSkimCount)).toFixed(4) : '0';
+
     res.json({
       success: true,
       status: botStatus,
@@ -113,6 +124,14 @@ router.get("/status", requireAdmin, async (req, res) => {
         xrp: profitXrp.toFixed(4),
         percentage: profitPercentage,
         startingBalance: parseFloat(startingBalance).toFixed(4)
+      },
+      microSkims: {
+        totalMicroSkimmed: parseFloat(totalMicroSkimmed).toFixed(4),
+        microSkimCount: parseInt(microSkimCount),
+        avgMicroSkim: avgMicroSkim,
+        totalLargeSkimmed: parseFloat(totalLargeSkimmed).toFixed(4),
+        lastSkimAmount: parseFloat(lastSkimAmount).toFixed(4),
+        lastSkimTime: lastSkimTime
       },
       activity: {
         tradesCount: tradesCount,

@@ -964,17 +964,17 @@ if (MARKET_MAKING) {
         const shouldTradeBot1 = Math.random() < bot1TradeProbability;
 
         if (shouldTradeBot1) {
-          logger.info(`⏰ BOT 1 Executing trade (Frequency: ${bot1FrequencySetting === 'random' ? 'Random' : bot1FrequencySetting + 'min'}, Next: ${new Date(nextTradeTimeBot1).toLocaleTimeString()})`);
+          logger.info(`⏰ [BOT 1 MAIN TRADE] Executing trade (Frequency: ${bot1FrequencySetting === 'random' ? 'Random' : bot1FrequencySetting + 'min'}, Next: ${new Date(nextTradeTimeBot1).toLocaleTimeString()})`);
 
           try {
-            logger.info('🤖 BOT 1 (Primary): Executing trade...');
+            logger.info('🤖 [BOT 1 MAIN TRADE] Executing automated trade...');
             await createAutomatedTrade();
-            logger.info('✅ BOT 1 trade executed successfully');
+            logger.info('✅ [BOT 1 MAIN TRADE] Trade executed successfully');
           } catch (error) {
-            logger.error('❌ BOT 1 trade error:', error);
+            logger.error('❌ [BOT 1 MAIN TRADE] Trade error:', error);
           }
         } else {
-          logger.info(`⏳ BOT 1 Next trade scheduled for: ${new Date(nextTradeTimeBot1).toLocaleTimeString()} (${bot1FrequencySetting === 'random' ? 'Random' : bot1FrequencySetting + 'min'} interval)`);
+          logger.info(`⏳ [BOT 1 MAIN TRADE] Next trade scheduled for: ${new Date(nextTradeTimeBot1).toLocaleTimeString()} (${bot1FrequencySetting === 'random' ? 'Random' : bot1FrequencySetting + 'min'} interval)`);
         }
       }
 
@@ -1118,9 +1118,10 @@ if (MARKET_MAKING) {
     }
   });
 
-  // Process pending micro-sells every 3 minutes
+  // Process pending micro-sells every 3 minutes (NOT regular bot trading)
   cron.schedule('*/3 * * * *', async () => {
     try {
+      logger.info('🔄 [MICRO-SELL CRON] Checking for pending micro-sells (this is NOT Bot 1 or Bot 2 trading)...');
       await processPendingMicroSells();
     } catch (error) {
       logger.error('❌ Micro-sell processing error:', error);

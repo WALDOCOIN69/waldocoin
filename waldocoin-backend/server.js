@@ -43,6 +43,7 @@ import memeologyRoute from "./routes/memeology.js";
 // 🕐 Cron Jobs
 import { startExpiredBattleRefunder } from "./cron/expiredBattleRefunder.js";
 import { startStakingMaturityProcessor } from "./cron/stakingMaturityProcessor.js";
+import { startNFTHolderRewards } from "./cron/nftHolderRewards.js";
 
 // Buy bot completely removed - using volume trading bot only
 // No Telegram bot imports to prevent conflicts
@@ -448,6 +449,7 @@ const startServer = async () => {
     console.log("🕐 Starting cron jobs...");
     startExpiredBattleRefunder();
     startStakingMaturityProcessor();
+    startNFTHolderRewards();
     console.log("✅ All cron jobs started");
   });
 };
