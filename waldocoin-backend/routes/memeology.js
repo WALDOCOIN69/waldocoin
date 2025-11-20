@@ -35,13 +35,26 @@ async function getWLOBalance(wallet) {
 
     await client.disconnect();
 
+    console.log(`🔍 Checking WLO balance for ${wallet}`);
+    console.log(`🎯 Looking for currency: ${WLO_CURRENCY}, issuer: ${WLO_ISSUER}`);
+    console.log(`📊 Total trustlines: ${response.result.lines.length}`);
+
+    // Log all trustlines for debugging
+    response.result.lines.forEach(line => {
+      console.log(`  - Currency: ${line.currency}, Issuer: ${line.account}, Balance: ${line.balance}`);
+    });
+
     const wloLine = response.result.lines.find(
       line => line.currency === WLO_CURRENCY && line.account === WLO_ISSUER
     );
 
-    return wloLine ? parseFloat(wloLine.balance) : 0;
+    console.log(`💰 WLO Line found:`, wloLine);
+    const balance = wloLine ? parseFloat(wloLine.balance) : 0;
+    console.log(`✅ Returning balance: ${balance}`);
+
+    return balance;
   } catch (error) {
-    console.error('Error getting WLO balance:', error);
+    console.error('❌ Error getting WLO balance:', error);
     return 0;
   }
 }
