@@ -33,6 +33,7 @@ function MemeGenerator() {
 
   const canvasRef = useRef(null)
   const imageRef = useRef(null)
+  const watermarkRef = useRef(null)
 
   useEffect(() => {
     fetchTemplates()
@@ -124,6 +125,19 @@ function MemeGenerator() {
         ctx.setLineDash([])
       }
     })
+
+    // Add watermark for FREE and WALDOCOIN tiers (Premium has no watermark)
+    if (tier !== 'premium' && watermarkRef.current && watermarkRef.current.complete) {
+      const watermarkSize = Math.min(canvas.width, canvas.height) * 0.15 // 15% of smallest dimension
+      const padding = 15
+      const x = canvas.width - watermarkSize - padding
+      const y = canvas.height - watermarkSize - padding
+
+      // Draw semi-transparent watermark
+      ctx.globalAlpha = 0.8
+      ctx.drawImage(watermarkRef.current, x, y, watermarkSize, watermarkSize)
+      ctx.globalAlpha = 1.0
+    }
   }
 
   const wrapText = (ctx, text, maxWidth) => {
@@ -529,6 +543,14 @@ function MemeGenerator() {
                   alt="template"
                   onLoad={handleImageLoad}
                   style={{ display: 'none' }}
+                />
+                {/* Watermark logo (hidden, used for canvas drawing) */}
+                <img
+                  ref={watermarkRef}
+                  src="/memeology-logo.png"
+                  alt="watermark"
+                  style={{ display: 'none' }}
+                  crossOrigin="anonymous"
                 />
               </div>
 
