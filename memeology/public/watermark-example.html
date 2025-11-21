@@ -112,7 +112,7 @@
       bottom: 20px;
     }
 
-    .watermark {
+    .watermark-logo {
       position: absolute;
       bottom: 15px;
       right: 15px;
@@ -122,6 +122,29 @@
       z-index: 10;
       border-radius: 50%;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .watermark-text {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 8px;
+      z-index: 10;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .watermark-text span {
+      font-size: 24px;
+      font-weight: 900;
+      font-family: Impact, 'Arial Black', sans-serif;
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      letter-spacing: 1px;
     }
 
     .description {
@@ -147,9 +170,9 @@
         <div class="meme-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
         <div class="meme-text top-text">WHEN YOU REALIZE</div>
         <div class="meme-text bottom-text">MEMES CAN EARN YOU CRYPTO</div>
-        <img src="/memeology-logo.png" alt="Memeology" class="watermark" />
+        <img src="memeology-logo.png" alt="Memeology" class="watermark-logo" />
       </div>
-      <p class="description">✅ Has watermark in bottom-right corner</p>
+      <p class="description">✅ Has Memeology logo watermark</p>
     </div>
 
     <!-- WALDOCOIN TIER -->
@@ -162,9 +185,11 @@
         <div class="meme-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
         <div class="meme-text top-text">HODLING WALDOCOIN</div>
         <div class="meme-text bottom-text">STILL HAS WATERMARK THO</div>
-        <img src="/memeology-logo.png" alt="Memeology" class="watermark" />
+        <div class="watermark-text">
+          <span>WALDOCOIN</span>
+        </div>
       </div>
-      <p class="description">✅ Has watermark (even with 1000+ WLO)</p>
+      <p class="description">✅ Has "WALDOCOIN" gold text watermark</p>
     </div>
 
     <!-- PREMIUM TIER -->

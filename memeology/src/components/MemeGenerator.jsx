@@ -127,16 +127,60 @@ function MemeGenerator() {
     })
 
     // Add watermark for FREE and WALDOCOIN tiers (Premium has no watermark)
-    if (tier !== 'premium' && watermarkRef.current && watermarkRef.current.complete) {
-      const watermarkSize = Math.min(canvas.width, canvas.height) * 0.15 // 15% of smallest dimension
+    if (tier !== 'premium') {
       const padding = 15
-      const x = canvas.width - watermarkSize - padding
-      const y = canvas.height - watermarkSize - padding
 
-      // Draw semi-transparent watermark
-      ctx.globalAlpha = 0.8
-      ctx.drawImage(watermarkRef.current, x, y, watermarkSize, watermarkSize)
-      ctx.globalAlpha = 1.0
+      if (tier === 'waldocoin') {
+        // WALDOCOIN tier gets "WALDOCOIN" text watermark
+        const fontSize = Math.min(canvas.width, canvas.height) * 0.05 // 5% of smallest dimension
+        ctx.font = `bold ${fontSize}px Impact, Arial Black, sans-serif`
+        ctx.textAlign = 'right'
+        ctx.textBaseline = 'bottom'
+
+        // Draw background box
+        const text = 'WALDOCOIN'
+        const textMetrics = ctx.measureText(text)
+        const textWidth = textMetrics.width
+        const textHeight = fontSize * 1.2
+        const boxPadding = 10
+
+        const boxX = canvas.width - padding - textWidth - boxPadding * 2
+        const boxY = canvas.height - padding - textHeight - boxPadding
+
+        // Semi-transparent black background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+        ctx.fillRect(boxX, boxY, textWidth + boxPadding * 2, textHeight + boxPadding)
+
+        // Gold gradient text
+        const gradient = ctx.createLinearGradient(
+          boxX, boxY,
+          boxX + textWidth, boxY + textHeight
+        )
+        gradient.addColorStop(0, '#FFD700')
+        gradient.addColorStop(0.5, '#FFA500')
+        gradient.addColorStop(1, '#FFD700')
+
+        ctx.fillStyle = gradient
+        ctx.strokeStyle = '#000000'
+        ctx.lineWidth = 3
+
+        const textX = canvas.width - padding - boxPadding
+        const textY = canvas.height - padding - boxPadding
+
+        ctx.strokeText(text, textX, textY)
+        ctx.fillText(text, textX, textY)
+
+      } else if (tier === 'free' && watermarkRef.current && watermarkRef.current.complete) {
+        // FREE tier gets Memeology logo watermark
+        const watermarkSize = Math.min(canvas.width, canvas.height) * 0.15 // 15% of smallest dimension
+        const x = canvas.width - watermarkSize - padding
+        const y = canvas.height - watermarkSize - padding
+
+        // Draw semi-transparent watermark
+        ctx.globalAlpha = 0.8
+        ctx.drawImage(watermarkRef.current, x, y, watermarkSize, watermarkSize)
+        ctx.globalAlpha = 1.0
+      }
     }
   }
 
