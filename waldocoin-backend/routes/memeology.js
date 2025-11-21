@@ -26,6 +26,69 @@ const userUploadCount = new Map(); // Track daily upload limits
 const communityMemes = []; // Store community-shared memes
 const memeUpvotes = new Map(); // Track upvotes per meme
 
+// Helper: Send WLO rewards to meme creator
+async function sendWLOReward(recipientWallet, amount, reason) {
+  const DISTRIBUTOR_SECRET = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
+
+  if (!DISTRIBUTOR_SECRET) {
+    console.error('❌ DISTRIBUTOR_SECRET not configured - cannot send WLO rewards');
+    return { success: false, error: 'Distributor wallet not configured' };
+  }
+
+  let client;
+  try {
+    client = new xrpl.Client(XRPL_SERVER);
+    await client.connect();
+
+    const distributorWallet = xrpl.Wallet.fromSeed(DISTRIBUTOR_SECRET);
+
+    const payment = {
+      TransactionType: 'Payment',
+      Account: distributorWallet.classicAddress,
+      Destination: recipientWallet,
+      Amount: {
+        currency: WLO_CURRENCY,
+        issuer: WLO_ISSUER,
+        value: amount.toString()
+      },
+      Memos: [{
+        Memo: {
+          MemoType: Buffer.from('MEME_REWARD').toString('hex').toUpperCase(),
+          MemoData: Buffer.from(reason).toString('hex').toUpperCase()
+        }
+      }]
+    };
+
+    const prepared = await client.autofill(payment);
+    const signed = distributorWallet.sign(prepared);
+    const result = await client.submitAndWait(signed.tx_blob);
+
+    if (result.result.meta.TransactionResult === 'tesSUCCESS') {
+      console.log(`✅ Sent ${amount} WLO to ${recipientWallet} - ${reason}`);
+      console.log(`   TX Hash: ${result.result.hash}`);
+      return {
+        success: true,
+        txHash: result.result.hash,
+        amount,
+        recipient: recipientWallet
+      };
+    } else {
+      console.error(`❌ WLO reward transaction failed: ${result.result.meta.TransactionResult}`);
+      return {
+        success: false,
+        error: result.result.meta.TransactionResult
+      };
+    }
+  } catch (error) {
+    console.error('❌ Error sending WLO reward:', error);
+    return { success: false, error: error.message };
+  } finally {
+    if (client && client.isConnected()) {
+      await client.disconnect();
+    }
+  }
+}
+
 // Helper: Get WLO balance from XRPL
 async function getWLOBalance(wallet) {
   try {
@@ -825,13 +888,40 @@ router.post('/community/vote', async (req, res) => {
       if (creatorTier.features.canEarnWLO) {
         if (meme.upvotes >= 1000 && !meme.rewarded1000) {
           meme.rewarded1000 = true;
-          console.log(`🏆 Meme ${memeId} reached 1000 upvotes! Award 10 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
-          // TODO: Send 10 WLO to meme.wallet via XRPL transaction
+          console.log(`🏆 Meme ${memeId} reached 1000 upvotes! Sending 10 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
+
+          // Send 10 WLO reward
+          const rewardResult = await sendWLOReward(
+            meme.wallet,
+            10,
+            `Viral meme reward: 1000 upvotes - Meme ID: ${memeId}`
+          );
+
+          if (rewardResult.success) {
+            meme.reward1000TxHash = rewardResult.txHash;
+            console.log(`✅ 1000 upvote reward sent! TX: ${rewardResult.txHash}`);
+          } else {
+            console.error(`❌ Failed to send 1000 upvote reward: ${rewardResult.error}`);
+          }
         }
+
         if (meme.upvotes >= 10000 && !meme.rewarded10000) {
           meme.rewarded10000 = true;
-          console.log(`🏆 Meme ${memeId} reached 10,000 upvotes! Award 100 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
-          // TODO: Send 100 WLO to meme.wallet via XRPL transaction
+          console.log(`🏆 Meme ${memeId} reached 10,000 upvotes! Sending 100 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
+
+          // Send 100 WLO reward
+          const rewardResult = await sendWLOReward(
+            meme.wallet,
+            100,
+            `Viral meme reward: 10000 upvotes - Meme ID: ${memeId}`
+          );
+
+          if (rewardResult.success) {
+            meme.reward10000TxHash = rewardResult.txHash;
+            console.log(`✅ 10,000 upvote reward sent! TX: ${rewardResult.txHash}`);
+          } else {
+            console.error(`❌ Failed to send 10,000 upvote reward: ${rewardResult.error}`);
+          }
         }
       } else {
         console.log(`⚠️ Meme ${memeId} creator ${meme.wallet} is free tier - cannot earn WLO rewards. Upgrade to earn!`);

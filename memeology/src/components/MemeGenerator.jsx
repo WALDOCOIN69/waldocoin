@@ -21,6 +21,9 @@ function MemeGenerator() {
   const [showNFTModal, setShowNFTModal] = useState(false)
   const [showPremiumModal, setShowPremiumModal] = useState(false)
   const [userNFTs, setUserNFTs] = useState([])
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareCaption, setShareCaption] = useState('')
+  const [shareSuccess, setShareSuccess] = useState(false)
 
   // Multiple text boxes
   const [textBoxes, setTextBoxes] = useState([
@@ -470,6 +473,46 @@ function MemeGenerator() {
     })
   }
 
+  const shareToGallery = async () => {
+    if (!user?.wallet) {
+      alert('Please connect your wallet to share memes!')
+      return
+    }
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    try {
+      // Convert canvas to data URL
+      const memeUrl = canvas.toDataURL('image/png')
+
+      const response = await fetch(`${API_URL}/api/memeology/community/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: user.wallet,
+          memeUrl: memeUrl,
+          templateName: selectedTemplate?.name || 'Custom Meme',
+          caption: shareCaption
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setShareSuccess(true)
+        setShowShareModal(false)
+        setShareCaption('')
+        alert('🎉 Meme shared to community gallery!')
+      } else {
+        alert(data.error || 'Failed to share meme')
+      }
+    } catch (error) {
+      console.error('Error sharing meme:', error)
+      alert('Error sharing meme to gallery')
+    }
+  }
+
   return (
     <div className="meme-generator">
       <div className="generator-grid">
@@ -730,13 +773,22 @@ function MemeGenerator() {
                 ))}
               </div>
 
-              <button
-                className="btn-primary"
-                onClick={downloadMeme}
-                disabled={!imageLoaded}
-              >
-                ⬇️ Download Meme
-              </button>
+              <div className="meme-actions-buttons">
+                <button
+                  className="btn-primary"
+                  onClick={downloadMeme}
+                  disabled={!imageLoaded}
+                >
+                  ⬇️ Download Meme
+                </button>
+                <button
+                  className="btn-secondary"
+                  onClick={() => setShowShareModal(true)}
+                  disabled={!imageLoaded}
+                >
+                  🌐 Share to Gallery
+                </button>
+              </div>
             </>
           ) : (
             <div className="no-template">
@@ -871,6 +923,36 @@ function MemeGenerator() {
         onClose={() => setShowPremiumModal(false)}
         wallet={user?.wallet}
       />
+
+      {/* Share to Gallery Modal */}
+      {showShareModal && (
+        <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowShareModal(false)}>×</button>
+            <h2>🌐 Share to Community Gallery</h2>
+            <p className="share-subtitle">Add a caption to your meme (optional)</p>
+
+            <textarea
+              className="caption-input"
+              placeholder="Add a funny caption... (optional)"
+              value={shareCaption}
+              onChange={(e) => setShareCaption(e.target.value)}
+              maxLength={200}
+              rows={3}
+            />
+            <p className="char-count">{shareCaption.length}/200</p>
+
+            <div className="share-actions">
+              <button className="btn-cancel" onClick={() => setShowShareModal(false)}>
+                Cancel
+              </button>
+              <button className="btn-share" onClick={shareToGallery}>
+                🚀 Share Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
