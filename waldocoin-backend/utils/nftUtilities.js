@@ -2,8 +2,16 @@ import { redis } from "../redisClient.js";
 
 /**
  * 🖼️ WALDO NFT Utilities System
- * 
+ *
  * Handles all NFT holder benefits, rewards, and utility features
+ *
+ * 💰 REVENUE SHARE STRUCTURE (3+ NFTs only):
+ * - 1.25% of all claim fees → Revenue pool
+ * - 1.25% of all staking rewards → Revenue pool
+ * - 0.25% of all fees → Burned
+ * - 2% of secondary NFT sales → Revenue pool
+ *
+ * Monthly distribution on 1st of each month to holders with 3+ NFTs
  */
 
 // ============================================================================

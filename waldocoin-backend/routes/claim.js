@@ -120,18 +120,24 @@ router.post("/", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet)
     const { getClaimConfig } = await import("../utils/config.js");
     const claimCfg = await getClaimConfig();
     const feeRate = finalStake ? claimCfg.stakedFeeRate : claimCfg.instantFeeRate;
-    const burnRate = claimCfg.burnRate;
+    const burnRate = claimCfg.burnRate || 0.0025;  // 0.25% of fee burned
+    const revenueShareRate = claimCfg.revenueShareRate || 0.0125;  // 1.25% of fee to revenue share
 
     const gross = baseReward;
     const fee = Math.floor(gross * feeRate);
     const burn = Math.floor(fee * burnRate);
-    const toXRP = fee - burn;
+    const revenueShare = Math.floor(fee * revenueShareRate);
+    const toXRP = fee - burn - revenueShare;
 
-    // 💰 NFT Holder Revenue Share: 2% of claim fees go to holder reward pool
-    const holderPoolContribution = Math.floor(fee * 0.02);
-    if (holderPoolContribution > 0) {
-      await addToHolderRewardPool(holderPoolContribution);
-      console.log(`💰 Added ${holderPoolContribution} WALDO to NFT holder reward pool from claim fee`);
+    // 💰 NFT Holder Revenue Share: 1.25% of claim fees go to holder reward pool (3+ NFTs only)
+    if (revenueShare > 0) {
+      await addToHolderRewardPool(revenueShare);
+      console.log(`💰 Added ${revenueShare} WALDO to NFT holder reward pool from claim fee (1.25% of ${fee} fee)`);
+    }
+
+    // 🔥 Burn: 0.25% of claim fees burned
+    if (burn > 0) {
+      console.log(`🔥 Burning ${burn} WALDO from claim fee (0.25% of ${fee} fee)`);
     }
 
     // For staked claims, tokens go to staking vault instead of user

@@ -172,11 +172,19 @@ async function processRedemptionIfComplete(uuid) {
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
-    // 💰 NFT Holder Revenue Share: 1% of staking rewards go to holder reward pool (3+ NFTs only)
-    const holderPoolContribution = Math.floor(expectedReward * 0.01);
+    // 💰 NFT Holder Revenue Share: 1.25% of staking rewards go to holder reward pool (3+ NFTs only)
+    const revenueShareRate = 0.0125;  // 1.25%
+    const holderPoolContribution = Math.floor(expectedReward * revenueShareRate);
     if (holderPoolContribution > 0) {
       await addToHolderRewardPool(holderPoolContribution);
-      console.log(`💎 Added ${holderPoolContribution} WALDO to NFT holder reward pool from staking rewards`);
+      console.log(`💎 Added ${holderPoolContribution} WALDO to NFT holder reward pool from staking rewards (1.25% of ${expectedReward})`);
+    }
+
+    // 🔥 Burn: 0.25% of staking rewards burned
+    const burnRate = 0.0025;  // 0.25%
+    const burnAmount = Math.floor(expectedReward * burnRate);
+    if (burnAmount > 0) {
+      console.log(`🔥 Burning ${burnAmount} WALDO from staking rewards (0.25% of ${expectedReward})`);
     }
 
     await redis.hSet(stakeKey, {
@@ -187,7 +195,8 @@ async function processRedemptionIfComplete(uuid) {
       totalReceived: totalAmount.toString(),
       originalAmount: originalAmount.toString(),
       rewardAmount: expectedReward.toString(),
-      holderPoolContribution: holderPoolContribution.toString()
+      holderPoolContribution: holderPoolContribution.toString(),
+      burnAmount: burnAmount.toString()
     });
 
     // Remove from active sets and add to redeemed set
@@ -1518,12 +1527,22 @@ router.post('/stake', rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wa
     };
 
     const apy = apyRates[duration];
-    const expectedReward = Math.floor((amount * apy / 100) * (duration / 365));
+
+    // 💰 Long-term staking fee: 2% of staked amount
+    const stakingFeeRate = 0.02;  // 2%
+    const stakingFee = Math.floor(amount * stakingFeeRate);
+    const stakedAmount = amount - stakingFee;  // Amount after fee
+
+    const expectedReward = Math.floor((stakedAmount * apy / 100) * (duration / 365));
+
+    console.log(`📊 Long-term staking: ${amount} WALDO, Fee: ${stakingFee} (2%), Staked: ${stakedAmount}, Expected reward: ${expectedReward}`);
 
     const stakeData = {
       stakeId,
       wallet,
-      amount: parseInt(amount),
+      originalAmount: parseInt(amount),
+      stakingFee: stakingFee,
+      amount: parseInt(stakedAmount),  // Store the amount after fee
       duration,
       tier: tier || 1,
       apy,
