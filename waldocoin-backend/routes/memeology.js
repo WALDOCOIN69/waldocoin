@@ -912,10 +912,14 @@ router.post('/upload', async (req, res) => {
 // POST /api/memeology/premium/subscribe - Subscribe to premium (remove watermark)
 router.post('/premium/subscribe', async (req, res) => {
   try {
-    const { wallet, paymentMethod, duration, xrpPrice, wloPrice } = req.body; // duration: 'monthly' or 'yearly'
+    const { wallet, paymentMethod, duration, txHash } = req.body; // duration: 'monthly' or 'yearly'
 
     if (!wallet) {
       return res.status(400).json({ error: 'Wallet address required' });
+    }
+
+    if (!txHash) {
+      return res.status(400).json({ error: 'Transaction hash required for payment verification' });
     }
 
     const selectedDuration = duration || 'monthly';
@@ -924,68 +928,90 @@ router.post('/premium/subscribe', async (req, res) => {
     const usdPerMonth = 5;
     const usdTotal = selectedDuration === 'yearly' ? usdPerMonth * 10 : usdPerMonth; // Yearly = 10 months (2 free)
 
-    // Calculate XRP and WLO amounts based on current market prices
-    // Frontend should pass current prices, or we fetch from API
-    const currentXrpPrice = xrpPrice || 2.50; // Default $2.50 per XRP (frontend should provide real-time price)
-    const currentWloPrice = wloPrice || 0.001; // Default $0.001 per WLO (frontend should provide real-time price)
+    // Fetch real-time prices
+    const prices = await getAllPrices();
+    const currentXrpPrice = prices.xrp;
+    const currentWloPrice = prices.wlo;
 
-    const xrpAmount = (usdTotal / currentXrpPrice).toFixed(2);
-    const wloAmount = Math.floor(usdTotal / currentWloPrice);
+    // Calculate required amounts
+    const requiredXrp = await calculateTokenAmount(usdTotal, 'xrp');
+    const requiredWlo = await calculateTokenAmount(usdTotal, 'wlo');
 
-    const pricing = {
-      monthly: {
-        usd: usdPerMonth,
-        xrp: parseFloat(xrpAmount),
-        wlo: wloAmount,
-        xrpPrice: currentXrpPrice,
-        wloPrice: currentWloPrice
-      },
-      yearly: {
-        usd: usdTotal,
-        xrp: parseFloat(xrpAmount),
-        wlo: wloAmount,
-        xrpPrice: currentXrpPrice,
-        wloPrice: currentWloPrice,
-        savings: `${usdPerMonth * 2} USD (2 months free)`
-      }
-    };
-
-    const price = pricing[selectedDuration];
-
-    if (!price) {
-      return res.status(400).json({ error: 'Invalid duration. Use "monthly" or "yearly"' });
-    }
+    // TODO: Verify payment on XRPL by checking txHash
+    // For now, we'll trust the frontend (in production, MUST verify on-chain)
+    console.log(`💳 Premium subscription payment: ${txHash}`);
+    console.log(`💰 Duration: ${selectedDuration}, Method: ${paymentMethod}`);
 
     // Calculate expiration date
     const now = new Date();
     const expiresAt = new Date(now);
+    const gracePeriodDays = 3; // 3-day grace period after expiration
+
     if (selectedDuration === 'monthly') {
       expiresAt.setMonth(expiresAt.getMonth() + 1);
     } else {
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     }
 
-    // Store premium subscription (in production, verify payment first)
+    const graceExpiresAt = new Date(expiresAt);
+    graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+
+    // Check if user already has a subscription
+    const existingSubscription = premiumSubscriptions.get(wallet);
+    let isRenewal = false;
+
+    if (existingSubscription) {
+      isRenewal = true;
+      console.log(`🔄 Renewing existing subscription for ${wallet}`);
+    }
+
+    // Store premium subscription
     premiumSubscriptions.set(wallet, {
       wallet,
       tier: 'premium',
-      subscribedAt: now.toISOString(),
+      subscribedAt: existingSubscription?.subscribedAt || now.toISOString(),
+      lastRenewalAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
+      graceExpiresAt: graceExpiresAt.toISOString(),
       duration: selectedDuration,
-      paymentMethod: paymentMethod || 'pending',
-      active: true
+      paymentMethod: paymentMethod,
+      paymentTxHash: txHash,
+      amountPaid: paymentMethod === 'xrp' ? requiredXrp : requiredWlo,
+      currency: paymentMethod === 'xrp' ? 'XRP' : 'WLO',
+      usdValue: usdTotal,
+      active: true,
+      autoRenew: false, // Crypto requires manual renewal
+      renewalReminders: {
+        threeDaysSent: false,
+        oneDaySent: false,
+        expirationSent: false
+      }
     });
 
-    console.log(`💵 Premium subscription created for ${wallet.slice(0, 10)}... (${selectedDuration})`);
+    console.log(`💵 Premium subscription ${isRenewal ? 'renewed' : 'created'} for ${wallet.slice(0, 10)}... (${selectedDuration})`);
 
     res.json({
       success: true,
-      message: `Premium subscription activated! Watermark removed.`,
+      message: isRenewal
+        ? `✅ Premium subscription renewed!`
+        : `✅ Premium subscription activated! Watermark removed.`,
       subscription: {
         tier: 'premium',
         duration: selectedDuration,
+        subscribedAt: existingSubscription?.subscribedAt || now.toISOString(),
         expiresAt: expiresAt.toISOString(),
-        pricing: price,
+        graceExpiresAt: graceExpiresAt.toISOString(),
+        gracePeriodDays: gracePeriodDays,
+        daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
+        autoRenew: false,
+        renewalNote: 'Manual renewal required. You will receive reminders 3 days before expiration.',
+        pricing: {
+          usd: usdTotal,
+          xrp: requiredXrp,
+          wlo: requiredWlo,
+          paid: paymentMethod === 'xrp' ? requiredXrp : requiredWlo,
+          currency: paymentMethod === 'xrp' ? 'XRP' : 'WLO'
+        },
         benefits: {
           noWatermark: true,
           unlimitedMemes: true,
@@ -996,11 +1022,6 @@ router.post('/premium/subscribe', async (req, res) => {
           gifTemplates: true,
           canEarnWLO: true
         }
-      },
-      paymentInstructions: {
-        xrp: `Send ${price.xrp} XRP to: [PAYMENT_WALLET]`,
-        wlo: `Send ${price.wlo} WLO to: [PAYMENT_WALLET]`,
-        note: 'Payment verification pending. Premium features activated immediately.'
       }
     });
   } catch (error) {
@@ -1063,25 +1084,55 @@ router.get('/premium/status/:wallet', async (req, res) => {
 
     if (!subscription) {
       return res.json({
-        isPremium: false,
-        message: 'No active premium subscription'
+        success: true,
+        hasPremium: false,
+        tier: 'free',
+        message: 'No premium subscription found'
       });
     }
 
     // Check if subscription is expired
     const now = new Date();
     const expiresAt = new Date(subscription.expiresAt);
+    const graceExpiresAt = new Date(subscription.graceExpiresAt || subscription.expiresAt);
     const isExpired = now > expiresAt;
+    const isInGracePeriod = now > expiresAt && now <= graceExpiresAt;
+    const isFullyExpired = now > graceExpiresAt;
 
-    if (isExpired) {
+    // Calculate days remaining
+    const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+    const graceDaysRemaining = Math.ceil((graceExpiresAt - now) / (1000 * 60 * 60 * 24));
+
+    // Determine if user needs renewal reminder
+    const needsRenewalReminder = daysRemaining <= 3 && daysRemaining > 0;
+
+    // Update subscription status if fully expired
+    if (isFullyExpired && subscription.active) {
       subscription.active = false;
       premiumSubscriptions.set(wallet, subscription);
     }
 
     res.json({
-      isPremium: subscription.active && !isExpired,
-      subscription: subscription.active && !isExpired ? subscription : null,
-      message: isExpired ? 'Premium subscription expired' : 'Premium subscription active'
+      success: true,
+      hasPremium: !isFullyExpired && subscription.active,
+      tier: !isFullyExpired && subscription.active ? 'premium' : 'free',
+      subscription: {
+        ...subscription,
+        isExpired,
+        isInGracePeriod,
+        isFullyExpired,
+        daysRemaining,
+        graceDaysRemaining: isInGracePeriod ? graceDaysRemaining : 0,
+        needsRenewalReminder,
+        renewalUrl: `/api/memeology/premium/subscribe`,
+        status: isFullyExpired
+          ? 'expired'
+          : isInGracePeriod
+            ? 'grace_period'
+            : daysRemaining <= 3
+              ? 'expiring_soon'
+              : 'active'
+      }
     });
   } catch (error) {
     console.error('Error in /premium/status:', error);

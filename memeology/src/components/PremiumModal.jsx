@@ -41,34 +41,101 @@ function PremiumModal({ show, onClose, wallet }) {
     try {
       setProcessing(true)
 
-      // Get current market prices (in production, fetch from CoinGecko or price oracle)
-      const xrpPrice = pricing[selectedDuration].xrpPrice
-      const wloPrice = pricing[selectedDuration].wloPrice
+      const currentPricing = pricing[selectedDuration]
+      const amount = selectedPayment === 'xrp' ? currentPricing.xrp : currentPricing.wlo
 
-      const response = await fetch(`${API_URL}/api/memeology/premium/subscribe`, {
+      // Create XUMM payment request
+      const paymentPayload = {
+        TransactionType: 'Payment',
+        Destination: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDOCOIN issuer wallet
+        Amount: selectedPayment === 'xrp'
+          ? String(Math.floor(amount * 1000000)) // XRP in drops
+          : {
+              currency: 'WLO',
+              value: String(amount),
+              issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+            },
+        Memos: [{
+          Memo: {
+            MemoType: Buffer.from('premium_subscription', 'utf8').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`${selectedDuration}_${wallet}`, 'utf8').toString('hex').toUpperCase()
+          }
+        }]
+      }
+
+      // Request XUMM signature
+      const xummResponse = await fetch(`${API_URL}/api/xumm/create-payload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          wallet,
-          paymentMethod: selectedPayment,
-          duration: selectedDuration,
-          xrpPrice,
-          wloPrice
+          txjson: paymentPayload,
+          options: {
+            submit: true,
+            return_url: {
+              web: window.location.href
+            }
+          }
         })
       })
 
-      const data = await response.json()
+      const xummData = await xummResponse.json()
 
-      if (data.success) {
-        alert(`✅ Premium activated! Watermark removed.\n\nExpires: ${new Date(data.subscription.expiresAt).toLocaleDateString()}`)
-        window.location.reload() // Refresh to update tier
-      } else {
-        alert('❌ Subscription failed. Please try again.')
+      if (!xummData.success) {
+        throw new Error('Failed to create payment request')
       }
+
+      // Open XUMM for signature
+      window.open(xummData.next.always, '_blank')
+
+      // Poll for payment confirmation
+      const checkPayment = setInterval(async () => {
+        const statusResponse = await fetch(`${API_URL}/api/xumm/payload/${xummData.uuid}`)
+        const statusData = await statusResponse.json()
+
+        if (statusData.meta.signed) {
+          clearInterval(checkPayment)
+
+          if (statusData.meta.resolved) {
+            // Payment successful, activate premium
+            const txHash = statusData.response.txid
+
+            const subscribeResponse = await fetch(`${API_URL}/api/memeology/premium/subscribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                wallet,
+                paymentMethod: selectedPayment,
+                duration: selectedDuration,
+                txHash
+              })
+            })
+
+            const subscribeData = await subscribeResponse.json()
+
+            if (subscribeData.success) {
+              alert(`✅ ${subscribeData.message}\n\nExpires: ${new Date(subscribeData.subscription.expiresAt).toLocaleDateString()}\nDays remaining: ${subscribeData.subscription.daysRemaining}`)
+              window.location.reload() // Refresh to update tier
+            } else {
+              alert('❌ Subscription activation failed. Please contact support.')
+            }
+          } else {
+            alert('❌ Payment was rejected or failed.')
+          }
+
+          setProcessing(false)
+        }
+      }, 2000)
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        clearInterval(checkPayment)
+        setProcessing(false)
+        alert('⏱️ Payment request timed out. Please try again.')
+      }, 300000)
+
     } catch (error) {
       console.error('Error subscribing:', error)
-      alert('❌ Error processing subscription')
-    } finally {
+      alert('❌ Error processing subscription: ' + error.message)
       setProcessing(false)
     }
   }
