@@ -4,6 +4,7 @@ import express from 'express';
 import axios from 'axios';
 import xrpl from 'xrpl';
 import dotenv from 'dotenv';
+import { getAllPrices, calculateTokenAmount } from '../utils/priceOracle.js';
 
 dotenv.config();
 
@@ -1011,41 +1012,41 @@ router.post('/premium/subscribe', async (req, res) => {
 // GET /api/memeology/premium/pricing - Get current premium pricing in XRP and WLO
 router.get('/premium/pricing', async (req, res) => {
   try {
-    // Fetch current market prices
-    // In production, fetch from CoinGecko, CMC, or your own price oracle
     const usdPerMonth = 5;
-
-    // TODO: Fetch real-time prices from API
-    const currentXrpPrice = 2.50; // $2.50 per XRP (placeholder)
-    const currentWloPrice = 0.001; // $0.001 per WLO (placeholder)
-
-    const monthlyXrp = (usdPerMonth / currentXrpPrice).toFixed(2);
-    const monthlyWlo = Math.floor(usdPerMonth / currentWloPrice);
-
     const yearlyUsd = usdPerMonth * 10; // 2 months free
-    const yearlyXrp = (yearlyUsd / currentXrpPrice).toFixed(2);
-    const yearlyWlo = Math.floor(yearlyUsd / currentWloPrice);
+
+    // Fetch real-time prices from price oracle
+    const prices = await getAllPrices();
+    const currentXrpPrice = prices.xrp;
+    const currentWloPrice = prices.wlo;
+
+    // Calculate token amounts needed
+    const monthlyXrp = await calculateTokenAmount(usdPerMonth, 'xrp');
+    const monthlyWlo = await calculateTokenAmount(usdPerMonth, 'wlo');
+    const yearlyXrp = await calculateTokenAmount(yearlyUsd, 'xrp');
+    const yearlyWlo = await calculateTokenAmount(yearlyUsd, 'wlo');
 
     res.json({
       success: true,
       pricing: {
         monthly: {
           usd: usdPerMonth,
-          xrp: parseFloat(monthlyXrp),
+          xrp: monthlyXrp,
           wlo: monthlyWlo,
           xrpPrice: currentXrpPrice,
           wloPrice: currentWloPrice
         },
         yearly: {
           usd: yearlyUsd,
-          xrp: parseFloat(yearlyXrp),
+          xrp: yearlyXrp,
           wlo: yearlyWlo,
           xrpPrice: currentXrpPrice,
           wloPrice: currentWloPrice,
           savings: `$${usdPerMonth * 2} USD (2 months free)`
         }
       },
-      note: 'Prices are calculated based on current market rates and may fluctuate'
+      note: 'Prices are calculated based on current market rates and may fluctuate',
+      lastUpdated: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error in /premium/pricing:', error);
