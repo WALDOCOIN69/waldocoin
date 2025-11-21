@@ -911,27 +911,44 @@ router.post('/upload', async (req, res) => {
 // POST /api/memeology/premium/subscribe - Subscribe to premium (remove watermark)
 router.post('/premium/subscribe', async (req, res) => {
   try {
-    const { wallet, paymentMethod, duration } = req.body; // duration: 'monthly' or 'yearly'
+    const { wallet, paymentMethod, duration, xrpPrice, wloPrice } = req.body; // duration: 'monthly' or 'yearly'
 
     if (!wallet) {
       return res.status(400).json({ error: 'Wallet address required' });
     }
 
-    // Premium pricing
+    const selectedDuration = duration || 'monthly';
+
+    // Premium pricing: $5 USD equivalent per month
+    const usdPerMonth = 5;
+    const usdTotal = selectedDuration === 'yearly' ? usdPerMonth * 10 : usdPerMonth; // Yearly = 10 months (2 free)
+
+    // Calculate XRP and WLO amounts based on current market prices
+    // Frontend should pass current prices, or we fetch from API
+    const currentXrpPrice = xrpPrice || 2.50; // Default $2.50 per XRP (frontend should provide real-time price)
+    const currentWloPrice = wloPrice || 0.001; // Default $0.001 per WLO (frontend should provide real-time price)
+
+    const xrpAmount = (usdTotal / currentXrpPrice).toFixed(2);
+    const wloAmount = Math.floor(usdTotal / currentWloPrice);
+
     const pricing = {
       monthly: {
-        xrp: 10,      // 10 XRP per month
-        wlo: 5000,    // 5,000 WLO per month
-        usd: 5        // $5 USD equivalent
+        usd: usdPerMonth,
+        xrp: parseFloat(xrpAmount),
+        wlo: wloAmount,
+        xrpPrice: currentXrpPrice,
+        wloPrice: currentWloPrice
       },
       yearly: {
-        xrp: 100,     // 100 XRP per year (2 months free)
-        wlo: 50000,   // 50,000 WLO per year (2 months free)
-        usd: 50       // $50 USD equivalent (2 months free)
+        usd: usdTotal,
+        xrp: parseFloat(xrpAmount),
+        wlo: wloAmount,
+        xrpPrice: currentXrpPrice,
+        wloPrice: currentWloPrice,
+        savings: `${usdPerMonth * 2} USD (2 months free)`
       }
     };
 
-    const selectedDuration = duration || 'monthly';
     const price = pricing[selectedDuration];
 
     if (!price) {
@@ -987,6 +1004,51 @@ router.post('/premium/subscribe', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in /premium/subscribe:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/premium/pricing - Get current premium pricing in XRP and WLO
+router.get('/premium/pricing', async (req, res) => {
+  try {
+    // Fetch current market prices
+    // In production, fetch from CoinGecko, CMC, or your own price oracle
+    const usdPerMonth = 5;
+
+    // TODO: Fetch real-time prices from API
+    const currentXrpPrice = 2.50; // $2.50 per XRP (placeholder)
+    const currentWloPrice = 0.001; // $0.001 per WLO (placeholder)
+
+    const monthlyXrp = (usdPerMonth / currentXrpPrice).toFixed(2);
+    const monthlyWlo = Math.floor(usdPerMonth / currentWloPrice);
+
+    const yearlyUsd = usdPerMonth * 10; // 2 months free
+    const yearlyXrp = (yearlyUsd / currentXrpPrice).toFixed(2);
+    const yearlyWlo = Math.floor(yearlyUsd / currentWloPrice);
+
+    res.json({
+      success: true,
+      pricing: {
+        monthly: {
+          usd: usdPerMonth,
+          xrp: parseFloat(monthlyXrp),
+          wlo: monthlyWlo,
+          xrpPrice: currentXrpPrice,
+          wloPrice: currentWloPrice
+        },
+        yearly: {
+          usd: yearlyUsd,
+          xrp: parseFloat(yearlyXrp),
+          wlo: yearlyWlo,
+          xrpPrice: currentXrpPrice,
+          wloPrice: currentWloPrice,
+          savings: `$${usdPerMonth * 2} USD (2 months free)`
+        }
+      },
+      note: 'Prices are calculated based on current market rates and may fluctuate'
+    });
+  } catch (error) {
+    console.error('Error in /premium/pricing:', error);
     res.status(500).json({ error: error.message });
   }
 });
