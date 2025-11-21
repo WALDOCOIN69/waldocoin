@@ -9,6 +9,9 @@ function PremiumModal({ show, onClose, wallet }) {
   const [selectedDuration, setSelectedDuration] = useState('monthly')
   const [selectedPayment, setSelectedPayment] = useState('xrp')
   const [processing, setProcessing] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [xummQrCode, setXummQrCode] = useState(null)
+  const [xummPayloadId, setXummPayloadId] = useState(null)
 
   useEffect(() => {
     if (show) {
@@ -32,11 +35,17 @@ function PremiumModal({ show, onClose, wallet }) {
     }
   }
 
-  const handleSubscribe = async () => {
+  const handleSubscribeClick = () => {
     if (!wallet) {
       alert('Please connect your wallet first')
       return
     }
+    // Show confirmation popup
+    setShowConfirmation(true)
+  }
+
+  const handleConfirmSubscribe = async () => {
+    setShowConfirmation(false)
 
     try {
       setProcessing(true)
@@ -45,20 +54,25 @@ function PremiumModal({ show, onClose, wallet }) {
       const amount = selectedPayment === 'xrp' ? currentPricing.xrp : currentPricing.wlo
 
       // Create XUMM payment request
+      // Premium payments go to Treasury Wallet (revenue collection)
+      const TREASURY_WALLET = 'r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K'
+      const WALDO_ISSUER = 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+
       const paymentPayload = {
         TransactionType: 'Payment',
-        Destination: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY', // WALDOCOIN issuer wallet
+        Destination: TREASURY_WALLET,
         Amount: selectedPayment === 'xrp'
           ? String(Math.floor(amount * 1000000)) // XRP in drops
           : {
               currency: 'WLO',
               value: String(amount),
-              issuer: 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY'
+              issuer: WALDO_ISSUER
             },
+        DestinationTag: 888, // Tag for premium subscriptions
         Memos: [{
           Memo: {
-            MemoType: Buffer.from('premium_subscription', 'utf8').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(`${selectedDuration}_${wallet}`, 'utf8').toString('hex').toUpperCase()
+            MemoType: Buffer.from('PREMIUM_SUB', 'utf8').toString('hex').toUpperCase(),
+            MemoData: Buffer.from(`${selectedDuration}_${selectedPayment}`, 'utf8').toString('hex').toUpperCase()
           }
         }]
       }
@@ -84,8 +98,9 @@ function PremiumModal({ show, onClose, wallet }) {
         throw new Error('Failed to create payment request')
       }
 
-      // Open XUMM for signature
-      window.open(xummData.next.always, '_blank')
+      // Show QR code instead of opening in new window
+      setXummQrCode(xummData.refs.qr_png)
+      setXummPayloadId(xummData.uuid)
 
       // Poll for payment confirmation
       const checkPayment = setInterval(async () => {
@@ -94,6 +109,10 @@ function PremiumModal({ show, onClose, wallet }) {
 
         if (statusData.meta.signed) {
           clearInterval(checkPayment)
+
+          // Hide QR code
+          setXummQrCode(null)
+          setXummPayloadId(null)
 
           if (statusData.meta.resolved) {
             // Payment successful, activate premium
@@ -129,6 +148,8 @@ function PremiumModal({ show, onClose, wallet }) {
       // Timeout after 5 minutes
       setTimeout(() => {
         clearInterval(checkPayment)
+        setXummQrCode(null)
+        setXummPayloadId(null)
         setProcessing(false)
         alert('⏱️ Payment request timed out. Please try again.')
       }, 300000)
@@ -219,7 +240,7 @@ function PremiumModal({ show, onClose, wallet }) {
             {/* Subscribe Button */}
             <button
               className="subscribe-btn"
-              onClick={handleSubscribe}
+              onClick={handleSubscribeClick}
               disabled={processing || !wallet}
             >
               {processing ? 'Processing...' : `Subscribe with ${selectedPayment.toUpperCase()}`}
@@ -229,6 +250,55 @@ function PremiumModal({ show, onClose, wallet }) {
               <p className="wallet-warning">⚠️ Please connect your wallet first</p>
             )}
           </>
+        )}
+
+        {/* Confirmation Popup */}
+        {showConfirmation && (
+          <div className="confirmation-overlay">
+            <div className="confirmation-popup">
+              <h3>⚠️ Confirm Subscription</h3>
+              <div className="confirmation-details">
+                <p><strong>Duration:</strong> {selectedDuration === 'monthly' ? 'Monthly' : 'Yearly (Save $10!)'}</p>
+                <p><strong>Payment:</strong> {currentPricing?.[selectedPayment === 'xrp' ? 'xrp' : 'wlo']} {selectedPayment.toUpperCase()}</p>
+                <p><strong>USD Value:</strong> ${currentPricing?.usd}</p>
+                <p className="no-refund-warning">🚨 <strong>NO REFUNDS</strong> - All sales are final</p>
+              </div>
+              <div className="confirmation-buttons">
+                <button className="confirm-btn-yes" onClick={handleConfirmSubscribe}>
+                  ✅ Yes, Subscribe
+                </button>
+                <button className="confirm-btn-no" onClick={() => setShowConfirmation(false)}>
+                  ❌ Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* XUMM QR Code Popup */}
+        {xummQrCode && (
+          <div className="qr-overlay">
+            <div className="qr-popup">
+              <h3>📱 Scan with Xaman</h3>
+              <p className="qr-instructions">Open Xaman app and scan this QR code to sign the transaction</p>
+              <img src={xummQrCode} alt="XUMM QR Code" className="qr-code-image" />
+              <div className="qr-details">
+                <p><strong>Amount:</strong> {currentPricing?.[selectedPayment === 'xrp' ? 'xrp' : 'wlo']} {selectedPayment.toUpperCase()}</p>
+                <p><strong>Destination:</strong> Treasury Wallet</p>
+                <p className="qr-waiting">⏳ Waiting for signature...</p>
+              </div>
+              <button
+                className="qr-cancel-btn"
+                onClick={() => {
+                  setXummQrCode(null)
+                  setXummPayloadId(null)
+                  setProcessing(false)
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
