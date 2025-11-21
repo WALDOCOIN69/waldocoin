@@ -201,12 +201,69 @@ router.get('/user/usage', async (req, res) => {
 // GET /api/memeology/templates/imgflip - Get meme templates from Imgflip
 router.get('/templates/imgflip', async (req, res) => {
   try {
+    const { tier } = req.query;
+    const userTier = tier || 'free';
+
     const response = await axios.get('https://api.imgflip.com/get_memes');
 
     if (response.data.success) {
+      const allMemes = response.data.data.memes;
+
+      // Filter templates based on tier
+      let templates = [];
+      let templateLimit = 0;
+      let upgradeMessage = '';
+      let features = {};
+
+      if (userTier === 'premium') {
+        templates = allMemes; // All templates
+        templateLimit = allMemes.length;
+        features = {
+          templates: 'unlimited',
+          memes_per_day: 'unlimited',
+          fee_per_meme: 'none',
+          ai_suggestions: 'unlimited',
+          custom_fonts: true,
+          no_watermark: true,
+          nft_art_integration: true
+        };
+      } else if (userTier === 'waldocoin') {
+        templates = allMemes.slice(0, 150); // 150 templates
+        templateLimit = 150;
+        upgradeMessage = '🪙 WALDOCOIN Tier: 150 templates, unlimited memes/day, 0.1 WLO per meme. Upgrade to Premium for 200+ templates and no fees!';
+        features = {
+          templates: 150,
+          memes_per_day: 'unlimited',
+          fee_per_meme: '0.1 WLO',
+          ai_suggestions: '50/day',
+          custom_fonts: true,
+          no_watermark: false,
+          nft_art_integration: true
+        };
+      } else {
+        templates = allMemes.slice(0, 50); // 50 templates for free tier
+        templateLimit = 50;
+        upgradeMessage = '🆓 Free Tier: 50 templates, 10 memes/day. Hold 1000+ WLO for 150 templates and unlimited memes!';
+        features = {
+          templates: 50,
+          memes_per_day: 10,
+          fee_per_meme: 'none',
+          ai_suggestions: '5/day',
+          custom_fonts: false,
+          no_watermark: false,
+          nft_art_integration: false
+        };
+      }
+
+      console.log(`📋 Templates endpoint: tier=${userTier}, returning ${templates.length}/${allMemes.length} templates`);
+
       res.json({
         success: true,
-        memes: response.data.data.memes
+        memes: templates,
+        tier: userTier,
+        template_count: templates.length,
+        upgrade_message: upgradeMessage,
+        features: features
       });
     } else {
       res.status(500).json({ error: 'Failed to fetch templates' });
