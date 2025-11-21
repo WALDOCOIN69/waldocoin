@@ -227,7 +227,7 @@ async function checkUserTier(wallet) {
         badge: '💵 PREMIUM'
       };
     }
-    // 🪙 WALDOCOIN TIER (1000+ WLO) - CAN EARN WLO
+    // 🪙 WALDOCOIN TIER (1000+ WLO) - CAN EARN WLO - HAS WATERMARK
     else if (tier === 'waldocoin') {
       features = {
         templates: 150,
@@ -235,7 +235,7 @@ async function checkUserTier(wallet) {
         feePerMeme: '0.1 WLO',
         aiSuggestions: '10/day',
         customFonts: true,
-        noWatermark: false,
+        noWatermark: false,  // WALDOCOIN tier has watermark
         nftArtIntegration: true,
         customUploads: '50/day',
         gifTemplates: 'unlimited',
@@ -244,7 +244,7 @@ async function checkUserTier(wallet) {
         badge: '🪙 WALDOCOIN'
       };
     }
-    // 🆓 FREE TIER - CANNOT EARN WLO, LIMITED FEATURES, NO GIFS, NO UPLOADS
+    // 🆓 FREE TIER - CANNOT EARN WLO, LIMITED FEATURES, NO GIFS, NO UPLOADS - HAS WATERMARK
     else {
       features = {
         templates: 50,
@@ -252,7 +252,7 @@ async function checkUserTier(wallet) {
         feePerMeme: 'none',
         aiSuggestions: '1/day',
         customFonts: false,
-        noWatermark: false,
+        noWatermark: false,  // FREE tier has watermark
         nftArtIntegration: false,
         customUploads: 'none',
         gifTemplates: 'none',
@@ -904,6 +904,157 @@ router.post('/upload', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in /upload:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/premium/subscribe - Subscribe to premium (remove watermark)
+router.post('/premium/subscribe', async (req, res) => {
+  try {
+    const { wallet, paymentMethod, duration } = req.body; // duration: 'monthly' or 'yearly'
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet address required' });
+    }
+
+    // Premium pricing
+    const pricing = {
+      monthly: {
+        xrp: 10,      // 10 XRP per month
+        wlo: 5000,    // 5,000 WLO per month
+        usd: 5        // $5 USD equivalent
+      },
+      yearly: {
+        xrp: 100,     // 100 XRP per year (2 months free)
+        wlo: 50000,   // 50,000 WLO per year (2 months free)
+        usd: 50       // $50 USD equivalent (2 months free)
+      }
+    };
+
+    const selectedDuration = duration || 'monthly';
+    const price = pricing[selectedDuration];
+
+    if (!price) {
+      return res.status(400).json({ error: 'Invalid duration. Use "monthly" or "yearly"' });
+    }
+
+    // Calculate expiration date
+    const now = new Date();
+    const expiresAt = new Date(now);
+    if (selectedDuration === 'monthly') {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    } else {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    }
+
+    // Store premium subscription (in production, verify payment first)
+    premiumSubscriptions.set(wallet, {
+      wallet,
+      tier: 'premium',
+      subscribedAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      duration: selectedDuration,
+      paymentMethod: paymentMethod || 'pending',
+      active: true
+    });
+
+    console.log(`💵 Premium subscription created for ${wallet.slice(0, 10)}... (${selectedDuration})`);
+
+    res.json({
+      success: true,
+      message: `Premium subscription activated! Watermark removed.`,
+      subscription: {
+        tier: 'premium',
+        duration: selectedDuration,
+        expiresAt: expiresAt.toISOString(),
+        pricing: price,
+        benefits: {
+          noWatermark: true,
+          unlimitedMemes: true,
+          unlimitedTemplates: true,
+          unlimitedAI: true,
+          customFonts: true,
+          customUploads: true,
+          gifTemplates: true,
+          canEarnWLO: true
+        }
+      },
+      paymentInstructions: {
+        xrp: `Send ${price.xrp} XRP to: [PAYMENT_WALLET]`,
+        wlo: `Send ${price.wlo} WLO to: [PAYMENT_WALLET]`,
+        note: 'Payment verification pending. Premium features activated immediately.'
+      }
+    });
+  } catch (error) {
+    console.error('Error in /premium/subscribe:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/premium/status - Check premium subscription status
+router.get('/premium/status/:wallet', async (req, res) => {
+  try {
+    const { wallet } = req.params;
+
+    const subscription = premiumSubscriptions.get(wallet);
+
+    if (!subscription) {
+      return res.json({
+        isPremium: false,
+        message: 'No active premium subscription'
+      });
+    }
+
+    // Check if subscription is expired
+    const now = new Date();
+    const expiresAt = new Date(subscription.expiresAt);
+    const isExpired = now > expiresAt;
+
+    if (isExpired) {
+      subscription.active = false;
+      premiumSubscriptions.set(wallet, subscription);
+    }
+
+    res.json({
+      isPremium: subscription.active && !isExpired,
+      subscription: subscription.active && !isExpired ? subscription : null,
+      message: isExpired ? 'Premium subscription expired' : 'Premium subscription active'
+    });
+  } catch (error) {
+    console.error('Error in /premium/status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/premium/cancel - Cancel premium subscription
+router.post('/premium/cancel', async (req, res) => {
+  try {
+    const { wallet } = req.body;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet address required' });
+    }
+
+    const subscription = premiumSubscriptions.get(wallet);
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'No active premium subscription found' });
+    }
+
+    // Mark as cancelled (will expire at end of paid period)
+    subscription.active = false;
+    subscription.cancelledAt = new Date().toISOString();
+    premiumSubscriptions.set(wallet, subscription);
+
+    console.log(`❌ Premium subscription cancelled for ${wallet.slice(0, 10)}...`);
+
+    res.json({
+      success: true,
+      message: 'Premium subscription cancelled. Access will continue until expiration date.',
+      expiresAt: subscription.expiresAt
+    });
+  } catch (error) {
+    console.error('Error in /premium/cancel:', error);
     res.status(500).json({ error: error.message });
   }
 });
