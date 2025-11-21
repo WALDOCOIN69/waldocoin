@@ -58,15 +58,8 @@ function AIBot() {
     <div className="ai-bot">
       <div className="ai-container">
         <div className="ai-header">
-          <h2>🤖 AI Meme Bot</h2>
-          <div className="model-selector">
-            <label>AI Model:</label>
-            <select value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
-              <option value="groq">⚡ Groq (Free, Fast)</option>
-              {tier === 'premium' && <option value="claude">✨ Claude (Premium, Best)</option>}
-              <option value="ollama">🏠 Ollama (Free, Local)</option>
-            </select>
-          </div>
+          <h2>🤖 AI Meme Assistant</h2>
+          {/* Hide AI model selector - users don't need to know which AI is being used */}
         </div>
 
         <div className="chat-box">

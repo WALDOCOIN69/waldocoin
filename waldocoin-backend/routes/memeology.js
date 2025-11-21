@@ -99,7 +99,7 @@ async function checkUserTier(wallet) {
         templates: 150,
         memesPerDay: 'unlimited',
         feePerMeme: '0.1 WLO',
-        aiSuggestions: '50/day',
+        aiSuggestions: '10/day',
         customFonts: true,
         noWatermark: false,
         nftArtIntegration: true
@@ -109,7 +109,7 @@ async function checkUserTier(wallet) {
         templates: 50,
         memesPerDay: 10,
         feePerMeme: 'none',
-        aiSuggestions: '5/day',
+        aiSuggestions: '1/day',
         customFonts: false,
         noWatermark: false,
         nftArtIntegration: false
@@ -235,7 +235,7 @@ router.get('/templates/imgflip', async (req, res) => {
           templates: 150,
           memes_per_day: 'unlimited',
           fee_per_meme: '0.1 WLO',
-          ai_suggestions: '50/day',
+          ai_suggestions: '10/day',
           custom_fonts: true,
           no_watermark: false,
           nft_art_integration: true
@@ -248,7 +248,7 @@ router.get('/templates/imgflip', async (req, res) => {
           templates: 50,
           memes_per_day: 10,
           fee_per_meme: 'none',
-          ai_suggestions: '5/day',
+          ai_suggestions: '1/day',
           custom_fonts: false,
           no_watermark: false,
           nft_art_integration: false
