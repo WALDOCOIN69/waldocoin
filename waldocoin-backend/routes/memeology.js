@@ -823,14 +823,14 @@ router.post('/community/vote', async (req, res) => {
       const creatorTier = await checkUserTier(meme.wallet);
 
       if (creatorTier.features.canEarnWLO) {
-        if (meme.upvotes >= 100 && !meme.rewarded100) {
-          meme.rewarded100 = true;
-          console.log(`🏆 Meme ${memeId} reached 100 upvotes! Award 10 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
-          // TODO: Send 10 WLO to meme.wallet via XRPL transaction
-        }
         if (meme.upvotes >= 1000 && !meme.rewarded1000) {
           meme.rewarded1000 = true;
-          console.log(`🏆 Meme ${memeId} reached 1000 upvotes! Award 100 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
+          console.log(`🏆 Meme ${memeId} reached 1000 upvotes! Award 10 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
+          // TODO: Send 10 WLO to meme.wallet via XRPL transaction
+        }
+        if (meme.upvotes >= 10000 && !meme.rewarded10000) {
+          meme.rewarded10000 = true;
+          console.log(`🏆 Meme ${memeId} reached 10,000 upvotes! Award 100 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
           // TODO: Send 100 WLO to meme.wallet via XRPL transaction
         }
       } else {
