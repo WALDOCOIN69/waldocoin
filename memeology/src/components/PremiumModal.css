@@ -1,0 +1,235 @@
+.premium-modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #ff3df7;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 0 40px rgba(255, 61, 247, 0.4);
+}
+
+.premium-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.premium-header h2 {
+  font-size: 32px;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #ff3df7, #00f5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.premium-subtitle {
+  color: #aaa;
+  font-size: 16px;
+}
+
+/* Duration Selector */
+.duration-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.duration-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  text-align: center;
+}
+
+.duration-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 61, 247, 0.5);
+}
+
+.duration-btn.active {
+  background: rgba(255, 61, 247, 0.2);
+  border-color: #ff3df7;
+  box-shadow: 0 0 20px rgba(255, 61, 247, 0.3);
+}
+
+.duration-label {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+.duration-price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #00f5ff;
+}
+
+.duration-savings {
+  font-size: 12px;
+  color: #4ade80;
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+/* Payment Selector */
+.payment-selector {
+  margin-bottom: 30px;
+}
+
+.payment-selector h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: white;
+}
+
+.payment-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.payment-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  text-align: center;
+}
+
+.payment-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 245, 255, 0.5);
+}
+
+.payment-btn.active {
+  background: rgba(0, 245, 255, 0.2);
+  border-color: #00f5ff;
+  box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+.payment-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.payment-label {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+.payment-amount {
+  font-size: 20px;
+  font-weight: bold;
+  color: #00f5ff;
+  margin-bottom: 5px;
+}
+
+.payment-usd {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Premium Benefits */
+.premium-benefits {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.premium-benefits h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: white;
+}
+
+.premium-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.premium-benefits li {
+  padding: 8px 0;
+  color: #ddd;
+  font-size: 14px;
+}
+
+/* Subscribe Button */
+.subscribe-btn {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(90deg, #ff3df7, #00f5ff);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+}
+
+.subscribe-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 25px rgba(255, 61, 247, 0.5);
+}
+
+.subscribe-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wallet-warning {
+  text-align: center;
+  color: #ff6b6b;
+  font-size: 14px;
+  margin: 0;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 40px;
+  color: #aaa;
+  font-size: 16px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .premium-modal {
+    padding: 25px;
+    max-width: 95%;
+  }
+
+  .premium-header h2 {
+    font-size: 24px;
+  }
+
+  .duration-selector,
+  .payment-options {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-icon {
+    font-size: 24px;
+  }
+
+  .payment-amount {
+    font-size: 18px;
+  }
+}
+
+

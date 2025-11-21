@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './MemeGenerator.css'
+import PremiumModal from './PremiumModal'
 
 // Get API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
@@ -18,6 +19,7 @@ function MemeGenerator() {
   const [tierFeatures, setTierFeatures] = useState(null)
   const [showTierModal, setShowTierModal] = useState(false)
   const [showNFTModal, setShowNFTModal] = useState(false)
+  const [showPremiumModal, setShowPremiumModal] = useState(false)
   const [userNFTs, setUserNFTs] = useState([])
 
   // Multiple text boxes
@@ -739,7 +741,13 @@ function MemeGenerator() {
                   <li>✅ No watermark</li>
                   <li>💰 <strong>No fees!</strong></li>
                 </ul>
-                <button className="tier-button tier-button-premium">
+                <button
+                  className="tier-button tier-button-premium"
+                  onClick={() => {
+                    setShowTierModal(false)
+                    setShowPremiumModal(true)
+                  }}
+                >
                   Upgrade to Premium
                 </button>
               </div>
@@ -790,6 +798,13 @@ function MemeGenerator() {
           </div>
         </div>
       )}
+
+      {/* Premium Payment Modal */}
+      <PremiumModal
+        show={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        wallet={user?.wallet}
+      />
     </div>
   )
 }
