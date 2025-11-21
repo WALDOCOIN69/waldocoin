@@ -244,7 +244,7 @@ async function checkUserTier(wallet) {
         badge: '🪙 WALDOCOIN'
       };
     }
-    // 🆓 FREE TIER - CANNOT EARN WLO, LIMITED FEATURES
+    // 🆓 FREE TIER - CANNOT EARN WLO, LIMITED FEATURES, NO GIFS, NO UPLOADS
     else {
       features = {
         templates: 50,
@@ -254,8 +254,8 @@ async function checkUserTier(wallet) {
         customFonts: false,
         noWatermark: false,
         nftArtIntegration: false,
-        customUploads: '5/day',
-        gifTemplates: 'unlimited',
+        customUploads: 'none',
+        gifTemplates: 'none',
         communityGallery: true,
         canEarnWLO: false,
         badge: '🆓 FREE'
@@ -428,11 +428,11 @@ router.get('/templates/imgflip', async (req, res) => {
           can_earn_wlo: true
         };
       }
-      // 🆓 FREE TIER
+      // 🆓 FREE TIER - NO GIFS, NO UPLOADS, CANNOT EARN WLO
       else {
         templates = allMemes.slice(0, 50); // 50 templates for free tier
         templateLimit = 50;
-        upgradeMessage = '🆓 Free Tier: 50 templates, 5 memes/day. Hold 1000+ WLO or collect 3+ NFTs for more!';
+        upgradeMessage = '🆓 Free Tier: 50 templates, 5 memes/day, NO GIFs, NO uploads, NO WLO rewards. Collect 3+ NFTs or hold 1000+ WLO to unlock everything!';
         features = {
           templates: 50,
           memes_per_day: 5,
@@ -441,8 +441,8 @@ router.get('/templates/imgflip', async (req, res) => {
           custom_fonts: false,
           no_watermark: false,
           nft_art_integration: false,
-          custom_uploads: '5/day',
-          gif_templates: 'unlimited',
+          custom_uploads: 'none',
+          gif_templates: 'none',
           can_earn_wlo: false
         };
       }
@@ -471,6 +471,19 @@ router.get('/templates/giphy', async (req, res) => {
   try {
     const { tier, limit = 50 } = req.query;
     const userTier = tier || 'free';
+
+    // 🚫 FREE TIER CANNOT ACCESS GIFS
+    if (userTier === 'free') {
+      return res.status(403).json({
+        error: 'GIF templates are not available on free tier',
+        message: '🎬 Upgrade to access GIF memes! Collect 3+ NFTs or hold 1000+ WLO to unlock.',
+        upgradeOptions: {
+          nfts: 'Collect 3+ NFTs for unlimited free access',
+          wlo: 'Hold 1000+ WLO for WALDOCOIN tier',
+          premium: 'Subscribe for $5/month'
+        }
+      });
+    }
 
     // Giphy API - trending GIFs
     const response = await axios.get('https://api.giphy.com/v1/gifs/trending', {
@@ -844,18 +857,30 @@ router.post('/upload', async (req, res) => {
       return res.status(400).json({ error: 'Wallet and image data required' });
     }
 
+    // 🚫 FREE TIER CANNOT UPLOAD CUSTOM IMAGES
+    if (tier === 'free') {
+      return res.status(403).json({
+        error: 'Custom uploads are not available on free tier',
+        message: '📸 Upgrade to upload your own images! Collect 3+ NFTs or hold 1000+ WLO to unlock.',
+        upgradeOptions: {
+          nfts: 'Collect 3+ NFTs for unlimited uploads',
+          wlo: 'Hold 1000+ WLO for 50 uploads/day',
+          premium: 'Subscribe for $5/month for unlimited uploads'
+        }
+      });
+    }
+
     // Check upload limits based on tier
     const today = new Date().toISOString().split('T')[0];
     const key = `${wallet}:${today}`;
     const uploadCount = userUploadCount.get(key) || 0;
 
-    let uploadLimit = 5; // Free tier
-    if (tier === 'waldocoin') uploadLimit = 50;
+    let uploadLimit = 50; // WALDOCOIN tier
     if (tier === 'premium' || tier === 'king' || tier === 'platinum' || tier === 'gold') uploadLimit = 999999; // Unlimited for premium/king/platinum/gold
 
     if (uploadCount >= uploadLimit) {
       return res.status(429).json({
-        error: `Daily upload limit reached (${uploadLimit} uploads/day). ${tier === 'free' ? 'Hold 10+ NFTs for unlimited uploads!' : 'Upgrade for more!'}`,
+        error: `Daily upload limit reached (${uploadLimit} uploads/day). Collect 3+ NFTs for unlimited uploads!`,
         limit: uploadLimit,
         used: uploadCount
       });
