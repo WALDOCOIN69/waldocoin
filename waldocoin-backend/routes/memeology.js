@@ -1075,6 +1075,75 @@ router.get('/premium/pricing', async (req, res) => {
   }
 });
 
+// POST /api/memeology/premium/test-activate - ADMIN: Manually activate premium for testing
+router.post('/premium/test-activate', async (req, res) => {
+  try {
+    const { wallet, duration } = req.body;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet address required' });
+    }
+
+    const selectedDuration = duration || 'yearly'; // Default to yearly for testing
+
+    const now = new Date();
+    const expiresAt = new Date(now);
+    const gracePeriodDays = 3;
+
+    if (selectedDuration === 'monthly') {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    } else {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    }
+
+    const graceExpiresAt = new Date(expiresAt);
+    graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+
+    // Store premium subscription
+    premiumSubscriptions.set(wallet, {
+      wallet,
+      tier: 'premium',
+      subscribedAt: now.toISOString(),
+      lastRenewalAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      graceExpiresAt: graceExpiresAt.toISOString(),
+      duration: selectedDuration,
+      paymentMethod: 'TEST',
+      paymentTxHash: 'TEST_ACTIVATION_' + Date.now(),
+      amountPaid: 0,
+      currency: 'TEST',
+      usdValue: 0,
+      active: true,
+      autoRenew: false,
+      renewalReminders: {
+        threeDaysSent: false,
+        oneDaySent: false,
+        expirationSent: false
+      }
+    });
+
+    console.log(`🧪 TEST: Premium subscription activated for ${wallet.slice(0, 10)}... (${selectedDuration})`);
+
+    res.json({
+      success: true,
+      message: `✅ TEST: Premium subscription activated!`,
+      subscription: {
+        tier: 'premium',
+        duration: selectedDuration,
+        subscribedAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        graceExpiresAt: graceExpiresAt.toISOString(),
+        gracePeriodDays: gracePeriodDays,
+        daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
+        testMode: true
+      }
+    });
+  } catch (error) {
+    console.error('Error in /premium/test-activate:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/memeology/premium/status - Check premium subscription status
 router.get('/premium/status/:wallet', async (req, res) => {
   try {
