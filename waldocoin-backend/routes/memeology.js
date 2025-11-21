@@ -63,11 +63,58 @@ async function getWLOBalance(wallet) {
   }
 }
 
+// Helper: Get NFT count and check for KING NFTs
+async function getNFTTier(wallet) {
+  try {
+    const client = new xrpl.Client(XRPL_SERVER);
+    await client.connect();
+
+    const nfts = await client.request({
+      command: 'account_nfts',
+      account: wallet,
+      ledger_index: 'validated'
+    });
+
+    await client.disconnect();
+
+    const nftCount = nfts.result.account_nfts?.length || 0;
+
+    // Check for KING NFTs (specific NFT IDs or issuer)
+    // TODO: Replace with actual KING NFT identifiers
+    const kingNFTs = nfts.result.account_nfts?.filter(nft => {
+      // Check if NFT is from WALDOCOIN collection
+      // You can check by issuer, URI, or specific NFT IDs
+      return nft.Issuer === WLO_ISSUER; // Adjust this logic based on your NFT collection
+    }) || [];
+
+    const hasKingNFT = kingNFTs.length > 0;
+    const isGoldTier = nftCount >= 10; // Gold tier: 10+ NFTs
+
+    console.log(`🖼️ NFT Check for ${wallet}: ${nftCount} NFTs, Gold: ${isGoldTier}, KING: ${hasKingNFT}`);
+
+    return {
+      nftCount,
+      isGoldTier,
+      hasKingNFT,
+      kingNFTCount: kingNFTs.length
+    };
+  } catch (error) {
+    console.error('❌ Error getting NFT tier:', error);
+    return {
+      nftCount: 0,
+      isGoldTier: false,
+      hasKingNFT: false,
+      kingNFTCount: 0
+    };
+  }
+}
+
 // Helper: Check user tier
 async function checkUserTier(wallet) {
   try {
     const wloBalance = await getWLOBalance(wallet);
-    
+    const nftTier = await getNFTTier(wallet);
+
     // Check premium subscription
     const now = new Date();
     let tier = 'free';
@@ -81,14 +128,26 @@ async function checkUserTier(wallet) {
       }
     }
 
-    // Check WLO balance for WALDOCOIN tier (if not premium)
-    if (tier !== 'premium' && wloBalance >= 1000) {
+    // 🏆 KING NFT HOLDERS = UNLIMITED FREE ACCESS (highest priority)
+    if (nftTier.hasKingNFT) {
+      tier = 'king';
+      console.log(`👑 KING NFT holder detected! Unlimited free access granted.`);
+    }
+    // 🥇 GOLD TIER (10+ NFTs) = UNLIMITED FREE ACCESS
+    else if (nftTier.isGoldTier) {
+      tier = 'gold';
+      console.log(`🥇 Gold NFT holder detected (${nftTier.nftCount} NFTs)! Unlimited free access granted.`);
+    }
+    // Check WLO balance for WALDOCOIN tier (if not premium/king/gold)
+    else if (tier !== 'premium' && wloBalance >= 1000) {
       tier = 'waldocoin';
     }
 
     // Set features based on tier
     let features = {};
-    if (tier === 'premium') {
+
+    // 👑 KING NFT HOLDERS - UNLIMITED EVERYTHING, NO FEES
+    if (tier === 'king') {
       features = {
         templates: 'unlimited',
         memesPerDay: 'unlimited',
@@ -96,9 +155,47 @@ async function checkUserTier(wallet) {
         aiSuggestions: 'unlimited',
         customFonts: true,
         noWatermark: true,
-        nftArtIntegration: true
+        nftArtIntegration: true,
+        customUploads: 'unlimited',
+        gifTemplates: 'unlimited',
+        communityGallery: true,
+        badge: '👑 KING'
       };
-    } else if (tier === 'waldocoin') {
+    }
+    // 🥇 GOLD TIER (10+ NFTs) - UNLIMITED EVERYTHING, NO FEES
+    else if (tier === 'gold') {
+      features = {
+        templates: 'unlimited',
+        memesPerDay: 'unlimited',
+        feePerMeme: 'none',
+        aiSuggestions: 'unlimited',
+        customFonts: true,
+        noWatermark: true,
+        nftArtIntegration: true,
+        customUploads: 'unlimited',
+        gifTemplates: 'unlimited',
+        communityGallery: true,
+        badge: '🥇 GOLD NFT HOLDER'
+      };
+    }
+    // 💎 PREMIUM TIER
+    else if (tier === 'premium') {
+      features = {
+        templates: 'unlimited',
+        memesPerDay: 'unlimited',
+        feePerMeme: 'none',
+        aiSuggestions: 'unlimited',
+        customFonts: true,
+        noWatermark: true,
+        nftArtIntegration: true,
+        customUploads: 'unlimited',
+        gifTemplates: 'unlimited',
+        communityGallery: true,
+        badge: '💎 PREMIUM'
+      };
+    }
+    // 🪙 WALDOCOIN TIER
+    else if (tier === 'waldocoin') {
       features = {
         templates: 150,
         memesPerDay: 'unlimited',
@@ -106,9 +203,15 @@ async function checkUserTier(wallet) {
         aiSuggestions: '10/day',
         customFonts: true,
         noWatermark: false,
-        nftArtIntegration: true
+        nftArtIntegration: true,
+        customUploads: '50/day',
+        gifTemplates: 'unlimited',
+        communityGallery: true,
+        badge: '🪙 WALDOCOIN'
       };
-    } else {
+    }
+    // 🆓 FREE TIER
+    else {
       features = {
         templates: 50,
         memesPerDay: 10,
@@ -116,7 +219,11 @@ async function checkUserTier(wallet) {
         aiSuggestions: '1/day',
         customFonts: false,
         noWatermark: false,
-        nftArtIntegration: false
+        nftArtIntegration: false,
+        customUploads: '5/day',
+        gifTemplates: 'unlimited',
+        communityGallery: true,
+        badge: '🆓 FREE'
       };
     }
 
@@ -124,6 +231,9 @@ async function checkUserTier(wallet) {
       tier,
       wallet,
       wloBalance,
+      nftCount: nftTier.nftCount,
+      hasKingNFT: nftTier.hasKingNFT,
+      isGoldTier: nftTier.isGoldTier,
       premiumExpires,
       features
     };
@@ -133,6 +243,7 @@ async function checkUserTier(wallet) {
       tier: 'free',
       wallet,
       wloBalance: 0,
+      nftCount: 0,
       error: error.message
     };
   }
@@ -219,7 +330,27 @@ router.get('/templates/imgflip', async (req, res) => {
       let upgradeMessage = '';
       let features = {};
 
-      if (userTier === 'premium') {
+      // 👑 KING & 🥇 GOLD NFT HOLDERS - UNLIMITED FREE ACCESS
+      if (userTier === 'king' || userTier === 'gold') {
+        templates = allMemes; // All templates
+        templateLimit = allMemes.length;
+        upgradeMessage = userTier === 'king'
+          ? '👑 KING NFT HOLDER: Unlimited everything, no fees! You are royalty!'
+          : '🥇 GOLD NFT HOLDER (10+ NFTs): Unlimited everything, no fees! Thank you for your support!';
+        features = {
+          templates: 'unlimited',
+          memes_per_day: 'unlimited',
+          fee_per_meme: 'none',
+          ai_suggestions: 'unlimited',
+          custom_fonts: true,
+          no_watermark: true,
+          nft_art_integration: true,
+          custom_uploads: 'unlimited',
+          gif_templates: 'unlimited'
+        };
+      }
+      // 💎 PREMIUM TIER
+      else if (userTier === 'premium') {
         templates = allMemes; // All templates
         templateLimit = allMemes.length;
         features = {
@@ -229,12 +360,16 @@ router.get('/templates/imgflip', async (req, res) => {
           ai_suggestions: 'unlimited',
           custom_fonts: true,
           no_watermark: true,
-          nft_art_integration: true
+          nft_art_integration: true,
+          custom_uploads: 'unlimited',
+          gif_templates: 'unlimited'
         };
-      } else if (userTier === 'waldocoin') {
+      }
+      // 🪙 WALDOCOIN TIER
+      else if (userTier === 'waldocoin') {
         templates = allMemes.slice(0, 150); // 150 templates
         templateLimit = 150;
-        upgradeMessage = '🪙 WALDOCOIN Tier: 150 templates, unlimited memes/day, 0.1 WLO per meme. Upgrade to Premium for 200+ templates and no fees!';
+        upgradeMessage = '🪙 WALDOCOIN Tier: 150 templates, unlimited memes/day, 0.1 WLO per meme. Hold 10+ NFTs for unlimited free access!';
         features = {
           templates: 150,
           memes_per_day: 'unlimited',
@@ -242,12 +377,16 @@ router.get('/templates/imgflip', async (req, res) => {
           ai_suggestions: '10/day',
           custom_fonts: true,
           no_watermark: false,
-          nft_art_integration: true
+          nft_art_integration: true,
+          custom_uploads: '50/day',
+          gif_templates: 'unlimited'
         };
-      } else {
+      }
+      // 🆓 FREE TIER
+      else {
         templates = allMemes.slice(0, 50); // 50 templates for free tier
         templateLimit = 50;
-        upgradeMessage = '🆓 Free Tier: 50 templates, 10 memes/day. Hold 1000+ WLO for 150 templates and unlimited memes!';
+        upgradeMessage = '🆓 Free Tier: 50 templates, 10 memes/day. Hold 1000+ WLO for 150 templates or 10+ NFTs for unlimited free access!';
         features = {
           templates: 50,
           memes_per_day: 10,
@@ -255,7 +394,9 @@ router.get('/templates/imgflip', async (req, res) => {
           ai_suggestions: '1/day',
           custom_fonts: false,
           no_watermark: false,
-          nft_art_integration: false
+          nft_art_integration: false,
+          custom_uploads: '5/day',
+          gif_templates: 'unlimited'
         };
       }
 
@@ -656,11 +797,11 @@ router.post('/upload', async (req, res) => {
 
     let uploadLimit = 5; // Free tier
     if (tier === 'waldocoin') uploadLimit = 50;
-    if (tier === 'premium') uploadLimit = 999999; // Unlimited
+    if (tier === 'premium' || tier === 'king' || tier === 'gold') uploadLimit = 999999; // Unlimited for premium/king/gold
 
     if (uploadCount >= uploadLimit) {
       return res.status(429).json({
-        error: `Daily upload limit reached (${uploadLimit} uploads/day). Upgrade for more!`,
+        error: `Daily upload limit reached (${uploadLimit} uploads/day). ${tier === 'free' ? 'Hold 10+ NFTs for unlimited uploads!' : 'Upgrade for more!'}`,
         limit: uploadLimit,
         used: uploadCount
       });
