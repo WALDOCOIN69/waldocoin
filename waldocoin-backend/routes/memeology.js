@@ -12,6 +12,7 @@ const router = express.Router();
 // Configuration
 const IMGFLIP_USERNAME = process.env.IMGFLIP_USERNAME || 'waldolabs';
 const IMGFLIP_PASSWORD = process.env.IMGFLIP_PASSWORD || 'waldolabs123';
+const GIPHY_API_KEY = process.env.GIPHY_API_KEY || 'YOUR_GIPHY_API_KEY'; // Get free key at developers.giphy.com
 const XRPL_SERVER = process.env.XRPL_SERVER || 'wss://s1.ripple.com'; // WebSocket for xrpl.js Client
 const WLO_ISSUER = process.env.WLO_ISSUER || process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WLO_CURRENCY = 'WLO';
@@ -20,6 +21,9 @@ const WLO_CURRENCY = 'WLO';
 const xummSessions = new Map();
 const userMemeCount = new Map();
 const premiumSubscriptions = new Map();
+const userUploadCount = new Map(); // Track daily upload limits
+const communityMemes = []; // Store community-shared memes
+const memeUpvotes = new Map(); // Track upvotes per meme
 
 // Helper: Get WLO balance from XRPL
 async function getWLOBalance(wallet) {
@@ -274,6 +278,49 @@ router.get('/templates/imgflip', async (req, res) => {
   }
 });
 
+// GET /api/memeology/templates/giphy - Get GIF templates from Giphy
+router.get('/templates/giphy', async (req, res) => {
+  try {
+    const { tier, limit = 50 } = req.query;
+    const userTier = tier || 'free';
+
+    // Giphy API - trending GIFs
+    const response = await axios.get('https://api.giphy.com/v1/gifs/trending', {
+      params: {
+        api_key: GIPHY_API_KEY,
+        limit: limit,
+        rating: 'pg-13' // Family-friendly content
+      }
+    });
+
+    if (response.data.data) {
+      const gifs = response.data.data.map(gif => ({
+        id: gif.id,
+        name: gif.title || 'Animated GIF',
+        url: gif.images.fixed_height.url,
+        original_url: gif.images.original.url,
+        width: gif.images.original.width,
+        height: gif.images.original.height,
+        type: 'gif'
+      }));
+
+      console.log(`🎬 Giphy endpoint: tier=${userTier}, returning ${gifs.length} GIFs`);
+
+      res.json({
+        success: true,
+        gifs: gifs,
+        tier: userTier,
+        count: gifs.length
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to fetch GIFs from Giphy' });
+    }
+  } catch (error) {
+    console.error('Error in /templates/giphy:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/memeology/user/nfts - Fetch user's NFTs from XRPL
 router.get('/user/nfts', async (req, res) => {
   try {
@@ -472,6 +519,171 @@ router.post('/premium/subscribe', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in /premium/subscribe:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/community/share - Share meme to community gallery
+router.post('/community/share', async (req, res) => {
+  try {
+    const { wallet, memeUrl, templateName, caption } = req.body;
+
+    if (!wallet || !memeUrl) {
+      return res.status(400).json({ error: 'Wallet and meme URL required' });
+    }
+
+    const meme = {
+      id: `meme_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      wallet,
+      memeUrl,
+      templateName: templateName || 'Custom Meme',
+      caption: caption || '',
+      createdAt: new Date().toISOString(),
+      upvotes: 0,
+      downvotes: 0
+    };
+
+    communityMemes.unshift(meme); // Add to beginning
+    memeUpvotes.set(meme.id, { upvotes: new Set(), downvotes: new Set() });
+
+    console.log(`🎨 Meme shared to community: ${meme.id} by ${wallet.slice(0, 10)}...`);
+
+    res.json({
+      success: true,
+      meme: meme,
+      message: 'Meme shared to community gallery!'
+    });
+  } catch (error) {
+    console.error('Error in /community/share:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/community/gallery - Get community memes
+router.get('/community/gallery', async (req, res) => {
+  try {
+    const { limit = 50, sort = 'recent' } = req.query;
+
+    let memes = [...communityMemes];
+
+    // Sort by upvotes or recent
+    if (sort === 'top') {
+      memes.sort((a, b) => b.upvotes - a.upvotes);
+    }
+
+    // Limit results
+    memes = memes.slice(0, parseInt(limit));
+
+    res.json({
+      success: true,
+      memes: memes,
+      total: communityMemes.length
+    });
+  } catch (error) {
+    console.error('Error in /community/gallery:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/community/vote - Upvote/downvote a meme
+router.post('/community/vote', async (req, res) => {
+  try {
+    const { wallet, memeId, voteType } = req.body; // voteType: 'up' or 'down'
+
+    if (!wallet || !memeId || !voteType) {
+      return res.status(400).json({ error: 'Wallet, meme ID, and vote type required' });
+    }
+
+    const votes = memeUpvotes.get(memeId);
+    if (!votes) {
+      return res.status(404).json({ error: 'Meme not found' });
+    }
+
+    // Remove previous vote if exists
+    votes.upvotes.delete(wallet);
+    votes.downvotes.delete(wallet);
+
+    // Add new vote
+    if (voteType === 'up') {
+      votes.upvotes.add(wallet);
+    } else if (voteType === 'down') {
+      votes.downvotes.add(wallet);
+    }
+
+    // Update meme upvote/downvote counts
+    const meme = communityMemes.find(m => m.id === memeId);
+    if (meme) {
+      meme.upvotes = votes.upvotes.size;
+      meme.downvotes = votes.downvotes.size;
+
+      // Award WLO for viral memes
+      if (meme.upvotes >= 100 && !meme.rewarded100) {
+        meme.rewarded100 = true;
+        console.log(`🏆 Meme ${memeId} reached 100 upvotes! Award 10 WLO to ${meme.wallet}`);
+        // TODO: Send 10 WLO to meme.wallet via XRPL transaction
+      }
+      if (meme.upvotes >= 1000 && !meme.rewarded1000) {
+        meme.rewarded1000 = true;
+        console.log(`🏆 Meme ${memeId} reached 1000 upvotes! Award 100 WLO to ${meme.wallet}`);
+        // TODO: Send 100 WLO to meme.wallet via XRPL transaction
+      }
+    }
+
+    res.json({
+      success: true,
+      upvotes: votes.upvotes.size,
+      downvotes: votes.downvotes.size
+    });
+  } catch (error) {
+    console.error('Error in /community/vote:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/upload - Upload custom image
+router.post('/upload', async (req, res) => {
+  try {
+    const { wallet, imageData, tier } = req.body; // imageData is base64
+
+    if (!wallet || !imageData) {
+      return res.status(400).json({ error: 'Wallet and image data required' });
+    }
+
+    // Check upload limits based on tier
+    const today = new Date().toISOString().split('T')[0];
+    const key = `${wallet}:${today}`;
+    const uploadCount = userUploadCount.get(key) || 0;
+
+    let uploadLimit = 5; // Free tier
+    if (tier === 'waldocoin') uploadLimit = 50;
+    if (tier === 'premium') uploadLimit = 999999; // Unlimited
+
+    if (uploadCount >= uploadLimit) {
+      return res.status(429).json({
+        error: `Daily upload limit reached (${uploadLimit} uploads/day). Upgrade for more!`,
+        limit: uploadLimit,
+        used: uploadCount
+      });
+    }
+
+    // In production, upload to IPFS or cloud storage
+    // For now, just return success with a placeholder URL
+    const uploadId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Increment upload count
+    userUploadCount.set(key, uploadCount + 1);
+
+    console.log(`📸 Image uploaded: ${uploadId} by ${wallet.slice(0, 10)}... (${uploadCount + 1}/${uploadLimit})`);
+
+    res.json({
+      success: true,
+      uploadId: uploadId,
+      imageUrl: `https://placeholder-for-ipfs.com/${uploadId}`, // TODO: Replace with actual IPFS URL
+      uploadsRemaining: uploadLimit - uploadCount - 1,
+      message: 'Image uploaded successfully! Use it as a meme template.'
+    });
+  } catch (error) {
+    console.error('Error in /upload:', error);
     res.status(500).json({ error: error.message });
   }
 });
