@@ -596,11 +596,6 @@ function MemeGenerator() {
   }
 
   const getAISuggestion = async (boxId) => {
-    if (!user?.wallet) {
-      alert('Please connect your wallet to use AI suggestions!')
-      return
-    }
-
     // Check tier limits
     const limits = {
       free: 1,
@@ -611,7 +606,7 @@ function MemeGenerator() {
     const dailyLimit = limits[tier] || 1
 
     if (aiSuggestionsToday >= dailyLimit) {
-      alert(`Daily AI suggestion limit reached (${dailyLimit}/day). Upgrade to get more suggestions!`)
+      alert(`Daily AI suggestion limit reached (${dailyLimit}/day). ${tier === 'free' ? 'Connect your wallet and upgrade to get more suggestions!' : 'Try again tomorrow!'}`)
       return
     }
 
@@ -622,7 +617,7 @@ function MemeGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          wallet: user.wallet,
+          wallet: user?.wallet || 'anonymous',
           templateName: selectedTemplate?.name || 'meme',
           position: textBoxes.find(box => box.id === boxId)?.position || 'top',
           tier: tier
@@ -634,6 +629,10 @@ function MemeGenerator() {
       if (data.success) {
         updateTextBox(boxId, 'text', data.suggestion)
         setAiSuggestionsToday(aiSuggestionsToday + 1)
+
+        if (tier === 'free') {
+          alert(`✨ AI suggestion added! You have ${dailyLimit - aiSuggestionsToday - 1} suggestions left today. Connect your wallet and upgrade for more!`)
+        }
       } else {
         alert(data.error || 'Failed to get AI suggestion')
       }

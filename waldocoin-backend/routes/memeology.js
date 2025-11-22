@@ -1340,9 +1340,8 @@ router.post('/ai/suggest', async (req, res) => {
   try {
     const { wallet, templateName, position, tier } = req.body;
 
-    if (!wallet) {
-      return res.status(400).json({ error: 'Wallet required' });
-    }
+    // Allow anonymous users for free tier
+    const userKey = wallet || 'anonymous';
 
     // Check tier limits
     const limits = {
@@ -1358,7 +1357,7 @@ router.post('/ai/suggest', async (req, res) => {
 
     // Track daily usage
     const today = new Date().toISOString().split('T')[0];
-    const key = `${wallet}:${today}`;
+    const key = `${userKey}:${today}`;
     const usageCount = aiSuggestionsToday.get(key) || 0;
 
     if (usageCount >= dailyLimit) {
