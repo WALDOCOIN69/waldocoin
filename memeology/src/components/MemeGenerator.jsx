@@ -24,6 +24,10 @@ function MemeGenerator() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareCaption, setShareCaption] = useState('')
   const [shareSuccess, setShareSuccess] = useState(false)
+  const [uploadedImage, setUploadedImage] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [aiSuggesting, setAiSuggesting] = useState(false)
+  const [aiSuggestionsToday, setAiSuggestionsToday] = useState(0)
 
   // Multiple text boxes
   const [textBoxes, setTextBoxes] = useState([
@@ -513,6 +517,130 @@ function MemeGenerator() {
     }
   }
 
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Check if user can upload
+    if (tier === 'free') {
+      alert('📸 Custom uploads are not available on FREE tier. Upgrade to WALDOCOIN (1000+ WLO) or PREMIUM to upload your own images!')
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (PNG, JPG, GIF, etc.)')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB')
+      return
+    }
+
+    try {
+      setUploading(true)
+
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const imageData = e.target.result
+
+        // Upload to backend
+        const response = await fetch(`${API_URL}/api/memeology/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wallet: user.wallet,
+            imageData: imageData,
+            tier: tier
+          })
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          // Use uploaded image as template
+          setSelectedTemplate({
+            id: `custom_${Date.now()}`,
+            name: 'Custom Upload',
+            url: data.imageUrl,
+            isCustom: true
+          })
+          setUploadedImage(data.imageUrl)
+          setImageLoaded(false)
+          alert('✅ Image uploaded successfully!')
+        } else {
+          alert(data.error || data.message || 'Failed to upload image')
+        }
+
+        setUploading(false)
+      }
+
+      reader.onerror = () => {
+        alert('Error reading file')
+        setUploading(false)
+      }
+
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Error uploading image')
+      setUploading(false)
+    }
+  }
+
+  const getAISuggestion = async (boxId) => {
+    if (!user?.wallet) {
+      alert('Please connect your wallet to use AI suggestions!')
+      return
+    }
+
+    // Check tier limits
+    const limits = {
+      free: 1,
+      waldocoin: 10,
+      premium: 999999
+    }
+
+    const dailyLimit = limits[tier] || 1
+
+    if (aiSuggestionsToday >= dailyLimit) {
+      alert(`Daily AI suggestion limit reached (${dailyLimit}/day). Upgrade to get more suggestions!`)
+      return
+    }
+
+    try {
+      setAiSuggesting(true)
+
+      const response = await fetch(`${API_URL}/api/memeology/ai/suggest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: user.wallet,
+          templateName: selectedTemplate?.name || 'meme',
+          position: textBoxes.find(box => box.id === boxId)?.position || 'top',
+          tier: tier
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        updateTextBox(boxId, 'text', data.suggestion)
+        setAiSuggestionsToday(aiSuggestionsToday + 1)
+      } else {
+        alert(data.error || 'Failed to get AI suggestion')
+      }
+    } catch (error) {
+      console.error('Error getting AI suggestion:', error)
+      alert('Error getting AI suggestion')
+    } finally {
+      setAiSuggesting(false)
+    }
+  }
+
   return (
     <div className="meme-generator">
       <div className="generator-grid">
@@ -567,14 +695,30 @@ function MemeGenerator() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input"
               />
-              {tierFeatures?.nft_art_integration && (
-                <button
-                  className="nft-browse-button"
-                  onClick={() => setShowNFTModal(true)}
-                >
-                  🖼️ Use My NFTs ({userNFTs.length})
-                </button>
-              )}
+
+              <div className="template-actions">
+                {tierFeatures?.nft_art_integration && (
+                  <button
+                    className="nft-browse-button"
+                    onClick={() => setShowNFTModal(true)}
+                  >
+                    🖼️ Use My NFTs ({userNFTs.length})
+                  </button>
+                )}
+
+                {tier !== 'free' && (
+                  <label className="upload-button">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                      disabled={uploading}
+                    />
+                    {uploading ? '⏳ Uploading...' : '📤 Upload Image'}
+                  </label>
+                )}
+              </div>
             </div>
           </div>
           <div className="templates-list">
@@ -670,14 +814,24 @@ function MemeGenerator() {
                       )}
                     </div>
 
-                    <input
-                      type="text"
-                      value={box.text}
-                      onChange={(e) => updateTextBox(box.id, 'text', e.target.value)}
-                      placeholder="Enter text..."
-                      maxLength="100"
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                    <div className="text-input-group">
+                      <input
+                        type="text"
+                        value={box.text}
+                        onChange={(e) => updateTextBox(box.id, 'text', e.target.value)}
+                        placeholder="Enter text..."
+                        maxLength="100"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <button
+                        className="ai-suggest-btn"
+                        onClick={(e) => { e.stopPropagation(); getAISuggestion(box.id); }}
+                        disabled={aiSuggesting}
+                        title="Get AI suggestion"
+                      >
+                        {aiSuggesting ? '⏳' : '✨ AI'}
+                      </button>
+                    </div>
 
                     {activeBoxId === box.id && (
                       <div className="text-box-controls">

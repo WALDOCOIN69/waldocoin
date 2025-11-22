@@ -17,6 +17,7 @@ const GIPHY_API_KEY = process.env.GIPHY_API_KEY || 'YOUR_GIPHY_API_KEY'; // Get 
 const XRPL_SERVER = process.env.XRPL_SERVER || 'wss://s1.ripple.com'; // WebSocket for xrpl.js Client
 const WLO_ISSUER = process.env.WLO_ISSUER || process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WLO_CURRENCY = 'WLO';
+const GROQ_API_KEY = process.env.GROQ_API_KEY || ''; // Free Groq API key
 
 // In-memory storage (replace with Redis/database in production)
 const xummSessions = new Map();
@@ -1331,6 +1332,135 @@ router.post('/premium/cancel', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// POST /api/memeology/ai/suggest - Get AI meme text suggestion
+const aiSuggestionsToday = new Map(); // Track daily usage per wallet
+
+router.post('/ai/suggest', async (req, res) => {
+  try {
+    const { wallet, templateName, position, tier } = req.body;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet required' });
+    }
+
+    // Check tier limits
+    const limits = {
+      free: 1,
+      waldocoin: 10,
+      premium: 999999,
+      gold: 999999,
+      platinum: 999999,
+      king: 999999
+    };
+
+    const dailyLimit = limits[tier] || 1;
+
+    // Track daily usage
+    const today = new Date().toISOString().split('T')[0];
+    const key = `${wallet}:${today}`;
+    const usageCount = aiSuggestionsToday.get(key) || 0;
+
+    if (usageCount >= dailyLimit) {
+      return res.status(429).json({
+        error: `Daily AI suggestion limit reached (${dailyLimit}/day)`,
+        message: tier === 'free'
+          ? 'Upgrade to WALDOCOIN (1000+ WLO) for 10 suggestions/day or PREMIUM for unlimited!'
+          : 'Daily limit reached. Try again tomorrow!',
+        limit: dailyLimit,
+        used: usageCount
+      });
+    }
+
+    // Generate AI suggestion using Groq (free and fast)
+    let suggestion = '';
+
+    if (GROQ_API_KEY) {
+      try {
+        const prompt = `Generate a funny, short meme text for the "${templateName}" meme template.
+Position: ${position}.
+Make it witty, relatable, and under 50 characters.
+Only respond with the meme text, nothing else.`;
+
+        const groqResponse = await axios.post(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            model: 'llama-3.1-8b-instant',
+            messages: [
+              { role: 'system', content: 'You are a witty meme text generator. Generate short, funny meme captions.' },
+              { role: 'user', content: prompt }
+            ],
+            max_tokens: 50,
+            temperature: 0.9
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${GROQ_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        suggestion = groqResponse.data.choices[0].message.content.trim();
+      } catch (aiError) {
+        console.error('Groq AI error:', aiError.response?.data || aiError.message);
+        // Fallback to template-based suggestions
+        suggestion = getFallbackSuggestion(templateName, position);
+      }
+    } else {
+      // No API key - use fallback
+      suggestion = getFallbackSuggestion(templateName, position);
+    }
+
+    // Increment usage count
+    aiSuggestionsToday.set(key, usageCount + 1);
+
+    res.json({
+      success: true,
+      suggestion: suggestion,
+      remaining: dailyLimit - usageCount - 1
+    });
+  } catch (error) {
+    console.error('Error in /ai/suggest:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fallback suggestions when AI is not available
+function getFallbackSuggestion(templateName, position) {
+  const suggestions = {
+    top: [
+      "When you realize...",
+      "Nobody:",
+      "Me trying to...",
+      "POV:",
+      "That moment when...",
+      "Everyone else:",
+      "My brain at 3am:"
+    ],
+    bottom: [
+      "It be like that sometimes",
+      "Why am I like this",
+      "Task failed successfully",
+      "Understandable, have a nice day",
+      "I'm in danger",
+      "This is fine",
+      "Suffering from success"
+    ],
+    middle: [
+      "Meanwhile...",
+      "Plot twist:",
+      "Narrator: It wasn't",
+      "Surprise!",
+      "Awkward...",
+      "Oops",
+      "Big brain time"
+    ]
+  };
+
+  const positionSuggestions = suggestions[position] || suggestions.top;
+  return positionSuggestions[Math.floor(Math.random() * positionSuggestions.length)];
+}
 
 export default router;
 

@@ -166,6 +166,12 @@
   flex-direction: column;
 }
 
+.template-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
 .search-input {
   width: 100%;
   padding: 12px 15px;
@@ -184,7 +190,7 @@
 }
 
 .nft-browse-button {
-  width: 100%;
+  flex: 1;
   padding: 12px 15px;
   background: linear-gradient(90deg, rgba(138, 43, 226, 0.3), rgba(75, 0, 130, 0.3));
   border: 2px solid #8B5CF6;
@@ -199,6 +205,27 @@
 .nft-browse-button:hover {
   background: linear-gradient(90deg, rgba(138, 43, 226, 0.5), rgba(75, 0, 130, 0.5));
   box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+.upload-button {
+  flex: 1;
+  padding: 12px 15px;
+  background: linear-gradient(90deg, rgba(255, 107, 107, 0.3), rgba(238, 90, 111, 0.3));
+  border: 2px solid #ff6b6b;
+  border-radius: 8px;
+  color: #ffa8a8;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  display: block;
+}
+
+.upload-button:hover {
+  background: linear-gradient(90deg, rgba(255, 107, 107, 0.5), rgba(238, 90, 111, 0.5));
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
   transform: translateY(-2px);
 }
 
@@ -463,6 +490,39 @@
   font-weight: 600;
   color: var(--neonAqua);
   font-size: 14px;
+}
+
+.text-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.text-input-group input {
+  flex: 1;
+}
+
+.ai-suggest-btn {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.ai-suggest-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-suggest-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-remove {
