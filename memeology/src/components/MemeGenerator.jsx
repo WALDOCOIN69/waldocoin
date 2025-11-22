@@ -28,6 +28,10 @@ function MemeGenerator() {
   const [uploading, setUploading] = useState(false)
   const [aiSuggesting, setAiSuggesting] = useState(false)
   const [aiSuggestionsToday, setAiSuggestionsToday] = useState(0)
+  const [showGIFModal, setShowGIFModal] = useState(false)
+  const [gifSearch, setGifSearch] = useState('')
+  const [gifResults, setGifResults] = useState([])
+  const [loadingGifs, setLoadingGifs] = useState(false)
 
   // Multiple text boxes
   const [textBoxes, setTextBoxes] = useState([
@@ -641,6 +645,47 @@ function MemeGenerator() {
     }
   }
 
+  const searchGIFs = async () => {
+    if (!gifSearch.trim()) {
+      alert('Please enter a search term')
+      return
+    }
+
+    if (tier === 'free') {
+      alert('🎬 GIF templates are not available on FREE tier. Upgrade to WALDOCOIN (1000+ WLO) or PREMIUM!')
+      return
+    }
+
+    try {
+      setLoadingGifs(true)
+
+      const response = await fetch(`${API_URL}/api/memeology/gifs/search?q=${encodeURIComponent(gifSearch)}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setGifResults(data.gifs)
+      } else {
+        alert(data.error || 'Failed to search GIFs')
+      }
+    } catch (error) {
+      console.error('Error searching GIFs:', error)
+      alert('Error searching GIFs')
+    } finally {
+      setLoadingGifs(false)
+    }
+  }
+
+  const selectGIF = (gif) => {
+    setSelectedTemplate({
+      id: `gif_${gif.id}`,
+      name: gif.title || 'GIF Template',
+      url: gif.url,
+      isGIF: true
+    })
+    setShowGIFModal(false)
+    setImageLoaded(false)
+  }
+
   return (
     <div className="meme-generator">
       <div className="generator-grid">
@@ -707,16 +752,25 @@ function MemeGenerator() {
                 )}
 
                 {tier !== 'free' && (
-                  <label className="upload-button">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      style={{ display: 'none' }}
-                      disabled={uploading}
-                    />
-                    {uploading ? '⏳ Uploading...' : '📤 Upload Image'}
-                  </label>
+                  <>
+                    <button
+                      className="gif-browse-button"
+                      onClick={() => setShowGIFModal(true)}
+                    >
+                      🎬 Browse GIFs
+                    </button>
+
+                    <label className="upload-button">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        style={{ display: 'none' }}
+                        disabled={uploading}
+                      />
+                      {uploading ? '⏳ Uploading...' : '📤 Upload Image'}
+                    </label>
+                  </>
                 )}
               </div>
             </div>
@@ -1104,6 +1158,57 @@ function MemeGenerator() {
                 🚀 Share Now
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* GIF Browser Modal */}
+      {showGIFModal && (
+        <div className="modal-overlay" onClick={() => setShowGIFModal(false)}>
+          <div className="gif-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowGIFModal(false)}>×</button>
+            <h2>🎬 Browse GIF Templates</h2>
+
+            <div className="gif-search-box">
+              <input
+                type="text"
+                placeholder="Search for GIFs... (e.g., 'funny cat', 'reaction')"
+                value={gifSearch}
+                onChange={(e) => setGifSearch(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && searchGIFs()}
+              />
+              <button onClick={searchGIFs} disabled={loadingGifs}>
+                {loadingGifs ? '⏳ Searching...' : '🔍 Search'}
+              </button>
+            </div>
+
+            {loadingGifs && (
+              <div className="loading-spinner">
+                <div className="spinner"></div>
+                <p>Searching GIFs...</p>
+              </div>
+            )}
+
+            {gifResults.length > 0 && (
+              <div className="gif-grid">
+                {gifResults.map((gif) => (
+                  <div
+                    key={gif.id}
+                    className="gif-item"
+                    onClick={() => selectGIF(gif)}
+                  >
+                    <img src={gif.url} alt={gif.title} />
+                    <p className="gif-title">{gif.title}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!loadingGifs && gifResults.length === 0 && gifSearch && (
+              <div className="empty-state">
+                <p>No GIFs found. Try a different search term!</p>
+              </div>
+            )}
           </div>
         </div>
       )}

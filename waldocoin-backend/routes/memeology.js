@@ -1462,5 +1462,50 @@ function getFallbackSuggestion(templateName, position) {
   return positionSuggestions[Math.floor(Math.random() * positionSuggestions.length)];
 }
 
+// GET /api/memeology/gifs/search - Search for GIF templates
+router.get('/gifs/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: 'Search query required' });
+    }
+
+    if (!GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY') {
+      return res.status(503).json({
+        error: 'GIF search is not configured',
+        message: 'Please add GIPHY_API_KEY to environment variables'
+      });
+    }
+
+    // Search Giphy API
+    const response = await axios.get('https://api.giphy.com/v1/gifs/search', {
+      params: {
+        api_key: GIPHY_API_KEY,
+        q: q,
+        limit: 20,
+        rating: 'pg-13'
+      }
+    });
+
+    const gifs = response.data.data.map(gif => ({
+      id: gif.id,
+      title: gif.title,
+      url: gif.images.fixed_height.url,
+      width: gif.images.fixed_height.width,
+      height: gif.images.fixed_height.height
+    }));
+
+    res.json({
+      success: true,
+      gifs: gifs,
+      count: gifs.length
+    });
+  } catch (error) {
+    console.error('Error in /gifs/search:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 
