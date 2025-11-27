@@ -1542,8 +1542,8 @@ router.post('/ai/generate', async (req, res) => {
     if (generationMode === 'ai-image') {
       // MODE 1: AI-GENERATED IMAGE (using multiple AI services with fallbacks)
       try {
-        // Generate meme image using AI
-        const memePrompt = `funny meme: ${prompt}, meme style, internet meme, high quality, funny, viral meme`;
+        // Generate meme image using AI - avoid text in the image itself
+        const memePrompt = `${prompt}, funny meme style image, internet meme aesthetic, high quality, no text, no words, no letters, clean image, viral meme format`;
         const encodedPrompt = encodeURIComponent(memePrompt);
 
         // Try multiple AI image services for reliability

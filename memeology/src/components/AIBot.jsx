@@ -151,10 +151,12 @@ function AIBot() {
                             }
                           }}
                         />
-                        {/* Watermark on left side */}
-                        <div className="meme-watermark-left">
-                          MEMEOLOGY.FUN
-                        </div>
+                        {/* Memeology logo watermark (same as main generator) */}
+                        <img
+                          src="/memeology-logo.png"
+                          alt="watermark"
+                          className="meme-watermark-logo"
+                        />
                       </div>
                       <div className="meme-info">
                         <small>
