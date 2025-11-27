@@ -133,23 +133,21 @@
   background: rgba(0, 247, 255, 0.1);
   border: 1px solid var(--neonAqua);
   color: var(--text);
+  text-align: center;
 }
 
 /* Meme image container with watermark */
 .meme-image-container {
   position: relative;
-  width: 100%;
-  max-width: 450px;
-  margin: 0 auto;
-  overflow: hidden;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .meme-image {
-  width: 100%;
+  max-width: 100%;
   height: auto;
   border-radius: 4px;
   display: block;
-  object-fit: contain;
 }
 
 .meme-watermark-logo {

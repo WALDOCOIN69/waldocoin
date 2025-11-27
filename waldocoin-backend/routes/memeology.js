@@ -1718,20 +1718,27 @@ RESPOND ONLY WITH JSON:
             messages: [
               {
                 role: 'system',
-                content: `You are a meme text generator. Generate funny meme text for the "${templateName}" template.
+                content: `You are a hilarious meme text generator. Create funny, relatable meme text based on the user's idea.
+
+RULES:
+- DO NOT repeat the user's exact words
+- Create ORIGINAL, FUNNY meme text
+- Keep it SHORT (max 6 words per line)
+- Make it punchy and relatable
+- Use internet meme humor style
 
 Template: ${templateName}
-- Generate SHORT, FUNNY text (max 8 words per line)
-- top_text: First line of the meme
-- bottom_text: Second line of the meme (punchline)
 
 RESPOND ONLY WITH JSON:
-{"top_text": "short text here", "bottom_text": "punchline here"}`
+{"top_text": "setup line", "bottom_text": "punchline"}`
               },
-              { role: 'user', content: prompt }
+              {
+                role: 'user',
+                content: `Create a funny meme about: ${prompt}`
+              }
             ],
             max_tokens: 100,
-            temperature: 0.8,
+            temperature: 0.9,
             response_format: { type: "json_object" }
           },
           {
@@ -1758,19 +1765,19 @@ RESPOND ONLY WITH JSON:
         } catch (parseError) {
           // If AI didn't return valid JSON, extract text manually
           console.log('AI response not valid JSON:', aiResponse, parseError.message);
-          topText = prompt.substring(0, 50);
-          bottomText = 'AI-generated meme';
+          topText = 'WHEN YOU';
+          bottomText = prompt.toUpperCase().substring(0, 40);
         }
       } catch (error) {
         console.error('Groq API error:', error.response?.data || error.message);
-        // Fallback
-        topText = prompt.substring(0, 50);
-        bottomText = 'Meme time!';
+        // Fallback - make it a proper meme format
+        topText = 'WHEN YOU';
+        bottomText = prompt.toUpperCase().substring(0, 40);
       }
     } else {
-      // No API key - use simple fallback
-      topText = prompt.substring(0, 50);
-      bottomText = 'Meme time!';
+      // No API key - use simple fallback with proper meme format
+      topText = 'WHEN YOU';
+      bottomText = prompt.toUpperCase().substring(0, 40);
     }
 
     // Step 2: Generate the meme using Imgflip API
