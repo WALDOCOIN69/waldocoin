@@ -1540,21 +1540,31 @@ router.post('/ai/generate', async (req, res) => {
     const generationMode = mode || 'template';
 
     if (generationMode === 'ai-image') {
-      // MODE 1: AI-GENERATED IMAGE (using Pollinations.ai - free!)
+      // MODE 1: AI-GENERATED IMAGE (using multiple AI services with fallbacks)
       try {
         // Generate meme image using AI
-        const memePrompt = `funny meme image: ${prompt}, meme style, internet meme, high quality, funny`;
+        const memePrompt = `funny meme: ${prompt}, meme style, internet meme, high quality, funny, viral meme`;
         const encodedPrompt = encodeURIComponent(memePrompt);
-        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true`;
 
-        console.log('Generated AI image URL:', aiImageUrl);
+        // Try multiple AI image services for reliability
+        const aiImageServices = [
+          `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Date.now()}`,
+          `https://pollinations.ai/p/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Date.now()}`,
+          `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&enhance=true&seed=${Date.now()}`
+        ];
+
+        // Use the first service (with random seed for variety)
+        const aiImageUrl = aiImageServices[0];
+
+        console.log('🎨 Generated AI image URL:', aiImageUrl);
 
         return res.json({
           success: true,
           meme_url: aiImageUrl,
           template_name: 'AI Generated Image',
           texts: { top: '', bottom: '' },
-          mode: 'ai-image'
+          mode: 'ai-image',
+          fallback_urls: aiImageServices.slice(1) // Send backup URLs to frontend
         });
       } catch (error) {
         console.error('AI image generation error:', error);
