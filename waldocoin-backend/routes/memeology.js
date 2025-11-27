@@ -27,6 +27,21 @@ const userUploadCount = new Map(); // Track daily upload limits
 const communityMemes = []; // Store community-shared memes
 const memeUpvotes = new Map(); // Track upvotes per meme
 
+// Helper: Map Imgflip template IDs to Memegen template names
+function getMemgenTemplate(imgflipId) {
+  const mapping = {
+    '181913649': 'drake',           // Drake Hotline Bling
+    '112126428': 'bf',              // Distracted Boyfriend
+    '87743020': 'buttons',          // Two Buttons
+    '129242436': 'cmm',             // Change My Mind
+    '93895088': 'brain',            // Expanding Brain
+    '100777631': 'pigeon',          // Is This A Pigeon
+    '155067746': 'pikachu',         // Surprised Pikachu
+    '131087935': 'balloon'          // Running Away Balloon
+  };
+  return mapping[imgflipId] || 'drake'; // Default to Drake
+}
+
 // Helper: Send WLO rewards to meme creator
 async function sendWLOReward(recipientWallet, amount, reason) {
   const DISTRIBUTOR_SECRET = process.env.DISTRIBUTOR_WALLET_SECRET || process.env.WALDO_DISTRIBUTOR_SECRET;
@@ -1592,36 +1607,55 @@ Respond ONLY in this exact JSON format:
     // Step 2: Generate the meme using Imgflip API
     console.log('Generating meme with:', { templateId, topText, bottomText });
 
-    const imgflipResponse = await axios.post(
-      'https://api.imgflip.com/caption_image',
-      new URLSearchParams({
-        template_id: templateId,
-        username: IMGFLIP_USERNAME,
-        password: IMGFLIP_PASSWORD,
-        text0: topText,
-        text1: bottomText
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+    // Try with credentials first, fallback to URL-based generation if credentials fail
+    let memeUrl = null;
+
+    try {
+      const imgflipResponse = await axios.post(
+        'https://api.imgflip.com/caption_image',
+        new URLSearchParams({
+          template_id: templateId,
+          username: IMGFLIP_USERNAME,
+          password: IMGFLIP_PASSWORD,
+          text0: topText,
+          text1: bottomText
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
         }
+      );
+
+      console.log('Imgflip response:', imgflipResponse.data);
+
+      if (imgflipResponse.data.success) {
+        memeUrl = imgflipResponse.data.data.url;
+      } else if (imgflipResponse.data.error_message && imgflipResponse.data.error_message.includes('Invalid username')) {
+        // Credentials invalid - use fallback method
+        console.log('Imgflip credentials invalid, using fallback URL method');
+        throw new Error('Invalid credentials');
       }
-    );
+    } catch (imgflipError) {
+      // Fallback: Generate meme URL manually (works without authentication)
+      console.log('Using fallback meme generation method');
+      const encodedTop = encodeURIComponent(topText);
+      const encodedBottom = encodeURIComponent(bottomText);
+      memeUrl = `https://api.memegen.link/images/${getMemgenTemplate(templateId)}/${encodedTop}/${encodedBottom}.jpg`;
+    }
 
-    console.log('Imgflip response:', imgflipResponse.data);
-
-    if (imgflipResponse.data.success) {
+    if (memeUrl) {
       res.json({
         success: true,
-        meme_url: imgflipResponse.data.data.url,
+        meme_url: memeUrl,
         template_name: 'AI Selected Template',
         texts: { top: topText, bottom: bottomText }
       });
     } else {
-      console.error('Imgflip API error:', imgflipResponse.data);
+      console.error('Failed to generate meme');
       res.status(500).json({
         success: false,
-        error: imgflipResponse.data.error_message || 'Failed to generate meme image'
+        error: 'Failed to generate meme image'
       });
     }
   } catch (error) {
