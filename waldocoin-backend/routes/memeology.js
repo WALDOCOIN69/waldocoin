@@ -1550,25 +1550,26 @@ router.post('/ai/generate', async (req, res) => {
             messages: [
               {
                 role: 'system',
-                content: `You are a meme generator. Given a user's description, select the best meme template and generate funny text.
+                content: `You are a meme template selector. Pick the BEST template for the user's request and generate funny text.
 
-Available templates:
-- Drake Hotline Bling (181913649): Two panels, top=bad thing, bottom=good thing
-- Distracted Boyfriend (112126428): Three people, boyfriend looking at another girl
-- Two Buttons (87743020): Person sweating choosing between two buttons
-- Change My Mind (129242436): Person at table with sign
-- Expanding Brain (93895088): Four levels of increasingly smart ideas
-- Is This A Pigeon (100777631): Person pointing at butterfly asking if it's something else
-- Surprised Pikachu (155067746): Pikachu looking shocked
-- Running Away Balloon (131087935): Person chasing balloon, letting go of partner
+TEMPLATES:
+1. drake (181913649) - Two panels: top=reject, bottom=approve. Use for: preferences, choices, comparisons
+2. bf (112126428) - Distracted boyfriend. Use for: temptation, distraction, cheating
+3. buttons (87743020) - Sweating choosing buttons. Use for: difficult choices, dilemmas
+4. cmm (129242436) - Change my mind. Use for: controversial opinions, debates
+5. brain (93895088) - Expanding brain (4 levels). Use for: escalating ideas, intelligence levels
+6. pigeon (100777631) - "Is this a pigeon?". Use for: misidentification, confusion
+7. pikachu (155067746) - Surprised Pikachu. Use for: shock, unexpected consequences
+8. balloon (131087935) - Running away balloon. Use for: abandoning something for something better
 
-Respond ONLY in this exact JSON format:
-{"template_id": "181913649", "top_text": "Your top text here", "bottom_text": "Your bottom text here"}`
+RESPOND ONLY WITH JSON (no markdown, no explanation):
+{"template_id": "181913649", "top_text": "text here", "bottom_text": "text here"}`
               },
               { role: 'user', content: prompt }
             ],
             max_tokens: 150,
-            temperature: 0.7
+            temperature: 0.7,
+            response_format: { type: "json_object" }
           },
           {
             headers: {
@@ -1579,16 +1580,22 @@ Respond ONLY in this exact JSON format:
         );
 
         const aiResponse = groqResponse.data.choices[0].message.content.trim();
+        console.log('AI raw response:', aiResponse);
 
         // Try to parse JSON response
         try {
-          const parsed = JSON.parse(aiResponse);
+          // Remove markdown code blocks if present
+          let jsonStr = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          const parsed = JSON.parse(jsonStr);
+
           templateId = parsed.template_id || templateId;
-          topText = parsed.top_text || '';
-          bottomText = parsed.bottom_text || '';
+          topText = parsed.top_text || parsed.top || '';
+          bottomText = parsed.bottom_text || parsed.bottom || '';
+
+          console.log('Parsed AI response:', { templateId, topText, bottomText });
         } catch (parseError) {
           // If AI didn't return valid JSON, extract text manually
-          console.log('AI response not JSON, using fallback:', aiResponse);
+          console.log('AI response not valid JSON:', aiResponse, parseError.message);
           topText = prompt.substring(0, 50);
           bottomText = 'AI-generated meme';
         }
