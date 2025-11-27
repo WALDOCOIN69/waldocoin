@@ -1524,7 +1524,7 @@ router.get('/gifs/search', async (req, res) => {
 // POST /api/memeology/ai/generate - AI generates complete meme from description
 router.post('/ai/generate', async (req, res) => {
   try {
-    const { prompt, wallet, tier } = req.body;
+    const { prompt, wallet, tier, mode } = req.body; // mode: 'template' or 'ai-image'
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({
@@ -1536,8 +1536,49 @@ router.post('/ai/generate', async (req, res) => {
     // Allow anonymous users for free tier
     const userKey = wallet || 'anonymous';
 
-    // Step 1: Use AI to select best template and generate text
-    let templateId = '181913649'; // Default: Drake Hotline Bling
+    // Decide generation mode: 'template' (fast) or 'ai-image' (custom)
+    const generationMode = mode || 'template';
+
+    if (generationMode === 'ai-image') {
+      // MODE 1: AI-GENERATED IMAGE (using Pollinations.ai - free!)
+      try {
+        // Generate meme image using AI
+        const memePrompt = `funny meme image: ${prompt}, meme style, internet meme, high quality, funny`;
+        const encodedPrompt = encodeURIComponent(memePrompt);
+        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true`;
+
+        console.log('Generated AI image URL:', aiImageUrl);
+
+        return res.json({
+          success: true,
+          meme_url: aiImageUrl,
+          template_name: 'AI Generated Image',
+          texts: { top: '', bottom: '' },
+          mode: 'ai-image'
+        });
+      } catch (error) {
+        console.error('AI image generation error:', error);
+        // Fallback to template mode
+      }
+    }
+
+    // MODE 2: TEMPLATE-BASED MEME (default)
+    // Available templates for randomization
+    const templates = [
+      { id: '181913649', name: 'Drake Hotline Bling', type: 'drake' },
+      { id: '112126428', name: 'Distracted Boyfriend', type: 'bf' },
+      { id: '87743020', name: 'Two Buttons', type: 'buttons' },
+      { id: '129242436', name: 'Change My Mind', type: 'cmm' },
+      { id: '93895088', name: 'Expanding Brain', type: 'brain' },
+      { id: '100777631', name: 'Is This A Pigeon', type: 'pigeon' },
+      { id: '155067746', name: 'Surprised Pikachu', type: 'pikachu' },
+      { id: '131087935', name: 'Running Away Balloon', type: 'balloon' }
+    ];
+
+    // Randomly select a template
+    const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+    let templateId = randomTemplate.id;
+    let templateName = randomTemplate.name;
     let topText = '';
     let bottomText = '';
 
@@ -1550,25 +1591,20 @@ router.post('/ai/generate', async (req, res) => {
             messages: [
               {
                 role: 'system',
-                content: `You are a meme template selector. Pick the BEST template for the user's request and generate funny text.
+                content: `You are a meme text generator. Generate funny meme text for the "${templateName}" template.
 
-TEMPLATES:
-1. drake (181913649) - Two panels: top=reject, bottom=approve. Use for: preferences, choices, comparisons
-2. bf (112126428) - Distracted boyfriend. Use for: temptation, distraction, cheating
-3. buttons (87743020) - Sweating choosing buttons. Use for: difficult choices, dilemmas
-4. cmm (129242436) - Change my mind. Use for: controversial opinions, debates
-5. brain (93895088) - Expanding brain (4 levels). Use for: escalating ideas, intelligence levels
-6. pigeon (100777631) - "Is this a pigeon?". Use for: misidentification, confusion
-7. pikachu (155067746) - Surprised Pikachu. Use for: shock, unexpected consequences
-8. balloon (131087935) - Running away balloon. Use for: abandoning something for something better
+Template: ${templateName}
+- Generate SHORT, FUNNY text (max 8 words per line)
+- top_text: First line of the meme
+- bottom_text: Second line of the meme (punchline)
 
-RESPOND ONLY WITH JSON (no markdown, no explanation):
-{"template_id": "181913649", "top_text": "text here", "bottom_text": "text here"}`
+RESPOND ONLY WITH JSON:
+{"top_text": "short text here", "bottom_text": "punchline here"}`
               },
               { role: 'user', content: prompt }
             ],
-            max_tokens: 150,
-            temperature: 0.7,
+            max_tokens: 100,
+            temperature: 0.8,
             response_format: { type: "json_object" }
           },
           {
@@ -1588,11 +1624,10 @@ RESPOND ONLY WITH JSON (no markdown, no explanation):
           let jsonStr = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
           const parsed = JSON.parse(jsonStr);
 
-          templateId = parsed.template_id || templateId;
           topText = parsed.top_text || parsed.top || '';
           bottomText = parsed.bottom_text || parsed.bottom || '';
 
-          console.log('Parsed AI response:', { templateId, topText, bottomText });
+          console.log('Parsed AI response:', { templateId, templateName, topText, bottomText });
         } catch (parseError) {
           // If AI didn't return valid JSON, extract text manually
           console.log('AI response not valid JSON:', aiResponse, parseError.message);
@@ -1655,8 +1690,9 @@ RESPOND ONLY WITH JSON (no markdown, no explanation):
       res.json({
         success: true,
         meme_url: memeUrl,
-        template_name: 'AI Selected Template',
-        texts: { top: topText, bottom: bottomText }
+        template_name: templateName,
+        texts: { top: topText, bottom: bottomText },
+        mode: 'template'
       });
     } else {
       console.error('Failed to generate meme');

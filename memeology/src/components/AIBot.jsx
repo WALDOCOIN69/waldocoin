@@ -10,6 +10,7 @@ function AIBot() {
   const [aiModel, setAiModel] = useState('groq') // groq (free), claude (premium), ollama (free)
   const messagesEndRef = useRef(null)
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [generationMode, setGenerationMode] = useState('template') // 'template' or 'ai-image'
 
   const examplePrompts = [
     "Make a meme about crypto being down",
@@ -59,7 +60,8 @@ function AIBot() {
         body: JSON.stringify({
           prompt: input,
           wallet: user?.wallet || 'anonymous',
-          tier: tier || 'free'
+          tier: tier || 'free',
+          mode: generationMode
         })
       })
 
@@ -94,7 +96,22 @@ function AIBot() {
       <div className="ai-container">
         <div className="ai-header">
           <h2>🤖 AI Meme Assistant</h2>
-          {/* Hide AI model selector - users don't need to know which AI is being used */}
+          <div className="mode-toggle">
+            <button
+              className={`mode-btn ${generationMode === 'template' ? 'active' : ''}`}
+              onClick={() => setGenerationMode('template')}
+              title="Use meme templates (fast)"
+            >
+              📋 Template
+            </button>
+            <button
+              className={`mode-btn ${generationMode === 'ai-image' ? 'active' : ''}`}
+              onClick={() => setGenerationMode('ai-image')}
+              title="AI generates custom image (slower)"
+            >
+              🎨 AI Image
+            </button>
+          </div>
         </div>
 
         <div className="chat-box">
