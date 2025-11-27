@@ -4,9 +4,15 @@ import express from 'express';
 import axios from 'axios';
 import xrpl from 'xrpl';
 import dotenv from 'dotenv';
+import sharp from 'sharp';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getAllPrices, calculateTokenAmount } from '../utils/priceOracle.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -1540,34 +1546,66 @@ router.post('/ai/generate', async (req, res) => {
     const generationMode = mode || 'template';
 
     if (generationMode === 'ai-image') {
-      // MODE 1: AI-GENERATED IMAGE (using multiple AI services with fallbacks)
+      // MODE 1: AI-GENERATED IMAGE with server-side watermarking
       try {
-        // Generate meme image using AI - avoid text in the image itself
-        const memePrompt = `${prompt}, funny meme style image, internet meme aesthetic, high quality, no text, no words, no letters, clean image, viral meme format`;
+        // Generate meme image using AI - avoid text to prevent garbled writing
+        const memePrompt = `${prompt}, funny meme style, internet meme aesthetic, high quality, no text, no words, no letters, clean image`;
         const encodedPrompt = encodeURIComponent(memePrompt);
 
-        // Try multiple AI image services for reliability
-        const aiImageServices = [
-          `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Date.now()}`,
-          `https://pollinations.ai/p/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Date.now()}`,
-          `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&enhance=true&seed=${Date.now()}`
-        ];
+        // Generate AI image URL
+        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Date.now()}`;
 
-        // Use the first service (with random seed for variety)
-        const aiImageUrl = aiImageServices[0];
+        console.log('🎨 Generating AI image:', aiImageUrl);
 
-        console.log('🎨 Generated AI image URL:', aiImageUrl);
+        // Download the AI-generated image
+        const imageResponse = await axios.get(aiImageUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000 // 30 second timeout
+        });
+
+        const imageBuffer = Buffer.from(imageResponse.data);
+
+        // Load watermark logo
+        const watermarkPath = path.join(__dirname, '../public/memeology-logo.png');
+
+        // Process image with Sharp: add watermark
+        const image = sharp(imageBuffer);
+        const metadata = await image.metadata();
+
+        // Calculate watermark size (15% of image width)
+        const watermarkSize = Math.floor(metadata.width * 0.15);
+
+        // Resize watermark
+        const watermark = await sharp(watermarkPath)
+          .resize(watermarkSize, watermarkSize)
+          .png()
+          .toBuffer();
+
+        // Composite watermark onto image (bottom-right corner with padding)
+        const padding = 15;
+        const watermarkedImage = await image
+          .composite([{
+            input: watermark,
+            gravity: 'southeast',
+            blend: 'over'
+          }])
+          .jpeg({ quality: 90 })
+          .toBuffer();
+
+        // Convert to base64 for sending to frontend
+        const base64Image = `data:image/jpeg;base64,${watermarkedImage.toString('base64')}`;
+
+        console.log('✅ AI image watermarked successfully');
 
         return res.json({
           success: true,
-          meme_url: aiImageUrl,
+          meme_url: base64Image,
           template_name: 'AI Generated Image',
           texts: { top: '', bottom: '' },
-          mode: 'ai-image',
-          fallback_urls: aiImageServices.slice(1) // Send backup URLs to frontend
+          mode: 'ai-image'
         });
       } catch (error) {
-        console.error('AI image generation error:', error);
+        console.error('AI image generation error:', error.message);
         // Fallback to template mode
       }
     }
