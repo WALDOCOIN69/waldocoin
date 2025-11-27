@@ -8,8 +8,15 @@ import './utils/logRedactor.js';
 import dotenv from "dotenv";
 // import cron from "node-cron"; // Temporarily disabled for debugging
 import xrpl from "xrpl";
+import fs from "fs";
 
-dotenv.config();
+// Load .env.local if it exists (for local development), otherwise load .env
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+  console.log('✅ Loaded .env.local for local development');
+} else {
+  dotenv.config();
+}
 
 import { connectRedis } from "./redisClient.js";
 import { refundExpiredBattles } from "./cron/battleRefunder.js";

@@ -8,17 +8,38 @@ dotenv.config();
 
 const router = express.Router();
 
-// Initialize XUMM SDK
-const xummClient = new XummSdk(
-  process.env.XUMM_API_KEY,
-  process.env.XUMM_API_SECRET
-);
+// Initialize XUMM SDK (only if valid keys are available)
+let xummClient = null;
+const hasValidKeys = process.env.XUMM_API_KEY &&
+                     process.env.XUMM_API_SECRET &&
+                     !process.env.XUMM_API_KEY.startsWith('00000000');
+
+if (hasValidKeys) {
+  try {
+    xummClient = new XummSdk(
+      process.env.XUMM_API_KEY,
+      process.env.XUMM_API_SECRET
+    );
+    console.log('✅ XUMM auth client initialized');
+  } catch (error) {
+    console.warn('⚠️  XUMM auth client initialization failed:', error.message);
+  }
+} else {
+  console.warn('⚠️  XUMM auth disabled (missing or dummy API keys)');
+}
 
 // Store for active login sessions (in production, use Redis)
 const loginSessions = new Map();
 
 // POST /api/auth/xumm/login - Create XUMM login payload
 router.post('/login', async (req, res) => {
+  if (!xummClient) {
+    return res.status(503).json({
+      success: false,
+      error: 'XUMM authentication is not available (API keys not configured)'
+    });
+  }
+
   try {
     console.log('🔐 Creating XUMM login payload for Memeology...');
 
@@ -74,6 +95,13 @@ router.post('/login', async (req, res) => {
 
 // GET /api/auth/xumm/status - Check login status
 router.get('/status', async (req, res) => {
+  if (!xummClient) {
+    return res.status(503).json({
+      success: false,
+      error: 'XUMM authentication is not available'
+    });
+  }
+
   try {
     const { uuid } = req.query;
 
