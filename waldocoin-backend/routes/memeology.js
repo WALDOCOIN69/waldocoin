@@ -1506,5 +1506,68 @@ router.get('/gifs/search', async (req, res) => {
   }
 });
 
+// POST /api/memeology/ai/chat - AI chat assistant for meme ideas
+router.post('/ai/chat', async (req, res) => {
+  try {
+    const { message, wallet, tier } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    // Allow anonymous users for free tier
+    const userKey = wallet || 'anonymous';
+
+    // Generate AI response using Groq (free and fast)
+    let response = '';
+
+    if (GROQ_API_KEY) {
+      try {
+        const groqResponse = await axios.post(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            model: 'llama-3.1-8b-instant',
+            messages: [
+              { role: 'system', content: 'You are a helpful meme assistant. Help users create funny memes by suggesting meme templates, text ideas, and meme concepts. Keep responses short and fun.' },
+              { role: 'user', content: message }
+            ],
+            max_tokens: 200,
+            temperature: 0.8
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${GROQ_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        response = groqResponse.data.choices[0].message.content.trim();
+      } catch (error) {
+        console.error('Groq API error:', error.response?.data || error.message);
+        // Fallback to generic response
+        response = "I'd love to help you create a meme! Try selecting a template and using the AI suggestion button (✨ AI) on the text boxes for quick meme text ideas!";
+      }
+    } else {
+      // No API key - use fallback
+      response = "I'd love to help you create a meme! Try selecting a template and using the AI suggestion button (✨ AI) on the text boxes for quick meme text ideas!";
+    }
+
+    res.json({
+      success: true,
+      suggestion: response
+    });
+  } catch (error) {
+    console.error('Error in /ai/chat:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;
 

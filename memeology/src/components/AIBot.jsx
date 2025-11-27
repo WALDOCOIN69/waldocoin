@@ -19,26 +19,27 @@ function AIBot() {
   }, [messages])
 
   const sendMessage = async () => {
-    if (!input.trim() || !user) {
-      alert('Please login first')
+    if (!input.trim()) {
       return
     }
 
+    // Allow anonymous users for FREE tier
     const userMessage = { role: 'user', content: input }
     setMessages([...messages, userMessage])
     setInput('')
     setLoading(true)
 
     try {
-      const response = await fetch('/api/ai/suggest', {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
+      const response = await fetch(`${API_URL}/api/memeology/ai/chat`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('waldoToken')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           message: input,
-          user_id: user.id,
+          wallet: user?.wallet || 'anonymous',
+          tier: tier || 'free',
           ai_model: aiModel
         })
       })
