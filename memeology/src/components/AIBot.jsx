@@ -129,27 +129,33 @@ function AIBot() {
                 <div className="message-content">
                   {msg.type === 'image' ? (
                     <div className="meme-result">
-                      <img
-                        src={msg.content}
-                        alt="Generated meme"
-                        style={{ maxWidth: '100%', borderRadius: '8px' }}
-                        onError={(e) => {
-                          // Try fallback URLs if main image fails to load
-                          if (msg.fallback_urls && msg.fallback_urls.length > 0) {
-                            const fallbackUrl = msg.fallback_urls.shift()
-                            if (fallbackUrl) {
-                              console.log('Image failed to load, trying fallback:', fallbackUrl)
-                              e.target.src = fallbackUrl
+                      <div className="meme-image-container">
+                        <img
+                          src={msg.content}
+                          alt="Generated meme"
+                          className="meme-image"
+                          onError={(e) => {
+                            // Try fallback URLs if main image fails to load
+                            if (msg.fallback_urls && msg.fallback_urls.length > 0) {
+                              const fallbackUrl = msg.fallback_urls.shift()
+                              if (fallbackUrl) {
+                                console.log('Image failed to load, trying fallback:', fallbackUrl)
+                                e.target.src = fallbackUrl
+                              } else {
+                                e.target.alt = '❌ Failed to load image. Try again!'
+                                e.target.style.display = 'none'
+                              }
                             } else {
                               e.target.alt = '❌ Failed to load image. Try again!'
                               e.target.style.display = 'none'
                             }
-                          } else {
-                            e.target.alt = '❌ Failed to load image. Try again!'
-                            e.target.style.display = 'none'
-                          }
-                        }}
-                      />
+                          }}
+                        />
+                        {/* Watermark on left side */}
+                        <div className="meme-watermark-left">
+                          MEMEOLOGY.FUN
+                        </div>
+                      </div>
                       <div className="meme-info">
                         <small>
                           {msg.mode === 'ai-image' ? '🎨 AI Generated' : `📋 ${msg.template}`}
