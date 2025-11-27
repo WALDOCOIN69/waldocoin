@@ -134,28 +134,23 @@ function AIBot() {
                           src={msg.content}
                           alt="Generated meme"
                           className="meme-image"
+                          style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                          onLoad={() => console.log('✅ Image loaded successfully')}
                           onError={(e) => {
+                            console.error('❌ Image failed to load:', msg.content)
                             // Try fallback URLs if main image fails to load
                             if (msg.fallback_urls && msg.fallback_urls.length > 0) {
                               const fallbackUrl = msg.fallback_urls.shift()
                               if (fallbackUrl) {
-                                console.log('Image failed to load, trying fallback:', fallbackUrl)
+                                console.log('Trying fallback:', fallbackUrl)
                                 e.target.src = fallbackUrl
                               } else {
                                 e.target.alt = '❌ Failed to load image. Try again!'
-                                e.target.style.display = 'none'
                               }
                             } else {
                               e.target.alt = '❌ Failed to load image. Try again!'
-                              e.target.style.display = 'none'
                             }
                           }}
-                        />
-                        {/* Memeology logo watermark (same as main generator) */}
-                        <img
-                          src="/memeology-logo.png"
-                          alt="watermark"
-                          className="meme-watermark-logo"
                         />
                       </div>
                       <div className="meme-info">

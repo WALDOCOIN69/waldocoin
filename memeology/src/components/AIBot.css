@@ -139,8 +139,9 @@
 .meme-image-container {
   position: relative;
   width: 100%;
-  max-width: 100%;
-  margin: 0;
+  max-width: 450px;
+  margin: 0 auto;
+  overflow: hidden;
 }
 
 .meme-image {
@@ -148,6 +149,7 @@
   height: auto;
   border-radius: 4px;
   display: block;
+  object-fit: contain;
 }
 
 .meme-watermark-logo {
