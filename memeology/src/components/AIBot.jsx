@@ -9,6 +9,18 @@ function AIBot() {
   const [loading, setLoading] = useState(false)
   const [aiModel, setAiModel] = useState('groq') // groq (free), claude (premium), ollama (free)
   const messagesEndRef = useRef(null)
+  const [placeholderIndex, setPlaceholderIndex] = useState(0)
+
+  const examplePrompts = [
+    "Make a meme about crypto being down",
+    "Create a meme about Monday mornings",
+    "Meme about my code not working",
+    "Make a funny meme about coffee",
+    "Create a meme about working from home",
+    "Meme about being broke",
+    "Make a meme about the weekend",
+    "Create a meme about procrastination"
+  ]
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -17,6 +29,14 @@ function AIBot() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Rotate placeholder text every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % examplePrompts.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   const sendMessage = async () => {
     if (!input.trim()) {
@@ -129,11 +149,11 @@ function AIBot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Describe the meme you want..."
+            placeholder={examplePrompts[placeholderIndex]}
             disabled={loading}
           />
-          <button 
-            className="btn-primary" 
+          <button
+            className="btn-primary"
             onClick={sendMessage}
             disabled={loading || !input.trim()}
           >
