@@ -1546,7 +1546,7 @@ router.post('/ai/generate', async (req, res) => {
     const generationMode = mode || 'template';
 
     if (generationMode === 'ai-image') {
-      // MODE 1: AI-GENERATED IMAGE with server-side watermarking
+      // MODE 1: AI-GENERATED IMAGE with server-side watermarking and text overlay
       try {
         // Generate meme image using AI - avoid text to prevent garbled writing
         const memePrompt = `${prompt}, funny meme style, internet meme aesthetic, high quality, no text, no words, no letters, clean image`;
@@ -1568,9 +1568,75 @@ router.post('/ai/generate', async (req, res) => {
         // Load watermark logo
         const watermarkPath = path.join(__dirname, '../public/memeology-logo.png');
 
-        // Process image with Sharp: add watermark
+        // Process image with Sharp
         const image = sharp(imageBuffer);
         const metadata = await image.metadata();
+
+        // Use AI to generate meme text if not provided
+        let topText = '';
+        let bottomText = '';
+
+        if (GROQ_API_KEY) {
+          try {
+            const groqResponse = await axios.post(
+              'https://api.groq.com/openai/v1/chat/completions',
+              {
+                model: 'llama-3.1-8b-instant',
+                messages: [
+                  {
+                    role: 'system',
+                    content: `You are a meme text generator. Generate SHORT, FUNNY meme text (max 8 words per line).
+
+RESPOND ONLY WITH JSON:
+{"top_text": "short text here", "bottom_text": "punchline here"}`
+                  },
+                  { role: 'user', content: prompt }
+                ],
+                max_tokens: 100,
+                temperature: 0.8,
+                response_format: { type: "json_object" }
+              },
+              {
+                headers: {
+                  'Authorization': `Bearer ${GROQ_API_KEY}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+
+            const aiResponse = groqResponse.data.choices[0].message.content.trim();
+            const parsed = JSON.parse(aiResponse);
+            topText = parsed.top_text || parsed.top || '';
+            bottomText = parsed.bottom_text || parsed.bottom || '';
+          } catch (aiError) {
+            console.log('AI text generation failed, using prompt as text');
+            topText = prompt.substring(0, 50);
+            bottomText = '';
+          }
+        }
+
+        // Create SVG for text overlay (Impact font style)
+        const fontSize = Math.floor(metadata.width * 0.08); // 8% of width
+        const strokeWidth = Math.floor(fontSize * 0.15);
+
+        const textSvg = `
+          <svg width="${metadata.width}" height="${metadata.height}">
+            <style>
+              .meme-text {
+                font-family: Impact, Arial Black, sans-serif;
+                font-size: ${fontSize}px;
+                font-weight: bold;
+                fill: white;
+                stroke: black;
+                stroke-width: ${strokeWidth}px;
+                text-anchor: middle;
+                text-transform: uppercase;
+              }
+            </style>
+            ${topText ? `<text x="50%" y="${fontSize + 20}" class="meme-text">${topText}</text>` : ''}
+            ${bottomText ? `<text x="50%" y="${metadata.height - 30}" class="meme-text">${bottomText}</text>` : ''}
+          </svg>
+        `;
 
         // Calculate watermark size (15% of image width)
         const watermarkSize = Math.floor(metadata.width * 0.15);
@@ -1581,27 +1647,39 @@ router.post('/ai/generate', async (req, res) => {
           .png()
           .toBuffer();
 
-        // Composite watermark onto image (bottom-right corner with padding)
-        const padding = 15;
+        // Composite text and watermark onto image
+        const composites = [];
+
+        // Add text overlay
+        if (topText || bottomText) {
+          composites.push({
+            input: Buffer.from(textSvg),
+            top: 0,
+            left: 0
+          });
+        }
+
+        // Add watermark
+        composites.push({
+          input: watermark,
+          gravity: 'southeast'
+        });
+
         const watermarkedImage = await image
-          .composite([{
-            input: watermark,
-            gravity: 'southeast',
-            blend: 'over'
-          }])
+          .composite(composites)
           .jpeg({ quality: 90 })
           .toBuffer();
 
         // Convert to base64 for sending to frontend
         const base64Image = `data:image/jpeg;base64,${watermarkedImage.toString('base64')}`;
 
-        console.log('✅ AI image watermarked successfully');
+        console.log('✅ AI image with text and watermark created');
 
         return res.json({
           success: true,
           meme_url: base64Image,
           template_name: 'AI Generated Image',
-          texts: { top: '', bottom: '' },
+          texts: { top: topText, bottom: bottomText },
           mode: 'ai-image'
         });
       } catch (error) {
