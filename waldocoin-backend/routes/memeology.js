@@ -40,10 +40,8 @@ function getMemgenTemplate(imgflipId) {
     '112126428': 'bf',              // Distracted Boyfriend
     '87743020': 'buttons',          // Two Buttons
     '129242436': 'cmm',             // Change My Mind
-    '93895088': 'brain',            // Expanding Brain
-    '100777631': 'pigeon',          // Is This A Pigeon
-    '155067746': 'pikachu',         // Surprised Pikachu
-    '131087935': 'balloon'          // Running Away Balloon
+    '100777631': 'iw',              // Is This A Pigeon (memegen uses 'iw')
+    '131087935': 'ants'             // Running Away Balloon (memegen uses 'ants')
   };
   return mapping[imgflipId] || 'drake'; // Default to Drake
 }
@@ -1691,16 +1689,14 @@ RESPOND ONLY WITH JSON:
     }
 
     // MODE 2: TEMPLATE-BASED MEME (default)
-    // Available templates for randomization
+    // Available templates for randomization (only using verified working memegen templates)
     const templates = [
       { id: '181913649', name: 'Drake Hotline Bling', type: 'drake' },
       { id: '112126428', name: 'Distracted Boyfriend', type: 'bf' },
       { id: '87743020', name: 'Two Buttons', type: 'buttons' },
       { id: '129242436', name: 'Change My Mind', type: 'cmm' },
-      { id: '93895088', name: 'Expanding Brain', type: 'brain' },
-      { id: '100777631', name: 'Is This A Pigeon', type: 'pigeon' },
-      { id: '155067746', name: 'Surprised Pikachu', type: 'pikachu' },
-      { id: '131087935', name: 'Running Away Balloon', type: 'balloon' }
+      { id: '100777631', name: 'Is This A Pigeon', type: 'iw' },
+      { id: '131087935', name: 'What Is This', type: 'ants' }
     ];
 
     // Randomly select a template
@@ -1823,8 +1819,11 @@ RESPOND ONLY WITH JSON:
       // Download the template meme and add watermark
       try {
         console.log('📥 Downloading template meme from:', memeUrl);
-        const memeResponse = await axios.get(memeUrl, { responseType: 'arraybuffer' });
+        const memeResponse = await axios.get(memeUrl, { responseType: 'arraybuffer', timeout: 10000 });
         const memeBuffer = Buffer.from(memeResponse.data);
+
+        // Load watermark logo
+        const watermarkPath = path.join(__dirname, '../public/memeology-logo.png');
 
         // Process with Sharp to add watermark
         const image = sharp(memeBuffer);
