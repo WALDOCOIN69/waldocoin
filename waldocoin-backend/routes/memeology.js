@@ -1820,13 +1820,59 @@ RESPOND ONLY WITH JSON:
     }
 
     if (memeUrl) {
-      res.json({
-        success: true,
-        meme_url: memeUrl,
-        template_name: templateName,
-        texts: { top: topText, bottom: bottomText },
-        mode: 'template'
-      });
+      // Download the template meme and add watermark
+      try {
+        console.log('📥 Downloading template meme from:', memeUrl);
+        const memeResponse = await axios.get(memeUrl, { responseType: 'arraybuffer' });
+        const memeBuffer = Buffer.from(memeResponse.data);
+
+        // Process with Sharp to add watermark
+        const image = sharp(memeBuffer);
+        const metadata = await image.metadata();
+
+        // Calculate watermark size (15% of image width)
+        const watermarkSize = Math.floor(metadata.width * 0.15);
+
+        // Resize watermark
+        const watermark = await sharp(watermarkPath)
+          .resize(watermarkSize, watermarkSize)
+          .png()
+          .toBuffer();
+
+        // Add watermark on BOTTOM-LEFT
+        const padding = 15;
+        const watermarkedImage = await image
+          .composite([{
+            input: watermark,
+            left: padding,
+            top: metadata.height - watermarkSize - padding
+          }])
+          .jpeg({ quality: 90 })
+          .toBuffer();
+
+        // Convert to base64
+        const base64Image = `data:image/jpeg;base64,${watermarkedImage.toString('base64')}`;
+
+        console.log('✅ Template meme with watermark created');
+
+        res.json({
+          success: true,
+          meme_url: base64Image,
+          template_name: templateName,
+          texts: { top: topText, bottom: bottomText },
+          mode: 'template'
+        });
+      } catch (watermarkError) {
+        console.error('Failed to add watermark to template, returning original URL:', watermarkError.message);
+        // Fallback to original URL if watermarking fails
+        res.json({
+          success: true,
+          meme_url: memeUrl,
+          template_name: templateName,
+          texts: { top: topText, bottom: bottomText },
+          mode: 'template'
+        });
+      }
     } else {
       console.error('Failed to generate meme');
       res.status(500).json({
