@@ -1590,6 +1590,8 @@ Respond ONLY in this exact JSON format:
     }
 
     // Step 2: Generate the meme using Imgflip API
+    console.log('Generating meme with:', { templateId, topText, bottomText });
+
     const imgflipResponse = await axios.post(
       'https://api.imgflip.com/caption_image',
       new URLSearchParams({
@@ -1598,8 +1600,15 @@ Respond ONLY in this exact JSON format:
         password: IMGFLIP_PASSWORD,
         text0: topText,
         text1: bottomText
-      })
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }
     );
+
+    console.log('Imgflip response:', imgflipResponse.data);
 
     if (imgflipResponse.data.success) {
       res.json({
@@ -1609,16 +1618,17 @@ Respond ONLY in this exact JSON format:
         texts: { top: topText, bottom: bottomText }
       });
     } else {
+      console.error('Imgflip API error:', imgflipResponse.data);
       res.status(500).json({
         success: false,
-        error: 'Failed to generate meme image'
+        error: imgflipResponse.data.error_message || 'Failed to generate meme image'
       });
     }
   } catch (error) {
-    console.error('Error in /ai/generate:', error);
+    console.error('Error in /ai/generate:', error.response?.data || error.message);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.response?.data?.error_message || error.message || 'Failed to generate meme'
     });
   }
 });
