@@ -1506,23 +1506,25 @@ router.get('/gifs/search', async (req, res) => {
   }
 });
 
-// POST /api/memeology/ai/chat - AI chat assistant for meme ideas
-router.post('/ai/chat', async (req, res) => {
+// POST /api/memeology/ai/generate - AI generates complete meme from description
+router.post('/ai/generate', async (req, res) => {
   try {
-    const { message, wallet, tier } = req.body;
+    const { prompt, wallet, tier } = req.body;
 
-    if (!message || !message.trim()) {
+    if (!prompt || !prompt.trim()) {
       return res.status(400).json({
         success: false,
-        error: 'Message is required'
+        error: 'Prompt is required'
       });
     }
 
     // Allow anonymous users for free tier
     const userKey = wallet || 'anonymous';
 
-    // Generate AI response using Groq (free and fast)
-    let response = '';
+    // Step 1: Use AI to select best template and generate text
+    let templateId = '181913649'; // Default: Drake Hotline Bling
+    let topText = '';
+    let bottomText = '';
 
     if (GROQ_API_KEY) {
       try {
@@ -1531,11 +1533,27 @@ router.post('/ai/chat', async (req, res) => {
           {
             model: 'llama-3.1-8b-instant',
             messages: [
-              { role: 'system', content: 'You are a helpful meme assistant. Help users create funny memes by suggesting meme templates, text ideas, and meme concepts. Keep responses short and fun.' },
-              { role: 'user', content: message }
+              {
+                role: 'system',
+                content: `You are a meme generator. Given a user's description, select the best meme template and generate funny text.
+
+Available templates:
+- Drake Hotline Bling (181913649): Two panels, top=bad thing, bottom=good thing
+- Distracted Boyfriend (112126428): Three people, boyfriend looking at another girl
+- Two Buttons (87743020): Person sweating choosing between two buttons
+- Change My Mind (129242436): Person at table with sign
+- Expanding Brain (93895088): Four levels of increasingly smart ideas
+- Is This A Pigeon (100777631): Person pointing at butterfly asking if it's something else
+- Surprised Pikachu (155067746): Pikachu looking shocked
+- Running Away Balloon (131087935): Person chasing balloon, letting go of partner
+
+Respond ONLY in this exact JSON format:
+{"template_id": "181913649", "top_text": "Your top text here", "bottom_text": "Your bottom text here"}`
+              },
+              { role: 'user', content: prompt }
             ],
-            max_tokens: 200,
-            temperature: 0.8
+            max_tokens: 150,
+            temperature: 0.7
           },
           {
             headers: {
@@ -1545,23 +1563,59 @@ router.post('/ai/chat', async (req, res) => {
           }
         );
 
-        response = groqResponse.data.choices[0].message.content.trim();
+        const aiResponse = groqResponse.data.choices[0].message.content.trim();
+
+        // Try to parse JSON response
+        try {
+          const parsed = JSON.parse(aiResponse);
+          templateId = parsed.template_id || templateId;
+          topText = parsed.top_text || '';
+          bottomText = parsed.bottom_text || '';
+        } catch (parseError) {
+          // If AI didn't return valid JSON, extract text manually
+          console.log('AI response not JSON, using fallback:', aiResponse);
+          topText = prompt.substring(0, 50);
+          bottomText = 'AI-generated meme';
+        }
       } catch (error) {
         console.error('Groq API error:', error.response?.data || error.message);
-        // Fallback to generic response
-        response = "I'd love to help you create a meme! Try selecting a template and using the AI suggestion button (✨ AI) on the text boxes for quick meme text ideas!";
+        // Fallback
+        topText = prompt.substring(0, 50);
+        bottomText = 'Meme time!';
       }
     } else {
-      // No API key - use fallback
-      response = "I'd love to help you create a meme! Try selecting a template and using the AI suggestion button (✨ AI) on the text boxes for quick meme text ideas!";
+      // No API key - use simple fallback
+      topText = prompt.substring(0, 50);
+      bottomText = 'Meme time!';
     }
 
-    res.json({
-      success: true,
-      suggestion: response
-    });
+    // Step 2: Generate the meme using Imgflip API
+    const imgflipResponse = await axios.post(
+      'https://api.imgflip.com/caption_image',
+      new URLSearchParams({
+        template_id: templateId,
+        username: IMGFLIP_USERNAME,
+        password: IMGFLIP_PASSWORD,
+        text0: topText,
+        text1: bottomText
+      })
+    );
+
+    if (imgflipResponse.data.success) {
+      res.json({
+        success: true,
+        meme_url: imgflipResponse.data.data.url,
+        template_name: 'AI Selected Template',
+        texts: { top: topText, bottom: bottomText }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate meme image'
+      });
+    }
   } catch (error) {
-    console.error('Error in /ai/chat:', error);
+    console.error('Error in /ai/generate:', error);
     res.status(500).json({
       success: false,
       error: error.message

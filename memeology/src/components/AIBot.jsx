@@ -31,25 +31,39 @@ function AIBot() {
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
-      const response = await fetch(`${API_URL}/api/memeology/ai/chat`, {
+      const response = await fetch(`${API_URL}/api/memeology/ai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          message: input,
+          prompt: input,
           wallet: user?.wallet || 'anonymous',
-          tier: tier || 'free',
-          ai_model: aiModel
+          tier: tier || 'free'
         })
       })
 
       const data = await response.json()
-      const botMessage = { role: 'bot', content: data.suggestion }
-      setMessages(prev => [...prev, botMessage])
+
+      if (data.success && data.meme_url) {
+        // Show the generated meme image
+        const botMessage = {
+          role: 'bot',
+          content: data.meme_url,
+          type: 'image',
+          template: data.template_name,
+          texts: data.texts
+        }
+        setMessages(prev => [...prev, botMessage])
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'bot',
+          content: data.error || 'Failed to generate meme. Try being more specific!'
+        }])
+      }
     } catch (error) {
       console.error('Error:', error)
-      setMessages(prev => [...prev, { role: 'bot', content: 'Error getting response' }])
+      setMessages(prev => [...prev, { role: 'bot', content: 'Error generating meme. Please try again!' }])
     } finally {
       setLoading(false)
     }
@@ -74,7 +88,27 @@ function AIBot() {
             messages.map((msg, idx) => (
               <div key={idx} className={`message ${msg.role}`}>
                 <div className="message-content">
-                  {msg.content}
+                  {msg.type === 'image' ? (
+                    <div className="meme-result">
+                      <img src={msg.content} alt="Generated meme" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+                      <div className="meme-info">
+                        <small>Template: {msg.template}</small>
+                        <button
+                          className="btn-download"
+                          onClick={() => {
+                            const link = document.createElement('a')
+                            link.href = msg.content
+                            link.download = `meme-${Date.now()}.jpg`
+                            link.click()
+                          }}
+                        >
+                          📥 Download
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               </div>
             ))
