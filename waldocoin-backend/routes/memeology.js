@@ -1659,10 +1659,12 @@ RESPOND ONLY WITH JSON:
           });
         }
 
-        // Add watermark
+        // Add watermark on BOTTOM-LEFT to cover pollinations.ai watermark
+        const padding = 15;
         composites.push({
           input: watermark,
-          gravity: 'southeast'
+          left: padding,
+          top: metadata.height - watermarkSize - padding
         });
 
         const watermarkedImage = await image
