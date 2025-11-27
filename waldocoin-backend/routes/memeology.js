@@ -1579,8 +1579,11 @@ router.post('/ai/generate', async (req, res) => {
     const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
     let templateId = randomTemplate.id;
     let templateName = randomTemplate.name;
+    let templateType = randomTemplate.type;
     let topText = '';
     let bottomText = '';
+
+    console.log('🎲 Randomly selected template:', { templateId, templateName, templateType });
 
     if (GROQ_API_KEY) {
       try {
@@ -1683,7 +1686,9 @@ RESPOND ONLY WITH JSON:
       console.log('Using fallback meme generation method');
       const encodedTop = encodeURIComponent(topText);
       const encodedBottom = encodeURIComponent(bottomText);
-      memeUrl = `https://api.memegen.link/images/${getMemgenTemplate(templateId)}/${encodedTop}/${encodedBottom}.jpg`;
+      const memgenTemplate = templateType || getMemgenTemplate(templateId);
+      memeUrl = `https://api.memegen.link/images/${memgenTemplate}/${encodedTop}/${encodedBottom}.jpg`;
+      console.log('🖼️ Generated memegen URL:', memeUrl);
     }
 
     if (memeUrl) {
