@@ -7,6 +7,15 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getAllPrices, calculateTokenAmount } from '../utils/priceOracle.js';
+import {
+  getTemplatesForTier,
+  searchTemplates,
+  getCategories,
+  getRandomTemplate,
+  getTemplateById,
+  getTierStats,
+  toImgflipFormat
+} from '../utils/templateLoader.js';
 
 dotenv.config();
 
@@ -1709,117 +1718,24 @@ RESPOND ONLY WITH JSON:
     }
 
     // MODE 2: TEMPLATE-BASED MEME (default)
-    // ALL 100 most popular Imgflip templates (auto-generated from API)
-    const templates = [
-      { id: '181913649', name: 'Drake Hotline Bling', type: 'drake-hotline-bling' },
-      { id: '87743020', name: 'Two Buttons', type: 'two-buttons' },
-      { id: '112126428', name: 'Distracted Boyfriend', type: 'distracted-boyfriend' },
-      { id: '124822590', name: 'Left Exit 12 Off Ramp', type: 'left-exit-12-off-ram' },
-      { id: '129242436', name: 'Change My Mind', type: 'change-my-mind' },
-      { id: '438680', name: 'Batman Slapping Robin', type: 'batman-slapping-robi' },
-      { id: '217743513', name: 'UNO Draw 25 Cards', type: 'uno-draw-25-cards' },
-      { id: '131087935', name: 'Running Away Balloon', type: 'running-away-balloon' },
-      { id: '61579', name: 'One Does Not Simply', type: 'one-does-not-simply' },
-      { id: '4087833', name: 'Waiting Skeleton', type: 'waiting-skeleton' },
-      { id: '93895088', name: 'Expanding Brain', type: 'expanding-brain' },
-      { id: '102156234', name: 'Mocking Spongebob', type: 'mocking-spongebob' },
-      { id: '97984', name: 'Disaster Girl', type: 'disaster-girl' },
-      { id: '1035805', name: 'Boardroom Meeting Suggestion', type: 'boardroom-meeting-su' },
-      { id: '188390779', name: 'Woman Yelling At Cat', type: 'woman-yelling-at-cat' },
-      { id: '91538330', name: 'X, X Everywhere', type: 'x-x-everywhere' },
-      { id: '101470', name: 'Ancient Aliens', type: 'ancient-aliens' },
-      { id: '247375501', name: 'Buff Doge vs. Cheems', type: 'buff-doge-vs-cheems' },
-      { id: '131940431', name: 'Gru\'s Plan', type: 'grus-plan' },
-      { id: '222403160', name: 'Bernie I Am Once Again Asking For Your Support', type: 'bernie-i-am-once-aga' },
-      { id: '89370399', name: 'Roll Safe Think About It', type: 'roll-safe-think-abou' },
-      { id: '119139145', name: 'Blank Nut Button', type: 'blank-nut-button' },
-      { id: '61520', name: 'Futurama Fry', type: 'futurama-fry' },
-      { id: '178591752', name: 'Tuxedo Winnie The Pooh', type: 'tuxedo-winnie-the-po' },
-      { id: '135256802', name: 'Epic Handshake', type: 'epic-handshake' },
-      { id: '114585149', name: 'Inhaling Seagull', type: 'inhaling-seagull' },
-      { id: '155067746', name: 'Surprised Pikachu', type: 'surprised-pikachu' },
-      { id: '80707627', name: 'Sad Pablo Escobar', type: 'sad-pablo-escobar' },
-      { id: '5496396', name: 'Leonardo Dicaprio Cheers', type: 'leonardo-dicaprio-ch' },
-      { id: '27813981', name: 'Hide the Pain Harold', type: 'hide-the-pain-harold' },
-      { id: '100777631', name: 'Is This A Pigeon', type: 'is-this-a-pigeon' },
-      { id: '123999232', name: 'The Scroll Of Truth', type: 'the-scroll-of-truth' },
-      { id: '21735', name: 'The Rock Driving', type: 'the-rock-driving' },
-      { id: '148909805', name: 'Monkey Puppet', type: 'monkey-puppet' },
-      { id: '252600902', name: 'Always Has Been', type: 'always-has-been' },
-      { id: '124055727', name: 'Y\'all Got Any More Of That', type: 'yall-got-any-more-of' },
-      { id: '28251713', name: 'Oprah You Get A', type: 'oprah-you-get-a' },
-      { id: '226297822', name: 'Panik Kalm Panik', type: 'panik-kalm-panik' },
-      { id: '161865971', name: 'Marked Safe From', type: 'marked-safe-from' },
-      { id: '101288', name: 'Third World Skeptical Kid', type: 'third-world-skeptica' },
-      { id: '134797956', name: 'American Chopper Argument', type: 'american-chopper-arg' },
-      { id: '110163934', name: 'I Bet He\'s Thinking About Other Women', type: 'i-bet-hes-thinking-a' },
-      { id: '180190441', name: 'They\'re The Same Picture', type: 'theyre-the-same-pict' },
-      { id: '61556', name: 'Grandma Finds The Internet', type: 'grandma-finds-the-in' },
-      { id: '91545132', name: 'Trump Bill Signing', type: 'trump-bill-signing' },
-      { id: '6235864', name: 'Finding Neverland', type: 'finding-neverland' },
-      { id: '84341851', name: 'Evil Kermit', type: 'evil-kermit' },
-      { id: '3218037', name: 'This Is Where I\'d Put My Trophy If I Had One', type: 'this-is-where-id-put' },
-      { id: '55311130', name: 'This Is Fine', type: 'this-is-fine' },
-      { id: '61544', name: 'Success Kid', type: 'success-kid' },
-      { id: '14371066', name: 'Star Wars Yoda', type: 'star-wars-yoda' },
-      { id: '135678846', name: 'Who Killed Hannibal', type: 'who-killed-hannibal' },
-      { id: '79132341', name: 'Bike Fall', type: 'bike-fall' },
-      { id: '322841258', name: 'Anakin Padme 4 Panel', type: 'anakin-padme-4-panel' },
-      { id: '196652226', name: 'Spongebob Ight Imma Head Out', type: 'spongebob-ight-imma-' },
-      { id: '195515965', name: 'Clown Applying Makeup', type: 'clown-applying-makeu' },
-      { id: '309868304', name: 'Trade Offer', type: 'trade-offer' },
-      { id: '259237855', name: 'Laughing Leo', type: 'laughing-leo' },
-      { id: '99683372', name: 'Sleeping Shaq', type: 'sleeping-shaq' },
-      { id: '370867422', name: 'Megamind peeking', type: 'megamind-peeking' },
-      { id: '166969924', name: 'Flex Tape', type: 'flex-tape' },
-      { id: '252758727', name: 'Mother Ignoring Kid Drowning In A Pool', type: 'mother-ignoring-kid-' },
-      { id: '50421420', name: 'Disappointed Black Guy', type: 'disappointed-black-g' },
-      { id: '119215120', name: 'Types of Headaches meme', type: 'types-of-headaches-m' },
-      { id: '29617627', name: 'Look At Me', type: 'look-at-me' },
-      { id: '247113703', name: 'A train hitting a school bus', type: 'a-train-hitting-a-sc' },
-      { id: '177682295', name: 'You Guys are Getting Paid', type: 'you-guys-are-getting' },
-      { id: '224015000', name: 'Bernie Sanders Once Again Asking', type: 'bernie-sanders-once-' },
-      { id: '67452763', name: 'Squidward window', type: 'squidward-window' },
-      { id: '110133729', name: 'spiderman pointing at spiderman', type: 'spiderman-pointing-a' },
-      { id: '316466202', name: 'where monkey', type: 'where-monkey' },
-      { id: '101956210', name: 'Whisper and Goosebumps', type: 'whisper-and-goosebum' },
-      { id: '221578498', name: 'Grant Gustin over grave', type: 'grant-gustin-over-gr' },
-      { id: '224514655', name: 'Anime Girl Hiding from Terminator', type: 'anime-girl-hiding-fr' },
-      { id: '216523697', name: 'All My Homies Hate', type: 'all-my-homies-hate' },
-      { id: '77045868', name: 'Pawn Stars Best I Can Do', type: 'pawn-stars-best-i-ca' },
-      { id: '187102311', name: 'Three-headed Dragon', type: 'threeheaded-dragon' },
-      { id: '284929871', name: 'They don\'t know', type: 'they-dont-know' },
-      { id: '234202281', name: 'AJ Styles & Undertaker', type: 'aj-styles-undertaker' },
-      { id: '171305372', name: 'Soldier protecting sleeping child', type: 'soldier-protecting-s' },
-      { id: '427308417', name: '0 days without (Lenny, Simpsons)', type: '0-days-without-lenny' },
-      { id: '206151308', name: 'Spider Man Triple', type: 'spider-man-triple' },
-      { id: '342785297', name: 'Gus Fring we are not the same', type: 'gus-fring-we-are-not' },
-      { id: '137501417', name: 'Friendship ended', type: 'friendship-ended' },
-      { id: '20007896', name: 'c\'mon do something', type: 'cmon-do-something' },
-      { id: '162372564', name: 'Domino Effect', type: 'domino-effect' },
-      { id: '129315248', name: 'No - Yes', type: 'no-yes' },
-      { id: '533936279', name: 'Bell Curve', type: 'bell-curve' },
-      { id: '142009471', name: 'is this butterfly', type: 'is-this-butterfly' },
-      { id: '145139900', name: 'Scooby doo mask reveal', type: 'scooby-doo-mask-reve' },
-      { id: '371619279', name: 'Megamind no bitches', type: 'megamind-no-bitches' },
-      { id: '72525473', name: 'say the line bart! simpsons', type: 'say-the-line-bart-si' },
-      { id: '104893621', name: 'Grim Reaper Knocking Door', type: 'grim-reaper-knocking' },
-      { id: '354700819', name: 'Two guys on a bus', type: 'two-guys-on-a-bus' },
-      { id: '360597639', name: 'whe i\'m in a competition and my opponent is', type: 'whe-im-in-a-competit' },
-      { id: '309668311', name: 'Two Paths', type: 'two-paths' },
-      { id: '558880671', name: 'Squid Game', type: 'squid-game' },
-      { id: '208915813', name: 'George Bush 9/11', type: 'george-bush-911' },
-      { id: '505705955', name: 'Absolute Cinema', type: 'absolute-cinema' },
-      { id: '590646276', name: 'the lion..', type: 'the-lion' }
-    ];
+    // Get templates based on user's tier (380 total templates from 7 sources)
+    const userTemplates = getTemplatesForTier(tier);
+    console.log(`📚 User tier "${tier}" has access to ${userTemplates.length} templates`);
 
-    // Randomly select a template with better randomization
-    const randomIndex = Math.floor(Math.random() * templates.length);
-    const randomTemplate = templates[randomIndex];
-    console.log(`🎲 Selected template ${randomIndex + 1}/${templates.length}:`, randomTemplate.name);
-    let templateId = randomTemplate.id;
+    // Randomly select a template from user's available templates
+    const randomTemplate = getRandomTemplate(tier);
+
+    if (!randomTemplate) {
+      return res.status(500).json({ error: 'No templates available for your tier' });
+    }
+
+    console.log(`🎲 Selected template: ${randomTemplate.name} (${randomTemplate.source}) - Rank: ${randomTemplate.rank}, Score: ${randomTemplate.qualityScore}`);
+
+    // Convert template to Imgflip format if needed
+    const imgflipTemplate = toImgflipFormat(randomTemplate);
+    let templateId = imgflipTemplate.id;
     let templateName = randomTemplate.name;
-    let templateType = randomTemplate.type;
+    let templateType = randomTemplate.type || randomTemplate.id;
     let topText = '';
     let bottomText = '';
 
@@ -2074,6 +1990,135 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
       success: false,
       error: error.response?.data?.error_message || error.message || 'Failed to generate meme'
     });
+  }
+});
+
+// GET /api/memeology/templates/search - Search templates by name, category, or keywords
+router.get('/templates/search', async (req, res) => {
+  try {
+    const { q, tier, category, limit = 50 } = req.query;
+    const userTier = tier || 'free';
+
+    // Search templates
+    const results = searchTemplates(q, userTier, category);
+
+    // Limit results
+    const limitedResults = results.slice(0, parseInt(limit));
+
+    console.log(`🔍 Template search: query="${q}", tier="${userTier}", category="${category || 'all'}", found=${results.length}`);
+
+    res.json({
+      success: true,
+      templates: limitedResults,
+      total: results.length,
+      showing: limitedResults.length,
+      tier: userTier,
+      query: q || '',
+      category: category || 'all'
+    });
+  } catch (error) {
+    console.error('Error in /templates/search:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/templates/categories - Get all template categories
+router.get('/templates/categories', async (req, res) => {
+  try {
+    const categories = getCategories();
+
+    res.json({
+      success: true,
+      categories: categories,
+      total: categories.length
+    });
+  } catch (error) {
+    console.error('Error in /templates/categories:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/templates/stats - Get template library statistics
+router.get('/templates/stats', async (req, res) => {
+  try {
+    const stats = getTierStats();
+
+    res.json({
+      success: true,
+      stats: stats,
+      tiers: {
+        free: {
+          templates: stats.free,
+          description: 'Top 50 highest quality templates'
+        },
+        waldocoin: {
+          templates: stats.free + stats.waldocoin,
+          description: 'Top 150 templates (requires 1000+ WLO)'
+        },
+        premium: {
+          templates: stats.total,
+          description: 'All 380 templates from 7 sources'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in /templates/stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/templates/random - Get a random template for user's tier
+router.get('/templates/random', async (req, res) => {
+  try {
+    const { tier, category } = req.query;
+    const userTier = tier || 'free';
+
+    const template = getRandomTemplate(userTier, category);
+
+    if (!template) {
+      return res.status(404).json({
+        error: 'No templates found',
+        tier: userTier,
+        category: category || 'all'
+      });
+    }
+
+    res.json({
+      success: true,
+      template: template,
+      tier: userTier
+    });
+  } catch (error) {
+    console.error('Error in /templates/random:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/templates/:id - Get specific template by ID
+router.get('/templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tier } = req.query;
+    const userTier = tier || 'free';
+
+    const template = getTemplateById(id, userTier);
+
+    if (!template) {
+      return res.status(404).json({
+        error: 'Template not found or not accessible for your tier',
+        id: id,
+        tier: userTier
+      });
+    }
+
+    res.json({
+      success: true,
+      template: template,
+      tier: userTier
+    });
+  } catch (error) {
+    console.error('Error in /templates/:id:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
