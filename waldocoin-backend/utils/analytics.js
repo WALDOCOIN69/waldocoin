@@ -1,13 +1,25 @@
-import { 
-  MemeGeneration, 
-  UserSession, 
-  TemplatePerformance, 
-  ConversionEvent,
-  FeatureUsage 
-} from '../models/Analytics.js';
+// Conditionally import Analytics models (only if MongoDB is configured)
+let MemeGeneration, UserSession, TemplatePerformance, ConversionEvent, FeatureUsage;
+let analyticsEnabled = false;
+
+try {
+  const analyticsModels = await import('../models/Analytics.js');
+  MemeGeneration = analyticsModels.MemeGeneration;
+  UserSession = analyticsModels.UserSession;
+  TemplatePerformance = analyticsModels.TemplatePerformance;
+  ConversionEvent = analyticsModels.ConversionEvent;
+  FeatureUsage = analyticsModels.FeatureUsage;
+  analyticsEnabled = true;
+} catch (error) {
+  console.warn('⚠️  Analytics tracking disabled (MongoDB/Mongoose not installed)');
+}
 
 // TRACK MEME GENERATION
 export async function trackMemeGeneration(data) {
+  if (!analyticsEnabled) {
+    return null; // Silently skip if analytics not enabled
+  }
+
   try {
     const memeEvent = new MemeGeneration({
       userId: data.userId || data.sessionId,
@@ -75,6 +87,8 @@ async function updateTemplatePerformance(templateId, templateName, templateSourc
 
 // TRACK MEME DOWNLOAD
 export async function trackMemeDownload(memeId, templateId) {
+  if (!analyticsEnabled) return null;
+
   try {
     // Update meme generation record
     await MemeGeneration.findByIdAndUpdate(memeId, { wasDownloaded: true });
@@ -91,6 +105,8 @@ export async function trackMemeDownload(memeId, templateId) {
 
 // TRACK MEME SHARE
 export async function trackMemeShare(memeId, templateId) {
+  if (!analyticsEnabled) return null;
+
   try {
     await MemeGeneration.findByIdAndUpdate(memeId, { wasShared: true });
     await TemplatePerformance.findOneAndUpdate(
@@ -104,6 +120,8 @@ export async function trackMemeShare(memeId, templateId) {
 
 // TRACK USER SESSION
 export async function trackSession(sessionData) {
+  if (!analyticsEnabled) return null;
+
   try {
     const session = await UserSession.findOneAndUpdate(
       { sessionId: sessionData.sessionId },
@@ -133,6 +151,8 @@ export async function trackSession(sessionData) {
 
 // UPDATE SESSION ACTIVITY
 export async function updateSessionActivity(sessionId, activity) {
+  if (!analyticsEnabled) return null;
+
   try {
     const update = {
       lastActivityAt: new Date(),
@@ -153,6 +173,8 @@ export async function updateSessionActivity(sessionId, activity) {
 
 // TRACK CONVERSION
 export async function trackConversion(conversionData) {
+  if (!analyticsEnabled) return null;
+
   try {
     const conversion = new ConversionEvent({
       userId: conversionData.userId,
@@ -176,6 +198,8 @@ export async function trackConversion(conversionData) {
 
 // TRACK FEATURE USAGE
 export async function trackFeatureUsage(featureName, userId, tier) {
+  if (!analyticsEnabled) return null;
+
   try {
     await FeatureUsage.findOneAndUpdate(
       { featureName, userId },

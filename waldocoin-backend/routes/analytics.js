@@ -2,13 +2,24 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { redis } from "../redisClient.js"; // ✅ Import Redis client
-import {
-  MemeGeneration,
-  UserSession,
-  TemplatePerformance,
-  ConversionEvent,
-  FeatureUsage
-} from '../models/Analytics.js';
+
+// Conditionally import Analytics models (only if MongoDB is configured)
+let MemeGeneration, UserSession, TemplatePerformance, ConversionEvent, FeatureUsage;
+let analyticsEnabled = false;
+
+try {
+  const analyticsModels = await import('../models/Analytics.js');
+  MemeGeneration = analyticsModels.MemeGeneration;
+  UserSession = analyticsModels.UserSession;
+  TemplatePerformance = analyticsModels.TemplatePerformance;
+  ConversionEvent = analyticsModels.ConversionEvent;
+  FeatureUsage = analyticsModels.FeatureUsage;
+  analyticsEnabled = true;
+  console.log('✅ Analytics models loaded successfully');
+} catch (error) {
+  console.warn('⚠️  Analytics models not available (MongoDB/Mongoose not installed):', error.message);
+  console.warn('⚠️  Memeology analytics endpoints will return errors. Install mongoose to enable.');
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +77,14 @@ router.get("/airdrops", async (req, res) => {
 
 // GET /api/analytics/memeology/dashboard - Main memeology analytics dashboard
 router.get('/memeology/dashboard', async (req, res) => {
+  if (!analyticsEnabled) {
+    return res.status(503).json({
+      success: false,
+      error: 'Analytics not available. MongoDB/Mongoose not configured.',
+      message: 'To enable analytics, install mongoose and configure MongoDB connection.'
+    });
+  }
+
   try {
     const { timeRange = '7d' } = req.query;
 
@@ -163,6 +182,13 @@ router.get('/memeology/dashboard', async (req, res) => {
 
 // GET /api/analytics/memeology/trending - Get trending templates
 router.get('/memeology/trending', async (req, res) => {
+  if (!analyticsEnabled) {
+    return res.status(503).json({
+      success: false,
+      error: 'Analytics not available. MongoDB/Mongoose not configured.'
+    });
+  }
+
   try {
     const { limit = 20, timeRange = '24h' } = req.query;
 
