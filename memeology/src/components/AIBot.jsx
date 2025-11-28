@@ -11,6 +11,7 @@ function AIBot() {
   const messagesEndRef = useRef(null)
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
   const [generationMode, setGenerationMode] = useState('template') // 'template' or 'ai-image'
+  const [enlargedImage, setEnlargedImage] = useState(null) // For image modal
 
   const examplePrompts = [
     "Make a meme about crypto being down",
@@ -129,12 +130,12 @@ function AIBot() {
                 <div className="message-content">
                   {msg.type === 'image' ? (
                     <div className="meme-result">
-                      <div className="meme-image-container">
+                      <div className="meme-image-container" onClick={() => setEnlargedImage(msg.content)}>
                         <img
                           src={msg.content}
                           alt="Generated meme"
                           className="meme-image"
-                          style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                          style={{ maxWidth: '100%', height: 'auto', display: 'block', cursor: 'pointer' }}
                           onLoad={() => console.log('✅ Image loaded successfully')}
                           onError={(e) => {
                             console.error('❌ Image failed to load:', msg.content)
@@ -269,6 +270,16 @@ function AIBot() {
           </button>
         </div>
       </div>
+
+      {/* Image Enlargement Modal */}
+      {enlargedImage && (
+        <div className="image-modal" onClick={() => setEnlargedImage(null)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setEnlargedImage(null)}>✕</button>
+            <img src={enlargedImage} alt="Enlarged meme" className="enlarged-image" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
