@@ -13,6 +13,14 @@ function AIBot() {
   const [generationMode, setGenerationMode] = useState('template') // 'template' or 'ai-image'
   const [enlargedImage, setEnlargedImage] = useState(null) // For image modal
 
+  // Template browser state
+  const [showTemplateBrowser, setShowTemplateBrowser] = useState(false)
+  const [templates, setTemplates] = useState([])
+  const [categories, setCategories] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [templateStats, setTemplateStats] = useState(null)
+
   const examplePrompts = [
     "Make a meme about crypto being down",
     "Create a meme about Monday mornings",
@@ -39,6 +47,65 @@ function AIBot() {
     }, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  // Load categories and stats on mount
+  useEffect(() => {
+    loadCategories()
+    loadTemplateStats()
+  }, [])
+
+  // Load templates when browser is opened or filters change
+  useEffect(() => {
+    if (showTemplateBrowser) {
+      loadTemplates()
+    }
+  }, [showTemplateBrowser, selectedCategory, searchQuery, tier])
+
+  const loadCategories = async () => {
+    try {
+      const response = await fetch('https://waldocoin-backend.onrender.com/api/memeology/templates/categories')
+      const data = await response.json()
+      if (data.success) {
+        setCategories(data.categories)
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+  }
+
+  const loadTemplateStats = async () => {
+    try {
+      const response = await fetch('https://waldocoin-backend.onrender.com/api/memeology/templates/stats')
+      const data = await response.json()
+      if (data.success) {
+        setTemplateStats(data)
+      }
+    } catch (error) {
+      console.error('Error loading template stats:', error)
+    }
+  }
+
+  const loadTemplates = async () => {
+    try {
+      const userTier = tier || 'free'
+      const params = new URLSearchParams({
+        tier: userTier,
+        limit: 100
+      })
+
+      if (searchQuery) params.append('q', searchQuery)
+      if (selectedCategory !== 'all') params.append('category', selectedCategory)
+
+      const response = await fetch(`https://waldocoin-backend.onrender.com/api/memeology/templates/search?${params}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setTemplates(data.templates)
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error)
+    }
+  }
 
   const sendMessage = async () => {
     if (!input.trim()) {
@@ -132,8 +199,97 @@ function AIBot() {
             >
               🎨 AI Image
             </button>
+            <button
+              className={`mode-btn ${showTemplateBrowser ? 'active' : ''}`}
+              onClick={() => setShowTemplateBrowser(!showTemplateBrowser)}
+              title="Browse all templates"
+            >
+              🎨 Browse ({templateStats?.stats?.total || 380})
+            </button>
           </div>
         </div>
+
+        {/* Template Browser */}
+        {showTemplateBrowser && (
+          <div className="template-browser">
+            <div className="browser-header">
+              <h3>📚 Template Library</h3>
+              {templateStats && (
+                <div className="tier-info">
+                  <span className="tier-badge">{tier || 'FREE'}</span>
+                  <span className="template-count">
+                    {tier === 'free' && `${templateStats.stats.free} templates`}
+                    {tier === 'waldocoin' && `${templateStats.stats.free + templateStats.stats.waldocoin} templates`}
+                    {['premium', 'gold', 'platinum', 'king'].includes(tier) && `All ${templateStats.stats.total} templates`}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="browser-filters">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="🔍 Search templates..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              <div className="category-filters">
+                <button
+                  className={`category-btn ${selectedCategory === 'all' ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory('all')}
+                >
+                  All
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat.category}
+                    className={`category-btn ${selectedCategory === cat.category ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat.category)}
+                  >
+                    {cat.category} ({cat.count})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="template-grid">
+              {templates.map(template => (
+                <div key={template.id} className="template-card">
+                  <div className="template-info">
+                    <h4>{template.name}</h4>
+                    <div className="template-meta">
+                      <span className="template-source">{template.source}</span>
+                      <span className="template-score">⭐ {template.qualityScore}/100</span>
+                      <span className="template-rank">#{template.rank}</span>
+                    </div>
+                    <div className="template-categories">
+                      {template.categories?.map(cat => (
+                        <span key={cat} className="category-tag">{cat}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    className="use-template-btn"
+                    onClick={() => {
+                      setInput(`Make a meme using ${template.name}`)
+                      setShowTemplateBrowser(false)
+                    }}
+                  >
+                    Use Template
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {templates.length === 0 && (
+              <div className="no-templates">
+                <p>No templates found. Try a different search or category.</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="chat-box">
           {messages.length === 0 ? (
