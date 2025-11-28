@@ -43,7 +43,7 @@ services:
     name: waldo-api
     runtime: node
     rootDir: waldocoin-backend
-    buildCommand: "npm install"
+    buildCommand: "npm ci"
     startCommand: "node server.js"
     envVars:
       - key: XUMM_API_KEY
@@ -130,6 +130,8 @@ services:
         value: waldolabs
       - key: IMGFLIP_PASSWORD
         value: waldolabs123
+      - key: GROQ_API_KEY
+        sync: false
       - key: WLO_ISSUER
         value: rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY
       - key: XRPL_SERVER
