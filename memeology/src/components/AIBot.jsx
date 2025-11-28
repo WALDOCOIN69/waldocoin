@@ -152,6 +152,11 @@ function AIBot() {
                             }
                           }}
                         />
+                        <img
+                          src="/memeology-logo.png"
+                          alt="Memeology"
+                          className="meme-watermark-overlay"
+                        />
                       </div>
                       <div className="meme-info">
                         <small>
@@ -159,11 +164,70 @@ function AIBot() {
                         </small>
                         <button
                           className="btn-download"
-                          onClick={() => {
-                            const link = document.createElement('a')
-                            link.href = msg.content
-                            link.download = `meme-${Date.now()}.jpg`
-                            link.click()
+                          onClick={async () => {
+                            try {
+                              // Create canvas to add watermark
+                              const img = new Image()
+                              img.crossOrigin = 'anonymous'
+                              img.src = msg.content
+
+                              await new Promise((resolve, reject) => {
+                                img.onload = resolve
+                                img.onerror = reject
+                              })
+
+                              const canvas = document.createElement('canvas')
+                              const ctx = canvas.getContext('2d')
+                              canvas.width = img.width
+                              canvas.height = img.height
+
+                              // Draw the meme image
+                              ctx.drawImage(img, 0, 0)
+
+                              // Load and draw watermark
+                              const watermark = new Image()
+                              watermark.src = '/memeology-logo.png'
+
+                              await new Promise((resolve, reject) => {
+                                watermark.onload = resolve
+                                watermark.onerror = () => {
+                                  console.warn('Watermark not found, downloading without watermark')
+                                  resolve() // Continue without watermark
+                                }
+                              })
+
+                              if (watermark.complete && watermark.naturalWidth > 0) {
+                                // Calculate watermark size (20% of image width to cover memegen.link watermark)
+                                const watermarkSize = Math.floor(img.width * 0.20)
+                                const padding = 10
+
+                                // Draw watermark on bottom-left to cover memegen.link watermark
+                                ctx.drawImage(
+                                  watermark,
+                                  padding,
+                                  img.height - watermarkSize - padding,
+                                  watermarkSize,
+                                  watermarkSize
+                                )
+                              }
+
+                              // Download the watermarked image
+                              canvas.toBlob((blob) => {
+                                const url = URL.createObjectURL(blob)
+                                const link = document.createElement('a')
+                                link.href = url
+                                link.download = `meme-${Date.now()}.jpg`
+                                link.click()
+                                URL.revokeObjectURL(url)
+                              }, 'image/jpeg', 0.9)
+                            } catch (error) {
+                              console.error('Download failed:', error)
+                              // Fallback to direct download
+                              const link = document.createElement('a')
+                              link.href = msg.content
+                              link.download = `meme-${Date.now()}.jpg`
+                              link.click()
+                            }
                           }}
                         >
                           📥 Download

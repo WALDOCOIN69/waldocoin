@@ -163,6 +163,20 @@
   z-index: 10;
 }
 
+.meme-watermark-overlay {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: 20%;
+  max-width: 120px;
+  min-width: 60px;
+  height: auto;
+  opacity: 0.95;
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
 .meme-result {
   width: 100%;
 }
