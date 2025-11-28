@@ -63,7 +63,7 @@ function AIBot() {
 
   const loadCategories = async () => {
     try {
-      const response = await fetch('https://waldocoin-backend.onrender.com/api/memeology/templates/categories')
+      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/memeology/templates/categories')
       const data = await response.json()
       if (data.success) {
         setCategories(data.categories)
@@ -75,7 +75,7 @@ function AIBot() {
 
   const loadTemplateStats = async () => {
     try {
-      const response = await fetch('https://waldocoin-backend.onrender.com/api/memeology/templates/stats')
+      const response = await fetch('https://waldocoin-backend-api.onrender.com/api/memeology/templates/stats')
       const data = await response.json()
       if (data.success) {
         setTemplateStats(data)
@@ -96,7 +96,7 @@ function AIBot() {
       if (searchQuery) params.append('q', searchQuery)
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
 
-      const response = await fetch(`https://waldocoin-backend.onrender.com/api/memeology/templates/search?${params}`)
+      const response = await fetch(`https://waldocoin-backend-api.onrender.com/api/memeology/templates/search?${params}`)
       const data = await response.json()
 
       if (data.success) {
