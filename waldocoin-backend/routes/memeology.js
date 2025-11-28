@@ -4,12 +4,21 @@ import express from 'express';
 import axios from 'axios';
 import xrpl from 'xrpl';
 import dotenv from 'dotenv';
-import sharp from 'sharp';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getAllPrices, calculateTokenAmount } from '../utils/priceOracle.js';
 
 dotenv.config();
+
+// Try to import sharp, but make it optional
+let sharp = null;
+try {
+  const sharpModule = await import('sharp');
+  sharp = sharpModule.default;
+  console.log('✅ Sharp loaded successfully - watermarking enabled');
+} catch (error) {
+  console.warn('⚠️  Sharp not available - watermarking disabled:', error.message);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1563,6 +1572,17 @@ router.post('/ai/generate', async (req, res) => {
 
         const imageBuffer = Buffer.from(imageResponse.data);
 
+        // If sharp is not available, return image without watermark
+        if (!sharp) {
+          console.log('⚠️  Returning AI image without watermark (sharp not available)');
+          const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+          return res.json({
+            success: true,
+            imageUrl: base64Image,
+            message: 'AI meme generated successfully (watermark unavailable)'
+          });
+        }
+
         // Load watermark logo
         const watermarkPath = path.join(__dirname, '../public/memeology-logo.png');
 
@@ -1823,11 +1843,24 @@ RESPOND ONLY WITH JSON:
     }
 
     if (memeUrl) {
-      // Download the template meme and add watermark
+      // Download the template meme and add watermark (if sharp is available)
       try {
         console.log('📥 Downloading template meme from:', memeUrl);
         const memeResponse = await axios.get(memeUrl, { responseType: 'arraybuffer', timeout: 10000 });
         const memeBuffer = Buffer.from(memeResponse.data);
+
+        // If sharp is not available, return image without watermark
+        if (!sharp) {
+          console.log('⚠️  Returning template meme without watermark (sharp not available)');
+          const base64Image = `data:image/jpeg;base64,${memeBuffer.toString('base64')}`;
+          return res.json({
+            success: true,
+            meme_url: base64Image,
+            template_name: templateName,
+            texts: { top: topText, bottom: bottomText },
+            mode: 'template'
+          });
+        }
 
         // Load watermark logo
         const watermarkPath = path.join(__dirname, '../public/memeology-logo.png');
