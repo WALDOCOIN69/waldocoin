@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memeology Analytics Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 30px; font-size: 2.5rem; }
+    .time-selector {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .time-selector button {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 10px 20px;
+      margin: 0 5px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .time-selector button:hover { background: rgba(255,255,255,0.3); }
+    .time-selector button.active {
+      background: rgba(255,255,255,0.4);
+      border-color: white;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .stat-card h3 {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .stat-card .value {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    .chart-container {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .chart-container h2 {
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    th {
+      font-weight: 600;
+      opacity: 0.8;
+      font-size: 14px;
+    }
+    .loading {
+      text-align: center;
+      padding: 50px;
+      font-size: 18px;
+    }
+    .emoji { font-size: 24px; margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Memeology Analytics Dashboard</h1>
+    
+    <div class="time-selector">
+      <button class="time-btn active" data-range="24h">Last 24 Hours</button>
+      <button class="time-btn" data-range="7d">Last 7 Days</button>
+      <button class="time-btn" data-range="30d">Last 30 Days</button>
+      <button class="time-btn" data-range="90d">Last 90 Days</button>
+    </div>
+
+    <div id="loading" class="loading">Loading analytics...</div>
+    
+    <div id="dashboard" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>🎨 Total Memes</h3>
+          <div class="value" id="totalMemes">-</div>
+          <div class="label">Generated</div>
+        </div>
+        <div class="stat-card">
+          <h3>👥 Total Sessions</h3>
+          <div class="value" id="totalSessions">-</div>
+          <div class="label">Unique visitors</div>
+        </div>
+        <div class="stat-card">
+          <h3>💰 Conversions</h3>
+          <div class="value" id="totalConversions">-</div>
+          <div class="label" id="conversionRate">0% rate</div>
+        </div>
+        <div class="stat-card">
+          <h3>📈 Avg Memes/Session</h3>
+          <div class="value" id="avgMemes">-</div>
+          <div class="label">Per user</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <h2>🔥 Top 10 Templates</h2>
+        <table id="topTemplates">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Template Name</th>
+              <th>Generations</th>
+              <th>Downloads</th>
+              <th>Download Rate</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="chart-container">
+        <h2>🎯 Tier Breakdown</h2>
+        <div id="tierBreakdown"></div>
+      </div>
+
+      <div class="chart-container">
+        <h2>🤖 Generation Mode</h2>
+        <div id="modeBreakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentRange = '24h';
+
+    async function loadDashboard(timeRange = '24h') {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+
+      try {
+        const response = await fetch(`/api/analytics/memeology/dashboard?timeRange=${timeRange}`);
+        const data = await response.json();
+
+        if (data.success) {
+          // Update summary stats
+          document.getElementById('totalMemes').textContent = data.summary.totalMemes.toLocaleString();
+          document.getElementById('totalSessions').textContent = data.summary.totalSessions.toLocaleString();
+          document.getElementById('totalConversions').textContent = data.summary.totalConversions.toLocaleString();
+          document.getElementById('conversionRate').textContent = `${data.summary.conversionRate} rate`;
+          document.getElementById('avgMemes').textContent = data.summary.avgMemesPerSession;
+
+          // Top templates table
+          const tbody = document.querySelector('#topTemplates tbody');
+          tbody.innerHTML = data.topTemplates.map((t, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${t.templateName}</td>
+              <td>${t.totalGenerations.toLocaleString()}</td>
+              <td>${t.totalDownloads.toLocaleString()}</td>
+              <td>${((t.totalDownloads / t.totalGenerations) * 100).toFixed(1)}%</td>
+            </tr>
+          `).join('');
+
+          // Tier breakdown
+          const tierDiv = document.getElementById('tierBreakdown');
+          tierDiv.innerHTML = data.tierBreakdown.map(t => `
+            <div style="margin: 10px 0;">
+              <strong>${t._id || 'Unknown'}:</strong> ${t.count.toLocaleString()} memes
+            </div>
+          `).join('');
+
+          // Mode breakdown
+          const modeDiv = document.getElementById('modeBreakdown');
+          modeDiv.innerHTML = data.generationModeBreakdown.map(m => `
+            <div style="margin: 10px 0;">
+              <strong>${m._id || 'Unknown'}:</strong> ${m.count.toLocaleString()} memes
+            </div>
+          `).join('');
+
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('dashboard').style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        document.getElementById('loading').textContent = 'Error loading analytics. Make sure MongoDB is connected.';
+      }
+    }
+
+    // Time range selector
+    document.querySelectorAll('.time-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRange = btn.dataset.range;
+        loadDashboard(currentRange);
+      });
+    });
+
+    // Load on page load
+    loadDashboard(currentRange);
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => loadDashboard(currentRange), 30000);
+  </script>
+</body>
+</html>
+

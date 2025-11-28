@@ -16,6 +16,14 @@ import {
   getTierStats,
   toImgflipFormat
 } from '../utils/templateLoader.js';
+import {
+  trackMemeGeneration,
+  trackMemeDownload,
+  trackMemeShare,
+  trackSession,
+  updateSessionActivity,
+  trackFeatureUsage
+} from '../utils/analytics.js';
 
 dotenv.config();
 
@@ -1958,6 +1966,27 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
         const base64Image = `data:image/jpeg;base64,${watermarkedImage.toString('base64')}`;
 
         console.log('✅ Template meme with watermark created');
+
+        // 📊 TRACK ANALYTICS
+        const startTime = Date.now();
+        trackMemeGeneration({
+          userId: wallet || req.sessionID,
+          sessionId: req.sessionID,
+          tier: tier || 'free',
+          templateId: randomTemplate.id,
+          templateName: randomTemplate.name,
+          templateSource: randomTemplate.source,
+          templateCategory: randomTemplate.categories,
+          templateQualityScore: randomTemplate.qualityScore,
+          templateRank: randomTemplate.rank,
+          generationMode: mode || 'template',
+          userPrompt: prompt,
+          aiModel: 'groq-llama-3.1-8b',
+          aiGeneratedText: `${topText} / ${bottomText}`,
+          generationTimeMs: Date.now() - startTime,
+          deviceType: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'desktop',
+          browser: req.headers['user-agent']?.split(' ')[0]
+        }).catch(err => console.error('Analytics error:', err));
 
         res.json({
           success: true,
