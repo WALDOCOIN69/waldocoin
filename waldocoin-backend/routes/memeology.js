@@ -60,16 +60,17 @@ const communityMemes = []; // Store community-shared memes
 const memeUpvotes = new Map(); // Track upvotes per meme
 
 // Helper: Map Imgflip template IDs to Memegen template names
+// Returns a slug string for known IDs or null for unknown ones.
 function getMemgenTemplate(imgflipId) {
-  const mapping = {
-    '181913649': 'drake',           // Drake Hotline Bling
-    '112126428': 'bf',              // Distracted Boyfriend
-    '87743020': 'buttons',          // Two Buttons
-    '129242436': 'cmm',             // Change My Mind
-    '100777631': 'iw',              // Is This A Pigeon (memegen uses 'iw')
-    '131087935': 'ants'             // Running Away Balloon (memegen uses 'ants')
-  };
-  return mapping[imgflipId] || 'drake'; // Default to Drake
+	const mapping = {
+	  '181913649': 'drake',           // Drake Hotline Bling
+	  '112126428': 'bf',              // Distracted Boyfriend
+	  '87743020': 'buttons',          // Two Buttons
+	  '129242436': 'cmm',             // Change My Mind
+	  '100777631': 'iw',              // Is This A Pigeon (memegen uses 'iw')
+	  '131087935': 'ants'             // Running Away Balloon (memegen uses 'ants')
+	};
+	return mapping[imgflipId] || null; // Unknown IDs handled elsewhere
 }
 
 // Helper: Send WLO rewards to meme creator
@@ -1914,30 +1915,49 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
       const encodedTop = encodeURIComponent(topText);
       const encodedBottom = encodeURIComponent(bottomText);
 
-      // IMPORTANT:
-      // For Imgflip-based templates, we must map the numeric Imgflip ID
-      // to a valid memegen slug (e.g. 100777631 -> 'iw').
-      // Using `templateType` (e.g. 'imgflip_100777631') directly causes
-      // invalid memegen URLs like:
-      //   https://api.memegen.link/images/imgflip_100777631/...
-      // which 404 and make the frontend show "Failed to load image".
-      let memgenTemplate;
+	      // IMPORTANT:
+	      // Imgflip credentials often fail in production. To avoid always
+	      // defaulting to the Drake template, we try to use Memegen's
+	      // `custom` template with the actual background image URL when
+	      // we have one. This keeps variety across all templates.
+	      let memgenTemplate = null;
+	      let useCustomBackground = false;
+	      let backgroundUrl = null;
 
-      if (templateType && templateType.startsWith('imgflip_')) {
-        // Extract the numeric Imgflip ID from values like 'imgflip_100777631'
-        const imgflipId = templateType.replace('imgflip_', '');
-        memgenTemplate = getMemgenTemplate(imgflipId);
-      } else if (randomTemplate && randomTemplate.source === 'imgflip' && imgflipTemplate && imgflipTemplate.id) {
-        // Fallback: use the Imgflip ID from the converted template
-        memgenTemplate = getMemgenTemplate(imgflipTemplate.id);
-      } else {
-        // For non-Imgflip templates, `templateType` may already be a valid
-        // memegen slug (e.g. 'drake', 'cmm'); fall back to the helper map.
-        memgenTemplate = templateType || getMemgenTemplate(templateId);
-      }
+	      // If we have a concrete template image URL, use Memegen's custom mode
+	      if (randomTemplate && randomTemplate.url) {
+	        useCustomBackground = true;
+	        backgroundUrl = randomTemplate.url;
+	      } else if (templateType && templateType.startsWith('imgflip_')) {
+	        // Extract the numeric Imgflip ID from values like 'imgflip_100777631'
+	        const imgflipId = templateType.replace('imgflip_', '');
+	        memgenTemplate = getMemgenTemplate(imgflipId);
+	      } else if (randomTemplate && randomTemplate.source === 'imgflip' && imgflipTemplate && imgflipTemplate.id) {
+	        // Fallback: use the Imgflip ID from the converted template
+	        memgenTemplate = getMemgenTemplate(imgflipTemplate.id);
+	      } else {
+	        // For non-Imgflip templates, `templateType` may already be a valid
+	        // memegen slug (e.g. 'drake', 'cmm'); fall back to the helper map.
+	        memgenTemplate = templateType || getMemgenTemplate(templateId);
+	      }
 
-      memeUrl = `https://api.memegen.link/images/${memgenTemplate}/${encodedTop}/${encodedBottom}.jpg`;
-      console.log('🖼️ Generated memegen URL (fallback):', memeUrl);
+	      if (useCustomBackground && backgroundUrl) {
+	        memeUrl = `https://api.memegen.link/images/custom/${encodedTop}/${encodedBottom}.jpg?background=${encodeURIComponent(backgroundUrl)}`;
+	      } else {
+	        // Final safety: if we still don't have a valid slug, default to Drake
+	        if (!memgenTemplate) {
+	          memgenTemplate = 'drake';
+	        }
+	        memeUrl = `https://api.memegen.link/images/${memgenTemplate}/${encodedTop}/${encodedBottom}.jpg`;
+	      }
+
+	      console.log('🖼️ Generated memegen URL (fallback):', memeUrl, {
+	        useCustomBackground,
+	        backgroundUrl,
+	        memgenTemplate,
+	        templateId,
+	        templateType
+	      });
     }
 
     if (memeUrl) {
