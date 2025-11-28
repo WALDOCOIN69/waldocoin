@@ -1913,9 +1913,31 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
       console.log('Using fallback meme generation method');
       const encodedTop = encodeURIComponent(topText);
       const encodedBottom = encodeURIComponent(bottomText);
-      const memgenTemplate = templateType || getMemgenTemplate(templateId);
+
+      // IMPORTANT:
+      // For Imgflip-based templates, we must map the numeric Imgflip ID
+      // to a valid memegen slug (e.g. 100777631 -> 'iw').
+      // Using `templateType` (e.g. 'imgflip_100777631') directly causes
+      // invalid memegen URLs like:
+      //   https://api.memegen.link/images/imgflip_100777631/...
+      // which 404 and make the frontend show "Failed to load image".
+      let memgenTemplate;
+
+      if (templateType && templateType.startsWith('imgflip_')) {
+        // Extract the numeric Imgflip ID from values like 'imgflip_100777631'
+        const imgflipId = templateType.replace('imgflip_', '');
+        memgenTemplate = getMemgenTemplate(imgflipId);
+      } else if (randomTemplate && randomTemplate.source === 'imgflip' && imgflipTemplate && imgflipTemplate.id) {
+        // Fallback: use the Imgflip ID from the converted template
+        memgenTemplate = getMemgenTemplate(imgflipTemplate.id);
+      } else {
+        // For non-Imgflip templates, `templateType` may already be a valid
+        // memegen slug (e.g. 'drake', 'cmm'); fall back to the helper map.
+        memgenTemplate = templateType || getMemgenTemplate(templateId);
+      }
+
       memeUrl = `https://api.memegen.link/images/${memgenTemplate}/${encodedTop}/${encodedBottom}.jpg`;
-      console.log('🖼️ Generated memegen URL:', memeUrl);
+      console.log('🖼️ Generated memegen URL (fallback):', memeUrl);
     }
 
     if (memeUrl) {
