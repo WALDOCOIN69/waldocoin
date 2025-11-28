@@ -1716,18 +1716,24 @@ RESPOND ONLY WITH JSON:
       { id: '87743020', name: 'Two Buttons', type: 'buttons' },
       { id: '129242436', name: 'Change My Mind', type: 'cmm' },
       { id: '100777631', name: 'Is This A Pigeon', type: 'iw' },
-      { id: '131087935', name: 'What Is This', type: 'ants' }
+      { id: '131087935', name: 'What Is This', type: 'ants' },
+      { id: '438680', name: 'Batman Slapping Robin', type: 'slap' },
+      { id: '93895088', name: 'Expanding Brain', type: 'brain' },
+      { id: '101470', name: 'Ancient Aliens', type: 'aliens' },
+      { id: '4087833', name: 'Waiting Skeleton', type: 'skeleton' },
+      { id: '61579', name: 'One Does Not Simply', type: 'simply' },
+      { id: '563423', name: 'That Would Be Great', type: 'great' }
     ];
 
-    // Randomly select a template
-    const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+    // Randomly select a template with better randomization
+    const randomIndex = Math.floor(Math.random() * templates.length);
+    const randomTemplate = templates[randomIndex];
+    console.log(`🎲 Selected template ${randomIndex + 1}/${templates.length}:`, randomTemplate.name);
     let templateId = randomTemplate.id;
     let templateName = randomTemplate.name;
     let templateType = randomTemplate.type;
     let topText = '';
     let bottomText = '';
-
-    console.log('🎲 Randomly selected template:', { templateId, templateName, templateType });
 
     if (GROQ_API_KEY) {
       try {

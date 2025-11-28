@@ -154,7 +154,7 @@ function AIBot() {
                           }}
                         />
                         <div className="meme-watermark-text">
-                          memeology.live
+                          memeology.fun
                         </div>
                       </div>
                       <div className="meme-info">
@@ -184,7 +184,7 @@ function AIBot() {
                               ctx.drawImage(img, 0, 0)
 
                               // Add text watermark with black background
-                              const text = 'memeology.live'
+                              const text = 'memeology.fun'
                               const fontSize = 14
                               const padding = 8
 
@@ -268,7 +268,7 @@ function AIBot() {
             <div className="enlarged-image-container">
               <img src={enlargedImage} alt="Enlarged meme" className="enlarged-image" />
               <div className="meme-watermark-text">
-                memeology.live
+                memeology.fun
               </div>
             </div>
           </div>
