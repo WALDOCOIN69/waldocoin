@@ -275,6 +275,11 @@
   cursor: default;
 }
 
+.enlarged-image-container {
+  position: relative;
+  display: inline-block;
+}
+
 .enlarged-image {
   max-width: 95vw;
   max-height: 95vh;
@@ -282,6 +287,7 @@
   height: auto;
   border-radius: 8px;
   box-shadow: 0 10px 50px rgba(0, 247, 255, 0.3);
+  display: block;
 }
 
 .modal-close {

@@ -265,7 +265,12 @@ function AIBot() {
         <div className="image-modal" onClick={() => setEnlargedImage(null)}>
           <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setEnlargedImage(null)}>✕</button>
-            <img src={enlargedImage} alt="Enlarged meme" className="enlarged-image" />
+            <div className="enlarged-image-container">
+              <img src={enlargedImage} alt="Enlarged meme" className="enlarged-image" />
+              <div className="meme-watermark-text">
+                memeology.live
+              </div>
+            </div>
           </div>
         </div>
       )}
