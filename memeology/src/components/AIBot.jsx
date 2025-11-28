@@ -150,6 +150,8 @@ function AIBot() {
 
       const data = await response.json()
 
+      console.log('API Response:', data) // Debug log
+
       if (data.success && data.meme_url) {
         // Replace loading message with the generated meme
         const botMessage = {
@@ -161,9 +163,11 @@ function AIBot() {
           mode: data.mode,
           fallback_urls: data.fallback_urls || []
         }
+        console.log('Generated meme message:', botMessage) // Debug log
         // Remove loading message and add meme
         setMessages(prev => [...prev.slice(0, -1), botMessage])
       } else {
+        console.error('API Error:', data) // Debug log
         // Replace loading message with error
         setMessages(prev => [...prev.slice(0, -1), {
           role: 'bot',
