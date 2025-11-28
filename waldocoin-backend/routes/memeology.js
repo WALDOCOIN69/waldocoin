@@ -1595,7 +1595,10 @@ router.post('/ai/generate', async (req, res) => {
           const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
           return res.json({
             success: true,
-            imageUrl: base64Image,
+            meme_url: base64Image,
+            template_name: 'AI Generated Image',
+            texts: { top: prompt, bottom: '' },
+            mode: 'ai-image',
             message: 'AI meme generated successfully (watermark unavailable)'
           });
         }
