@@ -1803,15 +1803,40 @@ RESPOND ONLY WITH JSON:
           bottomText = prompt.toUpperCase().substring(0, 40);
         }
       } catch (error) {
-        console.error('Groq API error:', error.response?.data || error.message);
-        // Fallback - make it a proper meme format
-        topText = 'WHEN YOU';
-        bottomText = prompt.toUpperCase().substring(0, 40);
+        console.error('❌ Groq API error:', error.response?.data || error.message);
+        console.error('Full error:', error);
+
+        // Creative fallback - make it a proper meme format
+        const fallbacks = [
+          { top: 'WHEN YOU', bottom: prompt.toUpperCase().substring(0, 40) },
+          { top: 'ME WHEN', bottom: prompt.toUpperCase().substring(0, 40) },
+          { top: 'NOBODY:', bottom: 'ME: ' + prompt.toUpperCase().substring(0, 35) }
+        ];
+
+        const randomFallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        topText = randomFallback.top;
+        bottomText = randomFallback.bottom;
+
+        console.log('Using error fallback text:', { topText, bottomText });
       }
     } else {
-      // No API key - use simple fallback with proper meme format
-      topText = 'WHEN YOU';
-      bottomText = prompt.toUpperCase().substring(0, 40);
+      // No API key - use creative fallback based on template
+      console.log('⚠️  No GROQ_API_KEY - using creative fallback');
+
+      // Create more varied fallback text based on template
+      const fallbacks = [
+        { top: 'WHEN YOU', bottom: prompt.toUpperCase().substring(0, 40) },
+        { top: 'ME WHEN', bottom: prompt.toUpperCase().substring(0, 40) },
+        { top: 'NOBODY:', bottom: 'ME: ' + prompt.toUpperCase().substring(0, 35) },
+        { top: prompt.toUpperCase().substring(0, 40), bottom: 'EVERY TIME' },
+        { top: 'POV:', bottom: prompt.toUpperCase().substring(0, 40) }
+      ];
+
+      const randomFallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      topText = randomFallback.top;
+      bottomText = randomFallback.bottom;
+
+      console.log('Using fallback text:', { topText, bottomText });
     }
 
     // Step 2: Generate the meme using Imgflip API
