@@ -35,13 +35,13 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // Configuration
-const IMGFLIP_USERNAME = process.env.IMGFLIP_USERNAME || 'waldolabs';
-const IMGFLIP_PASSWORD = process.env.IMGFLIP_PASSWORD || 'waldolabs123';
-const GIPHY_API_KEY = process.env.GIPHY_API_KEY || 'YOUR_GIPHY_API_KEY'; // Get free key at developers.giphy.com
+const IMGFLIP_USERNAME = process.env.IMGFLIP_USERNAME;
+const IMGFLIP_PASSWORD = process.env.IMGFLIP_PASSWORD;
+const GIPHY_API_KEY = process.env.GIPHY_API_KEY; // Get free key at developers.giphy.com
 const XRPL_SERVER = process.env.XRPL_SERVER || 'wss://s1.ripple.com'; // WebSocket for xrpl.js Client
 const WLO_ISSUER = process.env.WLO_ISSUER || process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WLO_CURRENCY = 'WLO';
-const GROQ_API_KEY = process.env.GROQ_API_KEY || ''; // Free Groq API key
+const GROQ_API_KEY = process.env.GROQ_API_KEY; // Free Groq API key
 
 // In-memory storage (replace with Redis/database in production)
 const xummSessions = new Map();

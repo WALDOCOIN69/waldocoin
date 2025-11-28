@@ -127,9 +127,9 @@ services:
         sync: false
       # Memeology Configuration
       - key: IMGFLIP_USERNAME
-        value: waldolabs
+        sync: false
       - key: IMGFLIP_PASSWORD
-        value: waldolabs123
+        sync: false
       - key: GROQ_API_KEY
         sync: false
       - key: WLO_ISSUER
