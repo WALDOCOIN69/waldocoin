@@ -248,11 +248,11 @@ function AIBot() {
                 </button>
                 {categories.map(cat => (
                   <button
-                    key={cat.category}
-                    className={`category-btn ${selectedCategory === cat.category ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(cat.category)}
+                    key={cat.name}
+                    className={`category-btn ${selectedCategory === cat.name ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat.name)}
                   >
-                    {cat.category} ({cat.count})
+                    {cat.name} ({cat.count})
                   </button>
                 ))}
               </div>
