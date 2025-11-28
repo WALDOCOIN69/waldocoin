@@ -1709,20 +1709,75 @@ RESPOND ONLY WITH JSON:
     }
 
     // MODE 2: TEMPLATE-BASED MEME (default)
-    // Available templates for randomization (only using verified working memegen templates)
+    // Massive template library - 50+ popular meme templates
     const templates = [
+      // Classic Top Tier Memes
       { id: '181913649', name: 'Drake Hotline Bling', type: 'drake' },
       { id: '112126428', name: 'Distracted Boyfriend', type: 'bf' },
       { id: '87743020', name: 'Two Buttons', type: 'buttons' },
       { id: '129242436', name: 'Change My Mind', type: 'cmm' },
-      { id: '100777631', name: 'Is This A Pigeon', type: 'iw' },
-      { id: '131087935', name: 'What Is This', type: 'ants' },
       { id: '438680', name: 'Batman Slapping Robin', type: 'slap' },
       { id: '93895088', name: 'Expanding Brain', type: 'brain' },
       { id: '101470', name: 'Ancient Aliens', type: 'aliens' },
       { id: '4087833', name: 'Waiting Skeleton', type: 'skeleton' },
       { id: '61579', name: 'One Does Not Simply', type: 'simply' },
-      { id: '563423', name: 'That Would Be Great', type: 'great' }
+      { id: '563423', name: 'That Would Be Great', type: 'great' },
+
+      // Reaction Memes
+      { id: '100777631', name: 'Is This A Pigeon', type: 'iw' },
+      { id: '131087935', name: 'What Is This', type: 'ants' },
+      { id: '27813981', name: 'Hide the Pain Harold', type: 'harold' },
+      { id: '89370399', name: 'Roll Safe Think About It', type: 'rollsafe' },
+      { id: '124822590', name: 'Left Exit 12 Off Ramp', type: 'exit' },
+      { id: '217743513', name: 'UNO Draw 25 Cards', type: 'uno' },
+      { id: '91538330', name: 'X, X Everywhere', type: 'everywhere' },
+      { id: '102156234', name: 'Mocking Spongebob', type: 'spongebob' },
+
+      // Comparison Memes
+      { id: '80707627', name: 'Sad Pablo Escobar', type: 'pablo' },
+      { id: '135256802', name: 'Epic Handshake', type: 'handshake' },
+      { id: '188390779', name: 'Woman Yelling At Cat', type: 'woman-cat' },
+      { id: '131940431', name: 'Gru\'s Plan', type: 'gru' },
+      { id: '175540452', name: 'Unsettled Tom', type: 'tom' },
+      { id: '91545132', name: 'Trump Bill Signing', type: 'trump' },
+
+      // Success/Failure Memes
+      { id: '61520', name: 'Futurama Fry', type: 'fry' },
+      { id: '61532', name: 'The Most Interesting Man', type: 'interesting' },
+      { id: '61546', name: 'Brace Yourselves', type: 'brace' },
+      { id: '61585', name: 'Bad Luck Brian', type: 'badluck' },
+      { id: '61533', name: 'X All The Y', type: 'allthey' },
+      { id: '563423', name: 'That Would Be Great', type: 'great' },
+      { id: '5496396', name: 'Leonardo Dicaprio Cheers', type: 'cheers' },
+      { id: '61556', name: 'Grandma Finds The Internet', type: 'grandma' },
+
+      // Modern Viral Memes
+      { id: '252600902', name: 'Always Has Been', type: 'astronaut' },
+      { id: '226297822', name: 'Panik Kalm Panik', type: 'panik' },
+      { id: '178591752', name: 'Tuxedo Winnie The Pooh', type: 'pooh' },
+      { id: '222403160', name: 'Bernie Sanders Once Again Asking', type: 'bernie' },
+      { id: '216951317', name: 'Guy Holding Cardboard Box', type: 'box' },
+      { id: '370867422', name: 'Megamind Peeking', type: 'megamind' },
+
+      // Argument/Debate Memes
+      { id: '101511', name: 'Don\'t You Squidward', type: 'squidward' },
+      { id: '134797956', name: 'American Chopper Argument', type: 'chopper' },
+      { id: '161865971', name: 'Marked Safe From', type: 'safe' },
+      { id: '119139145', name: 'Blank Nut Button', type: 'nut' },
+      { id: '28251713', name: 'Oprah You Get A', type: 'oprah' },
+
+      // Wholesome/Positive Memes
+      { id: '101288', name: 'Third World Skeptical Kid', type: 'skeptical' },
+      { id: '61544', name: 'Success Kid', type: 'success' },
+      { id: '61539', name: 'First World Problems', type: 'firstworld' },
+      { id: '6235864', name: 'Finding Neverland', type: 'neverland' },
+      { id: '21735', name: 'The Rock Driving', type: 'rock' },
+
+      // Bonus Modern Templates
+      { id: '247375501', name: 'Buff Doge vs Cheems', type: 'doge' },
+      { id: '110163934', name: 'I Bet He\'s Thinking About', type: 'thinking' },
+      { id: '123999232', name: 'The Scroll Of Truth', type: 'scroll' },
+      { id: '114585149', name: 'Inhaling Seagull', type: 'seagull' }
     ];
 
     // Randomly select a template with better randomization
@@ -1748,26 +1803,48 @@ RESPOND ONLY WITH JSON:
             messages: [
               {
                 role: 'system',
-                content: `You are a hilarious meme text generator. Create UNIQUE, CREATIVE meme text. NEVER repeat previous responses.
+                content: `You are an EXPERT meme creator who understands internet humor, viral trends, and what makes people laugh.
 
-CRITICAL RULES:
-- MUST be DIFFERENT every time (seed: ${randomSeed})
-- DO NOT repeat the user's exact words
-- Create ORIGINAL, FUNNY meme text
-- Keep it SHORT (max 6 words per line)
-- Make it punchy and relatable
-- Use internet meme humor style
-- Be creative and unexpected
+MEME TEMPLATE: ${templateName}
 
-Template: ${templateName}
-Context: This is request #${timestamp}
+YOUR MISSION:
+Create hilarious, relatable meme text that will make people share it. Study the template format and use it correctly.
+
+GOLDEN RULES:
+1. Be PUNCHY - Short, impactful text (3-8 words per line max)
+2. Be RELATABLE - Universal experiences everyone gets
+3. Be UNEXPECTED - Twist endings, subvert expectations
+4. Use INTERNET SLANG - "POV:", "Nobody:", "Me:", etc. when appropriate
+5. NEVER repeat the user's exact words - transform them into meme format
+6. Match the template style (comparison, reaction, escalation, etc.)
+
+MEME FORMATS TO USE:
+- Setup/Punchline (most templates)
+- "Nobody: / Me:" (for unprompted actions)
+- "POV:" (point of view scenarios)
+- Escalation (brain meme, gru's plan)
+- Comparison (drake, buttons, exit ramp)
+
+UNIQUENESS SEED: ${randomSeed}
+REQUEST ID: ${timestamp}
 
 RESPOND ONLY WITH JSON:
-{"top_text": "setup line", "bottom_text": "punchline"}`
+{"top_text": "setup or context", "bottom_text": "punchline or reaction"}
+
+EXAMPLES:
+User: "being tired"
+Good: {"top_text": "COFFEE", "bottom_text": "MORE COFFEE"}
+Bad: {"top_text": "WHEN YOU ARE TIRED", "bottom_text": "YOU FEEL TIRED"}
+
+User: "monday morning"
+Good: {"top_text": "ALARM CLOCK", "bottom_text": "SNOOZE BUTTON GO BRRR"}
+Bad: {"top_text": "IT IS MONDAY MORNING", "bottom_text": "I DO NOT LIKE IT"}`
               },
               {
                 role: 'user',
-                content: `Create a UNIQUE funny meme about: ${prompt}. Make it different from any previous response.`
+                content: `Create a VIRAL-WORTHY meme about: "${prompt}"
+
+Make it funny, relatable, and shareable. Use the ${templateName} format effectively.`
               }
             ],
             max_tokens: 100,

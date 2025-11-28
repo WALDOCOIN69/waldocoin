@@ -47,7 +47,22 @@ function AIBot() {
 
     // Allow anonymous users for FREE tier
     const userMessage = { role: 'user', content: input }
-    setMessages([...messages, userMessage])
+
+    // Fun loading messages
+    const loadingMessages = [
+      '🎨 Cooking up something spicy...',
+      '🧠 AI brain go brrr...',
+      '✨ Summoning the meme gods...',
+      '🎭 Crafting peak comedy...',
+      '🚀 Launching meme into orbit...',
+      '🎪 Performing meme magic...',
+      '⚡ Charging meme capacitors...',
+      '🎯 Aiming for viral status...'
+    ]
+    const randomLoading = loadingMessages[Math.floor(Math.random() * loadingMessages.length)]
+
+    const loadingMessage = { role: 'bot', content: randomLoading, type: 'text' }
+    setMessages([...messages, userMessage, loadingMessage])
     setInput('')
     setLoading(true)
 
@@ -69,7 +84,7 @@ function AIBot() {
       const data = await response.json()
 
       if (data.success && data.meme_url) {
-        // Show the generated meme image
+        // Replace loading message with the generated meme
         const botMessage = {
           role: 'bot',
           content: data.meme_url,
@@ -79,16 +94,19 @@ function AIBot() {
           mode: data.mode,
           fallback_urls: data.fallback_urls || []
         }
-        setMessages(prev => [...prev, botMessage])
+        // Remove loading message and add meme
+        setMessages(prev => [...prev.slice(0, -1), botMessage])
       } else {
-        setMessages(prev => [...prev, {
+        // Replace loading message with error
+        setMessages(prev => [...prev.slice(0, -1), {
           role: 'bot',
-          content: data.error || 'Failed to generate meme. Try being more specific!'
+          content: data.error || '❌ Failed to generate meme. Try being more specific or try again!'
         }])
       }
     } catch (error) {
       console.error('Error:', error)
-      setMessages(prev => [...prev, { role: 'bot', content: 'Error generating meme. Please try again!' }])
+      // Replace loading message with error
+      setMessages(prev => [...prev.slice(0, -1), { role: 'bot', content: '❌ Network error. Check your connection and try again!' }])
     } finally {
       setLoading(false)
     }
@@ -159,7 +177,12 @@ function AIBot() {
                       </div>
                       <div className="meme-info">
                         <small>
-                          {msg.mode === 'ai-image' ? '🎨 AI Generated' : `📋 ${msg.template}`}
+                          {msg.mode === 'ai-image' ? '🎨 AI Generated Image' : `📋 Template: ${msg.template}`}
+                          {msg.texts && (
+                            <span style={{ marginLeft: '10px', opacity: 0.7 }}>
+                              "{msg.texts.top}" / "{msg.texts.bottom}"
+                            </span>
+                          )}
                         </small>
                         <button
                           className="btn-download"
