@@ -1737,6 +1737,10 @@ RESPOND ONLY WITH JSON:
 
     if (GROQ_API_KEY) {
       try {
+        // Add timestamp to make each request unique and prevent caching
+        const timestamp = Date.now();
+        const randomSeed = Math.floor(Math.random() * 1000000);
+
         const groqResponse = await axios.post(
           'https://api.groq.com/openai/v1/chat/completions',
           {
@@ -1744,27 +1748,31 @@ RESPOND ONLY WITH JSON:
             messages: [
               {
                 role: 'system',
-                content: `You are a hilarious meme text generator. Create funny, relatable meme text based on the user's idea.
+                content: `You are a hilarious meme text generator. Create UNIQUE, CREATIVE meme text. NEVER repeat previous responses.
 
-RULES:
+CRITICAL RULES:
+- MUST be DIFFERENT every time (seed: ${randomSeed})
 - DO NOT repeat the user's exact words
 - Create ORIGINAL, FUNNY meme text
 - Keep it SHORT (max 6 words per line)
 - Make it punchy and relatable
 - Use internet meme humor style
+- Be creative and unexpected
 
 Template: ${templateName}
+Context: This is request #${timestamp}
 
 RESPOND ONLY WITH JSON:
 {"top_text": "setup line", "bottom_text": "punchline"}`
               },
               {
                 role: 'user',
-                content: `Create a funny meme about: ${prompt}`
+                content: `Create a UNIQUE funny meme about: ${prompt}. Make it different from any previous response.`
               }
             ],
             max_tokens: 100,
-            temperature: 0.9,
+            temperature: 1.0,
+            top_p: 0.95,
             response_format: { type: "json_object" }
           },
           {
