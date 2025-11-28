@@ -153,11 +153,9 @@ function AIBot() {
                             }
                           }}
                         />
-                        <img
-                          src="/memeology-logo.png"
-                          alt="Memeology"
-                          className="meme-watermark-overlay"
-                        />
+                        <div className="meme-watermark-text">
+                          memeology.live
+                        </div>
                       </div>
                       <div className="meme-info">
                         <small>
@@ -185,32 +183,23 @@ function AIBot() {
                               // Draw the meme image
                               ctx.drawImage(img, 0, 0)
 
-                              // Load and draw watermark
-                              const watermark = new Image()
-                              watermark.src = '/memeology-logo.png'
+                              // Add text watermark with black background
+                              const text = 'memeology.live'
+                              const fontSize = 14
+                              const padding = 8
 
-                              await new Promise((resolve, reject) => {
-                                watermark.onload = resolve
-                                watermark.onerror = () => {
-                                  console.warn('Watermark not found, downloading without watermark')
-                                  resolve() // Continue without watermark
-                                }
-                              })
+                              ctx.font = `bold ${fontSize}px Arial`
+                              const textMetrics = ctx.measureText(text)
+                              const textWidth = textMetrics.width
+                              const textHeight = fontSize
 
-                              if (watermark.complete && watermark.naturalWidth > 0) {
-                                // Calculate watermark size (20% of image width to cover memegen.link watermark)
-                                const watermarkSize = Math.floor(img.width * 0.20)
-                                const padding = 10
+                              // Draw black background rectangle (bottom-left corner, no margin)
+                              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
+                              ctx.fillRect(0, img.height - textHeight - padding * 2, textWidth + padding * 2, textHeight + padding * 2)
 
-                                // Draw watermark on bottom-left to cover memegen.link watermark
-                                ctx.drawImage(
-                                  watermark,
-                                  padding,
-                                  img.height - watermarkSize - padding,
-                                  watermarkSize,
-                                  watermarkSize
-                                )
-                              }
+                              // Draw text
+                              ctx.fillStyle = '#00f7ff'
+                              ctx.fillText(text, padding, img.height - padding - 4)
 
                               // Download the watermarked image
                               canvas.toBlob((blob) => {

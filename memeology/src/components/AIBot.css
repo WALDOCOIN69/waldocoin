@@ -177,6 +177,21 @@
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
+.meme-watermark-text {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  color: #00f7ff;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 4px 8px;
+  font-family: 'Arial', sans-serif;
+  pointer-events: none;
+  z-index: 10;
+  letter-spacing: 0.5px;
+}
+
 .meme-result {
   width: 100%;
 }
