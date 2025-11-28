@@ -43,7 +43,7 @@ services:
     name: waldo-api
     runtime: node
     rootDir: waldocoin-backend
-    buildCommand: "npm ci"
+    buildCommand: "npm install --include=optional"
     startCommand: "node server.js"
     envVars:
       - key: XUMM_API_KEY
