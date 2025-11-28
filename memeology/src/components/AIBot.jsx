@@ -20,6 +20,7 @@ function AIBot() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [templateStats, setTemplateStats] = useState(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null)
 
   const examplePrompts = [
     "Make a meme about crypto being down",
@@ -135,17 +136,26 @@ function AIBot() {
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
+
+      const payload = {
+        prompt: input,
+        wallet: user?.wallet || 'anonymous',
+        tier: tier || 'free',
+        mode: generationMode
+      }
+
+      // If user picked a specific template in the browser, send its ID so
+      // the backend can use that exact template instead of a random one.
+      if (generationMode === 'template' && selectedTemplateId) {
+        payload.templateId = selectedTemplateId
+      }
+
       const response = await fetch(`${API_URL}/api/memeology/ai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          prompt: input,
-          wallet: user?.wallet || 'anonymous',
-          tier: tier || 'free',
-          mode: generationMode
-        })
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()
@@ -277,7 +287,10 @@ function AIBot() {
                   <button
                     className="use-template-btn"
                     onClick={() => {
-                      setInput(`Make a meme using ${template.name}`)
+                          // Remember the chosen template so the backend can
+                          // generate a meme using this exact one.
+                          setSelectedTemplateId(template.id)
+                          setInput(`Make a meme using ${template.name}`)
                       setShowTemplateBrowser(false)
                     }}
                   >

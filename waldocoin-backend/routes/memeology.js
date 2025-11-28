@@ -1555,7 +1555,7 @@ router.get('/gifs/search', async (req, res) => {
 // POST /api/memeology/ai/generate - AI generates complete meme from description
 router.post('/ai/generate', async (req, res) => {
   try {
-    const { prompt, wallet, tier, mode } = req.body; // mode: 'template' or 'ai-image'
+    const { prompt, wallet, tier, mode, templateId: requestedTemplateId } = req.body; // mode: 'template' or 'ai-image'
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({
@@ -1729,25 +1729,41 @@ RESPOND ONLY WITH JSON:
       }
     }
 
-    // MODE 2: TEMPLATE-BASED MEME (default)
-    // Get templates based on user's tier (380 total templates from 7 sources)
-    const userTemplates = getTemplatesForTier(tier);
-    console.log(`📚 User tier "${tier}" has access to ${userTemplates.length} templates`);
+	    // MODE 2: TEMPLATE-BASED MEME (default)
+	    const userTier = tier || 'free';
 
-    // Randomly select a template from user's available templates
-    const randomTemplate = getRandomTemplate(tier);
+	    // Get templates based on user's tier (380 total templates from 7 sources)
+	    const userTemplates = getTemplatesForTier(userTier);
+	    console.log(`📚 User tier "${userTier}" has access to ${userTemplates.length} templates`);
 
-    if (!randomTemplate) {
-      return res.status(500).json({ error: 'No templates available for your tier' });
-    }
+	    // If the frontend requested a specific template (via Browse → Use Template),
+	    // try to honor that. Otherwise, fall back to random.
+	    let selectedTemplate = null;
+	    if (requestedTemplateId) {
+	      selectedTemplate = getTemplateById(requestedTemplateId, userTier);
+	      if (!selectedTemplate) {
+	        console.warn(`⚠️  Requested templateId "${requestedTemplateId}" not available for tier "${userTier}" – falling back to random template`);
+	      } else {
+	        console.log(`🎯 Using requested template: ${selectedTemplate.name} (id: ${requestedTemplateId})`);
+	      }
+	    }
 
-    console.log(`🎲 Selected template: ${randomTemplate.name} (${randomTemplate.source}) - Rank: ${randomTemplate.rank}, Score: ${randomTemplate.qualityScore}`);
+	    if (!selectedTemplate) {
+	      // Randomly select a template from user's available templates
+	      selectedTemplate = getRandomTemplate(userTier);
+	    }
 
-    // Convert template to Imgflip format if needed
-    const imgflipTemplate = toImgflipFormat(randomTemplate);
-    let templateId = imgflipTemplate.id;
-    let templateName = randomTemplate.name;
-    let templateType = randomTemplate.type || randomTemplate.id;
+	    if (!selectedTemplate) {
+	      return res.status(500).json({ error: 'No templates available for your tier' });
+	    }
+
+	    console.log(`🎲 Selected template: ${selectedTemplate.name} (${selectedTemplate.source}) - Rank: ${selectedTemplate.rank}, Score: ${selectedTemplate.qualityScore}`);
+
+	    // Convert template to Imgflip format if needed
+	    const imgflipTemplate = toImgflipFormat(selectedTemplate);
+	    let templateId = imgflipTemplate.id;
+	    let templateName = selectedTemplate.name;
+	    let templateType = selectedTemplate.type || selectedTemplate.id;
     let topText = '';
     let bottomText = '';
 
@@ -1932,7 +1948,7 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
 	        // Extract the numeric Imgflip ID from values like 'imgflip_100777631'
 	        const imgflipId = templateType.replace('imgflip_', '');
 	        memgenTemplate = getMemgenTemplate(imgflipId);
-	      } else if (randomTemplate && randomTemplate.source === 'imgflip' && imgflipTemplate && imgflipTemplate.id) {
+	      } else if (selectedTemplate && selectedTemplate.source === 'imgflip' && imgflipTemplate && imgflipTemplate.id) {
 	        // Fallback: use the Imgflip ID from the converted template
 	        memgenTemplate = getMemgenTemplate(imgflipTemplate.id);
 	      } else {
