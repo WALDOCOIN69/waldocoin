@@ -1941,9 +1941,9 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
 	      let backgroundUrl = null;
 
 	      // If we have a concrete template image URL, use Memegen's custom mode
-	      if (randomTemplate && randomTemplate.url) {
-	        useCustomBackground = true;
-	        backgroundUrl = randomTemplate.url;
+	    	      if (selectedTemplate && selectedTemplate.url) {
+	    	        useCustomBackground = true;
+	    	        backgroundUrl = selectedTemplate.url;
 	      } else if (templateType && templateType.startsWith('imgflip_')) {
 	        // Extract the numeric Imgflip ID from values like 'imgflip_100777631'
 	        const imgflipId = templateType.replace('imgflip_', '');
@@ -1967,7 +1967,7 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
 	        memeUrl = `https://api.memegen.link/images/${memgenTemplate}/${encodedTop}/${encodedBottom}.jpg`;
 	      }
 
-	      console.log('🖼️ Generated memegen URL (fallback):', memeUrl, {
+	    	      console.log('🖼️ Generated memegen URL (fallback):', memeUrl, {
 	        useCustomBackground,
 	        backgroundUrl,
 	        memgenTemplate,
@@ -2034,12 +2034,12 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
           userId: wallet || req.sessionID,
           sessionId: req.sessionID,
           tier: tier || 'free',
-          templateId: randomTemplate.id,
-          templateName: randomTemplate.name,
-          templateSource: randomTemplate.source,
-          templateCategory: randomTemplate.categories,
-          templateQualityScore: randomTemplate.qualityScore,
-          templateRank: randomTemplate.rank,
+	    	      templateId: selectedTemplate.id,
+	    	      templateName: selectedTemplate.name,
+	    	      templateSource: selectedTemplate.source,
+	    	      templateCategory: selectedTemplate.categories,
+	    	      templateQualityScore: selectedTemplate.qualityScore,
+	    	      templateRank: selectedTemplate.rank,
           generationMode: mode || 'template',
           userPrompt: prompt,
           aiModel: 'groq-llama-3.1-8b',
