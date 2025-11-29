@@ -236,19 +236,33 @@ function MemeGenerator() {
   }
 
   // Canvas mouse event handlers for dragging text
-  const getCanvasCoordinates = (e) => {
-    const canvas = canvasRef.current
-    if (!canvas) return { x: 0, y: 0 }
+	  const getCanvasCoordinates = (e) => {
+	    const canvas = canvasRef.current
+	    if (!canvas) return { x: 0, y: 0 }
 
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
+	    const rect = canvas.getBoundingClientRect()
+	    const scaleX = canvas.width / rect.width
+	    const scaleY = canvas.height / rect.height
 
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
-    }
-  }
+	    // Support both mouse and touch events
+	    let clientX
+	    let clientY
+	    if (e.touches && e.touches.length > 0) {
+	      clientX = e.touches[0].clientX
+	      clientY = e.touches[0].clientY
+	    } else if (e.changedTouches && e.changedTouches.length > 0) {
+	      clientX = e.changedTouches[0].clientX
+	      clientY = e.changedTouches[0].clientY
+	    } else {
+	      clientX = e.clientX
+	      clientY = e.clientY
+	    }
+
+	    return {
+	      x: (clientX - rect.left) * scaleX,
+	      y: (clientY - rect.top) * scaleY
+	    }
+	  }
 
   const getTextBoxAtPosition = (x, y) => {
     const canvas = canvasRef.current
@@ -286,7 +300,10 @@ function MemeGenerator() {
     return null
   }
 
-  const handleCanvasMouseDown = (e) => {
+	  const handleCanvasMouseDown = (e) => {
+	    // Prevent page scroll on touch drag
+	    if (e.touches) e.preventDefault()
+
     const { x, y } = getCanvasCoordinates(e)
     const clickedBox = getTextBoxAtPosition(x, y)
 
@@ -301,7 +318,10 @@ function MemeGenerator() {
     }
   }
 
-  const handleCanvasMouseMove = (e) => {
+	  const handleCanvasMouseMove = (e) => {
+	    // Prevent page scroll on touch drag
+	    if (e.touches) e.preventDefault()
+
     if (!draggingBoxId) return
 
     const canvas = canvasRef.current
@@ -819,6 +839,10 @@ function MemeGenerator() {
                   onMouseMove={handleCanvasMouseMove}
                   onMouseUp={handleCanvasMouseUp}
                   onMouseLeave={handleCanvasMouseUp}
+	                  onTouchStart={handleCanvasMouseDown}
+	                  onTouchMove={handleCanvasMouseMove}
+	                  onTouchEnd={handleCanvasMouseUp}
+	                  onTouchCancel={handleCanvasMouseUp}
                   style={{ cursor: draggingBoxId ? 'grabbing' : 'grab' }}
                 />
                 <img
