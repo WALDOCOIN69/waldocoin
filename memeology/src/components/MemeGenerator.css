@@ -334,12 +334,9 @@
 
 .preview-box {
   width: 100%;
-  min-height: 400px;
-  max-height: 600px;
+	  min-height: 400px;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
-  overflow-y: auto;
-  overflow-x: hidden;
   margin-bottom: 20px;
   display: flex;
   align-items: flex-start;
