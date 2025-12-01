@@ -53,6 +53,19 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
     }
   }, [tier])
 
+	// On mobile, disable page scrolling while the user is dragging a text box
+	// so the image doesn't slide up/down when you try to move text.
+	useEffect(() => {
+		if (!draggingBoxId) return
+
+		const originalOverflow = document.body.style.overflow
+		document.body.style.overflow = 'hidden'
+
+		return () => {
+			document.body.style.overflow = originalOverflow
+		}
+	}, [draggingBoxId])
+
 	// If a template is passed in from elsewhere (e.g. AI Image mode), load it once
 	useEffect(() => {
 		if (initialTemplate && initialTemplate.url) {

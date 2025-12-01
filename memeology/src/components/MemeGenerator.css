@@ -359,6 +359,8 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  /* Prevent the browser from treating drags on the canvas as page scroll/zoom */
+  touch-action: none;
 }
 
 .meme-canvas:active {
