@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './AIBot.css'
 
-function AIBot() {
+function AIBot({ onUseInEditor }) {
   const { user, tier } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -153,7 +153,7 @@ function AIBot() {
             messages.map((msg, idx) => (
               <div key={idx} className={`message ${msg.role}`}>
                 <div className="message-content">
-                  {msg.type === 'image' ? (
+	                  {msg.type === 'image' ? (
                     <div className="meme-result">
                       <div className="meme-image-container" onClick={() => setEnlargedImage(msg.content)}>
                         <img
@@ -183,17 +183,27 @@ function AIBot() {
                         </div>
                       </div>
                       <div className="meme-info">
-                        <small>
-                          {msg.mode === 'ai-image' ? '🎨 AI Generated Image' : `📋 Template: ${msg.template}`}
-                          {msg.texts && (
-                            <span style={{ marginLeft: '10px', opacity: 0.7 }}>
-                              "{msg.texts.top}" / "{msg.texts.bottom}"
-                            </span>
-                          )}
-                        </small>
-                        <button
-                          className="btn-download"
-                          onClick={async () => {
+	                        <small>
+	                          {msg.mode === 'ai-image' ? '🎨 AI Generated Image (no text – edit it yourself)' : `📋 Template: ${msg.template}`}
+	                          {msg.texts && msg.mode !== 'ai-image' && (
+	                            <span style={{ marginLeft: '10px', opacity: 0.7 }}>
+	                              "{msg.texts.top}" / "{msg.texts.bottom}"
+	                            </span>
+	                          )}
+	                        </small>
+	                        <div className="meme-actions">
+	                          {msg.mode === 'ai-image' && onUseInEditor && (
+	                            <button
+	                              className="btn-edit"
+	                              onClick={() => onUseInEditor(msg.content)}
+	                              title="Open this image in the Meme Generator to add your own text"
+	                            >
+	                              ✏️ Edit in Meme Generator
+	                            </button>
+	                          )}
+	                          <button
+	                            className="btn-download"
+	                            onClick={async () => {
                             try {
                               // Create canvas to add watermark
                               const img = new Image()
@@ -248,10 +258,11 @@ function AIBot() {
                               link.download = `meme-${Date.now()}.jpg`
                               link.click()
                             }
-                          }}
-                        >
-                          📥 Download
-                        </button>
+	                            }}
+	                          >
+	                            📥 Download
+	                          </button>
+	                        </div>
                       </div>
                     </div>
                   ) : (

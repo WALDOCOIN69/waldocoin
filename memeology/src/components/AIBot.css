@@ -205,6 +205,27 @@
   padding: 8px 0;
 }
 
+.meme-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-edit {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--neonAqua);
+  border-radius: 6px;
+  color: var(--neonAqua);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+  background: rgba(0, 247, 255, 0.1);
+}
+
 .btn-download {
   padding: 8px 16px;
   background: linear-gradient(135deg, var(--neonMagenta), var(--neonAqua));

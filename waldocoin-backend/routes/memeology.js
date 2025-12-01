@@ -1571,7 +1571,7 @@ router.post('/ai/generate', async (req, res) => {
     const generationMode = mode || 'template';
 
     if (generationMode === 'ai-image') {
-      // MODE 1: AI-GENERATED IMAGE with server-side watermarking and text overlay
+	      // MODE 1: AI-GENERATED IMAGE with optional watermark (NO meme text overlay)
       try {
         // Generate meme image using AI - avoid text to prevent garbled writing
         const memePrompt = `${prompt}, funny meme style, internet meme aesthetic, high quality, no text, no words, no letters, clean image`;
@@ -1590,7 +1590,7 @@ router.post('/ai/generate', async (req, res) => {
 
         const imageBuffer = Buffer.from(imageResponse.data);
 
-        // If sharp is not available, return image without watermark
+	        // If sharp is not available, return image without watermark
         if (!sharp) {
           console.log('⚠️  Returning AI image without watermark (sharp not available)');
           const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
@@ -1598,7 +1598,6 @@ router.post('/ai/generate', async (req, res) => {
             success: true,
             meme_url: base64Image,
             template_name: 'AI Generated Image',
-            texts: { top: prompt, bottom: '' },
             mode: 'ai-image',
             message: 'AI meme generated successfully (watermark unavailable)'
           });
@@ -1611,72 +1610,6 @@ router.post('/ai/generate', async (req, res) => {
         const image = sharp(imageBuffer);
         const metadata = await image.metadata();
 
-        // Use AI to generate meme text if not provided
-        let topText = '';
-        let bottomText = '';
-
-        if (GROQ_API_KEY) {
-          try {
-            const groqResponse = await axios.post(
-              'https://api.groq.com/openai/v1/chat/completions',
-              {
-                model: 'llama-3.1-8b-instant',
-                messages: [
-                  {
-                    role: 'system',
-                    content: `You are a meme text generator. Generate SHORT, FUNNY meme text (max 8 words per line).
-
-RESPOND ONLY WITH JSON:
-{"top_text": "short text here", "bottom_text": "punchline here"}`
-                  },
-                  { role: 'user', content: prompt }
-                ],
-                max_tokens: 100,
-                temperature: 0.8,
-                response_format: { type: "json_object" }
-              },
-              {
-                headers: {
-                  'Authorization': `Bearer ${GROQ_API_KEY}`,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
-
-            const aiResponse = groqResponse.data.choices[0].message.content.trim();
-            const parsed = JSON.parse(aiResponse);
-            topText = parsed.top_text || parsed.top || '';
-            bottomText = parsed.bottom_text || parsed.bottom || '';
-          } catch (aiError) {
-            console.log('AI text generation failed, using prompt as text');
-            topText = prompt.substring(0, 50);
-            bottomText = '';
-          }
-        }
-
-        // Create SVG for text overlay (Impact font style)
-        const fontSize = Math.floor(metadata.width * 0.08); // 8% of width
-        const strokeWidth = Math.floor(fontSize * 0.15);
-
-        const textSvg = `
-          <svg width="${metadata.width}" height="${metadata.height}">
-            <style>
-              .meme-text {
-                font-family: Impact, Arial Black, sans-serif;
-                font-size: ${fontSize}px;
-                font-weight: bold;
-                fill: white;
-                stroke: black;
-                stroke-width: ${strokeWidth}px;
-                text-anchor: middle;
-                text-transform: uppercase;
-              }
-            </style>
-            ${topText ? `<text x="50%" y="${fontSize + 20}" class="meme-text">${topText}</text>` : ''}
-            ${bottomText ? `<text x="50%" y="${metadata.height - 30}" class="meme-text">${bottomText}</text>` : ''}
-          </svg>
-        `;
-
         // Calculate watermark size (15% of image width)
         const watermarkSize = Math.floor(metadata.width * 0.15);
 
@@ -1686,17 +1619,8 @@ RESPOND ONLY WITH JSON:
           .png()
           .toBuffer();
 
-        // Composite text and watermark onto image
+	        // Composite watermark onto image (no meme text)
         const composites = [];
-
-        // Add text overlay
-        if (topText || bottomText) {
-          composites.push({
-            input: Buffer.from(textSvg),
-            top: 0,
-            left: 0
-          });
-        }
 
         // Add watermark on BOTTOM-LEFT to cover pollinations.ai watermark
         const padding = 15;
@@ -1714,13 +1638,12 @@ RESPOND ONLY WITH JSON:
         // Convert to base64 for sending to frontend
         const base64Image = `data:image/jpeg;base64,${watermarkedImage.toString('base64')}`;
 
-        console.log('✅ AI image with text and watermark created');
+	        console.log('✅ AI image with watermark created (no text overlay)');
 
         return res.json({
           success: true,
           meme_url: base64Image,
           template_name: 'AI Generated Image',
-          texts: { top: topText, bottom: bottomText },
           mode: 'ai-image'
         });
       } catch (error) {
@@ -1729,29 +1652,45 @@ RESPOND ONLY WITH JSON:
       }
     }
 
-	    // MODE 2: TEMPLATE-BASED MEME (default)
-	    const userTier = tier || 'free';
-
-	    // Get templates based on user's tier (380 total templates from 7 sources)
-	    const userTemplates = getTemplatesForTier(userTier);
-	    console.log(`📚 User tier "${userTier}" has access to ${userTemplates.length} templates`);
-
-	    // If the frontend requested a specific template (via Browse → Use Template),
-	    // try to honor that. Otherwise, fall back to random.
-	    let selectedTemplate = null;
-	    if (requestedTemplateId) {
-	      selectedTemplate = getTemplateById(requestedTemplateId, userTier);
-	      if (!selectedTemplate) {
-	        console.warn(`⚠️  Requested templateId "${requestedTemplateId}" not available for tier "${userTier}" – falling back to random template`);
-	      } else {
-	        console.log(`🎯 Using requested template: ${selectedTemplate.name} (id: ${requestedTemplateId})`);
-	      }
-	    }
-
-	    if (!selectedTemplate) {
-	      // Randomly select a template from user's available templates
-	      selectedTemplate = getRandomTemplate(userTier);
-	    }
+		    // MODE 2: TEMPLATE-BASED MEME (default)
+		    const userTier = tier || 'free';
+		
+		    // Get templates based on user's tier (380 total templates from 7 sources)
+		    const userTemplates = getTemplatesForTier(userTier);
+		    console.log(`📚 User tier "${userTier}" has access to ${userTemplates.length} templates`);
+		
+		    // If the frontend requested a specific template (old Browse flow),
+		    // try to honor that. Otherwise, try to infer a good template from
+		    // the user's prompt (e.g. "Drake", "UNO", "distracted boyfriend").
+		    // If nothing matches, fall back to a random high-quality template.
+		    let selectedTemplate = null;
+		    if (requestedTemplateId) {
+		      selectedTemplate = getTemplateById(requestedTemplateId, userTier);
+		      if (!selectedTemplate) {
+		        console.warn(`⚠️  Requested templateId "${requestedTemplateId}" not available for tier "${userTier}" – falling back to prompt-based match`);
+		      } else {
+		        console.log(`🎯 Using requested template: ${selectedTemplate.name} (id: ${requestedTemplateId})`);
+		      }
+		    }
+		
+		    // Try to pick a template that matches what the user typed
+		    if (!selectedTemplate) {
+		      try {
+		        const searchResults = searchTemplates(prompt, userTier, null);
+		        if (Array.isArray(searchResults) && searchResults.length > 0) {
+		          selectedTemplate = searchResults[0];
+		          console.log(`🎯 Using prompt-matched template: ${selectedTemplate.name}`);
+		        }
+		      } catch (searchError) {
+		        console.warn('Template search failed, falling back to random template:', searchError.message);
+		      }
+		    }
+		
+		    if (!selectedTemplate) {
+		      // Randomly select a template from user's available templates
+		      selectedTemplate = getRandomTemplate(userTier);
+		      console.log('🎲 Using random template as fallback');
+		    }
 
 	    if (!selectedTemplate) {
 	      return res.status(500).json({ error: 'No templates available for your tier' });

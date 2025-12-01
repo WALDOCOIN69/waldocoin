@@ -7,42 +7,60 @@ import AIBot from './components/AIBot'
 import './App.css'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('generator')
+	const [activeTab, setActiveTab] = useState('generator')
+	// When set, this will preload the meme editor with an image (e.g. from AI Image mode)
+	const [aiEditorTemplate, setAiEditorTemplate] = useState(null)
 
-  return (
-    <AuthProvider>
-      <div className="app">
-        <Header />
+	const handleUseInEditor = (imageUrl) => {
+		if (!imageUrl) return
+		setAiEditorTemplate({
+			id: `ai_${Date.now()}`,
+			name: 'AI Generated Image',
+			url: imageUrl,
+			isCustom: true,
+		})
+		setActiveTab('generator')
+	}
 
-        <div className="container">
-          <div className="tabs">
-            <button
-              className={`tab ${activeTab === 'generator' ? 'active' : ''}`}
-              onClick={() => setActiveTab('generator')}
-            >
-              🎨 Meme Generator
-            </button>
-            <button
-              className={`tab ${activeTab === 'gallery' ? 'active' : ''}`}
-              onClick={() => setActiveTab('gallery')}
-            >
-              🖼️ Community Gallery
-            </button>
-            <button
-              className={`tab ${activeTab === 'ai' ? 'active' : ''}`}
-              onClick={() => setActiveTab('ai')}
-            >
-              🤖 AI Bot
-            </button>
-          </div>
+	return (
+		<AuthProvider>
+			<div className="app">
+				<Header />
 
-          {activeTab === 'generator' && <MemeGenerator />}
-          {activeTab === 'gallery' && <CommunityGallery />}
-          {activeTab === 'ai' && <AIBot />}
-        </div>
-      </div>
-    </AuthProvider>
-  )
+				<div className="container">
+					<div className="tabs">
+						<button
+							className={`tab ${activeTab === 'generator' ? 'active' : ''}`}
+							onClick={() => setActiveTab('generator')}
+						>
+							🎨 Meme Generator
+						</button>
+						<button
+							className={`tab ${activeTab === 'gallery' ? 'active' : ''}`}
+							onClick={() => setActiveTab('gallery')}
+						>
+							🖼️ Community Gallery
+						</button>
+						<button
+							className={`tab ${activeTab === 'ai' ? 'active' : ''}`}
+							onClick={() => setActiveTab('ai')}
+						>
+							🤖 AI Bot
+						</button>
+					</div>
+
+					{activeTab === 'generator' && (
+						<MemeGenerator
+							initialTemplate={aiEditorTemplate}
+							onTemplateConsumed={() => setAiEditorTemplate(null)}
+						/>
+					)}
+					{activeTab === 'gallery' && <CommunityGallery />}
+					{activeTab === 'ai' && <AIBot onUseInEditor={handleUseInEditor} />}
+				</div>
+			</div>
+		</AuthProvider>
+	)
 }
 
 export default App

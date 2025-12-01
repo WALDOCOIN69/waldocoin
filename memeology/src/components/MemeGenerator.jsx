@@ -6,7 +6,7 @@ import PremiumModal from './PremiumModal'
 // Get API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
 
-function MemeGenerator() {
+function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
   const { user, tier, wloBalance } = useAuth()
   const [templates, setTemplates] = useState([])
   const [selectedTemplate, setSelectedTemplate] = useState(null)
@@ -52,6 +52,18 @@ function MemeGenerator() {
       fetchUserNFTs()
     }
   }, [tier])
+
+	// If a template is passed in from elsewhere (e.g. AI Image mode), load it once
+	useEffect(() => {
+		if (initialTemplate && initialTemplate.url) {
+			// Reuse the normal selection logic so text boxes reset properly
+			handleTemplateSelect(initialTemplate)
+			if (onTemplateConsumed) {
+				onTemplateConsumed()
+			}
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [initialTemplate])
 
   const fetchUserNFTs = async () => {
     if (!user?.wallet) return
