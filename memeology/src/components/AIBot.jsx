@@ -182,7 +182,7 @@ function AIBot({ onUseInEditor }) {
                           memeology.fun
                         </div>
                       </div>
-                      <div className="meme-info">
+		                      <div className="meme-info">
 	                        <small>
 	                          {msg.mode === 'ai-image' ? '🎨 AI Generated Image (no text – edit it yourself)' : `📋 Template: ${msg.template}`}
 	                          {msg.texts && msg.mode !== 'ai-image' && (
@@ -201,67 +201,99 @@ function AIBot({ onUseInEditor }) {
 	                              ✏️ Edit in Meme Generator
 	                            </button>
 	                          )}
-	                          <button
-	                            className="btn-download"
-	                            onClick={async () => {
-                            try {
-                              // Create canvas to add watermark
-                              const img = new Image()
-                              img.crossOrigin = 'anonymous'
-                              img.src = msg.content
+		                          <button
+		                            className="btn-download"
+		                            onClick={async () => {
+		                            const ua = window.navigator.userAgent || ''
+		                            const isMobile = /iP(hone|ad|od)|Android/i.test(ua)
 
-                              await new Promise((resolve, reject) => {
-                                img.onload = resolve
-                                img.onerror = reject
-                              })
+		                            // On mobile, just open the image URL so the user can long‑press
+		                            // and save/share into their Photos / Gallery.
+		                            if (isMobile) {
+		                              try {
+		                                const win = window.open(msg.content, '_blank')
+		                                if (!win) {
+		                                  window.location.href = msg.content
+		                                }
+		                              } catch (err) {
+		                                console.error('Mobile open failed:', err)
+		                                alert('Unable to open image. Try tapping the image itself and using your browser\'s save/share options.')
+		                              }
+		                              return
+		                            }
 
-                              const canvas = document.createElement('canvas')
-                              const ctx = canvas.getContext('2d')
-                              canvas.width = img.width
-                              canvas.height = img.height
+		                            try {
+		                              // Desktop: create canvas to add watermark, then trigger download
+		                              const img = new Image()
+		                              img.crossOrigin = 'anonymous'
+		                              img.src = msg.content
 
-                              // Draw the meme image
-                              ctx.drawImage(img, 0, 0)
+		                              await new Promise((resolve, reject) => {
+		                                img.onload = resolve
+		                                img.onerror = reject
+		                              })
 
-                              // Add text watermark with black background
-                              const text = 'memeology.fun'
-                              const fontSize = 14
-                              const padding = 8
+		                              const canvas = document.createElement('canvas')
+		                              const ctx = canvas.getContext('2d')
+		                              canvas.width = img.width
+		                              canvas.height = img.height
 
-                              ctx.font = `bold ${fontSize}px Arial`
-                              const textMetrics = ctx.measureText(text)
-                              const textWidth = textMetrics.width
-                              const textHeight = fontSize
+		                              // Draw the meme image
+		                              ctx.drawImage(img, 0, 0)
 
-                              // Draw black background rectangle (bottom-left corner, no margin)
-                              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
-                              ctx.fillRect(0, img.height - textHeight - padding * 2, textWidth + padding * 2, textHeight + padding * 2)
+		                              // Add text watermark with black background
+		                              const text = 'memeology.fun'
+		                              const fontSize = 14
+		                              const padding = 8
 
-                              // Draw text
-                              ctx.fillStyle = '#00f7ff'
-                              ctx.fillText(text, padding, img.height - padding - 4)
+		                              ctx.font = `bold ${fontSize}px Arial`
+		                              const textMetrics = ctx.measureText(text)
+		                              const textWidth = textMetrics.width
+		                              const textHeight = fontSize
 
-                              // Download the watermarked image
-                              canvas.toBlob((blob) => {
-                                const url = URL.createObjectURL(blob)
-                                const link = document.createElement('a')
-                                link.href = url
-                                link.download = `meme-${Date.now()}.jpg`
-                                link.click()
-                                URL.revokeObjectURL(url)
-                              }, 'image/jpeg', 0.9)
-                            } catch (error) {
-                              console.error('Download failed:', error)
-                              // Fallback to direct download
-                              const link = document.createElement('a')
-                              link.href = msg.content
-                              link.download = `meme-${Date.now()}.jpg`
-                              link.click()
-                            }
-	                            }}
-	                          >
-	                            📥 Download
-	                          </button>
+		                              // Draw black background rectangle (bottom-left corner, no margin)
+		                              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
+		                              ctx.fillRect(0, img.height - textHeight - padding * 2, textWidth + padding * 2, textHeight + padding * 2)
+
+		                              // Draw text
+		                              ctx.fillStyle = '#00f7ff'
+		                              ctx.fillText(text, padding, img.height - padding - 4)
+
+		                              // Download the watermarked image
+		                              canvas.toBlob((blob) => {
+		                                try {
+		                                  if (!blob) {
+		                                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+		                                    const link = document.createElement('a')
+		                                    link.href = dataUrl
+		                                    link.download = `meme-${Date.now()}.jpg`
+		                                    document.body.appendChild(link)
+		                                    link.click()
+		                                    document.body.removeChild(link)
+		                                    return
+		                                  }
+
+		                                  const url = URL.createObjectURL(blob)
+		                                  const link = document.createElement('a')
+		                                  link.href = url
+		                                  link.download = `meme-${Date.now()}.jpg`
+		                                  document.body.appendChild(link)
+		                                  link.click()
+		                                  document.body.removeChild(link)
+		                                  setTimeout(() => URL.revokeObjectURL(url), 1500)
+		                                } catch (err) {
+		                                  console.error('Download failed:', err)
+		                                  alert('Unable to download image. Try right‑clicking and saving the image instead.')
+		                                }
+		                              }, 'image/jpeg', 0.9)
+		                            } catch (error) {
+		                              console.error('Download failed:', error)
+		                              alert('Unable to download image at the moment.')
+		                            }
+		                            }}
+		                          >
+		                            📥 Download
+		                          </button>
 	                        </div>
                       </div>
                     </div>

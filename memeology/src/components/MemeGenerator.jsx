@@ -511,20 +511,64 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
     }
   }
 
-  const downloadMeme = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+	const downloadMeme = () => {
+	  const canvas = canvasRef.current
+	  if (!canvas) return
 
-    // Convert canvas to blob and download
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `meme-${Date.now()}.png`
-      link.click()
-      URL.revokeObjectURL(url)
-    })
-  }
+	  const isIOS = /iP(hone|ad|od)/i.test(window.navigator.userAgent || '')
+
+	  if (isIOS) {
+	    // On iPhone/iPad, open the image directly so the user can long‑press and
+	    // "Save Image" into their Photos / Gallery. This must be synchronous
+	    // with the tap to avoid popup blockers.
+	    try {
+	      const dataUrl = canvas.toDataURL('image/png')
+	      const win = window.open()
+	      if (win) {
+	        win.document.write(
+	          `<html><head><title>Meme</title></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;">` +
+	          `<img src="${dataUrl}" style="max-width:100%;height:auto;" />` +
+	          `</body></html>`
+	        )
+	      } else {
+	        // Fallback: navigate current tab
+	        window.location.href = dataUrl
+	      }
+	    } catch (err) {
+	      console.error('iOS open failed:', err)
+	      alert('Unable to open image on this device. Try taking a screenshot as a backup.')
+	    }
+	    return
+	  }
+
+	  // Other devices: use Blob + download attribute
+	  canvas.toBlob((blob) => {
+	    try {
+	      if (!blob) {
+	        const dataUrl = canvas.toDataURL('image/png')
+	        const link = document.createElement('a')
+	        link.href = dataUrl
+	        link.download = `meme-${Date.now()}.png`
+	        document.body.appendChild(link)
+	        link.click()
+	        document.body.removeChild(link)
+	        return
+	      }
+
+	      const url = URL.createObjectURL(blob)
+	      const link = document.createElement('a')
+	      link.href = url
+	      link.download = `meme-${Date.now()}.png`
+	      document.body.appendChild(link)
+	      link.click()
+	      document.body.removeChild(link)
+	      setTimeout(() => URL.revokeObjectURL(url), 1500)
+	    } catch (err) {
+	      console.error('Download failed:', err)
+	      alert('Unable to download image on this device. Try long‑pressing and saving the image instead.')
+	    }
+	  })
+	}
 
   const shareToGallery = async () => {
     if (!user?.wallet) {
