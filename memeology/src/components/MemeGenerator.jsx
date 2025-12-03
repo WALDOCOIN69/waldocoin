@@ -92,133 +92,137 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
     }
   }
 
-  // Draw meme on canvas whenever text or template changes
-  useEffect(() => {
-    if (selectedTemplate && imageLoaded) {
-      drawMeme()
-    }
-  }, [textBoxes, selectedTemplate, imageLoaded])
+	  // Draw meme on canvas whenever text or template changes
+	  useEffect(() => {
+	    if (selectedTemplate && imageLoaded) {
+	      drawMeme()
+	    }
+	  }, [textBoxes, selectedTemplate, imageLoaded])
+	
+	  const renderMemeToCanvas = (canvas, { showSelection = true } = {}) => {
+	    const image = imageRef.current
+	    if (!canvas || !image) return
+	
+	    const ctx = canvas.getContext('2d')
+	
+	    // Set canvas size to match image
+	    canvas.width = image.naturalWidth
+	    canvas.height = image.naturalHeight
+	
+	    // Draw image
+	    ctx.drawImage(image, 0, 0)
+	
+	    // Draw each text box
+	    textBoxes.forEach(box => {
+	      if (!box.text) return
+	
+	      // Configure text style for this box
+	      ctx.fillStyle = box.color
+	      ctx.strokeStyle = box.outlineColor
+	      ctx.lineWidth = box.outlineWidth
+	      ctx.textAlign = 'center'
+	      ctx.textBaseline = 'middle'
+	
+	      // Calculate font size based on canvas width and user setting
+	      const scaledFontSize = (box.fontSize / 100) * (canvas.width / 10)
+	      ctx.font = `bold ${scaledFontSize}px ${box.fontFamily}, Arial Black, sans-serif`
+	
+	      const lines = wrapText(ctx, box.text.toUpperCase(), canvas.width * 0.9)
+	
+	      // Use x and y coordinates (0-1 range, relative to canvas size)
+	      const centerX = box.x * canvas.width
+	      const centerY = box.y * canvas.height
+	
+	      // Draw text lines centered at the position
+	      const lineHeight = scaledFontSize * 1.1
+	      const totalHeight = lines.length * lineHeight
+	      const startY = centerY - (totalHeight / 2) + (lineHeight / 2)
+	
+	      lines.forEach((line, index) => {
+	        const y = startY + (index * lineHeight)
+	        ctx.strokeText(line, centerX, y)
+	        ctx.fillText(line, centerX, y)
+	      })
+	
+	      // Draw selection indicator around the active box only in editor mode
+	      if (showSelection && box.id === activeBoxId && box.text) {
+	        ctx.strokeStyle = '#00f7ff'
+	        ctx.lineWidth = 3
+	        ctx.setLineDash([5, 5])
+	        const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
+	        ctx.strokeRect(
+	          centerX - textWidth / 2 - 10,
+	          startY - lineHeight / 2 - 5,
+	          textWidth + 20,
+	          totalHeight + 10
+	        )
+	        ctx.setLineDash([])
+	      }
+	    })
+	
+	    // Add watermark for FREE and WALDOCOIN tiers (Premium has no watermark)
+	    if (tier !== 'premium') {
+	      const padding = 15
+	
+	      if (tier === 'waldocoin') {
+	        // WALDOCOIN tier gets "WALDOCOIN" text watermark
+	        const fontSize = Math.min(canvas.width, canvas.height) * 0.05 // 5% of smallest dimension
+	        ctx.font = `bold ${fontSize}px Impact, Arial Black, sans-serif`
+	        ctx.textAlign = 'right'
+	        ctx.textBaseline = 'bottom'
+	
+	        // Draw background box
+	        const text = 'WALDOCOIN'
+	        const textMetrics = ctx.measureText(text)
+	        const textWidth = textMetrics.width
+	        const textHeight = fontSize * 1.2
+	        const boxPadding = 10
+	
+	        const boxX = canvas.width - padding - textWidth - boxPadding * 2
+	        const boxY = canvas.height - padding - textHeight - boxPadding
+	
+	        // Semi-transparent black background
+	        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+	        ctx.fillRect(boxX, boxY, textWidth + boxPadding * 2, textHeight + boxPadding)
+	
+	        // Gold gradient text
+	        const gradient = ctx.createLinearGradient(
+	          boxX, boxY,
+	          boxX + textWidth, boxY + textHeight
+	        )
+	        gradient.addColorStop(0, '#FFD700')
+	        gradient.addColorStop(0.5, '#FFA500')
+	        gradient.addColorStop(1, '#FFD700')
+	
+	        ctx.fillStyle = gradient
+	        ctx.strokeStyle = '#000000'
+	        ctx.lineWidth = 3
+	
+	        const textX = canvas.width - padding - boxPadding
+	        const textY = canvas.height - padding - boxPadding
+	
+	        ctx.strokeText(text, textX, textY)
+	        ctx.fillText(text, textX, textY)
+	
+	      } else if (tier === 'free' && watermarkRef.current && watermarkRef.current.complete) {
+	        // FREE tier gets Memeology logo watermark
+	        const watermarkSize = Math.min(canvas.width, canvas.height) * 0.15 // 15% of smallest dimension
+	        const x = canvas.width - watermarkSize - padding
+	        const y = canvas.height - watermarkSize - padding
+	
+	        // Draw semi-transparent watermark
+	        ctx.globalAlpha = 0.8
+	        ctx.drawImage(watermarkRef.current, x, y, watermarkSize, watermarkSize)
+	        ctx.globalAlpha = 1.0
+	      }
+	    }
+	  }
 
-  const drawMeme = () => {
-    const canvas = canvasRef.current
-    const image = imageRef.current
-
-    if (!canvas || !image) return
-
-    const ctx = canvas.getContext('2d')
-
-    // Set canvas size to match image
-    canvas.width = image.naturalWidth
-    canvas.height = image.naturalHeight
-
-    // Draw image
-    ctx.drawImage(image, 0, 0)
-
-    // Draw each text box
-    textBoxes.forEach(box => {
-      if (!box.text) return
-
-      // Configure text style for this box
-      ctx.fillStyle = box.color
-      ctx.strokeStyle = box.outlineColor
-      ctx.lineWidth = box.outlineWidth
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-
-      // Calculate font size based on canvas width and user setting
-      const scaledFontSize = (box.fontSize / 100) * (canvas.width / 10)
-      ctx.font = `bold ${scaledFontSize}px ${box.fontFamily}, Arial Black, sans-serif`
-
-      const lines = wrapText(ctx, box.text.toUpperCase(), canvas.width * 0.9)
-
-      // Use x and y coordinates (0-1 range, relative to canvas size)
-      const centerX = box.x * canvas.width
-      const centerY = box.y * canvas.height
-
-      // Draw text lines centered at the position
-      const lineHeight = scaledFontSize * 1.1
-      const totalHeight = lines.length * lineHeight
-      const startY = centerY - (totalHeight / 2) + (lineHeight / 2)
-
-      lines.forEach((line, index) => {
-        const y = startY + (index * lineHeight)
-        ctx.strokeText(line, centerX, y)
-        ctx.fillText(line, centerX, y)
-      })
-
-      // Draw selection indicator if this box is active
-      if (box.id === activeBoxId && box.text) {
-        ctx.strokeStyle = '#00f7ff'
-        ctx.lineWidth = 3
-        ctx.setLineDash([5, 5])
-        const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
-        ctx.strokeRect(
-          centerX - textWidth / 2 - 10,
-          startY - lineHeight / 2 - 5,
-          textWidth + 20,
-          totalHeight + 10
-        )
-        ctx.setLineDash([])
-      }
-    })
-
-    // Add watermark for FREE and WALDOCOIN tiers (Premium has no watermark)
-    if (tier !== 'premium') {
-      const padding = 15
-
-      if (tier === 'waldocoin') {
-        // WALDOCOIN tier gets "WALDOCOIN" text watermark
-        const fontSize = Math.min(canvas.width, canvas.height) * 0.05 // 5% of smallest dimension
-        ctx.font = `bold ${fontSize}px Impact, Arial Black, sans-serif`
-        ctx.textAlign = 'right'
-        ctx.textBaseline = 'bottom'
-
-        // Draw background box
-        const text = 'WALDOCOIN'
-        const textMetrics = ctx.measureText(text)
-        const textWidth = textMetrics.width
-        const textHeight = fontSize * 1.2
-        const boxPadding = 10
-
-        const boxX = canvas.width - padding - textWidth - boxPadding * 2
-        const boxY = canvas.height - padding - textHeight - boxPadding
-
-        // Semi-transparent black background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-        ctx.fillRect(boxX, boxY, textWidth + boxPadding * 2, textHeight + boxPadding)
-
-        // Gold gradient text
-        const gradient = ctx.createLinearGradient(
-          boxX, boxY,
-          boxX + textWidth, boxY + textHeight
-        )
-        gradient.addColorStop(0, '#FFD700')
-        gradient.addColorStop(0.5, '#FFA500')
-        gradient.addColorStop(1, '#FFD700')
-
-        ctx.fillStyle = gradient
-        ctx.strokeStyle = '#000000'
-        ctx.lineWidth = 3
-
-        const textX = canvas.width - padding - boxPadding
-        const textY = canvas.height - padding - boxPadding
-
-        ctx.strokeText(text, textX, textY)
-        ctx.fillText(text, textX, textY)
-
-      } else if (tier === 'free' && watermarkRef.current && watermarkRef.current.complete) {
-        // FREE tier gets Memeology logo watermark
-        const watermarkSize = Math.min(canvas.width, canvas.height) * 0.15 // 15% of smallest dimension
-        const x = canvas.width - watermarkSize - padding
-        const y = canvas.height - watermarkSize - padding
-
-        // Draw semi-transparent watermark
-        ctx.globalAlpha = 0.8
-        ctx.drawImage(watermarkRef.current, x, y, watermarkSize, watermarkSize)
-        ctx.globalAlpha = 1.0
-      }
-    }
-  }
+	  const drawMeme = () => {
+	    const canvas = canvasRef.current
+	    if (!canvas) return
+	    renderMemeToCanvas(canvas, { showSelection: true })
+	  }
 
   const wrapText = (ctx, text, maxWidth) => {
     const words = text.split(' ')
@@ -398,22 +402,32 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
     template.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const fetchTemplates = async () => {
-    try {
-      setLoading(true)
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
-      const response = await fetch(`${apiUrl}/api/memeology/templates/imgflip?tier=${tier}`)
-      const data = await response.json()
+	  const fetchTemplates = async () => {
+	    try {
+	      setLoading(true)
+	      const apiUrl = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
+	      const response = await fetch(`${apiUrl}/api/memeology/templates/imgflip?tier=${tier}`)
+	      const data = await response.json()
 
-      // Filter out any templates with broken images
-      const validTemplates = (data.memes || []).filter(template => {
-        // Remove templates that commonly have CORS issues
-        const brokenIds = ['252600902', '226297822', '161865971'] // Always Has Been, Panik Kalm, Marked Safe
-        return !brokenIds.includes(template.id)
-      })
+	      // Start from everything the backend returns and just enforce the
+	      // per-tier limits here so FREE always shows 50 entries and
+	      // WALDOCOIN shows 150. We no longer hard-remove specific IDs,
+	      // so the full count isn't reduced to 48 when a couple are flaky.
+	      const allTemplates = data.memes || []
 
-      setTemplates(validTemplates)
-      setTemplateCount(validTemplates.length)
+	      let maxTemplates
+	      if (tier === 'free') {
+	        maxTemplates = 50
+	      } else if (tier === 'waldocoin') {
+	        maxTemplates = 150
+	      } else {
+	        maxTemplates = allTemplates.length
+	      }
+
+	      const limitedTemplates = allTemplates.slice(0, maxTemplates)
+
+	      setTemplates(limitedTemplates)
+	      setTemplateCount(limitedTemplates.length)
       setUpgradeMessage(data.upgrade_message || '')
       setTierFeatures(data.features || null)
     } catch (error) {
@@ -512,8 +526,13 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
   }
 
 	const downloadMeme = () => {
-	  const canvas = canvasRef.current
-	  if (!canvas) return
+	  const image = imageRef.current
+	  if (!image) return
+
+	  // Render a clean copy of the meme (without the drag selection box)
+	  // to an off-screen canvas so the saved image has no editor UI.
+	  const exportCanvas = document.createElement('canvas')
+	  renderMemeToCanvas(exportCanvas, { showSelection: false })
 
 	  const isIOS = /iP(hone|ad|od)/i.test(window.navigator.userAgent || '')
 
@@ -522,7 +541,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	    // "Save Image" into their Photos / Gallery. This must be synchronous
 	    // with the tap to avoid popup blockers.
 	    try {
-	      const dataUrl = canvas.toDataURL('image/png')
+	      const dataUrl = exportCanvas.toDataURL('image/png')
 	      const win = window.open()
 	      if (win) {
 	        win.document.write(
@@ -542,10 +561,10 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	  }
 
 	  // Other devices: use Blob + download attribute
-	  canvas.toBlob((blob) => {
+	  exportCanvas.toBlob((blob) => {
 	    try {
 	      if (!blob) {
-	        const dataUrl = canvas.toDataURL('image/png')
+	        const dataUrl = exportCanvas.toDataURL('image/png')
 	        const link = document.createElement('a')
 	        link.href = dataUrl
 	        link.download = `meme-${Date.now()}.png`

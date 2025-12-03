@@ -541,8 +541,12 @@ router.get('/templates/imgflip', async (req, res) => {
       }
       // 🆓 FREE TIER - NO GIFS, NO UPLOADS, CANNOT EARN WLO
       else {
-        templates = allMemes.slice(0, 50); // 50 templates for free tier
-        templateLimit = 50;
+	        // For free tier, expose the full Imgflip list and let the frontend
+	        // enforce the "50 templates" limit. This gives the UI room to
+	        // skip over any broken/CORS-blocked templates while still showing
+	        // a full set of 50 working options.
+	        templates = allMemes;
+	        templateLimit = 50;
         upgradeMessage = '🆓 Free Tier: 50 templates, 5 memes/day, NO GIFs, NO uploads, NO WLO rewards. Collect 3+ NFTs or hold 1000+ WLO to unlock everything!';
         features = {
           templates: 50,

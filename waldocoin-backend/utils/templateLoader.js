@@ -62,11 +62,43 @@ export function searchTemplates(query, tier = 'free', category = null) {
   // Search by query if provided
   if (query && query.trim()) {
     const searchTerm = query.toLowerCase().trim();
-    templates = templates.filter(t => 
-      t.name.toLowerCase().includes(searchTerm) ||
-      t.categories.some(cat => cat.toLowerCase().includes(searchTerm)) ||
-      (t.source && t.source.toLowerCase().includes(searchTerm))
-    );
+
+    // Split into individual words so long prompts like
+    // "make a meme about monday mornings" still match
+    // templates whose name or category contains "monday".
+    const terms = searchTerm.split(/\s+/).filter(Boolean);
+
+    // Common filler words we don't want to match on
+    const STOPWORDS = new Set([
+      'a', 'an', 'the', 'and', 'or', 'but', 'for', 'with', 'about', 'into', 'onto',
+      'make', 'create', 'do', 'did', 'when', 'while', 'that', 'this', 'just',
+      'meme', 'memes', 'funny', 'hilarious', 'joke', 'please', 'pls', 'me', 'my', 'you', 'your'
+    ]);
+
+    templates = templates.filter(t => {
+      const name = (t.name || '').toLowerCase();
+      const source = (t.source || '').toLowerCase();
+      const categories = Array.isArray(t.categories)
+        ? t.categories.map(cat => (cat || '').toLowerCase())
+        : [];
+
+      const haystacks = [name, source, ...categories];
+
+      // 1) Try full-phrase match first (old behaviour)
+      const fullMatch = haystacks.some(h => h.includes(searchTerm));
+      if (fullMatch) return true;
+
+      // 2) Then fall back to per-word matching, ignoring very short
+      // words and common filler like "make", "meme", "about".
+      const usefulTerms = terms.filter(term =>
+        term.length > 2 && !STOPWORDS.has(term)
+      );
+      if (!usefulTerms.length) return false;
+
+      return usefulTerms.some(term =>
+        haystacks.some(h => h.includes(term))
+      );
+    });
   }
   
   return templates;
