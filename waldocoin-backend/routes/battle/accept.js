@@ -97,6 +97,9 @@ router.post("/", async (req, res) => {
       });
     }
 
+	    // Mark this battle as the current featured battle once accepted
+	    await redis.set(BATTLE_KEYS.current(), battleId);
+
     // Add activity notifications
     const challengerHandle = battle.challengerHandle || 'Unknown';
 

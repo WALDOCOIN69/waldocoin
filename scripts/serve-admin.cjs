@@ -33,6 +33,6 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`🚀 Admin Panel Server running at http://localhost:${PORT}`);
   console.log(`📊 Access admin panel at: http://localhost:${PORT}/admin`);
-  console.log(`🔑 Admin password: waldogod2025`);
+  console.log(`🔑 Use your configured admin key (X_ADMIN_KEY) to log in.`);
   console.log(`\n💡 This server avoids CORS issues when accessing the backend API.`);
 });

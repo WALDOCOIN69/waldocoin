@@ -119,16 +119,16 @@ router.get('/stats', async (req, res) => {
 
     // Calculate participation metrics
     const totalUsers = await redis.get("users:total_count") || 0;
-    const participationRate = totalUsers > 0 ? ((totalParticipants / totalUsers) * 100).toFixed(1) : 0;
-    const averageVotesPerProposal = stats.total > 0 ? (totalVotes / stats.total).toFixed(1) : 0;
+    const participationRateRaw = totalUsers > 0 ? ((totalParticipants / totalUsers) * 100) : 0;
+    const averageVotesPerProposalRaw = stats.total > 0 ? (totalVotes / stats.total) : 0;
 
     const daoStats = {
       proposals: stats,
       participation: {
         totalVoters: totalParticipants,
         totalVotes: totalVotes,
-        participationRate: `${participationRate}%`,
-        averageVotesPerProposal: parseFloat(averageVotesPerProposal)
+        participationRate: `${participationRateRaw.toFixed(1)}%`,
+        averageVotesPerProposal: Number(averageVotesPerProposalRaw.toFixed(1))
       },
       governance: {
         quorumRequirement: 100, // Default quorum
@@ -151,9 +151,17 @@ router.get('/stats', async (req, res) => {
 
     console.log(`🗳️ DAO stats requested: ${stats.total} total proposals, ${totalParticipants} participants`);
 
+    // Provide both the simple flat stats expected by WordPress and detailed breakdown.
+    // We merge the original detailed object so existing admin tooling using stats.proposals, etc. keeps working.
     return res.json({
       success: true,
-      stats: daoStats,
+      stats: {
+        totalProposals: stats.total,
+        activeProposals: stats.active,
+        totalVotes: totalVotes,
+        participationRate: Number(participationRateRaw.toFixed(1)),
+        ...daoStats
+      },
       timestamp: new Date().toISOString()
     });
 

@@ -94,25 +94,26 @@ router.get("/pending", async (req, res) => {
         // Get challenger tweet data
         const challengerTweet = await redis.hGetAll(`meme:${battleData.challengerTweetId}`);
 
-        pendingBattles.push({
-          battleId,
-          challenger: battleData.challenger,
-          challengerHandle: battleData.challengerHandle,
-          challengerTweet: {
-            id: battleData.challengerTweetId,
-            text: challengerTweet.text || "Loading...",
-            image: challengerTweet.image_url || null,
-            likes: parseInt(challengerTweet.likes) || 0,
-            retweets: parseInt(challengerTweet.retweets) || 0
-          },
-          challenged: battleData.challenged,
-          challengedHandle: battleData.challengedHandle,
-          status: battleData.status,
-          createdAt: battleData.createdAt,
-          expiresAt: battleData.expiresAt,
-          timeRemaining: battleData.expiresAt ? Math.max(0, new Date(battleData.expiresAt) - new Date()) : 0,
-          openInvite: battleData.openInvite === "true" || battleData.openInvite === true
-        });
+	        pendingBattles.push({
+	          battleId,
+	          challenger: battleData.challenger,
+	          challengerHandle: battleData.challengerHandle,
+	          challengerTweet: {
+	            id: battleData.challengerTweetId,
+	            text: challengerTweet.text || "Loading...",
+	            image: challengerTweet.image_url || null,
+	            likes: parseInt(challengerTweet.likes) || 0,
+	            retweets: parseInt(challengerTweet.retweets) || 0
+	          },
+	          // For pending/open battles, treat any without an acceptor as an open invite
+	          challenged: battleData.acceptor,
+	          challengedHandle: battleData.acceptorHandle,
+	          status: battleData.status,
+	          createdAt: battleData.createdAt,
+	          expiresAt: battleData.expiresAt,
+	          timeRemaining: battleData.expiresAt ? Math.max(0, new Date(battleData.expiresAt) - new Date()) : 0,
+	          openInvite: battleData.type === "open" || !battleData.acceptor
+	        });
       }
     }
 

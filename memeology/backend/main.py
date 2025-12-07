@@ -39,9 +39,9 @@ class AISuggestRequest(BaseModel):
     user_id: Optional[str] = None
     ai_model: str = "groq"
 
-# Imgflip API credentials (get from env or use defaults)
-IMGFLIP_USERNAME = os.getenv("IMGFLIP_USERNAME", "waldolabs")
-IMGFLIP_PASSWORD = os.getenv("IMGFLIP_PASSWORD", "waldolabs123")
+# Imgflip API credentials (must be provided via environment; no real defaults committed)
+IMGFLIP_USERNAME = os.getenv("IMGFLIP_USERNAME")
+IMGFLIP_PASSWORD = os.getenv("IMGFLIP_PASSWORD")
 
 # XRPL Configuration
 XRPL_SERVER = os.getenv("XRPL_SERVER", "https://s1.ripple.com:51234")  # Mainnet

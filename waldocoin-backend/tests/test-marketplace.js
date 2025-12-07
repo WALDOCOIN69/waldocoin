@@ -6,7 +6,7 @@
 
 import { redis } from './redisClient.js';
 
-const baseURL = 'http://localhost:3000';
+	const baseURL = 'http://localhost:5050';
 const testWallet = 'rN7n7otQDd6FczFgLdlqtyMVrn3Rqq5Qzz';
 const testTweetId = 'test_tweet_12345';
 const testListingId = `listing_${Date.now()}`;
@@ -38,6 +38,9 @@ async function setupTestData() {
       wallet: testWallet,
       createdAt: new Date().toISOString()
     });
+
+	    // Mark NFT as minted so /list endpoint will allow listing
+	    await redis.set(`meme:nft_minted:${testTweetId}`, 'true');
 
     // Create test listing
     await redis.hSet(`marketplace:listing:${testListingId}`, {

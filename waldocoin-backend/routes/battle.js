@@ -9,6 +9,7 @@ import resultsRouter from './battle/results.js';
 import payoutRouter from './battle/payout.js';
 import leaderboardRouter from './battle/leaderboard.js';
 import currentRouter from './battle/current.js';
+import historyRouter from './battle/history.js';
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.use('/results', resultsRouter);
 router.use('/payout', payoutRouter);
 router.use('/leaderboard', leaderboardRouter);
 router.use('/current', currentRouter);
+router.use('/history', historyRouter);
 
 // Legacy endpoints removed - all functionality moved to dedicated sub-routes
 // This prevents conflicts and ensures consistent data handling

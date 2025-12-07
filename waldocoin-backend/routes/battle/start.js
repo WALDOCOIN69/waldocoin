@@ -11,11 +11,11 @@ import { createErrorResponse, logError } from "../../utils/errorHandler.js";
 import { rateLimitMiddleware } from "../../utils/rateLimiter.js";
 dotenv.config();
 
-const router = express.Router();
+	const router = express.Router();
 
-console.log("🧩 Loaded: routes/battle/start.js");
+	console.log("🧩 Loaded: routes/battle/start.js");
 
-async function getWalletFromHandle(handle) {
+	async function getWalletFromHandle(handle) {
   const key = `twitter:${handle.toLowerCase()}`;
   const wallet = await redis.get(key);
   return wallet;
@@ -28,7 +28,8 @@ async function getHandleFromWallet(wallet) {
 }
 
 router.post("/", rateLimitMiddleware('BATTLE_START'), async (req, res) => {
-  const { wallet, tweetId, twitterHandle } = req.body;
+	  const { wallet, tweetId, twitterHandle } = req.body;
+	  const challengeHandle = req.body.challengeHandle;
 
   if (!wallet || !tweetId) {
     return res.status(400).json({ success: false, error: "Missing wallet or tweetId" });
@@ -51,16 +52,18 @@ router.post("/", rateLimitMiddleware('BATTLE_START'), async (req, res) => {
     const { startFeeWLO } = await (await import("../../utils/config.js")).getBattleFees();
     const feeWaldo = startFeeWLO;
 
-    let challengedWallet = null;
-    let challengedHandle = null;
+	    let challengedWallet = null;
+	    let challengedHandle = null;
 
-    if (twitterHandle) {
-      challengedWallet = await getWalletFromHandle(twitterHandle);
-      if (!challengedWallet) {
-        return res.status(404).json({ success: false, error: `No wallet found for @${twitterHandle}` });
-      }
-      challengedHandle = twitterHandle;
-    }
+	    const handleToUse = twitterHandle || challengeHandle;
+
+	    if (handleToUse) {
+	      challengedWallet = await getWalletFromHandle(handleToUse);
+	      if (!challengedWallet) {
+	        return res.status(404).json({ success: false, error: `No wallet found for @${handleToUse}` });
+	      }
+	      challengedHandle = handleToUse;
+	    }
 
     const challengerHandle = await getHandleFromWallet(wallet);
 
@@ -89,6 +92,9 @@ router.post("/", rateLimitMiddleware('BATTLE_START'), async (req, res) => {
     }
 
     const { battleId } = battleCreation;
+
+    // Mark this battle as the current featured battle (pending/open)
+    await redis.set(BATTLE_KEYS.current(), battleId);
 
     // 🔐 WALDO payment payload - Send to dedicated Battle Escrow Wallet
     const BATTLE_ESCROW_WALLET = process.env.BATTLE_ESCROW_WALLET || "rfn7cG6qAQMuG97i9Nb5GxGdHbTjY7TzW";

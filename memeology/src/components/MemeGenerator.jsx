@@ -21,17 +21,18 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
   const [showNFTModal, setShowNFTModal] = useState(false)
   const [showPremiumModal, setShowPremiumModal] = useState(false)
   const [userNFTs, setUserNFTs] = useState([])
-  const [showShareModal, setShowShareModal] = useState(false)
-  const [shareCaption, setShareCaption] = useState('')
-  const [shareSuccess, setShareSuccess] = useState(false)
-  const [uploadedImage, setUploadedImage] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [aiSuggesting, setAiSuggesting] = useState(false)
-  const [aiSuggestionsToday, setAiSuggestionsToday] = useState(0)
-  const [showGIFModal, setShowGIFModal] = useState(false)
-  const [gifSearch, setGifSearch] = useState('')
-  const [gifResults, setGifResults] = useState([])
-  const [loadingGifs, setLoadingGifs] = useState(false)
+	  const [showShareModal, setShowShareModal] = useState(false)
+	  const [shareCaption, setShareCaption] = useState('')
+	  const [shareSuccess, setShareSuccess] = useState(false)
+	  const [uploadedImage, setUploadedImage] = useState(null)
+	  const [uploading, setUploading] = useState(false)
+	  const [aiSuggesting, setAiSuggesting] = useState(false)
+	  const [aiSuggestionsToday, setAiSuggestionsToday] = useState(0)
+	  const [showGIFModal, setShowGIFModal] = useState(false)
+	  const [gifSearch, setGifSearch] = useState('')
+	  const [gifResults, setGifResults] = useState([])
+	  const [loadingGifs, setLoadingGifs] = useState(false)
+	  const [lastSharedMemeUrl, setLastSharedMemeUrl] = useState(null)
 
   // Multiple text boxes
   const [textBoxes, setTextBoxes] = useState([
@@ -613,21 +614,38 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
         })
       })
 
-      const data = await response.json()
+	      const data = await response.json()
 
-      if (data.success) {
-        setShareSuccess(true)
-        setShowShareModal(false)
-        setShareCaption('')
-        alert('🎉 Meme shared to community gallery!')
-      } else {
-        alert(data.error || 'Failed to share meme')
-      }
-    } catch (error) {
-      console.error('Error sharing meme:', error)
-      alert('Error sharing meme to gallery')
-    }
-  }
+	      if (data.success) {
+	        // If backend provided a per-meme public URL, remember it so
+	        // the Share on X button can deep-link to this exact meme.
+	        if (data.meme && data.meme.publicUrl) {
+	          setLastSharedMemeUrl(data.meme.publicUrl)
+	        }
+	        setShareSuccess(true)
+	        setShowShareModal(false)
+	        setShareCaption('')
+	        alert('🎉 Meme shared to community gallery!')
+	      } else {
+	        alert(data.error || 'Failed to share meme')
+	      }
+	    } catch (error) {
+	      console.error('Error sharing meme:', error)
+	      alert('Error sharing meme to gallery')
+	    }
+	  }
+
+		  const shareOnX = () => {
+		    const url = lastSharedMemeUrl || 'https://memeology.fun'
+		    const text = `Made this on #WaldoMeme\n${url}`
+		    const tweetUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`
+		    try {
+		      window.open(tweetUrl, '_blank', 'noopener,noreferrer')
+		    } catch (err) {
+		      console.error('Error opening X share window:', err)
+		      alert('Unable to open X (Twitter). Please check your popup blocker and try again.')
+		    }
+		  }
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0]
@@ -1107,6 +1125,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                 >
                   🌐 Share to Gallery
                 </button>
+	                <button
+	                  className="btn-secondary"
+	                  onClick={shareOnX}
+	                >
+	                  🐦 Share on X (#WaldoMeme)
+	                </button>
               </div>
             </>
           ) : (

@@ -10,6 +10,9 @@ function CommunityGallery() {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('recent') // 'recent' or 'top'
   const [userVotes, setUserVotes] = useState({}) // Track user's votes per meme
+  const [highlightedMemeId, setHighlightedMemeId] = useState(null)
+  const [hasFetchedHighlight, setHasFetchedHighlight] = useState(false)
+  const [highlightNotFound, setHighlightNotFound] = useState(false)
 
   useEffect(() => {
     fetchGallery()
@@ -30,6 +33,54 @@ function CommunityGallery() {
       setLoading(false)
     }
   }
+
+  // If the URL contains ?memeId=..., remember it so we can scroll/highlight
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const id = params.get('memeId')
+      if (id) {
+        setHighlightedMemeId(id)
+      }
+    } catch (err) {
+      console.error('Error parsing memeId from URL:', err)
+    }
+  }, [])
+
+  // If the highlighted meme is in the current list, scroll it into view.
+  // If not, try to fetch it directly from the backend once.
+  useEffect(() => {
+    if (!highlightedMemeId || memes.length === 0) return
+
+    const el = document.getElementById(`meme-${highlightedMemeId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+
+    if (!hasFetchedHighlight) {
+      const fetchSingleMeme = async () => {
+        try {
+          setHasFetchedHighlight(true)
+          const resp = await fetch(`${API_URL}/api/memeology/community/meme/${encodeURIComponent(highlightedMemeId)}`)
+          const data = await resp.json()
+          if (data.success && data.meme) {
+            setMemes(prev => {
+              const filtered = prev.filter(m => m.id !== data.meme.id)
+              return [data.meme, ...filtered]
+            })
+          } else {
+            setHighlightNotFound(true)
+          }
+        } catch (error) {
+          console.error('Error fetching highlighted meme:', error)
+          setHighlightNotFound(true)
+        }
+      }
+
+      fetchSingleMeme()
+    }
+  }, [highlightedMemeId, memes, hasFetchedHighlight])
 
   const handleVote = async (memeId, voteType) => {
     if (!user?.wallet) {
@@ -112,6 +163,12 @@ function CommunityGallery() {
         </div>
       </div>
 
+      {highlightNotFound && (
+        <div className="highlight-warning">
+          This meme link may have expired or been removed from the gallery.
+        </div>
+      )}
+
       {loading ? (
         <div className="loading-state">
           <div className="spinner"></div>
@@ -125,7 +182,11 @@ function CommunityGallery() {
       ) : (
         <div className="memes-grid">
           {memes.map((meme) => (
-            <div key={meme.id} className="meme-card">
+              <div
+                key={meme.id}
+                id={`meme-${meme.id}`}
+                className={`meme-card ${meme.id === highlightedMemeId ? 'highlight' : ''}`}
+              >
               <div className="meme-image-container">
                 <img src={meme.memeUrl} alt={meme.caption || 'Meme'} className="meme-image" />
               </div>

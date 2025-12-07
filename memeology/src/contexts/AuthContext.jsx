@@ -21,32 +21,65 @@ export const AuthProvider = ({ children }) => {
   const [showQRModal, setShowQRModal] = useState(false)
   const [qrData, setQrData] = useState(null)
 
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const savedUser = localStorage.getItem('memeology_user')
-        const savedTier = localStorage.getItem('memeology_tier')
-        
-        if (savedUser) {
-          const userData = JSON.parse(savedUser)
-          setUser(userData)
-          setTier(savedTier || 'free')
-          
-          // Check tier status
-          if (userData.wallet) {
-            await checkUserTier(userData.wallet)
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    loadUser()
-  }, [])
+	  // Load user from SSO token (if present) or from localStorage on mount
+	  useEffect(() => {
+	    const loadUser = async () => {
+	      try {
+	        const params = new URLSearchParams(window.location.search)
+	        const ssoToken = params.get('sso')
+
+	        // If we were launched from the WALDO stats dashboard with an SSO
+	        // token, verify it first and log the user in without another QR.
+	        if (ssoToken) {
+	          try {
+	            const response = await fetch(`${API_URL}/api/auth/xumm/sso/verify?token=${encodeURIComponent(ssoToken)}`)
+	            const data = await response.json()
+	            if (data.success && data.wallet) {
+	              const userData = {
+	                wallet: data.wallet,
+	                name: `User ${data.wallet.slice(0, 8)}...`,
+	                loggedIn: true
+	              }
+	              setUser(userData)
+	              localStorage.setItem('memeology_user', JSON.stringify(userData))
+	              await checkUserTier(data.wallet)
+
+	              // Clean the SSO token from the URL so refreshes don't retry it
+	              params.delete('sso')
+	              const newQuery = params.toString()
+	              const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}${window.location.hash}`
+	              window.history.replaceState({}, '', newUrl)
+	              return
+	            } else {
+	              console.warn('SSO verification failed:', data)
+	            }
+	          } catch (err) {
+	            console.error('Error verifying SSO token:', err)
+	          }
+	        }
+
+	        const savedUser = localStorage.getItem('memeology_user')
+	        const savedTier = localStorage.getItem('memeology_tier')
+	        
+	        if (savedUser) {
+	          const userData = JSON.parse(savedUser)
+	          setUser(userData)
+	          setTier(savedTier || 'free')
+	          
+	          // Check tier status
+	          if (userData.wallet) {
+	            await checkUserTier(userData.wallet)
+	          }
+	        }
+	      } catch (error) {
+	        console.error('Error loading user:', error)
+	      } finally {
+	        setLoading(false)
+	      }
+	    }
+	    
+	    loadUser()
+	  }, [])
 
   const checkUserTier = async (walletAddress) => {
     try {

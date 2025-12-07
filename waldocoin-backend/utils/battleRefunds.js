@@ -1,6 +1,6 @@
 import { redis } from "../redisClient.js";
 import { xrpSendWaldo } from "./sendWaldo.js";
-import { acquireLock, releaseLock } from "./battleStorage.js";
+import { acquireLock, releaseLock, BATTLE_KEYS } from "./battleStorage.js";
 import { logError } from "./errorHandler.js";
 import { trackEscrowTransaction } from "./escrowMonitor.js";
 
@@ -110,9 +110,9 @@ export async function refundAllVoters(battleId, voteAmount = 30000) {
     console.log(`💰 Refunding all voters for battle ${battleId}: ${voteAmount} WLO each`);
 
     // Get all voters from both sides
-    const meme1Voters = await redis.sMembers(`battle:${battleId}:voters:meme1`);
-    const meme2Voters = await redis.sMembers(`battle:${battleId}:voters:meme2`);
-    const allVoters = [...meme1Voters, ...meme2Voters];
+	    const votersA = await redis.sMembers(BATTLE_KEYS.voters(battleId, "A"));
+	    const votersB = await redis.sMembers(BATTLE_KEYS.voters(battleId, "B"));
+	    const allVoters = [...votersA, ...votersB];
 
     let refundedCount = 0;
     let failedCount = 0;
@@ -208,31 +208,41 @@ export async function processExpiredBattles() {
 
     let processedCount = 0;
 
-    for (const key of keys) {
-      const battle = await redis.hgetall(key);
+	    for (const key of keys) {
+	      const battle = await redis.hgetall(key);
 
-      if (!battle || !battle.createdAt || battle.status !== "pending") {
-        continue;
-      }
+	      if (
+	        !battle ||
+	        !battle.createdAt ||
+	        (battle.status !== "pending" && battle.status !== "open")
+	      ) {
+	        continue;
+	      }
 
       const createdAt = parseInt(battle.createdAt);
       const isExpired = (now - createdAt) > EXPIRY_TIME;
 
-      if (isExpired && !battle.challengerRefunded) {
-        const battleId = key.replace("battle:", "").replace(":data", "");
-        console.log(`⏰ Processing expired battle: ${battleId}`);
+	      if (isExpired && !battle.challengerRefunded) {
+	        const battleId = key.replace("battle:", "").replace(":data", "");
+	        console.log(`⏰ Processing expired battle: ${battleId}`);
 
-        const { startFeeWLO } = await (await import("./config.js")).getBattleFees();
-        await refundChallenger(battleId, battle.challenger, startFeeWLO, "Battle expired (10+ hours unaccepted)");
+	        const { startFeeWLO } = await (await import("./config.js")).getBattleFees();
+	        await refundChallenger(battleId, battle.challenger, startFeeWLO, "Battle expired (10+ hours unaccepted)");
 
-        // Mark battle as expired
-        await redis.hset(key, {
-          status: "expired",
-          expiredAt: now
-        });
+	        // Mark battle as expired
+	        await redis.hset(key, {
+	          status: "expired",
+	          expiredAt: now
+	        });
 
-        processedCount++;
-      }
+	        // If this expired battle was the "current" one, clear the pointer
+	        const currentId = await redis.get(BATTLE_KEYS.current());
+	        if (currentId === battleId) {
+	          await redis.del(BATTLE_KEYS.current());
+	        }
+
+	        processedCount++;
+	      }
     }
 
     if (processedCount > 0) {

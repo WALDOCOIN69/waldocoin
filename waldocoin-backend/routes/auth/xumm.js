@@ -1,8 +1,10 @@
 // routes/auth/xumm.js
-// XUMM Authentication for Memeology
+// XUMM Authentication for Memeology + SSO bridge from WALDO stats dashboard
 import express from 'express';
 import { XummSdk } from 'xumm-sdk';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+import { redis } from '../../redisClient.js';
 
 dotenv.config();
 
@@ -30,6 +32,10 @@ if (hasValidKeys) {
 
 // Store for active login sessions (in production, use Redis)
 const loginSessions = new Map();
+
+// TTL for SSO tokens (seconds). Short-lived, single-use tokens used when
+// a user clicks "Open Memeology" from the WALDO stats dashboard.
+const SSO_TOKEN_TTL_SECONDS = 10 * 60; // 10 minutes
 
 // POST /api/auth/xumm/login - Create XUMM login payload
 router.post('/login', async (req, res) => {
@@ -90,6 +96,71 @@ router.post('/login', async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+// POST /api/auth/xumm/sso - Create a short-lived SSO token that lets an
+// already-authenticated WALDO stats user hop into Memeology without scanning
+// another QR. The stats dashboard calls this with the connected wallet and
+// then redirects to memeology.fun/?sso=<token>.
+router.post('/sso', async (req, res) => {
+  try {
+    const { wallet } = req.body || {};
+
+    if (!wallet || typeof wallet !== 'string') {
+      return res.status(400).json({ success: false, error: 'wallet required' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // Store token -> wallet mapping in Redis with a short TTL. We only need
+    // the wallet here; Memeology will call its own tier endpoints.
+    await redis.setEx(`sso:${token}`, SSO_TOKEN_TTL_SECONDS, JSON.stringify({ wallet }));
+
+    res.json({ success: true, token });
+  } catch (error) {
+    console.error('❌ Error creating SSO token:', error);
+    res.status(500).json({ success: false, error: 'Failed to create SSO token' });
+  }
+});
+
+// GET /api/auth/xumm/sso/verify?token=... - Consume an SSO token and return
+// the associated wallet to Memeology. Tokens are single-use for safety.
+router.get('/sso/verify', async (req, res) => {
+  try {
+    const { token } = req.query || {};
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ success: false, error: 'token required' });
+    }
+
+    const key = `sso:${token}`;
+    const stored = await redis.get(key);
+
+    if (!stored) {
+      return res.json({ success: false, error: 'Invalid or expired token' });
+    }
+
+    // Single-use: delete immediately after reading.
+    await redis.del(key);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(stored);
+    } catch (e) {
+      console.error('❌ Failed to parse SSO token payload:', e);
+      return res.status(500).json({ success: false, error: 'Corrupted SSO token payload' });
+    }
+
+    const wallet = parsed.wallet;
+    if (!wallet || typeof wallet !== 'string') {
+      return res.status(500).json({ success: false, error: 'SSO token missing wallet' });
+    }
+
+    res.json({ success: true, wallet });
+  } catch (error) {
+    console.error('❌ Error verifying SSO token:', error);
+    res.status(500).json({ success: false, error: 'Failed to verify SSO token' });
   }
 });
 

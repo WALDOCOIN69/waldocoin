@@ -3222,6 +3222,10 @@
       <a href="https://nft-marketplace.waldocoin.live" class="nav-link"
         style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🏪
         NFT Market</a>
+      <a href="#" class="nav-link"
+        onclick="openMemeology(); return false;"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🎨
+        Memeology</a>
       <div class="wallet-display" id="navWalletDisplay"
         style="background: #333; padding: 8px 16px; border-radius: 20px; font-family: monospace; font-size: 0.9rem; color: #25c2a0;">
         Not Connected</div>
@@ -4169,6 +4173,39 @@
         });
 
         console.log('✅ Cross-subdomain wallet sharing enabled');
+      }
+
+      // === MEMEOLOGY SSO BRIDGE ===
+      // Called from the nav bar when user clicks "Memeology". Creates a
+      // short-lived SSO token on the backend tied to the currently
+      // connected WALDO wallet, then redirects to memeology.fun with that
+      // token as a query param.
+      async function openMemeology() {
+        try {
+          const wallet = getWallet();
+          if (!wallet) {
+            showWaldoNotification('⚠️ Connect your WALDO wallet first to open Memeology.', 0);
+            return;
+          }
+
+          const response = await fetch(`${baseURL}/api/auth/xumm/sso`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wallet })
+          });
+
+          const data = await response.json();
+          if (data.success && data.token) {
+            const target = `https://memeology.fun/?sso=${encodeURIComponent(data.token)}`;
+            window.location.href = target;
+          } else {
+            console.error('Memeology SSO failed:', data);
+            showWaldoNotification('❌ Could not open Memeology. Please try again.', 0);
+          }
+        } catch (error) {
+          console.error('Memeology SSO error:', error);
+          showWaldoNotification('❌ Could not open Memeology. Please try again.', 0);
+        }
       }
 
       function listenForWalletChanges() {

@@ -5,7 +5,9 @@ import axios from 'axios';
 import xrpl from 'xrpl';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { redis } from '../redisClient.js';
 import { getAllPrices, calculateTokenAmount } from '../utils/priceOracle.js';
 import {
   getTemplatesForTier,
@@ -16,6 +18,7 @@ import {
   getTierStats,
   toImgflipFormat
 } from '../utils/templateLoader.js';
+import { uploadToIPFS } from '../utils/ipfsUploader.js';
 import {
   trackMemeGeneration,
   trackMemeDownload,
@@ -50,14 +53,44 @@ const XRPL_SERVER = process.env.XRPL_SERVER || 'wss://s1.ripple.com'; // WebSock
 const WLO_ISSUER = process.env.WLO_ISSUER || process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const WLO_CURRENCY = 'WLO';
 const GROQ_API_KEY = process.env.GROQ_API_KEY; // Free Groq API key
+// Public URL used when generating per-meme share links for the community gallery
+const MEMEOLOGY_PUBLIC_URL = process.env.MEMEOLOGY_PUBLIC_URL || 'https://memeology.fun';
+// Treasury wallet for premium subscription payments (can be overridden by env)
+const TREASURY_WALLET = process.env.TREASURY_WALLET || 'r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K';
 
-// In-memory storage (replace with Redis/database in production)
-const xummSessions = new Map();
-const userMemeCount = new Map();
-const premiumSubscriptions = new Map();
-const userUploadCount = new Map(); // Track daily upload limits
-const communityMemes = []; // Store community-shared memes
-const memeUpvotes = new Map(); // Track upvotes per meme
+// 510 Redis-backed key helpers for Memeology
+const MEMEOLOGY_KEYS = {
+  premiumSubscription: (wallet) => `memeology:premium:${wallet}`,
+  usageMeme: (wallet, date) => `memeology:usage:meme:${wallet}:${date}`,
+  usageUpload: (wallet, date) => `memeology:usage:upload:${wallet}:${date}`,
+  usageAi: (userKey, date) => `memeology:usage:ai:${userKey}:${date}`,
+  communityList: 'memeology:community:memes',
+  meme: (id) => `memeology:meme:${id}`,
+  memeUpvotes: (id) => `memeology:meme:${id}:upvotes`,
+  memeDownvotes: (id) => `memeology:meme:${id}:downvotes`
+};
+
+// Helper: load & persist premium subscription in Redis
+async function getPremiumSubscription(wallet) {
+  if (!wallet) return null;
+  const key = MEMEOLOGY_KEYS.premiumSubscription(wallet);
+  const raw = await redis.get(key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('Error parsing premium subscription from Redis for', wallet, err.message);
+    return null;
+  }
+}
+
+async function savePremiumSubscription(wallet, subscription) {
+  if (!wallet || !subscription) return null;
+  const key = MEMEOLOGY_KEYS.premiumSubscription(wallet);
+  await redis.set(key, JSON.stringify(subscription));
+  return subscription;
+}
+
 
 // Helper: Map Imgflip template IDs to Memegen template names
 // Returns a slug string for known IDs or null for unknown ones.
@@ -234,11 +267,13 @@ async function checkUserTier(wallet) {
     let tier = 'free';
     let premiumExpires = null;
 
-    if (premiumSubscriptions.has(wallet)) {
-      const sub = premiumSubscriptions.get(wallet);
-      if (new Date(sub.expiresAt) > now) {
+    const premiumSub = await getPremiumSubscription(wallet);
+    if (premiumSub) {
+      const expiresAt = new Date(premiumSub.expiresAt);
+      const isActive = expiresAt > now && premiumSub.active !== false;
+      if (isActive) {
         tier = 'premium';
-        premiumExpires = sub.expiresAt;
+        premiumExpires = premiumSub.expiresAt;
       }
     }
 
@@ -446,8 +481,9 @@ router.get('/user/usage', async (req, res) => {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const key = `${wallet}:${today}`;
-    const count = userMemeCount.get(key) || 0;
+    const key = MEMEOLOGY_KEYS.usageMeme(wallet, today);
+    const raw = await redis.get(key);
+    const count = raw ? parseInt(raw, 10) || 0 : 0;
 
     res.json({
       wallet,
@@ -728,8 +764,9 @@ router.post('/memes/create', async (req, res) => {
       // Check usage limits for free tier
       if (tier === 'free') {
         const today = new Date().toISOString().split('T')[0];
-        const key = `${userId}:${today}`;
-        const count = userMemeCount.get(key) || 0;
+        const key = MEMEOLOGY_KEYS.usageMeme(userId, today);
+        const raw = await redis.get(key);
+        const count = raw ? parseInt(raw, 10) || 0 : 0;
 
         if (count >= 10) {
           return res.status(429).json({
@@ -765,8 +802,8 @@ router.post('/memes/create', async (req, res) => {
       // Track usage
       if (userId) {
         const today = new Date().toISOString().split('T')[0];
-        const key = `${userId}:${today}`;
-        userMemeCount.set(key, (userMemeCount.get(key) || 0) + 1);
+        const key = MEMEOLOGY_KEYS.usageMeme(userId, today);
+        await redis.incr(key);
       }
 
       const feeCharged = tier === 'waldocoin' ? '0.1 WLO' : 'none';
@@ -784,57 +821,6 @@ router.post('/memes/create', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in /memes/create:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// POST /api/memeology/premium/subscribe - Subscribe to Premium tier
-router.post('/premium/subscribe', async (req, res) => {
-  try {
-    const { wallet, paymentTx } = req.body;
-
-    if (!wallet || !paymentTx) {
-      return res.status(400).json({ error: 'Wallet and payment transaction required' });
-    }
-
-    // Verify payment transaction on XRPL
-    const client = new xrpl.Client(XRPL_SERVER);
-    await client.connect();
-
-    const txResponse = await client.request({
-      command: 'tx',
-      transaction: paymentTx
-    });
-
-    await client.disconnect();
-
-    if (!txResponse.result) {
-      return res.status(400).json({ error: 'Invalid transaction hash' });
-    }
-
-    // TODO: Verify transaction details
-    // - Check amount is correct ($5 equivalent)
-    // - Check destination is our wallet
-    // - Check transaction is validated
-
-    // Add 30 days to subscription
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
-
-    premiumSubscriptions.set(wallet, {
-      expiresAt: expiresAt.toISOString(),
-      paymentTx,
-      subscribedAt: new Date().toISOString()
-    });
-
-    res.json({
-      success: true,
-      tier: 'premium',
-      expiresAt: expiresAt.toISOString(),
-      message: 'Premium subscription activated! Enjoy unlimited memes!'
-    });
-  } catch (error) {
-    console.error('Error in /premium/subscribe:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -859,14 +845,22 @@ router.post('/community/share', async (req, res) => {
       downvotes: 0
     };
 
-    communityMemes.unshift(meme); // Add to beginning
-    memeUpvotes.set(meme.id, { upvotes: new Set(), downvotes: new Set() });
+    // Generate a stable, sharable URL for this specific meme so tweets can
+    // deep-link directly into the gallery. We use a query param instead of a
+    // path segment so static hosting/CDN setups keep working.
+    const publicUrl = `${MEMEOLOGY_PUBLIC_URL}/?memeId=${encodeURIComponent(meme.id)}`;
+    const memeWithUrl = { ...meme, publicUrl };
+
+    // Persist meme in Redis and push to the community list (newest first)
+    const memeKey = MEMEOLOGY_KEYS.meme(meme.id);
+    await redis.set(memeKey, JSON.stringify(memeWithUrl));
+    await redis.lPush(MEMEOLOGY_KEYS.communityList, meme.id);
 
     console.log(`🎨 Meme shared to community: ${meme.id} by ${wallet.slice(0, 10)}...`);
 
     res.json({
       success: true,
-      meme: meme,
+      meme: memeWithUrl,
       message: 'Meme shared to community gallery!'
     });
   } catch (error) {
@@ -880,23 +874,75 @@ router.get('/community/gallery', async (req, res) => {
   try {
     const { limit = 50, sort = 'recent' } = req.query;
 
-    let memes = [...communityMemes];
+    const numericLimit = Math.min(parseInt(limit, 10) || 50, 200);
+
+    const total = await redis.lLen(MEMEOLOGY_KEYS.communityList);
+    if (!total) {
+      return res.json({ success: true, memes: [], total: 0 });
+    }
+
+    // Get the most recent meme IDs
+    const memeIds = await redis.lRange(MEMEOLOGY_KEYS.communityList, 0, numericLimit - 1);
+    if (!memeIds || memeIds.length === 0) {
+      return res.json({ success: true, memes: [], total });
+    }
+
+    const memeKeys = memeIds.map(id => MEMEOLOGY_KEYS.meme(id));
+    const rawMemes = await redis.mGet(memeKeys);
+
+    const memes = [];
+    rawMemes.forEach(raw => {
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        memes.push(parsed);
+      } catch (e) {
+        console.error('Error parsing meme from Redis:', e.message);
+      }
+    });
 
     // Sort by upvotes or recent
     if (sort === 'top') {
-      memes.sort((a, b) => b.upvotes - a.upvotes);
+      memes.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
     }
-
-    // Limit results
-    memes = memes.slice(0, parseInt(limit));
 
     res.json({
       success: true,
-      memes: memes,
-      total: communityMemes.length
+      memes,
+      total
     });
   } catch (error) {
     console.error('Error in /community/gallery:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/community/meme/:id - Get a single meme by ID
+router.get('/community/meme/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Meme ID required' });
+    }
+
+    const memeKey = MEMEOLOGY_KEYS.meme(id);
+    const raw = await redis.get(memeKey);
+
+    if (!raw) {
+      return res.status(404).json({ error: 'Meme not found or may have expired' });
+    }
+
+    let meme;
+    try {
+      meme = JSON.parse(raw);
+    } catch (e) {
+      console.error('Error parsing meme JSON for /community/meme:', e.message);
+      return res.status(500).json({ error: 'Failed to parse stored meme data' });
+    }
+
+    res.json({ success: true, meme });
+  } catch (error) {
+    console.error('Error in /community/meme/:id:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -910,79 +956,98 @@ router.post('/community/vote', async (req, res) => {
       return res.status(400).json({ error: 'Wallet, meme ID, and vote type required' });
     }
 
-    const votes = memeUpvotes.get(memeId);
-    if (!votes) {
+    const memeKey = MEMEOLOGY_KEYS.meme(memeId);
+    const rawMeme = await redis.get(memeKey);
+    if (!rawMeme) {
       return res.status(404).json({ error: 'Meme not found' });
     }
 
+    let meme;
+    try {
+      meme = JSON.parse(rawMeme);
+    } catch (e) {
+      console.error('Error parsing meme in /community/vote:', e.message);
+      return res.status(500).json({ error: 'Failed to parse stored meme data' });
+    }
+
+    const upKey = MEMEOLOGY_KEYS.memeUpvotes(memeId);
+    const downKey = MEMEOLOGY_KEYS.memeDownvotes(memeId);
+
     // Remove previous vote if exists
-    votes.upvotes.delete(wallet);
-    votes.downvotes.delete(wallet);
+    await Promise.all([
+      redis.sRem(upKey, wallet),
+      redis.sRem(downKey, wallet)
+    ]);
 
     // Add new vote
     if (voteType === 'up') {
-      votes.upvotes.add(wallet);
+      await redis.sAdd(upKey, wallet);
     } else if (voteType === 'down') {
-      votes.downvotes.add(wallet);
+      await redis.sAdd(downKey, wallet);
     }
 
-    // Update meme upvote/downvote counts
-    const meme = communityMemes.find(m => m.id === memeId);
-    if (meme) {
-      meme.upvotes = votes.upvotes.size;
-      meme.downvotes = votes.downvotes.size;
+    // Get updated counts
+    const [upvoteCount, downvoteCount] = await Promise.all([
+      redis.sCard(upKey),
+      redis.sCard(downKey)
+    ]);
 
-      // Award WLO for viral memes (only if meme creator is not free tier)
-      // Check meme creator's tier
-      const creatorTier = await checkUserTier(meme.wallet);
+    meme.upvotes = upvoteCount;
+    meme.downvotes = downvoteCount;
 
-      if (creatorTier.features.canEarnWLO) {
-        if (meme.upvotes >= 1000 && !meme.rewarded1000) {
-          meme.rewarded1000 = true;
-          console.log(`🏆 Meme ${memeId} reached 1000 upvotes! Sending 10 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
+    // Award WLO for viral memes (only if meme creator is not free tier)
+    // Check meme creator's tier
+    const creatorTier = await checkUserTier(meme.wallet);
 
-          // Send 10 WLO reward
-          const rewardResult = await sendWLOReward(
-            meme.wallet,
-            10,
-            `Viral meme reward: 1000 upvotes - Meme ID: ${memeId}`
-          );
+    if (creatorTier.features.canEarnWLO) {
+      if (meme.upvotes >= 1000 && !meme.rewarded1000) {
+        meme.rewarded1000 = true;
+        console.log(`🏆 Meme ${memeId} reached 1000 upvotes! Sending 10 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
 
-          if (rewardResult.success) {
-            meme.reward1000TxHash = rewardResult.txHash;
-            console.log(`✅ 1000 upvote reward sent! TX: ${rewardResult.txHash}`);
-          } else {
-            console.error(`❌ Failed to send 1000 upvote reward: ${rewardResult.error}`);
-          }
+        // Send 10 WLO reward
+        const rewardResult = await sendWLOReward(
+          meme.wallet,
+          10,
+          `Viral meme reward: 1000 upvotes - Meme ID: ${memeId}`
+        );
+
+        if (rewardResult.success) {
+          meme.reward1000TxHash = rewardResult.txHash;
+          console.log(`✅ 1000 upvote reward sent! TX: ${rewardResult.txHash}`);
+        } else {
+          console.error(`❌ Failed to send 1000 upvote reward: ${rewardResult.error}`);
         }
-
-        if (meme.upvotes >= 10000 && !meme.rewarded10000) {
-          meme.rewarded10000 = true;
-          console.log(`🏆 Meme ${memeId} reached 10,000 upvotes! Sending 100 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
-
-          // Send 100 WLO reward
-          const rewardResult = await sendWLOReward(
-            meme.wallet,
-            100,
-            `Viral meme reward: 10000 upvotes - Meme ID: ${memeId}`
-          );
-
-          if (rewardResult.success) {
-            meme.reward10000TxHash = rewardResult.txHash;
-            console.log(`✅ 10,000 upvote reward sent! TX: ${rewardResult.txHash}`);
-          } else {
-            console.error(`❌ Failed to send 10,000 upvote reward: ${rewardResult.error}`);
-          }
-        }
-      } else {
-        console.log(`⚠️ Meme ${memeId} creator ${meme.wallet} is free tier - cannot earn WLO rewards. Upgrade to earn!`);
       }
+
+      if (meme.upvotes >= 10000 && !meme.rewarded10000) {
+        meme.rewarded10000 = true;
+        console.log(`🏆 Meme ${memeId} reached 10,000 upvotes! Sending 100 WLO to ${meme.wallet} (${creatorTier.tier} tier)`);
+
+        // Send 100 WLO reward
+        const rewardResult = await sendWLOReward(
+          meme.wallet,
+          100,
+          `Viral meme reward: 10000 upvotes - Meme ID: ${memeId}`
+        );
+
+        if (rewardResult.success) {
+          meme.reward10000TxHash = rewardResult.txHash;
+          console.log(`✅ 10,000 upvote reward sent! TX: ${rewardResult.txHash}`);
+        } else {
+          console.error(`❌ Failed to send 10,000 upvote reward: ${rewardResult.error}`);
+        }
+      }
+    } else {
+      console.log(`⚠️ Meme ${memeId} creator ${meme.wallet} is free tier - cannot earn WLO rewards. Upgrade to earn!`);
     }
+
+    // Persist updated meme with new counts and any reward flags
+    await redis.set(memeKey, JSON.stringify(meme));
 
     res.json({
       success: true,
-      upvotes: votes.upvotes.size,
-      downvotes: votes.downvotes.size
+      upvotes: upvoteCount,
+      downvotes: downvoteCount
     });
   } catch (error) {
     console.error('Error in /community/vote:', error);
@@ -1012,10 +1077,11 @@ router.post('/upload', async (req, res) => {
       });
     }
 
-    // Check upload limits based on tier
+    // Check upload limits based on tier (tracked in Redis)
     const today = new Date().toISOString().split('T')[0];
-    const key = `${wallet}:${today}`;
-    const uploadCount = userUploadCount.get(key) || 0;
+    const key = MEMEOLOGY_KEYS.usageUpload(wallet, today);
+    const raw = await redis.get(key);
+    const uploadCount = raw ? parseInt(raw, 10) || 0 : 0;
 
     let uploadLimit = 50; // WALDOCOIN tier
     if (tier === 'premium' || tier === 'king' || tier === 'platinum' || tier === 'gold') uploadLimit = 999999; // Unlimited for premium/king/platinum/gold
@@ -1028,19 +1094,19 @@ router.post('/upload', async (req, res) => {
       });
     }
 
-    // In production, upload to IPFS or cloud storage
-    // For now, just return success with a placeholder URL
     const uploadId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Increment upload count
-    userUploadCount.set(key, uploadCount + 1);
+    // For now we persist the base64 image data directly and rely on the
+    // frontend to render it. This avoids broken placeholder URLs while still
+    // being compatible with future IPFS/cloud storage integration.
+    await redis.incr(key);
 
     console.log(`📸 Image uploaded: ${uploadId} by ${wallet.slice(0, 10)}... (${uploadCount + 1}/${uploadLimit})`);
 
     res.json({
       success: true,
       uploadId: uploadId,
-      imageUrl: `https://placeholder-for-ipfs.com/${uploadId}`, // TODO: Replace with actual IPFS URL
+      imageUrl: imageData,
       uploadsRemaining: uploadLimit - uploadCount - 1,
       message: 'Image uploaded successfully! Use it as a meme template.'
     });
@@ -1074,14 +1140,88 @@ router.post('/premium/subscribe', async (req, res) => {
     const currentXrpPrice = prices.xrp;
     const currentWloPrice = prices.wlo;
 
-    // Calculate required amounts
+    // Calculate required amounts (used both for verification and for returning pricing info)
     const requiredXrp = await calculateTokenAmount(usdTotal, 'xrp');
     const requiredWlo = await calculateTokenAmount(usdTotal, 'wlo');
 
-    // TODO: Verify payment on XRPL by checking txHash
-    // For now, we'll trust the frontend (in production, MUST verify on-chain)
-    console.log(`💳 Premium subscription payment: ${txHash}`);
-    console.log(`💰 Duration: ${selectedDuration}, Method: ${paymentMethod}`);
+    // Verify payment on XRPL by checking txHash
+    let amountPaid = 0;
+    const paidCurrency = paymentMethod === 'xrp' ? 'XRP' : 'WLO';
+
+    let client;
+    try {
+      client = new xrpl.Client(XRPL_SERVER);
+      await client.connect();
+
+      const txResponse = await client.request({
+        command: 'tx',
+        transaction: txHash
+      });
+
+      if (!txResponse.result) {
+        throw new Error('Transaction not found on XRPL');
+      }
+
+      const tx = txResponse.result;
+
+      if (!tx.validated || (tx.meta && tx.meta.TransactionResult !== 'tesSUCCESS')) {
+        throw new Error('Transaction not validated or not successful');
+      }
+
+      if (tx.TransactionType !== 'Payment') {
+        throw new Error('Transaction is not a Payment');
+      }
+
+      if (tx.Destination !== TREASURY_WALLET) {
+        throw new Error('Payment destination does not match WALDO treasury wallet');
+      }
+
+      let amountPaidXrp = 0;
+      let amountPaidWlo = 0;
+
+      if (typeof tx.Amount === 'string') {
+        // XRP amount in drops
+        amountPaidXrp = Number(tx.Amount) / 1_000_000;
+      } else if (typeof tx.Amount === 'object' && tx.Amount !== null) {
+        if (tx.Amount.currency === WLO_CURRENCY && tx.Amount.issuer === WLO_ISSUER) {
+          amountPaidWlo = parseFloat(tx.Amount.value);
+        }
+      }
+
+      if (paymentMethod === 'xrp') {
+        if (!amountPaidXrp) {
+          throw new Error('Payment must be in XRP');
+        }
+        if (amountPaidXrp + 1e-6 < requiredXrp) {
+          throw new Error(`Payment amount too low. Required ~${requiredXrp} XRP, received ${amountPaidXrp} XRP`);
+        }
+        amountPaid = amountPaidXrp;
+      } else if (paymentMethod === 'wlo') {
+        if (!amountPaidWlo) {
+          throw new Error('Payment must be in WLO');
+        }
+        if (amountPaidWlo + 1e-9 < requiredWlo) {
+          throw new Error(`Payment amount too low. Required ~${requiredWlo} WLO, received ${amountPaidWlo} WLO`);
+        }
+        amountPaid = amountPaidWlo;
+      } else {
+        throw new Error('Unsupported payment method');
+      }
+
+      console.log(`💳 Premium subscription payment verified: ${txHash}`);
+      console.log(`💰 Duration: ${selectedDuration}, Method: ${paymentMethod}, Paid: ${amountPaid} ${paidCurrency}`);
+    } catch (verificationError) {
+      console.error('Error verifying premium subscription payment:', verificationError);
+      return res.status(400).json({ error: `Payment verification failed: ${verificationError.message}` });
+    } finally {
+      if (client) {
+        try {
+          await client.disconnect();
+        } catch (e) {
+          // ignore disconnect errors
+        }
+      }
+    }
 
     // Calculate expiration date
     const now = new Date();
@@ -1098,7 +1238,7 @@ router.post('/premium/subscribe', async (req, res) => {
     graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
 
     // Check if user already has a subscription
-    const existingSubscription = premiumSubscriptions.get(wallet);
+    const existingSubscription = await getPremiumSubscription(wallet);
     let isRenewal = false;
 
     if (existingSubscription) {
@@ -1106,8 +1246,8 @@ router.post('/premium/subscribe', async (req, res) => {
       console.log(`🔄 Renewing existing subscription for ${wallet}`);
     }
 
-    // Store premium subscription
-    premiumSubscriptions.set(wallet, {
+    // Store premium subscription in Redis
+    const subscriptionRecord = {
       wallet,
       tier: 'premium',
       subscribedAt: existingSubscription?.subscribedAt || now.toISOString(),
@@ -1117,8 +1257,8 @@ router.post('/premium/subscribe', async (req, res) => {
       duration: selectedDuration,
       paymentMethod: paymentMethod,
       paymentTxHash: txHash,
-      amountPaid: paymentMethod === 'xrp' ? requiredXrp : requiredWlo,
-      currency: paymentMethod === 'xrp' ? 'XRP' : 'WLO',
+      amountPaid: amountPaid,
+      currency: paidCurrency,
       usdValue: usdTotal,
       active: true,
       autoRenew: false, // Crypto requires manual renewal
@@ -1127,7 +1267,9 @@ router.post('/premium/subscribe', async (req, res) => {
         oneDaySent: false,
         expirationSent: false
       }
-    });
+    };
+
+    await savePremiumSubscription(wallet, subscriptionRecord);
 
     console.log(`💵 Premium subscription ${isRenewal ? 'renewed' : 'created'} for ${wallet.slice(0, 10)}... (${selectedDuration})`);
 
@@ -1139,9 +1281,9 @@ router.post('/premium/subscribe', async (req, res) => {
       subscription: {
         tier: 'premium',
         duration: selectedDuration,
-        subscribedAt: existingSubscription?.subscribedAt || now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        graceExpiresAt: graceExpiresAt.toISOString(),
+        subscribedAt: subscriptionRecord.subscribedAt,
+        expiresAt: subscriptionRecord.expiresAt,
+        graceExpiresAt: subscriptionRecord.graceExpiresAt,
         gracePeriodDays: gracePeriodDays,
         daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
         autoRenew: false,
@@ -1150,8 +1292,8 @@ router.post('/premium/subscribe', async (req, res) => {
           usd: usdTotal,
           xrp: requiredXrp,
           wlo: requiredWlo,
-          paid: paymentMethod === 'xrp' ? requiredXrp : requiredWlo,
-          currency: paymentMethod === 'xrp' ? 'XRP' : 'WLO'
+          paid: amountPaid,
+          currency: paidCurrency
         },
         benefits: {
           noWatermark: true,
@@ -1219,66 +1361,68 @@ router.get('/premium/pricing', async (req, res) => {
 // POST /api/memeology/premium/test-activate - ADMIN: Manually activate premium for testing
 router.post('/premium/test-activate', async (req, res) => {
   try {
-    const { wallet, duration } = req.body;
+	  const { wallet, duration } = req.body;
 
     if (!wallet) {
       return res.status(400).json({ error: 'Wallet address required' });
     }
 
-    const selectedDuration = duration || 'yearly'; // Default to yearly for testing
+	  const selectedDuration = duration || 'yearly'; // Default to yearly for testing
 
-    const now = new Date();
-    const expiresAt = new Date(now);
-    const gracePeriodDays = 3;
+	  const now = new Date();
+	  const expiresAt = new Date(now);
+	  const gracePeriodDays = 3;
 
-    if (selectedDuration === 'monthly') {
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-    } else {
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-    }
+	  if (selectedDuration === 'monthly') {
+	    expiresAt.setMonth(expiresAt.getMonth() + 1);
+	  } else {
+	    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+	  }
 
-    const graceExpiresAt = new Date(expiresAt);
-    graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+	  const graceExpiresAt = new Date(expiresAt);
+	  graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
 
-    // Store premium subscription
-    premiumSubscriptions.set(wallet, {
-      wallet,
-      tier: 'premium',
-      subscribedAt: now.toISOString(),
-      lastRenewalAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      graceExpiresAt: graceExpiresAt.toISOString(),
-      duration: selectedDuration,
-      paymentMethod: 'TEST',
-      paymentTxHash: 'TEST_ACTIVATION_' + Date.now(),
-      amountPaid: 0,
-      currency: 'TEST',
-      usdValue: 0,
-      active: true,
-      autoRenew: false,
-      renewalReminders: {
-        threeDaysSent: false,
-        oneDaySent: false,
-        expirationSent: false
-      }
-    });
+	  // Store premium subscription in Redis (test activation)
+	  const subscriptionRecord = {
+	    wallet,
+	    tier: 'premium',
+	    subscribedAt: now.toISOString(),
+	    lastRenewalAt: now.toISOString(),
+	    expiresAt: expiresAt.toISOString(),
+	    graceExpiresAt: graceExpiresAt.toISOString(),
+	    duration: selectedDuration,
+	    paymentMethod: 'TEST',
+	    paymentTxHash: 'TEST_ACTIVATION_' + Date.now(),
+	    amountPaid: 0,
+	    currency: 'TEST',
+	    usdValue: 0,
+	    active: true,
+	    autoRenew: false,
+	    renewalReminders: {
+	      threeDaysSent: false,
+	      oneDaySent: false,
+	      expirationSent: false
+	    }
+	  };
 
-    console.log(`🧪 TEST: Premium subscription activated for ${wallet.slice(0, 10)}... (${selectedDuration})`);
+	  await savePremiumSubscription(wallet, subscriptionRecord);
 
-    res.json({
-      success: true,
-      message: `✅ TEST: Premium subscription activated!`,
-      subscription: {
-        tier: 'premium',
-        duration: selectedDuration,
-        subscribedAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        graceExpiresAt: graceExpiresAt.toISOString(),
-        gracePeriodDays: gracePeriodDays,
-        daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
-        testMode: true
-      }
-    });
+	  console.log(`🧪 TEST: Premium subscription activated for ${wallet.slice(0, 10)}... (${selectedDuration})`);
+
+	  res.json({
+	    success: true,
+	    message: `✅ TEST: Premium subscription activated!`,
+	    subscription: {
+	      tier: 'premium',
+	      duration: selectedDuration,
+	      subscribedAt: now.toISOString(),
+	      expiresAt: expiresAt.toISOString(),
+	      graceExpiresAt: graceExpiresAt.toISOString(),
+	      gracePeriodDays: gracePeriodDays,
+	      daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
+	      testMode: true
+	    }
+	  });
   } catch (error) {
     console.error('Error in /premium/test-activate:', error);
     res.status(500).json({ error: error.message });
@@ -1287,10 +1431,10 @@ router.post('/premium/test-activate', async (req, res) => {
 
 // GET /api/memeology/premium/status - Check premium subscription status
 router.get('/premium/status/:wallet', async (req, res) => {
-  try {
-    const { wallet } = req.params;
+	  try {
+	    const { wallet } = req.params;
 
-    const subscription = premiumSubscriptions.get(wallet);
+	    const subscription = await getPremiumSubscription(wallet);
 
     if (!subscription) {
       return res.json({
@@ -1316,11 +1460,11 @@ router.get('/premium/status/:wallet', async (req, res) => {
     // Determine if user needs renewal reminder
     const needsRenewalReminder = daysRemaining <= 3 && daysRemaining > 0;
 
-    // Update subscription status if fully expired
-    if (isFullyExpired && subscription.active) {
-      subscription.active = false;
-      premiumSubscriptions.set(wallet, subscription);
-    }
+	    // Update subscription status if fully expired
+	    if (isFullyExpired && subscription.active) {
+	      subscription.active = false;
+	      await savePremiumSubscription(wallet, subscription);
+	    }
 
     res.json({
       success: true,
@@ -1359,16 +1503,16 @@ router.post('/premium/cancel', async (req, res) => {
       return res.status(400).json({ error: 'Wallet address required' });
     }
 
-    const subscription = premiumSubscriptions.get(wallet);
+	    const subscription = await getPremiumSubscription(wallet);
 
     if (!subscription) {
       return res.status(404).json({ error: 'No active premium subscription found' });
     }
 
-    // Mark as cancelled (will expire at end of paid period)
-    subscription.active = false;
-    subscription.cancelledAt = new Date().toISOString();
-    premiumSubscriptions.set(wallet, subscription);
+	    // Mark as cancelled (will expire at end of paid period)
+	    subscription.active = false;
+	    subscription.cancelledAt = new Date().toISOString();
+	    await savePremiumSubscription(wallet, subscription);
 
     console.log(`❌ Premium subscription cancelled for ${wallet.slice(0, 10)}...`);
 
@@ -1384,8 +1528,6 @@ router.post('/premium/cancel', async (req, res) => {
 });
 
 // POST /api/memeology/ai/suggest - Get AI meme text suggestion
-const aiSuggestionsToday = new Map(); // Track daily usage per wallet
-
 router.post('/ai/suggest', async (req, res) => {
   try {
     const { wallet, templateName, position, tier } = req.body;
@@ -1405,10 +1547,11 @@ router.post('/ai/suggest', async (req, res) => {
 
     const dailyLimit = limits[tier] || 1;
 
-    // Track daily usage
-    const today = new Date().toISOString().split('T')[0];
-    const key = `${userKey}:${today}`;
-    const usageCount = aiSuggestionsToday.get(key) || 0;
+	  // Track daily usage in Redis so limits survive restarts and scale
+	  const today = new Date().toISOString().split('T')[0];
+	  const usageKey = MEMEOLOGY_KEYS.usageAi(userKey, today);
+	  const rawUsage = await redis.get(usageKey);
+	  const usageCount = rawUsage ? parseInt(rawUsage, 10) || 0 : 0;
 
     if (usageCount >= dailyLimit) {
       return res.status(429).json({
@@ -1461,8 +1604,8 @@ Only respond with the meme text, nothing else.`;
       suggestion = getFallbackSuggestion(templateName, position);
     }
 
-    // Increment usage count
-    aiSuggestionsToday.set(key, usageCount + 1);
+	  // Increment usage count for today
+	  await redis.incr(usageKey);
 
     res.json({
       success: true,
@@ -1559,7 +1702,7 @@ router.get('/gifs/search', async (req, res) => {
 // POST /api/memeology/ai/generate - AI generates complete meme from description
 router.post('/ai/generate', async (req, res) => {
   try {
-    const { prompt, wallet, tier, mode, templateId: requestedTemplateId } = req.body; // mode: 'template' or 'ai-image'
+	    const { prompt, wallet, tier, mode, templateId: requestedTemplateId } = req.body; // mode: 'template' or 'ai-image'
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({
@@ -1568,96 +1711,94 @@ router.post('/ai/generate', async (req, res) => {
       });
     }
 
-    // Allow anonymous users for free tier
-    const userKey = wallet || 'anonymous';
+	    // Allow anonymous users for free tier
+	    const userKey = wallet || 'anonymous';
 
-    // Decide generation mode: 'template' (fast) or 'ai-image' (custom)
-    const generationMode = mode || 'template';
+	    // Decide generation mode: 'template' (fast) or 'ai-image' (custom)
+	    const generationMode = mode || 'template';
 
-    if (generationMode === 'ai-image') {
-	      // MODE 1: AI-GENERATED IMAGE with optional watermark (NO meme text overlay)
-      try {
-        // Generate meme image using AI - avoid text to prevent garbled writing
-        const memePrompt = `${prompt}, funny meme style, internet meme aesthetic, high quality, no text, no words, no letters, clean image`;
-        const encodedPrompt = encodeURIComponent(memePrompt);
+	    // Normalize user tier (used for both modes)
+	    const userTier = tier || 'free';
 
-        // Generate AI image URL
-        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Date.now()}`;
-
-        console.log('🎨 Generating AI image:', aiImageUrl);
-
-        // Download the AI-generated image
-        const imageResponse = await axios.get(aiImageUrl, {
-          responseType: 'arraybuffer',
-          timeout: 30000 // 30 second timeout
-        });
-
-        const imageBuffer = Buffer.from(imageResponse.data);
-
-	        // If sharp is not available, return image without watermark
-        if (!sharp) {
-          console.log('⚠️  Returning AI image without watermark (sharp not available)');
-          const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
-          return res.json({
-            success: true,
-            meme_url: base64Image,
-            template_name: 'AI Generated Image',
-            mode: 'ai-image',
-            message: 'AI meme generated successfully (watermark unavailable)'
-          });
-        }
-
-        // Load watermark logo
-        const watermarkPath = path.join(__dirname, '../public/memeology-logo.png');
-
-        // Process image with Sharp
-        const image = sharp(imageBuffer);
-        const metadata = await image.metadata();
-
-        // Calculate watermark size (15% of image width)
-        const watermarkSize = Math.floor(metadata.width * 0.15);
-
-        // Resize watermark
-        const watermark = await sharp(watermarkPath)
-          .resize(watermarkSize, watermarkSize)
-          .png()
-          .toBuffer();
-
-	        // Composite watermark onto image (no meme text)
-        const composites = [];
-
-        // Add watermark on BOTTOM-LEFT to cover pollinations.ai watermark
-        const padding = 15;
-        composites.push({
-          input: watermark,
-          left: padding,
-          top: metadata.height - watermarkSize - padding
-        });
-
-        const watermarkedImage = await image
-          .composite(composites)
-          .jpeg({ quality: 90 })
-          .toBuffer();
-
-        // Convert to base64 for sending to frontend
-        const base64Image = `data:image/jpeg;base64,${watermarkedImage.toString('base64')}`;
-
-	        console.log('✅ AI image with watermark created (no text overlay)');
-
-        return res.json({
-          success: true,
-          meme_url: base64Image,
-          template_name: 'AI Generated Image',
-          mode: 'ai-image'
-        });
-      } catch (error) {
-        console.error('AI image generation error:', error.message);
-        // Fallback to template mode
-      }
-    }
+	    if (generationMode === 'ai-image') {
+		      // MODE 1: AI-GENERATED IMAGE
+		      // - Prompts the AI to avoid any text in the picture
+		      // - For FREE tier, we add a small logo watermark image (no words)
+		      // - For WALDOCOIN / PREMIUM / NFT tiers, we return a completely clean image
+		      try {
+		        // Generate meme image using AI - explicitly avoid any text in the picture
+		        const memePrompt = `${prompt}, funny meme style, internet meme aesthetic, high quality, no text, no words, no letters, clean image`;
+		        const encodedPrompt = encodeURIComponent(memePrompt);
+		
+		        // Generate AI image URL with provider logo disabled
+		        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true&seed=${Date.now()}`;
+		
+		        console.log('🎨 Generating AI image:', aiImageUrl, 'tier=', userTier);
+		
+		        // Download the AI-generated image
+		        const imageResponse = await axios.get(aiImageUrl, {
+		          responseType: 'arraybuffer',
+		          timeout: 30000 // 30 second timeout
+		        });
+		
+		        const imageBuffer = Buffer.from(imageResponse.data);
+		
+		        let finalBuffer = imageBuffer;
+		
+		        // For FREE tier only, add a small logo image watermark (no text)
+		        if (userTier === 'free' && sharp) {
+		          try {
+		            const watermarkPath = path.join(__dirname, '../public/memeology-logo.png');
+		            const image = sharp(imageBuffer);
+		            const metadata = await image.metadata();
+		
+		            // Logo size: ~15% of image width
+		            const watermarkSize = Math.floor((metadata.width || 800) * 0.15);
+		            const watermark = await sharp(watermarkPath)
+		              .resize(watermarkSize, watermarkSize)
+		              .png()
+		              .toBuffer();
+		
+		            const padding = 15;
+		
+		            finalBuffer = await image
+		              .composite([
+		                {
+		                  input: watermark,
+		                  left: (metadata.width || 800) - watermarkSize - padding,
+		                  top: (metadata.height || 600) - watermarkSize - padding
+		                }
+		              ])
+		              .jpeg({ quality: 90 })
+		              .toBuffer();
+		
+		            console.log('✅ AI image logo watermark applied for FREE tier');
+		          } catch (wmError) {
+		            console.warn('⚠️  Failed to apply AI image watermark, returning raw image:', wmError.message);
+		            finalBuffer = imageBuffer; // Fallback to original
+		          }
+		        }
+		
+		        // Convert to base64 for sending to frontend
+		        const base64Image = `data:image/jpeg;base64,${finalBuffer.toString('base64')}`;
+		
+		        return res.json({
+		          success: true,
+		          meme_url: base64Image,
+		          template_name: 'AI Generated Image',
+		          mode: 'ai-image',
+		          tier: userTier,
+		          message: userTier === 'free'
+		            ? 'AI image generated with logo watermark for free tier'
+		            : 'AI image generated with no watermark'
+		        });
+		      } catch (error) {
+		        console.error('AI image generation error:', error.message);
+		        // Fallback to template mode
+		      }
+	    }
 
 		    // MODE 2: TEMPLATE-BASED MEME (default)
-		    const userTier = tier || 'free';
 		
 		    // Get templates based on user's tier (380 total templates from 7 sources)
 		    const userTemplates = getTemplatesForTier(userTier);

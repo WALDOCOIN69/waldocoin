@@ -18,7 +18,7 @@ if (fs.existsSync('.env.local')) {
   dotenv.config();
 }
 
-import { connectRedis } from "./redisClient.js";
+import { connectRedis, redis } from "./redisClient.js";
 import { refundExpiredBattles } from "./cron/battleRefunder.js";
 
 //airdrop
@@ -65,8 +65,7 @@ import battleResultsRoute from "./routes/battle/results.js";
 import battleCurrentRoute from "./routes/battle/current.js";
 
 // 🧠 DAO Governance Routes - LEGACY (DISABLED)
-// These imports are kept for reference but routes are disabled
-// import daoCreateRoute from "./routes/dao/create.js";      // Now: secure admin system
+// These imports are kept for reference but legacy routes are disabled
 // import daoVoteRoute from "./routes/dao/vote.js";          // Conflicts with main voting
 // import daoExpireRoute from "./routes/dao/expire.js";
 // import daoDeleteRoute from "./routes/dao/delete.js";
@@ -74,6 +73,9 @@ import battleCurrentRoute from "./routes/battle/current.js";
 // import daoVoterHistoryRoute from "./routes/dao/voter-history.js";
 // import daoConfigRoute from "./routes/dao/config.js";
 // import daoArchiveRoute from "./routes/dao/archive.js";
+
+// 🧩 DAO Community Proposal Request (NEW SYSTEM)
+import daoCreateRoute from "./routes/dao/create.js";
 
 // 💰 Presale Route
 import presaleRoute from "./routes/presale.js";
@@ -96,6 +98,7 @@ import adminNewWalletRoute from "./routes/admin/newWallet.js";
 import adminPriceRoute from "./routes/admin/price.js";
 import adminSetRegularKeyRoute from "./routes/admin/setRegularKey.js";
 import adminKingNFTRoute from "./routes/admin/kingNFT.js";
+import { requireAdmin } from "./utils/adminAuth.js";
 
 
 
@@ -206,6 +209,7 @@ const startServer = async () => {
   app.use("/api/burn", (await import("./routes/burn.js")).default);
   app.use("/api/battle", (await import("./routes/battle.js")).default);
   app.use("/api/dao", (await import("./routes/dao.js")).default);
+  app.use("/api/dao/create", daoCreateRoute);
   app.use("/api/users", (await import("./routes/users.js")).default);
   app.use("/api/rewards", (await import("./routes/rewards.js")).default);
   app.use("/api/proposals", proposalsRoute);
@@ -240,7 +244,6 @@ const startServer = async () => {
 
   // ⚠️ LEGACY DAO ROUTES - DISABLED FOR SECURITY
   // These routes use old data patterns and conflict with new secure DAO system
-  // app.use("/api/dao/create", daoCreateRoute);  // Now handled by secure admin system
   // app.use("/api/dao/vote", daoVoteRoute);      // Conflicts with main DAO voting
   // app.use("/api/dao/expire", daoExpireRoute);
   // app.use("/api/dao/delete", daoDeleteRoute);
@@ -249,9 +252,10 @@ const startServer = async () => {
   // app.use("/api/dao/config", daoConfigRoute);
   // app.use("/api/dao/archive", daoArchiveRoute);
 
-  // ✅ NEW SECURE DAO SYSTEM: All DAO functionality now handled by:
-  // - /api/dao/* (main DAO routes with secure voting)
-  // - /api/admin/dao/* (admin DAO management)
+	  // ✅ NEW SECURE DAO SYSTEM: All DAO functionality now handled by:
+	  // - /api/dao/* (main DAO routes with secure voting & stats)
+	  // - /api/dao/create (community proposal request endpoint; WALDO stake required)
+	  // - /api/admin/dao/* (admin DAO management)
 
   console.log("🔗 Registering airdrop routes...");
   app.use("/api/airdrop", airdropRoute);
@@ -282,7 +286,7 @@ const startServer = async () => {
   // 💼 Careers Route
   app.use("/api/careers", careersRoute);
 
-  // Health check endpoint
+	  // Health check endpoint
   app.get("/api/health", (_, res) => {
     res.json({
       status: "OK",
@@ -296,6 +300,86 @@ const startServer = async () => {
       }
     });
   });
+
+	  // Aggregated admin health endpoint (secured by X_ADMIN_KEY)
+	  app.get("/api/health/admin", requireAdmin, async (req, res) => {
+	    const timestamp = new Date().toISOString();
+	    const result = {
+	      success: true,
+	      status: "OK",
+	      timestamp,
+	      subsystems: {}
+	    };
+
+	    // Redis health
+	    try {
+	      const ping = await redis.ping();
+	      result.subsystems.redis = {
+	        status: ping === "PONG" ? "healthy" : "warning",
+	        ping
+	      };
+	    } catch (error) {
+	      result.subsystems.redis = {
+	        status: "error",
+	        error: error.message || String(error)
+	      };
+	      result.status = "DEGRADED";
+	    }
+
+	    // Core feature snapshots
+	    try {
+	      const [
+	        airdropCount,
+	        battleKeys,
+	        marketplaceKeys,
+	        daoProposalKeys
+	      ] = await Promise.all([
+	        redis.get("airdrop:count").catch(() => null),
+	        redis.keys("battle:*:data").catch(() => []),
+	        redis.keys("marketplace:listing:*").catch(() => []),
+	        redis.keys("dao:proposal:*").catch(() => [])
+	      ]);
+
+	      result.subsystems.airdrop = {
+	        status: "healthy",
+	        totalClaimed: Number(airdropCount || 0)
+	      };
+	      result.subsystems.battle = {
+	        status: "healthy",
+	        activeOrHistoricBattles: battleKeys.length
+	      };
+	      result.subsystems.marketplace = {
+	        status: "healthy",
+	        listingsKeys: marketplaceKeys.length
+	      };
+	      result.subsystems.dao = {
+	        status: "healthy",
+	        proposalKeys: daoProposalKeys.length
+	      };
+	    } catch (error) {
+	      result.subsystems.core = {
+	        status: "error",
+	        error: error.message || String(error)
+	      };
+	      result.status = "DEGRADED";
+	    }
+
+	    // Environment sanity (never returns actual secrets)
+	    result.subsystems.environment = {
+	      status: "healthy",
+	      X_ADMIN_KEY_SET: !!process.env.X_ADMIN_KEY,
+	      REDIS_URL_SET: !!process.env.REDIS_URL,
+	      XRPL_NODE_SET: !!process.env.XRPL_NODE,
+	      WALDO_ISSUER_SET: !!process.env.WALDO_ISSUER,
+	      WALDO_SENDER_SECRET_SET: !!process.env.WALDO_SENDER_SECRET
+	    };
+
+	    if (!result.subsystems.environment.X_ADMIN_KEY_SET || !result.subsystems.environment.REDIS_URL_SET) {
+	      result.status = "DEGRADED";
+	    }
+
+	    res.json(result);
+	  });
 
   app.get("/api/routes", (_, res) => {
     try {

@@ -452,6 +452,42 @@
       margin-bottom: 15px;
     }
 
+	    .admin-status-indicator {
+	      margin-top: 8px;
+	      display: inline-flex;
+	      align-items: center;
+	      gap: 8px;
+	      font-size: 0.9em;
+	    }
+
+	    .admin-status-indicator .status-dot {
+	      width: 10px;
+	      height: 10px;
+	      border-radius: 50%;
+	      background: #7f8c8d;
+	      box-shadow: 0 0 6px rgba(127, 140, 141, 0.7);
+	    }
+
+	    .admin-status-indicator.status-ok .status-dot {
+	      background: #2ecc71;
+	      box-shadow: 0 0 8px rgba(46, 204, 113, 0.8);
+	    }
+
+	    .admin-status-indicator.status-warning .status-dot {
+	      background: #f1c40f;
+	      box-shadow: 0 0 8px rgba(241, 196, 15, 0.8);
+	    }
+
+	    .admin-status-indicator.status-error .status-dot {
+	      background: #e74c3c;
+	      box-shadow: 0 0 8px rgba(231, 76, 60, 0.8);
+	    }
+
+	    .admin-status-indicator.status-unknown .status-dot {
+	      background: #7f8c8d;
+	      box-shadow: 0 0 8px rgba(127, 140, 141, 0.8);
+	    }
+
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -820,10 +856,14 @@
     <!-- Admin Header -->
     <div class="admin-header">
       <div class="header-with-logout">
-        <div>
-          <div class="admin-title">🛠️ WALDO Emergency Admin Panel</div>
-          <div class="admin-subtitle">Backup controls and manual overrides for automated systems</div>
-        </div>
+	        <div>
+	          <div class="admin-title">🛠️ WALDO Emergency Admin Panel</div>
+	          <div class="admin-subtitle">Backup controls and manual overrides for automated systems</div>
+	          <div id="adminStatusIndicator" class="admin-status-indicator status-unknown">
+	            <span class="status-dot"></span>
+	            <span id="adminStatusText">Status: Not checked</span>
+	          </div>
+	        </div>
         <button type="button" class="btn btn-danger" onclick="logout()">
           🚪 Logout
         </button>
@@ -2890,6 +2930,8 @@
           // Admin authentication successful
           localStorage.setItem('adminKey', password);
           isAuthenticated = true;
+	          updateAdminKeyStatus();
+	          checkAdminHealth();
 
           // Hide login screen and show admin panel
           document.getElementById('loginScreen').style.display = 'none';
@@ -2985,7 +3027,88 @@
       return div;
     }
 
-    // 💰 WALDO Requirements Control Functions
+	    function setAdminStatus(level, message) {
+	      const indicator = document.getElementById('adminStatusIndicator');
+	      const textEl = document.getElementById('adminStatusText');
+	      if (!indicator || !textEl) return;
+
+	      indicator.classList.remove('status-ok', 'status-warning', 'status-error', 'status-unknown');
+	      const normalized = ['ok', 'warning', 'error', 'unknown'].includes(level) ? level : 'unknown';
+	      indicator.classList.add(`status-${normalized}`);
+	      textEl.textContent = message;
+	    }
+
+	    async function checkAdminHealth() {
+	      const adminKey = localStorage.getItem('adminKey');
+
+	      if (!adminKey) {
+	        setAdminStatus('warning', 'Status: Not logged in');
+	        return;
+	      }
+
+	      // Prefer the dedicated admin health endpoint, with graceful fallback
+	      try {
+	        const res = await fetch(`${API_BASE}/api/health/admin`, {
+	          headers: { 'x-admin-key': adminKey }
+	        });
+	
+	        if (res.ok) {
+	          const data = await res.json().catch(() => null);
+	          if (data && data.success && data.status === 'OK') {
+	            setAdminStatus('ok', 'Status: Admin OK');
+	            return;
+	          }
+	
+	          // If the endpoint responds but indicates degraded state
+	          if (data && data.success && data.status === 'DEGRADED') {
+	            setAdminStatus('warning', 'Status: Admin health degraded');
+	            return;
+	          }
+	        } else if (res.status === 401) {
+	          setAdminStatus('error', 'Status: Admin key rejected');
+	          return;
+	        }
+	      } catch (error) {
+	        console.warn('Admin health endpoint failed, falling back to legacy checks:', error);
+	      }
+
+	      // Legacy fallback: separate backend + admin checks
+	      let backendOk = false;
+	      let adminOk = false;
+	
+	      try {
+	        const resHealth = await fetch(`${API_BASE}/api/health`);
+	        backendOk = resHealth.ok;
+	      } catch (error) {
+	        backendOk = false;
+	      }
+	
+	      try {
+	        const resVerify = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
+	          headers: { 'x-admin-key': adminKey }
+	        });
+	        if (resVerify.ok) {
+	          const data = await resVerify.json();
+	          adminOk = !!data.success;
+	        } else {
+	          adminOk = false;
+	        }
+	      } catch (error) {
+	        adminOk = false;
+	      }
+	
+	      if (backendOk && adminOk) {
+	        setAdminStatus('ok', 'Status: Admin OK');
+	      } else if (backendOk && !adminOk) {
+	        setAdminStatus('error', 'Status: Backend OK, admin key rejected');
+	      } else if (!backendOk && adminOk) {
+	        setAdminStatus('warning', 'Status: Admin key OK, backend health check failed');
+	      } else {
+	        setAdminStatus('error', 'Status: Backend unreachable');
+	      }
+	    }
+
+	    // 💰 WALDO Requirements Control Functions
     async function loadWaldoRequirements() {
       try {
         const adminKey = localStorage.getItem('adminKey');
@@ -3779,29 +3902,31 @@
       loginError.classList.add('hidden');
     }
 
-    function logout() {
-      if (confirm('Are you sure you want to logout from the admin panel?')) {
-        // Clear all stored authentication data
-        localStorage.removeItem('adminKey');
-        localStorage.removeItem('xummWallet'); // Clear any old wallet data
-        sessionStorage.clear(); // Clear session data
-        isAuthenticated = false;
+	    function logout() {
+	      if (confirm('Are you sure you want to logout from the admin panel?')) {
+	        // Clear all stored authentication data
+	        localStorage.removeItem('adminKey');
+	        localStorage.removeItem('xummWallet'); // Clear any old wallet data
+	        sessionStorage.clear(); // Clear session data
+	        isAuthenticated = false;
+	        updateAdminKeyStatus();
+	        setAdminStatus('warning', 'Status: Not logged in');
 
-        // Show login screen and hide admin panel
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('adminPanel').classList.add('hidden');
+	        // Show login screen and hide admin panel
+	        document.getElementById('loginScreen').style.display = 'flex';
+	        document.getElementById('adminPanel').classList.add('hidden');
 
-        // Clear password field and any error messages
-        document.getElementById('loginPassword').value = '';
-        hideLoginError();
+	        // Clear password field and any error messages
+	        document.getElementById('loginPassword').value = '';
+	        hideLoginError();
 
-        // Clear any test results
-        const testDiv = document.getElementById('connectionTest');
-        if (testDiv) testDiv.innerHTML = '';
+	        // Clear any test results
+	        const testDiv = document.getElementById('connectionTest');
+	        if (testDiv) testDiv.innerHTML = '';
 
-        console.log('Logged out successfully');
-      }
-    }
+	        console.log('Logged out successfully');
+	      }
+	    }
 
     // Check if user is already logged in on page load
     function checkExistingLogin() {
@@ -3822,6 +3947,8 @@
       const testDiv = document.getElementById('connectionTest');
       testDiv.innerHTML = '<div style="color: #f39c12;">🔄 Testing connection...</div>';
 
+      const adminKey = localStorage.getItem('adminKey') || '';
+
       // Test 1: Basic API connection
       try {
         const response1 = await fetch(`${API_BASE}/api/airdrop/status`);
@@ -3841,72 +3968,78 @@
         testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Backend API: ${error.message}</div>`;
       }
 
-      // Test 2: Try current-password endpoint
-      try {
-        const response2 = await fetch(`${API_BASE}/api/airdrop/current-password`, {
-          headers: { 'x-admin-key': 'waldogod2025' }
-        });
-        testDiv.innerHTML += `<div style="color: #666;">Password endpoint: ${response2.status}</div>`;
+      // Admin-only tests (2-4) require a saved admin key
+      if (!adminKey) {
+        testDiv.innerHTML += `<div style="color: #f39c12;">⚠️ Skipping admin key tests: no admin key saved in this browser.</div>`;
+      } else {
+        // Test 2: Try current-password endpoint
+        try {
+          const response2 = await fetch(`${API_BASE}/api/airdrop/current-password`, {
+            headers: { 'x-admin-key': adminKey }
+          });
+          testDiv.innerHTML += `<div style="color: #666;">Password endpoint: ${response2.status}</div>`;
 
-        if (response2.ok) {
-          const data2 = await response2.json();
-          if (data2.success) {
-            testDiv.innerHTML += `<div style="color: #27ae60;">✅ Password 'waldogod2025': Works</div>`;
-            testDiv.innerHTML += `<div style="color: #25c2a0;">Current password: ${data2.currentPassword}</div>`;
-            testDiv.innerHTML += `<div style="color: #25c2a0;">Source: ${data2.source}</div>`;
+          if (response2.ok) {
+            const data2 = await response2.json();
+            if (data2.success) {
+              testDiv.innerHTML += `<div style="color: #27ae60;">✅ Admin key works for current-password endpoint</div>`;
+              testDiv.innerHTML += `<div style="color: #25c2a0;">Current password: ${data2.currentPassword}</div>`;
+              testDiv.innerHTML += `<div style="color: #25c2a0;">Source: ${data2.source}</div>`;
+            } else {
+              testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password failed: ${data2.error}</div>`;
+            }
           } else {
-            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password failed: ${data2.error}</div>`;
+            const text = await response2.text();
+            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password endpoint: HTTP ${response2.status}</div>`;
+            testDiv.innerHTML += `<div style="color: #666;">Response: ${text.substring(0, 100)}...</div>`;
           }
-        } else {
-          const text = await response2.text();
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password endpoint: HTTP ${response2.status}</div>`;
-          testDiv.innerHTML += `<div style="color: #666;">Response: ${text.substring(0, 100)}...</div>`;
+        } catch (error) {
+          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password test: ${error.message}</div>`;
         }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Password test: ${error.message}</div>`;
-      }
 
-      // Test 3: Try verify-admin endpoint
-      try {
-        const response3 = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
-          headers: { 'x-admin-key': 'waldogod2025' }
-        });
-        testDiv.innerHTML += `<div style="color: #666;">Verify endpoint: ${response3.status}</div>`;
+        // Test 3: Try verify-admin endpoint
+        try {
+          const response3 = await fetch(`${API_BASE}/api/airdrop/verify-admin`, {
+            headers: { 'x-admin-key': adminKey }
+          });
+          testDiv.innerHTML += `<div style="color: #666;">Verify endpoint: ${response3.status}</div>`;
 
-        if (response3.ok) {
-          const data3 = await response3.json();
-          if (data3.success) {
-            testDiv.innerHTML += '<div style="color: #27ae60;">✅ Admin verification: Success</div>';
+          if (response3.ok) {
+            const data3 = await response3.json();
+            if (data3.success) {
+              testDiv.innerHTML += '<div style="color: #27ae60;">✅ Admin verification: Success</div>';
+            } else {
+              testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Admin verification: ${data3.error}</div>`;
+            }
           } else {
-            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Admin verification: ${data3.error}</div>`;
+            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Verify endpoint: HTTP ${response3.status}</div>`;
           }
-        } else {
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Verify endpoint: HTTP ${response3.status}</div>`;
+        } catch (error) {
+          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Verify test: ${error.message}</div>`;
         }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Verify test: ${error.message}</div>`;
-      }
 
-      // Test 4: Debug environment variables
-      try {
-        const response4 = await fetch(`${API_BASE}/api/airdrop/debug-env`, {
-          headers: { 'x-admin-key': 'waldogod2025' }
-        });
+        // Test 4: Debug environment variables
+        try {
+          const response4 = await fetch(`${API_BASE}/api/airdrop/debug-env`, {
+            headers: { 'x-admin-key': adminKey }
+          });
 
-        if (response4.ok) {
-          const data4 = await response4.json();
-          if (data4.success) {
-            testDiv.innerHTML += '<div style="color: #27ae60;">✅ Environment debug: Success</div>';
-            testDiv.innerHTML += `<div style="color: #25c2a0;">X_ADMIN_KEY set: ${data4.environment.X_ADMIN_KEY_SET}</div>`;
-            testDiv.innerHTML += `<div style="color: #25c2a0;">X_ADMIN_KEY value: ${data4.environment.X_ADMIN_KEY_VALUE}</div>`;
+          if (response4.ok) {
+            const data4 = await response4.json();
+            if (data4.success) {
+              testDiv.innerHTML += '<div style="color: #27ae60;">✅ Environment debug: Success</div>';
+              testDiv.innerHTML += `<div style="color: #25c2a0;">X_ADMIN_KEY set: ${data4.environment.X_ADMIN_KEY_SET}</div>`;
+              // Do not display the actual admin key value in the UI
+              testDiv.innerHTML += `<div style="color: #25c2a0;">X_ADMIN_KEY value: (hidden)</div>`;
+            } else {
+              testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Environment debug: ${data4.error}</div>`;
+            }
           } else {
-            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Environment debug: ${data4.error}</div>`;
+            testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Debug endpoint: HTTP ${response4.status}</div>`;
           }
-        } else {
-          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Debug endpoint: HTTP ${response4.status}</div>`;
+        } catch (error) {
+          testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Debug test: ${error.message}</div>`;
         }
-      } catch (error) {
-        testDiv.innerHTML += `<div style="color: #e74c3c;">❌ Debug test: ${error.message}</div>`;
       }
 
       // Test 5: Check available routes

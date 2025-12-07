@@ -947,9 +947,11 @@
         // Always show battle content so users can see controls
         content.style.display = "block";
 
-        // Check if battle exists and is active (backend returns success: false when no battle)
-        if (!battle.success) {
+	        // Check if battle exists and is active (backend returns success: false when no battle)
+	        if (!battle.success) {
           statusDiv.textContent = "No current battle. Start one!";
+	          // Clear any cached current battle id
+	          window.currentBattleId = null;
 
           // Hide meme voting sections when no battle
           $("voteMeme1Btn").style.display = "none";
@@ -976,7 +978,9 @@
           return;
         }
 
-        const battleData = battle.battle;
+	        const battleData = battle.battle;
+	        // Cache current battle id for vote calls
+	        window.currentBattleId = battleData && battleData.id ? battleData.id : null;
         const currentWallet = getWallet();
 
         // Check if this is a targeted challenge for the current user
@@ -1246,28 +1250,35 @@
 
     // === BATTLE ACTIONS === (Now handled by dropdown functions)
 
-    async function voteBattle(meme) {
-      try {
-        const res = await fetch(`${baseURL}/api/battle/vote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet: getWallet(), meme })
-        });
-        const data = await res.json();
-        if (data.success && data.uuid && data.next) {
-          // Show payment modal for vote
-          const memeNumber = meme === 'meme1' ? '1' : '2';
-          showPaymentModal(data.uuid, data.next, `🗳️ Vote for Meme ${memeNumber}`, "30,000 WLO", () => {
-            showToast("Vote cast! Check battle results after timer.", "success");
-            fetchBattleStatus();
-          });
-        } else {
-          showToast(data.error || "Vote failed", "error");
-        }
-      } catch (e) {
-        showToast("Vote error", "error");
-      }
-    }
+	    async function voteBattle(meme) {
+	      try {
+	        const battleId = window.currentBattleId || null;
+	        const payload = { wallet: getWallet(), meme };
+	        if (battleId) {
+	          // Prefer sending explicit battleId when we know it
+	          payload.battleId = battleId;
+	        }
+
+	        const res = await fetch(`${baseURL}/api/battle/vote`, {
+	          method: "POST",
+	          headers: { "Content-Type": "application/json" },
+	          body: JSON.stringify(payload)
+	        });
+	        const data = await res.json();
+	        if (data.success && data.uuid && data.next) {
+	          // Show payment modal for vote
+	          const memeNumber = meme === 'meme1' ? '1' : '2';
+	          showPaymentModal(data.uuid, data.next, `🗳️ Vote for Meme ${memeNumber}`, "30,000 WLO", () => {
+	            showToast("Vote cast! Check battle results after timer.", "success");
+	            fetchBattleStatus();
+	          });
+	        } else {
+	          showToast(data.error || "Vote failed", "error");
+	        }
+	      } catch (e) {
+	        showToast("Vote error", "error");
+	      }
+	    }
 
     // === NEW UI FLOW LOGIC ===
     function setupBattleUI() {

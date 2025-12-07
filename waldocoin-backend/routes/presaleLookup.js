@@ -4,8 +4,8 @@ import { redis } from "../redisClient.js";
 
 const router = express.Router();
 
-// Admin key to reveal email addresses (optional)
-const ADMIN_KEY = "waldogod2025";
+// Admin key to reveal email addresses (optional, configured via environment)
+const ADMIN_KEY = process.env.X_ADMIN_KEY || process.env.ADMIN_KEY || null;
 
 // Helper: format timestamp
 function formatDate(ms) {
@@ -20,7 +20,7 @@ function formatDate(ms) {
  */
 router.get("/lookup", async (req, res) => {
   const wallet = req.query.wallet;
-  const isAdmin = req.headers["x-admin-key"] === ADMIN_KEY;
+  const isAdmin = ADMIN_KEY && req.headers["x-admin-key"] === ADMIN_KEY;
 
   if (!wallet || !wallet.startsWith("r")) {
     return res.status(400).json({ error: "Invalid wallet address." });

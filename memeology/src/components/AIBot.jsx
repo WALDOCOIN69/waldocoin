@@ -178,9 +178,11 @@ function AIBot({ onUseInEditor }) {
                             }
                           }}
                         />
-                        <div className="meme-watermark-text">
-                          memeology.fun
-                        </div>
+	                        {msg.mode !== 'ai-image' && (
+	                          <div className="meme-watermark-text">
+	                            memeology.fun
+	                          </div>
+	                        )}
                       </div>
 		                      <div className="meme-info">
 	                        <small>
@@ -201,8 +203,23 @@ function AIBot({ onUseInEditor }) {
 	                              ✏️ Edit in Meme Generator
 	                            </button>
 	                          )}
-		                          <button
-		                            className="btn-download"
+			                          <button
+			                            className="btn-secondary"
+			                            onClick={() => {
+			                              const text = 'Made this on https://memeology.fun #WaldoMeme'
+			                              const tweetUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`
+			                              try {
+			                                window.open(tweetUrl, '_blank', 'noopener,noreferrer')
+			                              } catch (err) {
+			                                console.error('Error opening X share window:', err)
+			                                alert('Unable to open X (Twitter). Please check your popup blocker and try again.')
+			                              }
+			                            }}
+			                          >
+			                            🐦 Share on X
+			                          </button>
+			                          <button
+			                            className="btn-download"
 		                            onClick={async () => {
 		                            const ua = window.navigator.userAgent || ''
 		                            const isMobile = /iP(hone|ad|od)|Android/i.test(ua)
@@ -221,7 +238,24 @@ function AIBot({ onUseInEditor }) {
 		                              }
 		                              return
 		                            }
-
+	
+	                            // For AI Image mode, download the image exactly as generated,
+	                            // with no extra text or watermark added.
+	                            if (msg.mode === 'ai-image') {
+	                              try {
+	                                const link = document.createElement('a')
+	                                link.href = msg.content
+	                                link.download = `meme-${Date.now()}.jpg`
+	                                document.body.appendChild(link)
+	                                link.click()
+	                                document.body.removeChild(link)
+	                              } catch (err) {
+	                                console.error('Download failed:', err)
+	                                alert('Unable to download image. Try right‑clicking and saving the image instead.')
+	                              }
+	                              return
+	                            }
+	
 		                            try {
 		                              // Desktop: create canvas to add watermark, then trigger download
 		                              const img = new Image()
@@ -340,9 +374,6 @@ function AIBot({ onUseInEditor }) {
             <button className="modal-close" onClick={() => setEnlargedImage(null)}>✕</button>
             <div className="enlarged-image-container">
               <img src={enlargedImage} alt="Enlarged meme" className="enlarged-image" />
-              <div className="meme-watermark-text">
-                memeology.fun
-              </div>
             </div>
           </div>
         </div>
