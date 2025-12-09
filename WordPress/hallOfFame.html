@@ -716,27 +716,26 @@ function renderBattleLeaderboard(battles) {
   });
 }
 
-// Load XP leaderboard (simulated from battle data)
-async function loadXPLeaderboard() {
-  try {
-    if (leaderboardData.battles) {
-      const xpData = leaderboardData.battles.map(user => ({
-        ...user,
-        totalXP: (user.wins || 0) * 100 + Math.floor(Math.random() * 500),
-        level: Math.min(5, Math.floor(((user.wins || 0) * 100) / 250) + 1),
-        multiplier: Math.min(5, Math.floor(((user.wins || 0) * 100) / 250) + 1) * 0.2 + 1
-      })).sort((a, b) => b.totalXP - a.totalXP);
+	// Load XP leaderboard (REAL data from backend user stats)
+	async function loadXPLeaderboard() {
+	  try {
+	    const res = await fetch(`${API_BASE}/api/userstats/leaderboard`);
+	    const data = await res.json();
 
-      leaderboardData.xp = xpData;
-      renderXPLeaderboard(xpData);
-    }
-  } catch (error) {
-    console.error('Error loading XP leaderboard:', error);
-  }
-}
+	    if (data && data.leaderboard) {
+	      leaderboardData.xp = data.leaderboard;
+	      renderXPLeaderboard(data.leaderboard);
+	    } else {
+	      renderXPLeaderboard([]);
+	    }
+	  } catch (error) {
+	    console.error('Error loading XP leaderboard:', error);
+	    renderXPLeaderboard([]);
+	  }
+	}
 
-// Render XP leaderboard
-function renderXPLeaderboard(xpData) {
+	// Render XP leaderboard
+	function renderXPLeaderboard(xpData) {
   const tbody = document.getElementById('xpLeaderboard');
   tbody.innerHTML = '';
 
@@ -745,17 +744,20 @@ function renderXPLeaderboard(xpData) {
     return;
   }
 
-  xpData.slice(0, 20).forEach((user, index) => {
+	  xpData.slice(0, 20).forEach((user, index) => {
     const row = tbody.insertRow();
     const rank = index + 1;
     const rankClass = rank <= 3 ? `rank-${rank}` : '';
+	    const level = user.level || 1;
+	    const totalXP = user.xp ?? user.totalXP ?? 0;
+	    const multiplier = user.multiplier ?? (1 + 0.2 * (level - 1));
 
     row.innerHTML = `
       <td class="rank-cell ${rankClass}">${getRankEmoji(rank)} ${rank}</td>
       <td class="wallet-cell">${formatWallet(user.wallet)}</td>
-      <td class="xp-cell">Level ${user.level}</td>
-      <td class="xp-cell">${formatNumber(user.totalXP)}</td>
-      <td>${user.multiplier.toFixed(1)}x</td>
+	      <td class="xp-cell">Level ${level}</td>
+	      <td class="xp-cell">${formatNumber(totalXP)}</td>
+	      <td>${multiplier.toFixed(1)}x</td>
     `;
 
     if (rank <= 3) {

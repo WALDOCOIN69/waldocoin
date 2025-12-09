@@ -8,13 +8,13 @@ const DEFAULTS = {
     voteFeeWLO: 30000,    // 30K WLO
     useDefaults: true
   },
-  claim: {
-    instantFeeRate: 0.10,
-    stakedFeeRate: 0.05,
-    burnRate: 0.0025,      // 0.25% burned (changed from 2%)
-    revenueShareRate: 0.0125, // 1.25% to NFT holder revenue share
-    useDefaults: true
-  },
+	  claim: {
+	    instantFeeRate: 0.10,
+	    stakedFeeRate: 0.05,
+	    burnRate: 0.0025,      // 0.25% burned (changed from 2%)
+	    revenueShareRate: 0.10,   // 10% to NFT holder revenue share
+	    useDefaults: true
+	  },
   nft: {
     mintCostWLO: 500,
     useDefaults: true
@@ -23,15 +23,15 @@ const DEFAULTS = {
     votingRequirementWLO: 50000, // 1 vote per 50k WALDO
     useDefaults: true
   },
-  staking: {
-    minimumAmountLongTerm: 1000,
-    longTermStakingFee: 0.02,  // 2% fee for long-term staking
-    earlyUnstakePenalty: 0.15,
-    maxActiveStakes: 10,
-    burnRate: 0.0025,          // 0.25% burned (changed from 2%)
-    revenueShareRate: 0.0125,  // 1.25% to NFT holder revenue share
-    useDefaults: true
-  }
+	  staking: {
+	    minimumAmountLongTerm: 1000,
+	    longTermStakingFee: 0.02,  // 2% fee for long-term staking
+	    earlyUnstakePenalty: 0.15,
+	    maxActiveStakes: 10,
+	    burnRate: 0.0025,          // 0.25% burned (changed from 2%)
+	    revenueShareRate: 0.10,    // 10% to NFT holder revenue share
+	    useDefaults: true
+	  }
 };
 
 // Battle fees

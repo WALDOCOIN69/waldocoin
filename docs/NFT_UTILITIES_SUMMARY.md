@@ -17,11 +17,11 @@
 │      ├─ Silver (1-2 NFTs) → 1× share                       │
 │      └─ Non-Holder → 0× shares                             │
 │                                                             │
-│  2️⃣  REVENUE-SHARE POOL                                    │
-│      ├─ 2% of transaction fees                             │
-│      ├─ 1% of staking profits                              │
-│      ├─ Monthly distribution                               │
-│      └─ Pro-rata rewards                                   │
+	│  2️⃣  REVENUE-SHARE POOL                                    │
+	│      ├─ 10% of all platform fees (claims, staking, battles)│
+	│      ├─ 2% of secondary NFT sales (royalties)              │
+	│      ├─ Monthly distribution                               │
+	│      └─ Pro-rata rewards                                   │
 │                                                             │
 │  3️⃣  XP BOOST SYSTEM                                       │
 │      ├─ Platinum: +25% XP                                  │
@@ -206,11 +206,11 @@ cron.schedule("0 0 1 * *", distributeMonthlyRewards);
 
 ### Pool Funding Sources
 ```
-Transaction Fees (2%)
+Platform Fees (10%)
     ↓
-Staking Profits (1%)
+Staking Rewards (10%)
     ↓
-Secondary Sales Royalties
+Secondary Sales Royalties (2%)
     ↓
 HOLDER REWARD POOL
     ↓

@@ -6,31 +6,59 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const keys = await redis.keys("battle:*:data");
-    const winCounts = {};
+
+    // Track both wins and total decisive battles per wallet so we can
+    // calculate an accurate win rate on the frontend.
+    const stats = {}; // { [wallet]: { wins: number, totalBattles: number } }
+
+    const ensureStats = (wallet) => {
+      if (!wallet) return;
+      if (!stats[wallet]) {
+        stats[wallet] = { wins: 0, totalBattles: 0 };
+      }
+    };
 
     for (const key of keys) {
       const id = key.split(":")[1];
       const data = await redis.hgetall(key);
-      const votesA = parseInt(await redis.get(`battle:${id}:count:A`) || "0");
-      const votesB = parseInt(await redis.get(`battle:${id}:count:B`) || "0");
+      const votesA = parseInt((await redis.get(`battle:${id}:count:A`)) || "0", 10);
+      const votesB = parseInt((await redis.get(`battle:${id}:count:B`)) || "0", 10);
 
       // Only count finished battles
       if (!data || !["paid", "ended"].includes(data.status)) continue;
-      if (votesA === votesB) continue; // Skip draws
 
-      // Winner is challenger or acceptor (by wallet)
-      if (votesA > votesB && data.challenger) {
-        winCounts[data.challenger] = (winCounts[data.challenger] || 0) + 1;
-      } else if (votesB > votesA && data.acceptor) {
-        winCounts[data.acceptor] = (winCounts[data.acceptor] || 0) + 1;
+      // If it's a draw, don't count it towards wins OR totalBattles
+      if (votesA === votesB) continue;
+
+      const challenger = data.challenger;
+      const acceptor = data.acceptor;
+
+      // Count a decisive battle participation for both sides (when present)
+      if (challenger) {
+        ensureStats(challenger);
+        stats[challenger].totalBattles += 1;
+      }
+      if (acceptor) {
+        ensureStats(acceptor);
+        stats[acceptor].totalBattles += 1;
+      }
+
+      // Increment wins for the winner
+      if (votesA > votesB && challenger) {
+        ensureStats(challenger);
+        stats[challenger].wins += 1;
+      } else if (votesB > votesA && acceptor) {
+        ensureStats(acceptor);
+        stats[acceptor].wins += 1;
       }
     }
 
-    // Build enriched leaderboard (top 5)
-    let leaderboard = Object.entries(winCounts)
-      .map(([wallet, wins]) => ({ wallet, wins }))
+    // Build enriched leaderboard (top 10 by wins, at least 1 win)
+    let leaderboard = Object.entries(stats)
+      .filter(([, s]) => s.wins > 0)
+      .map(([wallet, s]) => ({ wallet, wins: s.wins, totalBattles: s.totalBattles }))
       .sort((a, b) => b.wins - a.wins)
-      .slice(0, 5);
+      .slice(0, 10);
 
     // Enrich with Twitter data
     leaderboard = await Promise.all(
@@ -40,6 +68,7 @@ router.get("/", async (req, res) => {
         return {
           wallet: entry.wallet,
           wins: entry.wins,
+          totalBattles: entry.totalBattles,
           twitter: user.twitter || null,
           twitterPic: user.twitterPic || null
         };

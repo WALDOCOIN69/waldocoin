@@ -4,14 +4,15 @@ import { redis } from "../redisClient.js";
 import { fileURLToPath } from "url";
 import path from "path";
 import { xummClient } from "../utils/xummClient.js";
+import { mintFraudPrevention } from "../middleware/fraudPrevention.js";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const router = express.Router();
 
-// 🧠 Start NFT Mint Payment Flow
-router.post("/", async (req, res) => {
+// 🧠 Start NFT Mint Payment Flow (protected by fraud prevention)
+router.post("/", mintFraudPrevention, async (req, res) => {
   try {
     const { tweetId, wallet } = req.body;
 

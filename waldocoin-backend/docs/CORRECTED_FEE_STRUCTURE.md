@@ -54,9 +54,9 @@
 ### **Revenue Share & Burn:**
 | Destination | Percentage | Eligible Holders |
 |-------------|------------|------------------|
-| **NFT Holder Revenue Pool** | **1.25%** | 3+ NFTs only (Gold, Platinum, KING) |
+| **NFT Holder Revenue Pool** | **10%** | 3+ NFTs only (Gold, Platinum, KING) |
 | **Burned** | **0.25%** | Deflationary mechanism |
-| **Platform** | **98.5%** | Remaining |
+| **Platform** | **89.75%** | Remaining |
 
 **Applies to:**
 - ✅ Claim fees (5-10% of reward)
@@ -78,8 +78,8 @@
 
 | Method | Fee Rate | Distribution |
 |--------|----------|--------------|
-| **Instant Claim** | **10%** | 1.25% → Revenue, 0.25% → Burn, 98.5% → Platform |
-| **Staked Claim** (30 days) | **5%** | 1.25% → Revenue, 0.25% → Burn, 98.5% → Platform |
+| **Instant Claim** | **10%** | 10% → Revenue, 0.25% → Burn, 89.75% → Platform |
+| **Staked Claim** (30 days) | **5%** | 10% → Revenue, 0.25% → Burn, 89.75% → Platform |
 
 ---
 
@@ -122,10 +122,10 @@
 - ✅ **KING NFT**: 10× shares
 
 ### **Revenue Pool Sources:**
-1. **1.25%** of all claim fees
-2. **1.25%** of all staking rewards
-3. **2%** of secondary NFT sales
-4. **1.25%** of all battle fees
+1. **10%** of all claim fees
+2. **10%** of all staking rewards
+3. **10%** of all battle fees
+4. **2%** of secondary NFT sales
 
 ### **Distribution:**
 - **Frequency:** Monthly (1st of each month at 00:00 UTC)
@@ -152,10 +152,10 @@
 ### **Updated Files:**
 - ✅ `waldocoin-backend/utils/config.js` - Battle fees: 150K/75K/30K
 - ✅ `waldocoin-backend/utils/config.js` - Long-term staking: 2% fee
-- ✅ `waldocoin-backend/utils/config.js` - Fee distribution: 1.25% revenue, 0.25% burn
+- ✅ `waldocoin-backend/utils/config.js` - Fee distribution: 10% revenue, 0.25% burn
 - ✅ `waldocoin-backend/routes/claim.js` - Updated fee distribution
 - ✅ `waldocoin-backend/routes/staking.js` - Added 2% long-term staking fee
-- ✅ `waldocoin-backend/routes/staking.js` - Updated revenue share to 1.25%
+- ✅ `waldocoin-backend/routes/staking.js` - Updated revenue share to 10%
 - ✅ `waldocoin-backend/routes/tokenomics.js` - Updated all fee structures
 - ✅ `waldocoin-backend/utils/nftUtilities.js` - Added revenue share documentation
 
@@ -166,6 +166,6 @@
 1. **NFT holder discounts apply to FEES, not entry amounts**
 2. **Revenue share only for 3+ NFT holders (Gold, Platinum, KING)**
 3. **Silver tier (1-2 NFTs) gets XP boost and fee discounts but NO revenue share**
-4. **All fees contribute 1.25% to revenue pool and 0.25% to burn**
+4. **All fees contribute 10% to revenue pool and 0.25% to burn**
 5. **Long-term staking now has 2% upfront fee (changed from 0%)**
 

@@ -256,70 +256,107 @@ function AIBot({ onUseInEditor }) {
 	                              return
 	                            }
 	
-		                            try {
-		                              // Desktop: create canvas to add watermark, then trigger download
-		                              const img = new Image()
-		                              img.crossOrigin = 'anonymous'
-		                              img.src = msg.content
+	                            try {
+	                              // Desktop: create canvas to add a smaller watermark and lightly crop
+	                              // the bottom of the image to hide any third‑party watermark.
+	                              const img = new Image()
+	                              img.crossOrigin = 'anonymous'
+	                              img.src = msg.content
 
-		                              await new Promise((resolve, reject) => {
-		                                img.onload = resolve
-		                                img.onerror = reject
-		                              })
+	                              await new Promise((resolve, reject) => {
+	                                img.onload = resolve
+	                                img.onerror = reject
+	                              })
 
-		                              const canvas = document.createElement('canvas')
-		                              const ctx = canvas.getContext('2d')
-		                              canvas.width = img.width
-		                              canvas.height = img.height
+	                              const canvas = document.createElement('canvas')
+	                              const ctx = canvas.getContext('2d')
 
-		                              // Draw the meme image
-		                              ctx.drawImage(img, 0, 0)
+	                              // Lightly "zoom in" by trimming a small slice from the bottom.
+	                              // This helps remove most built‑in AI watermarks without cutting
+	                              // away too much of the actual content.
+	                              const CROP_BOTTOM_PCT = 0.08 // crop ~8% from the bottom
+	                              const visibleHeight = Math.round(img.height * (1 - CROP_BOTTOM_PCT))
+	                              canvas.width = img.width
+	                              canvas.height = visibleHeight
 
-		                              // Add text watermark with black background
-		                              const text = 'memeology.fun'
-		                              const fontSize = 14
-		                              const padding = 8
+	                              // Draw the cropped meme image
+	                              ctx.drawImage(
+	                                img,
+	                                0,
+	                                0,
+	                                img.width,
+	                                visibleHeight,
+	                                0,
+	                                0,
+	                                canvas.width,
+	                                canvas.height
+	                              )
 
-		                              ctx.font = `bold ${fontSize}px Arial`
-		                              const textMetrics = ctx.measureText(text)
-		                              const textWidth = textMetrics.width
-		                              const textHeight = fontSize
+	                              // Add a smaller text watermark with black background
+	                              const text = 'memeology.fun'
+	                              const fontSize = Math.max(Math.round(canvas.width * 0.02), 10) // ~2% of width
+	                              const padding = Math.round(fontSize * 0.7)
 
-		                              // Draw black background rectangle (bottom-left corner, no margin)
-		                              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
-		                              ctx.fillRect(0, img.height - textHeight - padding * 2, textWidth + padding * 2, textHeight + padding * 2)
+	                              ctx.font = `bold ${fontSize}px Arial`
+	                              const textMetrics = ctx.measureText(text)
+	                              const textWidth = textMetrics.width
+	                              const textHeight = fontSize
 
-		                              // Draw text
-		                              ctx.fillStyle = '#00f7ff'
-		                              ctx.fillText(text, padding, img.height - padding - 4)
+	                              // Draw black background rectangle (bottom-left corner)
+	                              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
+	                              ctx.fillRect(
+	                                0,
+	                                canvas.height - textHeight - padding * 2,
+	                                textWidth + padding * 2,
+	                                textHeight + padding * 2
+	                              )
 
-		                              // Download the watermarked image
-		                              canvas.toBlob((blob) => {
-		                                try {
-		                                  if (!blob) {
-		                                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
-		                                    const link = document.createElement('a')
-		                                    link.href = dataUrl
-		                                    link.download = `meme-${Date.now()}.jpg`
-		                                    document.body.appendChild(link)
-		                                    link.click()
-		                                    document.body.removeChild(link)
-		                                    return
-		                                  }
+	                              // Draw text
+	                              ctx.fillStyle = '#00f7ff'
+	                              ctx.fillText(text, padding, canvas.height - padding - 4)
 
-		                                  const url = URL.createObjectURL(blob)
-		                                  const link = document.createElement('a')
-		                                  link.href = url
-		                                  link.download = `meme-${Date.now()}.jpg`
-		                                  document.body.appendChild(link)
-		                                  link.click()
-		                                  document.body.removeChild(link)
-		                                  setTimeout(() => URL.revokeObjectURL(url), 1500)
-		                                } catch (err) {
-		                                  console.error('Download failed:', err)
-		                                  alert('Unable to download image. Try right‑clicking and saving the image instead.')
-		                                }
-		                              }, 'image/jpeg', 0.9)
+	                              // Helper for browsers without canvas.toBlob or when it returns null
+	                              const downloadFromDataUrl = () => {
+	                                try {
+	                                  const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+	                                  const link = document.createElement('a')
+	                                  link.href = dataUrl
+	                                  link.download = `meme-${Date.now()}.jpg`
+	                                  document.body.appendChild(link)
+	                                  link.click()
+	                                  document.body.removeChild(link)
+	                                } catch (err) {
+	                                  console.error('Download fallback failed:', err)
+	                                  alert('Unable to download image. Try right‑clicking and saving the image instead.')
+	                                }
+	                              }
+
+	                              if (!canvas.toBlob) {
+	                                downloadFromDataUrl()
+	                                return
+	                              }
+
+	                              // Download the watermarked image
+	                              canvas.toBlob((blob) => {
+	                                try {
+	                                  if (!blob) {
+	                                    downloadFromDataUrl()
+	                                    return
+	                                  }
+
+	                                  const url = URL.createObjectURL(blob)
+	                                  const link = document.createElement('a')
+	                                  link.href = url
+	                                  link.download = `meme-${Date.now()}.jpg`
+	                                  document.body.appendChild(link)
+	                                  link.click()
+	                                  document.body.removeChild(link)
+	                                  setTimeout(() => URL.revokeObjectURL(url), 1500)
+	                                } catch (err) {
+	                                  console.error('Download failed:', err)
+	                                  alert('Unable to download image. Try right‑clicking and saving the image instead.')
+	                                }
+	                              }, 'image/jpeg', 0.9)
 		                            } catch (error) {
 		                              console.error('Download failed:', error)
 		                              alert('Unable to download image at the moment.')

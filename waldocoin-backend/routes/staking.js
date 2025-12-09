@@ -18,6 +18,7 @@ import {
 } from '../utils/stakingUtils.js';
 import { DISTRIBUTOR_WALLET, TREASURY_WALLET, WALDO_ISSUER } from '../constants.js';
 import { addToHolderRewardPool } from '../utils/nftUtilities.js';
+import { getStakingConfig } from '../utils/config.js';
 
 // XRPL connection with fallback nodes for better reliability
 const XRPL_NODES = [
@@ -172,16 +173,17 @@ async function processRedemptionIfComplete(uuid) {
     const expectedReward = parseFloat(stakeData.expectedReward || 0);
     const totalAmount = originalAmount + expectedReward;
 
-    // 💰 NFT Holder Revenue Share: 1.25% of staking rewards go to holder reward pool (3+ NFTs only)
-    const revenueShareRate = 0.0125;  // 1.25%
+    // 💰 NFT Holder Revenue Share: 10% of staking rewards go to holder reward pool (3+ NFTs only)
+    const stakingCfg = await getStakingConfig();
+    const revenueShareRate = stakingCfg.revenueShareRate || 0.10;  // 10%
     const holderPoolContribution = Math.floor(expectedReward * revenueShareRate);
     if (holderPoolContribution > 0) {
       await addToHolderRewardPool(holderPoolContribution);
-      console.log(`💎 Added ${holderPoolContribution} WALDO to NFT holder reward pool from staking rewards (1.25% of ${expectedReward})`);
+      console.log(`💎 Added ${holderPoolContribution} WALDO to NFT holder reward pool from staking rewards (10% of ${expectedReward})`);
     }
 
     // 🔥 Burn: 0.25% of staking rewards burned
-    const burnRate = 0.0025;  // 0.25%
+    const burnRate = stakingCfg.burnRate || 0.0025;  // 0.25%
     const burnAmount = Math.floor(expectedReward * burnRate);
     if (burnAmount > 0) {
       console.log(`🔥 Burning ${burnAmount} WALDO from staking rewards (0.25% of ${expectedReward})`);

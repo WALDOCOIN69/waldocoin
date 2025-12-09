@@ -82,24 +82,24 @@ async function testTokenomics() {
 
     // Test 6: Economic analysis
     console.log("🔍 Test 6: Economic Analysis");
-    console.log("   Fee Structure Summary:");
-    console.log("   =====================");
-    console.log("   💸 Battle Entry: 100 WALDO → Issuer");
-    console.log("   💸 Battle Vote: 5 WALDO → Issuer");
-    console.log("   🔥 Battle Burn: 5% of pot → Burned");
-    console.log("   💸 Instant Claim: 10% fee (2% burned)");
-    console.log("   💸 Staked Claim: 5% fee (2% burned)");
-    console.log("   💸 NFT Mint: 50 WALDO → Distributor");
-    console.log("   🗳️ DAO Vote: 10,000 WALDO minimum");
-    console.log("");
+	    console.log("   Fee Structure Summary:");
+	    console.log("   =====================");
+	    console.log("   💸 Battle Entry: 150,000 / 75,000 WALDO creator fees (no house fee)");
+	    console.log("   💸 Battle Vote: 30,000 WALDO per vote");
+	    console.log("   💸 Battle House Fee: 2% of voting pool (10% to NFT pool, ~0.25% burned, rest treasury)");
+	    console.log("   💸 Instant Claim: 10% fee (10% of fee to NFT pool, 0.25% of fee burned)");
+	    console.log("   💸 Staked Claim: 5% fee (10% of fee to NFT pool, 0.25% of fee burned)");
+	    console.log("   💸 NFT Mint: 500 WALDO base cost");
+	    console.log("   🗳️ DAO Vote: 10,000 WALDO minimum");
+	    console.log("");
 
-    console.log("   Deflationary Mechanisms:");
-    console.log("   ========================");
-    console.log("   🔥 Battle pot burns (5% per battle)");
-    console.log("   🔥 Claim fee burns (2% of fees)");
-    console.log("   💰 Fee collection in WALDO");
-    console.log("   ⚖️ High governance requirements");
-    console.log("");
+	    console.log("   Deflationary & Reward Mechanisms:");
+	    console.log("   ========================");
+	    console.log("   🔥 0.25% of platform fees burned");
+	    console.log("   💰 10% of platform fees shared with NFT holders");
+	    console.log("   💰 Fee collection in WALDO");
+	    console.log("   ⚖️ High governance requirements");
+	    console.log("");
 
     console.log("✅ TOKENOMICS TEST COMPLETE!");
     console.log("============================");

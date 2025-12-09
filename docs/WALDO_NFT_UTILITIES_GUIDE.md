@@ -54,9 +54,9 @@ User has 5 NFTs → Gold Tier
 ### Monthly Reward Distribution
 
 **Pool Funding:**
-- 2% of all WALDO transaction fees
-- 1% of staking pool profits
-- Royalties from secondary NFT sales
+- 10% of all platform fees (claim fees, staking rewards, battle fees)
+- 2% of secondary NFT sales (royalties)
+- 0.25% of all fees are burned as a deflationary mechanism
 
 **Distribution Method:**
 - Snapshot taken on 1st of each month

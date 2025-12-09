@@ -598,16 +598,25 @@ router.get('/templates/imgflip', async (req, res) => {
         };
       }
 
-      console.log(`📋 Templates endpoint: tier=${userTier}, returning ${templates.length}/${allMemes.length} templates`);
+	      console.log(`📋 Templates endpoint: tier=${userTier}, returning ${templates.length}/${allMemes.length} templates`);
 
-      res.json({
-        success: true,
-        memes: templates,
-        tier: userTier,
-        template_count: templates.length,
-        upgrade_message: upgradeMessage,
-        features: features
-      });
+	      // 🔁 Proxy template image URLs through our backend so Memeology's
+	      // canvas can safely read pixels (for downloads & gallery sharing)
+	      // without being blocked by third-party CORS restrictions.
+	      const proxyBase = `${req.protocol}://${req.get('host')}/api/memeology/templates/proxy?url=`;
+	      const proxiedTemplates = templates.map((meme) => ({
+	        ...meme,
+	        url: `${proxyBase}${encodeURIComponent(meme.url)}`
+	      }));
+
+	      res.json({
+	        success: true,
+	        memes: proxiedTemplates,
+	        tier: userTier,
+	        template_count: templates.length,
+	        upgrade_message: upgradeMessage,
+	        features: features
+	      });
     } else {
       res.status(500).json({ error: 'Failed to fetch templates' });
     }
@@ -616,6 +625,40 @@ router.get('/templates/imgflip', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+	// GET /api/memeology/templates/proxy - Proxy external template images so
+	// they can be used in a canvas without CORS tainting (needed for
+	// downloads and community sharing on memeology.fun).
+	router.get('/templates/proxy', async (req, res) => {
+	  try {
+	    const { url } = req.query;
+
+	    if (!url || typeof url !== 'string') {
+	      return res.status(400).send('Missing or invalid url parameter');
+	    }
+
+	    // Basic safety: only allow http/https URLs
+	    if (!/^https?:\/\//i.test(url)) {
+	      return res.status(400).send('Invalid image URL');
+	    }
+
+	    const response = await axios.get(url, {
+	      responseType: 'arraybuffer',
+	      timeout: 15000
+	    });
+
+	    const contentType = response.headers['content-type'] || 'image/jpeg';
+	    res.setHeader('Content-Type', contentType);
+	    // CORS headers are added by the global cors() middleware so the
+	    // image can be drawn to a canvas from the Memeology frontend.
+	    res.setHeader('Cache-Control', 'public, max-age=86400');
+
+	    return res.send(Buffer.from(response.data));
+	  } catch (error) {
+	    console.error('Error in /templates/proxy:', error.message || error);
+	    return res.status(500).send('Failed to load template image');
+	  }
+	});
 
 // GET /api/memeology/templates/giphy - Get GIF templates from Giphy
 router.get('/templates/giphy', async (req, res) => {

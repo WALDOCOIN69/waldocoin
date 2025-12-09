@@ -4,6 +4,7 @@ import { redis } from "../../redisClient.js";
 import { xummClient } from "../../utils/xummClient.js";
 import { calculateXpReward, addXP } from "../../utils/xpManager.js";
 import { TREASURY_WALLET, BURN_ADDRESS } from "../../constants.js";
+import { addToHolderRewardPool } from "../../utils/nftUtilities.js";
 
 const router = express.Router();
 
@@ -120,16 +121,26 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // WALDO Distribution - Two-sided battle with losing side redistribution
-    const memeCreatorFees = 150000 + 75000; // challenger + acceptor fees (no house fees)
-    const winningVoteFees = winningVoters.length * 30000;
-    const losingVoteFees = losingVoters.length * 30000;
-    const totalVotingPool = winningVoteFees + losingVoteFees;
-
-    // House fees only apply to betting pool, not meme creator fees
-    const burnAmount = Math.floor(totalVotingPool * 0.001); // 0.1% of betting pool
-    const treasuryAmount = Math.floor(totalVotingPool * 0.019); // 1.9% of betting pool
-    const availableVotingPool = totalVotingPool - burnAmount - treasuryAmount;
+	    // WALDO Distribution - Two-sided battle with losing side redistribution
+	    const memeCreatorFees = 150000 + 75000; // challenger + acceptor fees (no house fees)
+	    const winningVoteFees = winningVoters.length * 30000;
+	    const losingVoteFees = losingVoters.length * 30000;
+	    const totalVotingPool = winningVoteFees + losingVoteFees;
+	
+	    // House fees only apply to betting pool, not meme creator fees
+	    // Total house fee is 2% of the betting pool. From this 2%:
+	    // - 10% goes to the NFT holder revenue pool
+	    // - 0.25% of the fee amount is burned
+	    // - The remainder goes to the treasury
+	    const houseFeeRate = 0.02; // 2% of voting pool
+	    const totalHouseFee = Math.floor(totalVotingPool * houseFeeRate);
+	
+	    const holderPoolContribution = Math.floor(totalHouseFee * 0.10);  // 10% of fees
+	    const burnAmount = Math.floor(totalHouseFee * 0.0025);            // 0.25% of fee amount
+	    const treasuryAmount = totalHouseFee - holderPoolContribution - burnAmount;
+	
+	    // Remaining voting pool after all house fees
+	    const availableVotingPool = totalVotingPool - totalHouseFee;
 
     const totalPot = memeCreatorFees + totalVotingPool;
     const prizePool = memeCreatorFees + availableVotingPool; // Meme fees + net betting pool
@@ -140,10 +151,10 @@ router.post("/", async (req, res) => {
     const totalVoterAmount = baseVoterAmount + losingVoteFees; // Add losing side bets
     const voterSplit = winningVoters.length ? Math.floor(totalVoterAmount / winningVoters.length) : 0;
 
-    console.log(`💰 Battle payout: Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters share ${totalVoterAmount} WLO (${voterSplit} each)`);
-    console.log(`📊 Meme creator fees: ${memeCreatorFees} WLO (no house fees), Betting pool: ${totalVotingPool} WLO`);
-    console.log(`🏦 Voter house fees (2% total): Burn ${burnAmount} WLO (0.1%), Treasury ${treasuryAmount} WLO (1.9%)`);
-    console.log(`📊 Losing side contributed ${losingVoteFees} WLO (${losingVoters.length} voters) to winning voters`);
+	    console.log(`💰 Battle payout: Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters share ${totalVoterAmount} WLO (${voterSplit} each)`);
+	    console.log(`📊 Meme creator fees: ${memeCreatorFees} WLO (no house fees), Betting pool: ${totalVotingPool} WLO`);
+	    console.log(`🏦 Voter house fees (2% of betting pool): total ${totalHouseFee} WLO → NFT pool ${holderPoolContribution} WLO (10%), burn ${burnAmount} WLO (~0.25% of fees), treasury ${treasuryAmount} WLO`);
+	    console.log(`📊 Losing side contributed ${losingVoteFees} WLO (${losingVoters.length} voters) to winning voters`);
 
     // Import treasury wallet functionality
     const { xrpSendWaldo } = await import("../../utils/sendWaldo.js");
@@ -165,16 +176,22 @@ router.post("/", async (req, res) => {
       await addXP(voter, 10); // Increased XP for winning voters
     }
 
-    // Burn 0.5% to dead address (black hole)
+	    // 💎 Add to NFT holder reward pool (revenue share)
+	    if (holderPoolContribution > 0) {
+	      await addToHolderRewardPool(holderPoolContribution);
+	      console.log(`💎 Added ${holderPoolContribution} WALDO to NFT holder reward pool from battle fees (10% of ${totalHouseFee})`);
+	    }
+	
+	    // 🔥 Burn: send burned portion of fees to dead address (black hole)
     if (burnAmount > 0) {
       await xrpSendWaldo(BURN_ADDRESS, burnAmount);
-      console.log(`🔥 Burned ${burnAmount} WLO to black hole address`);
+	      console.log(`🔥 Burned ${burnAmount} WLO to black hole address from battle fees`);
     }
 
-    // Send 2.5% to treasury wallet
+	    // 🏦 Send remaining house fees to treasury wallet
     if (treasuryAmount > 0) {
       await xrpSendWaldo(TREASURY_WALLET, treasuryAmount);
-      console.log(`🏦 Sent ${treasuryAmount} WLO to treasury: ${TREASURY_WALLET}`);
+	      console.log(`🏦 Sent ${treasuryAmount} WLO in battle house fees to treasury: ${TREASURY_WALLET}`);
     }
 
     // XP rewards
@@ -190,12 +207,14 @@ router.post("/", async (req, res) => {
       losingVoterCount: losingVoters.length,
       totalPot,
       memeCreatorFees,
-      totalVotingPool,
-      prizePool,
-      burnAmount,
-      treasuryAmount,
+	      totalVotingPool,
+	      prizePool,
+	      burnAmount,
+	      treasuryAmount,
       voterSplit,
-      losingVoteFees
+	      losingVoteFees,
+	      holderPoolContribution,
+	      totalHouseFee
     });
 
     console.log(`⚔️ Battle ${battleId} completed - Winner: ${winner}, Total Pot: ${totalPot} WLO, Losing side: ${losingVoteFees} WLO redistributed`);
@@ -207,17 +226,19 @@ router.post("/", async (req, res) => {
       winnerWallet,
       totalPot,
       memeCreatorFees,
-      totalVotingPool,
-      prizePool,
-      burnAmount,
-      treasuryAmount,
+	      totalVotingPool,
+	      prizePool,
+	      burnAmount,
+	      treasuryAmount,
       posterAmount,
       totalVoterAmount,
       voterSplit,
       votersPaid: winningVoters.length,
       losingVoterCount: losingVoters.length,
-      losingVoteFees,
-      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters get ${voterSplit} WLO each. Voter house fees: ${burnAmount + treasuryAmount} WLO (2% total: 1.75% treasury, 0.25% burn).`
+	      losingVoteFees,
+	      holderPoolContribution,
+	      totalHouseFee,
+	      message: `Battle completed! Winner gets ${posterAmount} WLO, ${winningVoters.length} winning voters get ${voterSplit} WLO each. House fees from voting pool: ${totalHouseFee} WLO (10% to NFT holders, ~0.25% burned, remainder to treasury).`
     });
 
   } catch (err) {

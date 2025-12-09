@@ -219,8 +219,8 @@ export const mintFraudPrevention = createFraudPrevention({
   requireWallet: true,
   economicBarrier: { type: 'waldo_balance', amount: 50 },
   customValidation: async (req, wallet) => {
-    // Whitepaper doesn't specify XP requirement for NFT minting, only 50 WALDO cost
-    return { success: true };
+	    // XP requirement (currently 60+ for memes) is enforced in routes/mint.js; here we only apply WALDO balance checks
+	    return { success: true };
   }
 });
 

@@ -1,6 +1,7 @@
 // routes/market/wlo.js
 import express from "express";
 import xrpl from "xrpl";
+import fetch from "node-fetch";
 import { redis } from "../../redisClient.js";
 import getWaldoPerXrp from "../../utils/getWaldoPerXrp.js";
 
@@ -11,7 +12,12 @@ const USE_XRPL_ONLY = String(process.env.PRICE_SOURCE || '').toUpperCase() === '
 router.get("/", async (_req, res) => {
   const result = {
     success: true,
-    source: { price: USE_XRPL_ONLY ? 'xrpl' : 'xrpl+magnetic', volume: 'redis|unknown', magnetic: Boolean(process.env.MAGNETIC_PRICE_URL) && !USE_XRPL_ONLY },
+    source: {
+      price: USE_XRPL_ONLY ? "xrpl" : "xrpl+magnetic",
+      volume: "redis|unknown",
+      magnetic: Boolean(process.env.MAGNETIC_PRICE_URL) && !USE_XRPL_ONLY,
+      used: undefined,
+    },
     waldoPerXrp: null,
     xrpPerWlo: null,
     best: { bid: null, ask: null, mid: null },
@@ -22,21 +28,58 @@ router.get("/", async (_req, res) => {
   try {
     // Admin override via Redis: price:xrp_per_wlo:override
     try {
-      const ovRaw = await redis.get('price:xrp_per_wlo:override');
+      const ovRaw = await redis.get("price:xrp_per_wlo:override");
       const ov = Number(ovRaw);
       if (isFinite(ov) && ov > 0) {
         result.xrpPerWlo = ov;
         result.waldoPerXrp = 1 / ov;
-        result.source.used = 'override';
+        result.source.used = "override";
       }
-    } catch (_) { }
-    // Magnetic-derived rate (cached). Only expose if Magnetic is configured and not explicitly disabled and no override applied.
+    } catch (_) {}
+
+    // GeckoTerminal (primary live DEX price if configured and no override)
+    if (!result.xrpPerWlo && process.env.GECKO_TERMINAL_POOL_URL) {
+      try {
+        const geckoRes = await fetch(process.env.GECKO_TERMINAL_POOL_URL, {
+          timeout: 8000,
+          headers: { Accept: "application/json" },
+        });
+        if (geckoRes.ok) {
+          const geckoJson = await geckoRes.json();
+          const attrs = geckoJson?.data?.attributes || {};
+          const priceStr =
+            attrs.price_in_quote_token ??
+            attrs.price_in_token1 ??
+            attrs.price ??
+            null;
+          const p = priceStr !== null ? Number(priceStr) : NaN;
+          if (p && isFinite(p) && p > 0) {
+            // Treat this as XRP per WLO
+            result.xrpPerWlo = p;
+            result.waldoPerXrp = 1 / p;
+            result.source.price = "geckoterminal";
+            result.source.used = "geckoterminal";
+          }
+        }
+      } catch (_e) {
+        // If GeckoTerminal is unreachable or misconfigured, silently fall back to Magnetic/XRPL
+      }
+    }
+
+    // Magnetic-derived rate (cached). Only expose if Magnetic is configured and not explicitly disabled
+    // and no price has been set yet (no override, no GeckoTerminal).
     if (!USE_XRPL_ONLY && !result.xrpPerWlo && process.env.MAGNETIC_PRICE_URL) {
       const waldoPerXrp = await getWaldoPerXrp();
       // Treat default presale fallback (10000) as "not available" so we can fall back to XRPL mid
-      if (typeof waldoPerXrp === 'number' && isFinite(waldoPerXrp) && waldoPerXrp > 0 && waldoPerXrp !== 10000) {
+      if (
+        typeof waldoPerXrp === "number" &&
+        isFinite(waldoPerXrp) &&
+        waldoPerXrp > 0 &&
+        waldoPerXrp !== 10000
+      ) {
         result.waldoPerXrp = waldoPerXrp;
         result.xrpPerWlo = 1 / waldoPerXrp;
+        if (!result.source.used) result.source.used = "magnetic";
       }
     }
   } catch (e) {
@@ -89,17 +132,23 @@ router.get("/", async (_req, res) => {
 
     const mid = bidPrice && askPrice ? (bidPrice + askPrice) / 2 : (bidPrice || askPrice || null);
     result.best = { bid: bidPrice, ask: askPrice, mid };
-    // Choose display price: prefer Magnetic if available, otherwise XRPL mid
-    let baseXrpPerWlo = null;
-    if (typeof result.waldoPerXrp === 'number' && isFinite(result.waldoPerXrp) && result.waldoPerXrp > 0) {
-      baseXrpPerWlo = 1 / result.waldoPerXrp;
-      result.source.used = 'magnetic';
-    } else if (mid && isFinite(mid)) {
-      baseXrpPerWlo = mid;
-      result.source.used = 'xrpl';
-      result.waldoPerXrp = 1 / mid;
+    // Choose display price only if nothing has set xrpPerWlo yet (no override, no GeckoTerminal, no Magnetic)
+    if (!result.xrpPerWlo) {
+      let baseXrpPerWlo = null;
+      if (
+        typeof result.waldoPerXrp === "number" &&
+        isFinite(result.waldoPerXrp) &&
+        result.waldoPerXrp > 0
+      ) {
+        baseXrpPerWlo = 1 / result.waldoPerXrp;
+        result.source.used = "magnetic";
+      } else if (mid && isFinite(mid)) {
+        baseXrpPerWlo = mid;
+        result.source.used = "xrpl";
+        result.waldoPerXrp = 1 / mid;
+      }
+      result.xrpPerWlo = baseXrpPerWlo;
     }
-    result.xrpPerWlo = baseXrpPerWlo;
   } catch (e) {
     // XRPL query failed; keep best.* null
   }

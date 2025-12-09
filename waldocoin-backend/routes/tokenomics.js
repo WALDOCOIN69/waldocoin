@@ -13,18 +13,18 @@ const FEE_STRUCTURE = {
     accept: 75000,     // 75K WLO (acceptor fee)
     vote: 30000,       // 30K WLO (voting fee)
     burnRate: 0.0025,  // 0.25% burned
-    revenueShareRate: 0.0125 // 1.25% to NFT holder revenue share
+    revenueShareRate: 0.10 // 10% to NFT holder revenue share
   },
   claim: {
     instantFeeRate: 0.10,  // 10%
     stakedFeeRate: 0.05,   // 5%
     burnRate: 0.0025,      // 0.25% of fee burned
-    revenueShareRate: 0.0125 // 1.25% of fee to revenue share
+    revenueShareRate: 0.10 // 10% of fee to revenue share
   },
   staking: {
     longTermFee: 0.02,     // 2% fee for long-term staking
     burnRate: 0.0025,      // 0.25% of rewards burned
-    revenueShareRate: 0.0125 // 1.25% of rewards to revenue share
+    revenueShareRate: 0.10 // 10% of rewards to revenue share
   },
   nft: {
     mintCost: 500,         // 500 WLO
@@ -48,9 +48,9 @@ router.get("/fees", async (_, res) => {
         dao: "Governance participation requirements"
       },
       burnMechanisms: [
-        "5% of battle pots burned to issuer",
-        "2% of claim fees burned",
-        "All fees collected in WLO token"
+	        "0.25% of all platform fees burned",
+	        "10% of all platform fees shared with NFT holders via revenue pool",
+	        "All fees collected in WLO token"
       ]
     });
   } catch (error) {

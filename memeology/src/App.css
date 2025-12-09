@@ -54,3 +54,19 @@
   gap: 20px;
 }
 
+@media (max-width: 768px) {
+  /* Tighter, uniform padding on mobile so header and content line up cleanly */
+  .container {
+    padding: 20px 16px;
+  }
+
+  .tabs {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+  }
+
+  .tab {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}

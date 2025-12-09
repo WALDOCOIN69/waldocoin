@@ -3370,7 +3370,7 @@
         </div>
       </div>
 
-      <!-- Eligibility Badge Card (top status) -->
+      <!-- Eligibility Badge Card (top status, now includes Per‑Meme Matured Redemptions) -->
       <div class="card" id="eligibilityCard">
         <h2 id="eligibilityTitle" style="margin-bottom: 15px;">✅ WALDO Eligibility</h2>
         <div class="content-center">
@@ -3380,6 +3380,19 @@
           <div class="eligibility-icon" id="eligibilityIcon"
             style="font-size: 3em; margin: 15px 0; opacity: 0; transition: all 0.5s ease;">
             👍
+          </div>
+
+          <!-- Per‑Meme Matured Redemptions (moved inside WALDO Eligibility card) -->
+          <div class="eligibility-subsection" style="margin-top: 18px; width: 100%;">
+            <h3 style="margin: 0 0 8px 0; font-size: 1em; text-align: left;">🎯 Per‑Meme Matured Redemptions</h3>
+            <p style="font-size: 14px; margin: 4px 0;"><strong>Count:</strong>
+              <span id="pmRedCount">—</span>
+            </p>
+            <p style="font-size: 14px; margin: 4px 0;"><strong>Total Paid:</strong>
+              <span id="pmRedTotal">—</span>
+            </p>
+            <div id="pmRedList"
+              style="font-size: 13px; margin-top: 8px; max-height: 160px; overflow-y: auto; text-align: left;"></div>
           </div>
         </div>
       </div>
@@ -3539,13 +3552,7 @@
         </div>
       </div>
 
-      <!-- Per‑Meme Matured Redemptions -->
-      <div class="card" id="perMemeRedemptionsCard">
-        <h2>🎯 Per‑Meme Matured Redemptions</h2>
-        <p style="font-size:18px;margin:12px 0;"><strong>Count:</strong> <span id="pmRedCount">—</span></p>
-        <p style="font-size:18px;margin:12px 0;"><strong>Total Paid:</strong> <span id="pmRedTotal">—</span></p>
-        <div id="pmRedList" style="font-size:16px;margin-top:16px;"></div>
-      </div>
+      <!-- Per‑Meme Matured Redemptions moved into WALDO Eligibility card above -->
     </div> <!-- End container -->
 
     <!-- Three Cards Above Staking Zone -->

@@ -9,6 +9,7 @@ import { xummClient } from "../utils/xummClient.js";
 import { rateLimitMiddleware } from "../utils/rateLimiter.js";
 import { createErrorResponse, logError } from "../utils/errorHandler.js";
 import { addToHolderRewardPool } from "../utils/nftUtilities.js";
+import { claimFraudPrevention } from "../middleware/fraudPrevention.js";
 
 dotenv.config();
 
@@ -21,12 +22,12 @@ console.log("🧩 Loaded: routes/claim.js");
 
 // 🧠 XP-based reward system
 const baseRewards = [0, 100, 200, 300]; // By tier
-const maxClaimsPerMonth = 10;
+const maxClaimsPerMonth = 20;
 const stakingWindowHours = 8;
 const memeCooldownDays = 30;
 
-// Apply rate limiting to claim endpoint
-router.post("/", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
+// Apply full fraud prevention + rate limiting to claim endpoint
+router.post("/", claimFraudPrevention, rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet), async (req, res) => {
   const { wallet, stake, tier, memeId } = req.body;
 
   // Input validation
@@ -121,18 +122,19 @@ router.post("/", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.body.wallet)
     const claimCfg = await getClaimConfig();
     const feeRate = finalStake ? claimCfg.stakedFeeRate : claimCfg.instantFeeRate;
     const burnRate = claimCfg.burnRate || 0.0025;  // 0.25% of fee burned
-    const revenueShareRate = claimCfg.revenueShareRate || 0.0125;  // 1.25% of fee to revenue share
+    const revenueShareRate = claimCfg.revenueShareRate || 0.10;    // 10% of fee to NFT holder revenue share
 
     const gross = baseReward;
     const fee = Math.floor(gross * feeRate);
     const burn = Math.floor(fee * burnRate);
     const revenueShare = Math.floor(fee * revenueShareRate);
+    const holderPoolContribution = revenueShare;
     const toXRP = fee - burn - revenueShare;
 
-    // 💰 NFT Holder Revenue Share: 1.25% of claim fees go to holder reward pool (3+ NFTs only)
+    // 💰 NFT Holder Revenue Share: 10% of claim fees go to holder reward pool (3+ NFTs only)
     if (revenueShare > 0) {
       await addToHolderRewardPool(revenueShare);
-      console.log(`💰 Added ${revenueShare} WALDO to NFT holder reward pool from claim fee (1.25% of ${fee} fee)`);
+      console.log(`💰 Added ${revenueShare} WALDO to NFT holder reward pool from claim fee (10% of ${fee} fee)`);
     }
 
     // 🔥 Burn: 0.25% of claim fees burned

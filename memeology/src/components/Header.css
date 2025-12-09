@@ -136,14 +136,19 @@
 }
 
 @media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    gap: 15px;
-  }
+	  .header {
+	    padding: 16px 0;
+	  }
 
-  .header-actions {
-    width: 100%;
-    justify-content: center;
-  }
-}
+	  .header-content {
+	    flex-direction: column;
+	    gap: 15px;
+	    padding: 0 16px; /* match main container horizontal padding on mobile */
+	  }
+
+	  .header-actions {
+	    width: 100%;
+	    justify-content: center;
+	  }
+	}
 

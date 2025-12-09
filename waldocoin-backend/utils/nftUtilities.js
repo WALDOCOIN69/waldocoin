@@ -6,8 +6,7 @@ import { redis } from "../redisClient.js";
  * Handles all NFT holder benefits, rewards, and utility features
  *
  * 💰 REVENUE SHARE STRUCTURE (3+ NFTs only):
- * - 1.25% of all claim fees → Revenue pool
- * - 1.25% of all staking rewards → Revenue pool
+ * - 10% of all platform fees (claim fees, staking rewards, battle fees) → Revenue pool
  * - 0.25% of all fees → Burned
  * - 2% of secondary NFT sales → Revenue pool
  *

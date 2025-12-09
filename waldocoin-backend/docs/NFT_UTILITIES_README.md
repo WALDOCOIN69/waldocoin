@@ -77,9 +77,9 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 ### How It Works
 
 1. **Funding Sources**
-   - 2% of all WALDO transaction fees
-   - 1% of staking pool profits
-   - Royalties from secondary NFT sales
+	   - 10% of all platform fees (claim fees, staking rewards, battle fees)
+	   - 2% of secondary NFT sales (royalties)
+	   - 0.25% of all fees are burned as a deflationary mechanism
 
 2. **Monthly Distribution**
    - Snapshot taken on 1st of each month

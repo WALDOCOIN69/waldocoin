@@ -161,13 +161,13 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	      }
 	    })
 	
-	    // Add watermark for FREE and WALDOCOIN tiers (Premium has no watermark)
-	    if (tier !== 'premium') {
-	      const padding = 15
-	
-	      if (tier === 'waldocoin') {
-	        // WALDOCOIN tier gets "WALDOCOIN" text watermark
-	        const fontSize = Math.min(canvas.width, canvas.height) * 0.05 // 5% of smallest dimension
+		    // Add watermark for FREE and WALDOCOIN tiers (Premium has no watermark)
+		    if (tier !== 'premium') {
+		      const padding = 15
+		
+		      if (tier === 'waldocoin') {
+		        // WALDOCOIN tier gets "WALDOCOIN" text watermark (slightly smaller so it doesn't block text)
+		        const fontSize = Math.min(canvas.width, canvas.height) * 0.035 // 3.5% of smallest dimension
 	        ctx.font = `bold ${fontSize}px Impact, Arial Black, sans-serif`
 	        ctx.textAlign = 'right'
 	        ctx.textBaseline = 'bottom'
@@ -205,14 +205,14 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	        ctx.strokeText(text, textX, textY)
 	        ctx.fillText(text, textX, textY)
 	
-	      } else if (tier === 'free' && watermarkRef.current && watermarkRef.current.complete) {
-	        // FREE tier gets Memeology logo watermark
-	        const watermarkSize = Math.min(canvas.width, canvas.height) * 0.15 // 15% of smallest dimension
+		      } else if (tier === 'free' && watermarkRef.current && watermarkRef.current.complete) {
+		        // FREE tier gets Memeology logo watermark (smaller so it doesn't cover captions)
+		        const watermarkSize = Math.min(canvas.width, canvas.height) * 0.08 // 8% of smallest dimension
 	        const x = canvas.width - watermarkSize - padding
 	        const y = canvas.height - watermarkSize - padding
 	
-	        // Draw semi-transparent watermark
-	        ctx.globalAlpha = 0.8
+		        // Draw semi-transparent watermark (slightly lighter)
+		        ctx.globalAlpha = 0.7
 	        ctx.drawImage(watermarkRef.current, x, y, watermarkSize, watermarkSize)
 	        ctx.globalAlpha = 1.0
 	      }
@@ -530,6 +530,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	  const image = imageRef.current
 	  if (!image) return
 
+	  // Simple confirmation so users on mobile understand what will happen.
+	  const ok = window.confirm(
+	    'Download this meme to your device? On some phones your browser will open the image so you can long‑press to save it.'
+	  )
+	  if (!ok) return
+
 	  // Render a clean copy of the meme (without the drag selection box)
 	  // to an off-screen canvas so the saved image has no editor UI.
 	  const exportCanvas = document.createElement('canvas')
@@ -543,14 +549,8 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	    // with the tap to avoid popup blockers.
 	    try {
 	      const dataUrl = exportCanvas.toDataURL('image/png')
-	      const win = window.open()
-	      if (win) {
-	        win.document.write(
-	          `<html><head><title>Meme</title></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;">` +
-	          `<img src="${dataUrl}" style="max-width:100%;height:auto;" />` +
-	          `</body></html>`
-	        )
-	      } else {
+	      const win = window.open(dataUrl, '_blank')
+	      if (!win) {
 	        // Fallback: navigate current tab
 	        window.location.href = dataUrl
 	      }
@@ -561,33 +561,53 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	    return
 	  }
 
-	  // Other devices: use Blob + download attribute
-	  exportCanvas.toBlob((blob) => {
+	  // Helper for older browsers or when Blob creation fails
+	  const downloadFromDataUrl = () => {
 	    try {
-	      if (!blob) {
-	        const dataUrl = exportCanvas.toDataURL('image/png')
-	        const link = document.createElement('a')
-	        link.href = dataUrl
-	        link.download = `meme-${Date.now()}.png`
-	        document.body.appendChild(link)
-	        link.click()
-	        document.body.removeChild(link)
-	        return
-	      }
-
-	      const url = URL.createObjectURL(blob)
+	      const dataUrl = exportCanvas.toDataURL('image/png')
 	      const link = document.createElement('a')
-	      link.href = url
+	      link.href = dataUrl
 	      link.download = `meme-${Date.now()}.png`
 	      document.body.appendChild(link)
 	      link.click()
 	      document.body.removeChild(link)
-	      setTimeout(() => URL.revokeObjectURL(url), 1500)
 	    } catch (err) {
-	      console.error('Download failed:', err)
+	      console.error('Download fallback failed:', err)
 	      alert('Unable to download image on this device. Try long‑pressing and saving the image instead.')
 	    }
-	  })
+	  }
+
+	  // Other devices: prefer Blob when available, fall back to data URL
+	  if (!exportCanvas.toBlob) {
+	    downloadFromDataUrl()
+	    return
+	  }
+
+	  try {
+	    exportCanvas.toBlob((blob) => {
+	      try {
+	        if (!blob) {
+	          downloadFromDataUrl()
+	          return
+	        }
+
+	        const url = URL.createObjectURL(blob)
+	        const link = document.createElement('a')
+	        link.href = url
+	        link.download = `meme-${Date.now()}.png`
+	        document.body.appendChild(link)
+	        link.click()
+	        document.body.removeChild(link)
+	        setTimeout(() => URL.revokeObjectURL(url), 1500)
+	      } catch (err) {
+	        console.error('Download failed:', err)
+	        alert('Unable to download image on this device. Try long‑pressing and saving the image instead.')
+	      }
+	    })
+	  } catch (err) {
+	    console.error('Download failed:', err)
+	    downloadFromDataUrl()
+	  }
 	}
 
   const shareToGallery = async () => {
@@ -913,6 +933,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <img
                     src={template.url}
                     alt={template.name}
+	                    crossOrigin="anonymous"
                     onError={(e) => {
                       // Hide broken images
                       e.target.parentElement.style.display = 'none'
@@ -955,6 +976,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   ref={imageRef}
                   src={selectedTemplate.url}
                   alt="template"
+	                  crossOrigin="anonymous"
                   onLoad={handleImageLoad}
                   style={{ display: 'none' }}
                 />
