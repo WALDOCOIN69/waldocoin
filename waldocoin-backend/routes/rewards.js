@@ -193,38 +193,47 @@ router.post('/remove-bonus', async (req, res) => {
   }
 });
 
+// Maximum total boost percentage (200% = 3× multiplier) - matches nftUtilities.js
+const MAX_BOOST_PERCENT = 200;
+
 // GET /api/rewards/calculate - Calculate reward with active bonuses (for other systems to use)
+// Now uses ADDITIVE stacking with +200% cap (Option C)
 router.get('/calculate', async (req, res) => {
   try {
-    const { baseAmount, rewardType } = req.query;
+    const { baseAmount, rewardType, wallet } = req.query;
 
     if (!baseAmount || !rewardType) {
       return res.status(400).json({ success: false, error: "baseAmount and rewardType required" });
     }
 
     const base = parseFloat(baseAmount);
-    let finalAmount = base;
+    let totalBoostPercent = 0;
     let appliedBonuses = [];
 
-    // Get active bonuses
+    // Get active bonuses (paid/event boosts)
     const bonusIds = await redis.sMembers('active_bonuses');
 
     for (const bonusId of bonusIds) {
       const bonusData = await redis.hGetAll(`reward_bonus:${bonusId}`);
-      
+
       if (bonusData && Object.keys(bonusData).length > 0) {
         // Check if bonus applies to this reward type
         if (bonusData.type === 'all' || bonusData.type === rewardType) {
           // Check if bonus is still valid
-          if (bonusData.permanent === 'true' || 
+          if (bonusData.permanent === 'true' ||
               (bonusData.expiresAt && new Date(bonusData.expiresAt) > new Date())) {
-            
-            const multiplier = parseFloat(bonusData.multiplier);
-            finalAmount *= multiplier;
-            
+
+            // Convert multiplier to additive percentage (e.g., 1.4 → 40%)
+            const multiplier = parseFloat(bonusData.multiplier) || 1;
+            const boostPercent = (multiplier - 1) * 100;
+
+            // ADDITIVE: sum percentages instead of multiplying
+            totalBoostPercent += boostPercent;
+
             appliedBonuses.push({
               eventName: bonusData.eventName,
-              multiplier: multiplier,
+              boostPercent: boostPercent,
+              multiplier: multiplier, // Keep for backwards compatibility
               type: bonusData.type
             });
           }
@@ -232,11 +241,24 @@ router.get('/calculate', async (req, res) => {
       }
     }
 
+    // CAP at +200%
+    const rawTotalBoostPercent = totalBoostPercent;
+    const cappedBoostPercent = Math.min(totalBoostPercent, MAX_BOOST_PERCENT);
+    const wasCapped = rawTotalBoostPercent > MAX_BOOST_PERCENT;
+
+    // Apply capped boost
+    const finalMultiplier = 1 + (cappedBoostPercent / 100);
+    const finalAmount = base * finalMultiplier;
+
     return res.json({
       success: true,
       baseAmount: base,
       finalAmount: Math.round(finalAmount),
-      totalMultiplier: finalAmount / base,
+      totalBoostPercent: cappedBoostPercent,
+      rawTotalBoostPercent: rawTotalBoostPercent,
+      wasCapped: wasCapped,
+      maxBoostPercent: MAX_BOOST_PERCENT,
+      totalMultiplier: finalMultiplier,
       appliedBonuses: appliedBonuses,
       rewardType: rewardType
     });

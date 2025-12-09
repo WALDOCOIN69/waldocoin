@@ -39,27 +39,101 @@ export async function getHolderTier(wallet) {
 }
 
 // ============================================================================
-// 2️⃣ XP BOOST SYSTEM
+// 2️⃣ XP BOOST SYSTEM (Additive stacking, capped at +200%)
 // ============================================================================
 
-export async function applyHolderXPBoost(wallet, baseXP) {
+// Maximum total XP boost percentage (200% = 3× multiplier)
+const MAX_XP_BOOST_PERCENT = 200;
+
+/**
+ * Get all active paid/event XP bonuses for a wallet
+ * Returns total additive boost percentage from paid boosts
+ */
+export async function getActivePaidBoosts(wallet, rewardType = 'xp') {
+  try {
+    const bonusIds = await redis.sMembers('active_bonuses');
+    let totalBoostPercent = 0;
+    const appliedBonuses = [];
+
+    for (const bonusId of bonusIds) {
+      const bonusData = await redis.hGetAll(`reward_bonus:${bonusId}`);
+
+      if (bonusData && Object.keys(bonusData).length > 0) {
+        // Check if bonus applies to this reward type
+        if (bonusData.type === 'all' || bonusData.type === rewardType) {
+          // Check if bonus is still valid
+          if (bonusData.permanent === 'true' ||
+              (bonusData.expiresAt && new Date(bonusData.expiresAt) > new Date())) {
+
+            // Convert multiplier to additive percentage (e.g., 1.4 → 40%)
+            const multiplier = parseFloat(bonusData.multiplier) || 1;
+            const boostPercent = (multiplier - 1) * 100;
+            totalBoostPercent += boostPercent;
+
+            appliedBonuses.push({
+              eventName: bonusData.eventName,
+              boostPercent: boostPercent,
+              type: bonusData.type
+            });
+          }
+        }
+      }
+    }
+
+    return { totalBoostPercent, appliedBonuses };
+  } catch (error) {
+    console.error('❌ Error getting paid boosts:', error);
+    return { totalBoostPercent: 0, appliedBonuses: [] };
+  }
+}
+
+/**
+ * Apply XP boost with ADDITIVE stacking and +200% cap
+ *
+ * Example:
+ *   NFT tier: Gold (+15%)
+ *   Paid boost: +40%
+ *   Event bonus: +50%
+ *   Total: min(15 + 40 + 50, 200) = 105% → baseXP × 2.05
+ */
+export async function applyHolderXPBoost(wallet, baseXP, rewardType = 'xp') {
   try {
     const tier = await getHolderTier(wallet);
-    const boostedXP = baseXP * (1 + tier.xpBoost);
-    
+    const nftBoostPercent = tier.xpBoost * 100; // e.g., 0.15 → 15%
+
+    // Get paid/event boosts
+    const { totalBoostPercent: paidBoostPercent, appliedBonuses } = await getActivePaidBoosts(wallet, rewardType);
+
+    // ADDITIVE stacking: sum all boosts
+    const rawTotalBoostPercent = nftBoostPercent + paidBoostPercent;
+
+    // CAP at +200%
+    const cappedBoostPercent = Math.min(rawTotalBoostPercent, MAX_XP_BOOST_PERCENT);
+    const wasCapped = rawTotalBoostPercent > MAX_XP_BOOST_PERCENT;
+
+    // Apply boost
+    const multiplier = 1 + (cappedBoostPercent / 100);
+    const boostedXP = baseXP * multiplier;
+
     // Log boost for analytics
     await redis.incr(`analytics:xp_boosts:${wallet}`);
     await redis.incrByFloat(`analytics:xp_boosted_total:${wallet}`, boostedXP - baseXP);
-    
+
     return {
       baseXP,
       boostedXP: Math.floor(boostedXP),
-      boostPercentage: tier.xpBoost * 100,
-      tier: tier.tier
+      boostPercentage: cappedBoostPercent,
+      nftBoostPercent,
+      paidBoostPercent,
+      rawTotalBoostPercent,
+      wasCapped,
+      maxBoostPercent: MAX_XP_BOOST_PERCENT,
+      tier: tier.tier,
+      appliedBonuses
     };
   } catch (error) {
     console.error('❌ Error applying XP boost:', error);
-    return { baseXP, boostedXP: baseXP, boostPercentage: 0, tier: 'none' };
+    return { baseXP, boostedXP: baseXP, boostPercentage: 0, tier: 'none', wasCapped: false };
   }
 }
 
