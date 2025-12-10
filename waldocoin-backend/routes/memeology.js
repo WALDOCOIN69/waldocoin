@@ -649,9 +649,12 @@ router.get('/templates/imgflip', async (req, res) => {
 
 	    const contentType = response.headers['content-type'] || 'image/jpeg';
 	    res.setHeader('Content-Type', contentType);
-	    // CORS headers are added by the global cors() middleware so the
-	    // image can be drawn to a canvas from the Memeology frontend.
 	    res.setHeader('Cache-Control', 'public, max-age=86400');
+
+	    // Explicitly set CORS headers to allow canvas access from any origin.
+	    // This overrides Helmet's restrictive Cross-Origin-Resource-Policy.
+	    res.setHeader('Access-Control-Allow-Origin', '*');
+	    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
 	    return res.send(Buffer.from(response.data));
 	  } catch (error) {
