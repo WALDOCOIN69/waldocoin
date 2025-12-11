@@ -2187,11 +2187,13 @@ Make it funny, relatable, and shareable. Use the ${templateName} format effectiv
           mode: 'template'
         });
       } catch (watermarkError) {
-        console.error('Failed to add watermark to template, returning original URL:', watermarkError.message);
-        // Fallback to original URL if watermarking fails
+        console.error('Failed to add watermark to template, returning proxied URL:', watermarkError.message);
+        // Fallback: proxy the URL so frontend can access it without CORS issues
+        const proxyBase = `${req.protocol}://${req.get('host')}/api/memeology/templates/proxy?url=`;
+        const proxiedMemeUrl = `${proxyBase}${encodeURIComponent(memeUrl)}`;
         res.json({
           success: true,
-          meme_url: memeUrl,
+          meme_url: proxiedMemeUrl,
           template_name: templateName,
           texts: { top: topText, bottom: bottomText },
           mode: 'template'
