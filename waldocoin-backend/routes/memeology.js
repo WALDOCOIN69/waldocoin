@@ -390,17 +390,17 @@ async function checkUserTier(wallet) {
         badge: '🪙 WALDOCOIN'
       };
     }
-    // 🆓 FREE TIER - CANNOT EARN WLO, LIMITED FEATURES, NO GIFS, NO UPLOADS - HAS WATERMARK
+    // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY, NO GIFS
     else {
       features = {
-        templates: 50,
-        memesPerDay: 5,
+        templates: 'unlimited',
+        memesPerDay: 'unlimited',
         feePerMeme: 'none',
         aiSuggestions: '1/day',
-        customFonts: false,
+        customFonts: true,
         noWatermark: false,  // FREE tier has watermark
         nftArtIntegration: false,
-        customUploads: 'none',
+        customUploads: 'unlimited',
         gifTemplates: 'none',
         communityGallery: true,
         canEarnWLO: false,
@@ -575,24 +575,21 @@ router.get('/templates/imgflip', async (req, res) => {
           can_earn_wlo: true
         };
       }
-      // 🆓 FREE TIER - NO GIFS, NO UPLOADS, CANNOT EARN WLO
+      // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY
       else {
-	        // For free tier, expose the full Imgflip list and let the frontend
-	        // enforce the "50 templates" limit. This gives the UI room to
-	        // skip over any broken/CORS-blocked templates while still showing
-	        // a full set of 50 working options.
+	        // Free tier now gets full template access - only AI features are limited
 	        templates = allMemes;
-	        templateLimit = 50;
-        upgradeMessage = '🆓 Free Tier: 50 templates, 5 memes/day, NO GIFs, NO uploads, NO WLO rewards. Collect 3+ NFTs or hold 1000+ WLO to unlock everything!';
+	        templateLimit = allMemes.length;
+        upgradeMessage = '🆓 Free Tier: All templates, unlimited memes! AI suggestions limited to 1/day. Upgrade for GIFs & more AI features!';
         features = {
-          templates: 50,
-          memes_per_day: 5,
+          templates: 'unlimited',
+          memes_per_day: 'unlimited',
           fee_per_meme: 'none',
           ai_suggestions: '1/day',
-          custom_fonts: false,
+          custom_fonts: true,
           no_watermark: false,
           nft_art_integration: false,
-          custom_uploads: 'none',
+          custom_uploads: 'unlimited',
           gif_templates: 'none',
           can_earn_wlo: false
         };
@@ -669,18 +666,7 @@ router.get('/templates/giphy', async (req, res) => {
     const { tier, limit = 50 } = req.query;
     const userTier = tier || 'free';
 
-    // 🚫 FREE TIER CANNOT ACCESS GIFS
-    if (userTier === 'free') {
-      return res.status(403).json({
-        error: 'GIF templates are not available on free tier',
-        message: '🎬 Upgrade to access GIF memes! Collect 3+ NFTs or hold 1000+ WLO to unlock.',
-        upgradeOptions: {
-          nfts: 'Collect 3+ NFTs for unlimited free access',
-          wlo: 'Hold 1000+ WLO for WALDOCOIN tier',
-          premium: 'Subscribe for $5/month'
-        }
-      });
-    }
+    // All tiers can access GIFs now (AI features only have limits)
 
     // Giphy API - trending GIFs
     const response = await axios.get('https://api.giphy.com/v1/gifs/trending', {
@@ -807,19 +793,7 @@ router.post('/memes/create', async (req, res) => {
       tier = tierData.tier;
       wloBalance = tierData.wloBalance;
 
-      // Check usage limits for free tier
-      if (tier === 'free') {
-        const today = new Date().toISOString().split('T')[0];
-        const key = MEMEOLOGY_KEYS.usageMeme(userId, today);
-        const raw = await redis.get(key);
-        const count = raw ? parseInt(raw, 10) || 0 : 0;
-
-        if (count >= 10) {
-          return res.status(429).json({
-            error: 'Daily limit reached (10 memes/day). Upgrade to WALDOCOIN or Premium for unlimited memes!'
-          });
-        }
-      }
+      // Free tier now has unlimited meme generation - no limits!
 
       // Check payment for WALDOCOIN tier
       if (tier === 'waldocoin') {
@@ -1110,18 +1084,7 @@ router.post('/upload', async (req, res) => {
       return res.status(400).json({ error: 'Wallet and image data required' });
     }
 
-    // 🚫 FREE TIER CANNOT UPLOAD CUSTOM IMAGES
-    if (tier === 'free') {
-      return res.status(403).json({
-        error: 'Custom uploads are not available on free tier',
-        message: '📸 Upgrade to upload your own images! Collect 3+ NFTs or hold 1000+ WLO to unlock.',
-        upgradeOptions: {
-          nfts: 'Collect 3+ NFTs for unlimited uploads',
-          wlo: 'Hold 1000+ WLO for 50 uploads/day',
-          premium: 'Subscribe for $5/month for unlimited uploads'
-        }
-      });
-    }
+    // Free tier now has unlimited uploads - no restrictions!
 
     // Check upload limits based on tier (tracked in Redis)
     const today = new Date().toISOString().split('T')[0];

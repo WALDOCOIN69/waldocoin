@@ -417,16 +417,8 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	      // so the full count isn't reduced to 48 when a couple are flaky.
 	      const allTemplates = data.memes || []
 
-	      let maxTemplates
-	      if (tier === 'free') {
-	        maxTemplates = 50
-	      } else if (tier === 'waldocoin') {
-	        maxTemplates = 150
-	      } else {
-	        maxTemplates = allTemplates.length
-	      }
-
-	      const limitedTemplates = allTemplates.slice(0, maxTemplates)
+	      // All tiers now get unlimited templates
+	      const limitedTemplates = allTemplates
 
 	      setTemplates(limitedTemplates)
 	      setTemplateCount(limitedTemplates.length)
@@ -657,11 +649,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
     const file = event.target.files[0]
     if (!file) return
 
-    // Check if user can upload
-    if (tier === 'free') {
-      alert('📸 Custom uploads are not available on FREE tier. Upgrade to WALDOCOIN (1000+ WLO) or PREMIUM to upload your own images!')
-      return
-    }
+    // All tiers can now upload custom images!
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -1171,10 +1159,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-price">$0/month</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ 50 meme templates</li>
-                  <li>✅ 10 memes per day</li>
-                  <li>✅ 5 AI suggestions/day</li>
-                  <li>❌ Custom fonts</li>
+                  <li>✅ Unlimited meme templates</li>
+                  <li>✅ Unlimited memes/day</li>
+                  <li>✅ Custom uploads</li>
+                  <li>✅ Custom fonts</li>
+                  <li>⚠️ 1 AI suggestion/day</li>
+                  <li>❌ GIF templates</li>
                   <li>❌ No watermark</li>
                   <li>💰 No fees</li>
                 </ul>
