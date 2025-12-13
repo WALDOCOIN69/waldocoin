@@ -207,14 +207,6 @@ export const AuthProvider = ({ children }) => {
   // Detect mobile device
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
-  // Handle opening Xaman app on mobile
-  const openXamanApp = () => {
-    if (qrData?.qr_uri) {
-      // On mobile, use window.location.href to trigger the deep link
-      window.location.href = qrData.qr_uri
-    }
-  }
-
   return (
     <AuthContext.Provider value={value}>
       {children}
@@ -252,7 +244,8 @@ export const AuthProvider = ({ children }) => {
                 color: '#00f7ff',
                 fontSize: '24px',
                 cursor: 'pointer',
-                padding: '5px 10px'
+                padding: '5px 10px',
+                zIndex: 10000
               }}
             >
               ✕
@@ -279,21 +272,29 @@ export const AuthProvider = ({ children }) => {
               </>
             )}
 
-            {/* Mobile: show prominent button to open Xaman */}
+            {/* Mobile: show prominent message */}
             {isMobile && (
               <p style={{ color: '#eafff9', marginBottom: '20px', fontSize: '16px' }}>
                 Tap the button below to sign in with Xaman
               </p>
             )}
 
-            <button
-              onClick={openXamanApp}
+            {/* Use anchor tag for deep links - works better on mobile */}
+            <a
+              href={qrData.qr_uri}
+              onClick={(e) => {
+                // For mobile, navigate directly without opening new tab
+                if (isMobile) {
+                  e.preventDefault()
+                  window.location.href = qrData.qr_uri
+                }
+              }}
               style={{
                 display: 'inline-block',
                 padding: '15px 30px',
                 background: 'linear-gradient(135deg, #ff3df7 0%, #00f7ff 100%)',
                 color: '#fff',
-                border: 'none',
+                textDecoration: 'none',
                 borderRadius: '10px',
                 fontWeight: 'bold',
                 fontSize: '18px',
@@ -302,7 +303,7 @@ export const AuthProvider = ({ children }) => {
               }}
             >
               📱 Open in Xaman App
-            </button>
+            </a>
           </div>
         </div>
       )}

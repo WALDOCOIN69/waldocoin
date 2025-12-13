@@ -98,6 +98,12 @@
   background: rgba(255, 61, 247, 0.1);
   border: 1px solid var(--neonMagenta);
   border-radius: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.logout-btn {
+  order: 10; /* Push logout button to end */
 }
 
 .user-name {
@@ -149,6 +155,22 @@
 	  .header-actions {
 	    width: 100%;
 	    justify-content: center;
+	  }
+
+	  .user-menu {
+	    flex-direction: column;
+	    gap: 8px;
+	    width: 100%;
+	  }
+
+	  .user-menu .btn-secondary {
+	    width: 100%;
+	    margin: 0;
+	  }
+
+	  .logout-btn {
+	    margin-top: 8px;
+	    width: 100%;
 	  }
 	}
 

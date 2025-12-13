@@ -1,11 +1,15 @@
 .meme-generator {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .generator-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 30px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .templates-panel {
@@ -13,6 +17,8 @@
   max-height: 90vh;
   overflow-y: scroll;
   overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .templates-panel::-webkit-scrollbar {
@@ -269,6 +275,8 @@
   max-height: 90vh;
   overflow-y: scroll;
   overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .editor-panel::-webkit-scrollbar {

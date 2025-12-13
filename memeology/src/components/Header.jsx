@@ -98,7 +98,7 @@ function Header() {
 	                  🐦 Link X Handle
 	                </button>
 	              )}
-	              <button className="btn-secondary" onClick={logout}>
+	              <button className="btn-secondary logout-btn" onClick={logout}>
 	                Logout
 	              </button>
 	            </div>
