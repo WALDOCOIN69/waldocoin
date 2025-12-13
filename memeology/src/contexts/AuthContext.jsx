@@ -204,6 +204,17 @@ export const AuthProvider = ({ children }) => {
     closeQRModal
   }
 
+  // Detect mobile device
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+  // Handle opening Xaman app on mobile
+  const openXamanApp = () => {
+    if (qrData?.qr_uri) {
+      // On mobile, use window.location.href to trigger the deep link
+      window.location.href = qrData.qr_uri
+    }
+  }
+
   return (
     <AuthContext.Provider value={value}>
       {children}
@@ -247,37 +258,51 @@ export const AuthProvider = ({ children }) => {
               ✕
             </button>
             <h2 style={{ color: '#00f7ff', marginBottom: '20px' }}>🔐 Login with Xaman</h2>
-            <img
-              src={qrData.qr_url}
-              alt="XUMM QR Code"
-              style={{
-                width: '300px',
-                height: '300px',
-                border: '3px solid #00f7ff',
-                borderRadius: '10px',
-                marginBottom: '20px'
-              }}
-            />
-            <p style={{ color: '#eafff9', marginBottom: '10px' }}>
-              Scan with Xaman app to login
-            </p>
-            <a
-              href={qrData.qr_uri}
-              target="_blank"
-              rel="noopener noreferrer"
+
+            {/* Show QR code on desktop, hide on mobile */}
+            {!isMobile && (
+              <>
+                <img
+                  src={qrData.qr_url}
+                  alt="XUMM QR Code"
+                  style={{
+                    width: '300px',
+                    height: '300px',
+                    border: '3px solid #00f7ff',
+                    borderRadius: '10px',
+                    marginBottom: '20px'
+                  }}
+                />
+                <p style={{ color: '#eafff9', marginBottom: '10px' }}>
+                  Scan with Xaman app to login
+                </p>
+              </>
+            )}
+
+            {/* Mobile: show prominent button to open Xaman */}
+            {isMobile && (
+              <p style={{ color: '#eafff9', marginBottom: '20px', fontSize: '16px' }}>
+                Tap the button below to sign in with Xaman
+              </p>
+            )}
+
+            <button
+              onClick={openXamanApp}
               style={{
                 display: 'inline-block',
-                padding: '10px 20px',
+                padding: '15px 30px',
                 background: 'linear-gradient(135deg, #ff3df7 0%, #00f7ff 100%)',
                 color: '#fff',
-                textDecoration: 'none',
+                border: 'none',
                 borderRadius: '10px',
                 fontWeight: 'bold',
+                fontSize: '18px',
+                cursor: 'pointer',
                 marginTop: '10px'
               }}
             >
               📱 Open in Xaman App
-            </a>
+            </button>
           </div>
         </div>
       )}
