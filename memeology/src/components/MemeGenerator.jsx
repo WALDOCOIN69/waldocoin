@@ -42,6 +42,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
   const [activeBoxId, setActiveBoxId] = useState(1)
   const [draggingBoxId, setDraggingBoxId] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [enlargedImage, setEnlargedImage] = useState(null) // For image modal
 
   const canvasRef = useRef(null)
   const imageRef = useRef(null)
@@ -494,6 +495,23 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
     }
   }
 
+  // Expand the meme to full-screen modal view
+  const expandMeme = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    // Create a clean version without selection box for the modal
+    const exportCanvas = document.createElement('canvas')
+    renderMemeToCanvas(exportCanvas, { showSelection: false })
+
+    try {
+      const dataUrl = exportCanvas.toDataURL('image/png')
+      setEnlargedImage(dataUrl)
+    } catch (err) {
+      console.error('Failed to expand meme:', err)
+    }
+  }
+
 	const downloadMeme = () => {
 	  const image = imageRef.current
 	  if (!image) return
@@ -940,6 +958,13 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	                  onTouchCancel={handleCanvasMouseUp}
                   style={{ cursor: draggingBoxId ? 'grabbing' : 'grab' }}
                 />
+                <button
+                  className="expand-button"
+                  onClick={expandMeme}
+                  title="View full size"
+                >
+                  🔍
+                </button>
                 <img
                   ref={imageRef}
                   src={selectedTemplate.url}
@@ -1334,6 +1359,18 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                 <p>No GIFs found. Try a different search term!</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Image Enlargement Modal */}
+      {enlargedImage && (
+        <div className="image-modal" onClick={() => setEnlargedImage(null)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setEnlargedImage(null)}>✕</button>
+            <div className="enlarged-image-container">
+              <img src={enlargedImage} alt="Enlarged meme" className="enlarged-image" />
+            </div>
           </div>
         </div>
       )}

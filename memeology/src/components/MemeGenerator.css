@@ -333,6 +333,7 @@
 }
 
 .preview-box {
+  position: relative;
   width: 100%;
 	  min-height: 400px;
   background: rgba(0, 0, 0, 0.3);
@@ -343,6 +344,29 @@
   justify-content: center;
   border: 2px solid var(--border);
   padding: 10px;
+}
+
+.expand-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid var(--neonAqua);
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.expand-button:hover {
+  background: var(--neonAqua);
+  transform: scale(1.1);
 }
 
 .meme-canvas {
@@ -1139,4 +1163,71 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Image Enlargement Modal */
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: pointer;
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: 95vw;
+  max-height: 95vh;
+  cursor: default;
+}
+
+.enlarged-image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.enlarged-image {
+  max-width: 95vw;
+  max-height: 95vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 10px 50px rgba(0, 247, 255, 0.3);
+  display: block;
+}
+
+.modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--neonAqua);
+  color: var(--neonAqua);
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: var(--neonAqua);
+  color: var(--dark);
+  transform: rotate(90deg);
 }
