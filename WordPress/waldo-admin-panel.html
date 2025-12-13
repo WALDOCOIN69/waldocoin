@@ -881,6 +881,7 @@
         <button type="button" class="nav-btn" onclick="showSection('security')">🛡️ Security Override</button>
         <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
         <button type="button" class="nav-btn" onclick="showSection('volumebot')">🤖 Trading Bot</button>
+        <button type="button" class="nav-btn" onclick="showSection('memeology')">🎨 Memeology Templates</button>
         <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
         <button type="button" class="nav-btn" onclick="runDiagnostics()" style="background: #f39c12;">🔍
           Diagnostics</button>
@@ -2822,6 +2823,83 @@
           </div>
         </div>
       </div>
+
+      <!-- Memeology Templates Section -->
+      <div id="memeology" class="admin-section">
+        <div class="alert alert-info margin-bottom-20">
+          🎨 <strong>MEMEOLOGY CUSTOM TEMPLATES</strong><br>
+          Upload and manage custom meme templates. Drag & drop images or click to upload.
+        </div>
+
+        <!-- Upload Area -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">📤 Upload New Template</div>
+
+          <div id="dropZone" style="border: 3px dashed #ff3df7; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; background: rgba(255, 61, 247, 0.05); transition: all 0.3s ease; margin-bottom: 20px;">
+            <div style="font-size: 48px; margin-bottom: 15px;">🖼️</div>
+            <div style="color: #ff3df7; font-size: 18px; font-weight: bold;">Drag & Drop Image Here</div>
+            <div style="color: #888; margin-top: 5px;">or click to select a file</div>
+            <div style="color: #666; font-size: 12px; margin-top: 10px;">Supports: JPG, PNG, GIF, WebP (max 5MB)</div>
+            <input type="file" id="templateFileInput" accept="image/*" style="display: none;">
+          </div>
+
+          <!-- Preview & Form -->
+          <div id="uploadPreviewArea" style="display: none; background: #2a2a2a; padding: 20px; border-radius: 8px;">
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 20px;">
+              <div>
+                <img id="uploadPreviewImg" src="" alt="Preview" style="width: 100%; border-radius: 8px; border: 2px solid #ff3df7;">
+              </div>
+              <div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                  <label class="form-label">Template Name *</label>
+                  <input type="text" id="templateName" class="form-control" placeholder="e.g., Epic WALDO Moment">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div class="form-group">
+                    <label class="form-label">Text Boxes</label>
+                    <select id="templateBoxCount" class="form-control">
+                      <option value="1">1 Text Box</option>
+                      <option value="2" selected>2 Text Boxes</option>
+                      <option value="3">3 Text Boxes</option>
+                      <option value="4">4 Text Boxes</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Tier</label>
+                    <select id="templateTier" class="form-control">
+                      <option value="free">Free (Everyone)</option>
+                      <option value="waldocoin">WALDOCOIN Holders</option>
+                      <option value="premium">Premium Only</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                  <label class="form-label">Categories (comma-separated)</label>
+                  <input type="text" id="templateCategories" class="form-control" placeholder="e.g., crypto, funny, reaction">
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                  <button onclick="uploadTemplate()" class="btn-primary" style="flex: 1;">
+                    ⬆️ Upload Template
+                  </button>
+                  <button onclick="cancelUpload()" class="btn-secondary">
+                    ❌ Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="uploadStatus" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- Custom Templates List -->
+        <div class="admin-card">
+          <div class="card-title">📚 Custom Templates (<span id="customTemplateCount">0</span>)</div>
+          <button onclick="loadCustomTemplates()" class="btn-secondary margin-bottom-15">🔄 Refresh</button>
+          <div id="customTemplatesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
+            <div class="loading"><div class="spinner"></div> Loading templates...</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4278,6 +4356,9 @@
             break;
           case 'volumebot':
             await loadVolumeBotData();
+            break;
+          case 'memeology':
+            await loadCustomTemplates();
             break;
         }
       } catch (error) {
@@ -8694,6 +8775,221 @@ This action cannot be undone. Continue?`;
         showAlert('Network error resetting profit tracking', 'error');
       }
     }
+
+    // =====================================================
+    // MEMEOLOGY TEMPLATE MANAGEMENT
+    // =====================================================
+
+    let selectedTemplateFile = null;
+    let selectedTemplateData = null;
+
+    // Initialize drag & drop zone
+    document.addEventListener('DOMContentLoaded', function() {
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('templateFileInput');
+
+      if (dropZone && fileInput) {
+        // Click to select file
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Drag events
+        dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.style.borderColor = '#00f7ff';
+          dropZone.style.background = 'rgba(0, 247, 255, 0.1)';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+          e.preventDefault();
+          dropZone.style.borderColor = '#ff3df7';
+          dropZone.style.background = 'rgba(255, 61, 247, 0.05)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.style.borderColor = '#ff3df7';
+          dropZone.style.background = 'rgba(255, 61, 247, 0.05)';
+
+          const files = e.dataTransfer.files;
+          if (files.length > 0) {
+            handleFileSelect(files[0]);
+          }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+          }
+        });
+      }
+    });
+
+    function handleFileSelect(file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        showAlert('Invalid file type. Please upload JPG, PNG, GIF, or WebP.', 'error');
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        showAlert('File too large. Maximum size is 5MB.', 'error');
+        return;
+      }
+
+      selectedTemplateFile = file;
+
+      // Read file as base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        selectedTemplateData = e.target.result;
+
+        // Show preview
+        document.getElementById('uploadPreviewImg').src = selectedTemplateData;
+        document.getElementById('uploadPreviewArea').style.display = 'block';
+
+        // Auto-fill name from filename
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        document.getElementById('templateName').value = nameWithoutExt;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function cancelUpload() {
+      selectedTemplateFile = null;
+      selectedTemplateData = null;
+      document.getElementById('uploadPreviewArea').style.display = 'none';
+      document.getElementById('templateFileInput').value = '';
+      document.getElementById('templateName').value = '';
+      document.getElementById('templateCategories').value = '';
+      document.getElementById('uploadStatus').innerHTML = '';
+    }
+
+    async function uploadTemplate() {
+      if (!selectedTemplateData) {
+        showAlert('Please select an image first.', 'error');
+        return;
+      }
+
+      const name = document.getElementById('templateName').value.trim();
+      if (!name) {
+        showAlert('Please enter a template name.', 'error');
+        return;
+      }
+
+      const boxCount = document.getElementById('templateBoxCount').value;
+      const tier = document.getElementById('templateTier').value;
+      const categoriesRaw = document.getElementById('templateCategories').value;
+      const categories = categoriesRaw ? categoriesRaw.split(',').map(c => c.trim()).filter(c => c) : ['custom'];
+
+      const statusEl = document.getElementById('uploadStatus');
+      statusEl.innerHTML = '<div style="color: #f39c12;">⏳ Uploading template...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/memeology/admin/templates/upload`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminKey
+          },
+          body: JSON.stringify({
+            imageData: selectedTemplateData,
+            name,
+            boxCount,
+            tier,
+            categories
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          statusEl.innerHTML = '<div style="color: #25c2a0;">✅ Template uploaded successfully!</div>';
+          showAlert(`Template "${name}" uploaded successfully!`, 'success');
+          cancelUpload();
+          loadCustomTemplates();
+        } else {
+          statusEl.innerHTML = `<div style="color: #e74c3c;">❌ Error: ${data.error}</div>`;
+          showAlert(`Failed to upload: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        statusEl.innerHTML = `<div style="color: #e74c3c;">❌ Network error</div>`;
+        showAlert('Network error uploading template', 'error');
+      }
+    }
+
+    async function loadCustomTemplates() {
+      const listEl = document.getElementById('customTemplatesList');
+      const countEl = document.getElementById('customTemplateCount');
+
+      listEl.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/memeology/admin/templates`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          countEl.textContent = data.count;
+
+          if (data.templates.length === 0) {
+            listEl.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">No custom templates yet. Upload your first one above!</div>';
+            return;
+          }
+
+          listEl.innerHTML = data.templates.map(t => `
+            <div style="background: #2a2a2a; border-radius: 8px; overflow: hidden; position: relative;">
+              <img src="${t.url}" alt="${t.name}" style="width: 100%; aspect-ratio: 1; object-fit: cover;">
+              <div style="padding: 10px;">
+                <div style="font-weight: bold; color: #fff; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${t.name}">${t.name}</div>
+                <div style="font-size: 11px; color: #888;">
+                  <span style="background: ${t.tier === 'free' ? '#25c2a0' : t.tier === 'waldocoin' ? '#f39c12' : '#e74c3c'}; padding: 2px 6px; border-radius: 4px; color: #fff;">${t.tier}</span>
+                  <span style="margin-left: 5px;">${t.box_count} boxes</span>
+                </div>
+              </div>
+              <button onclick="deleteTemplate('${t.id}', '${t.name.replace(/'/g, "\\'")}')" style="position: absolute; top: 5px; right: 5px; background: rgba(231, 76, 60, 0.9); border: none; color: #fff; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-size: 12px;" title="Delete">🗑️</button>
+            </div>
+          `).join('');
+        } else {
+          listEl.innerHTML = `<div style="color: #e74c3c;">Error: ${data.error}</div>`;
+        }
+      } catch (error) {
+        console.error('Load templates error:', error);
+        listEl.innerHTML = '<div style="color: #e74c3c;">Network error loading templates</div>';
+      }
+    }
+
+    async function deleteTemplate(id, name) {
+      if (!confirm(`Delete template "${name}"? This cannot be undone.`)) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/memeology/admin/templates/${id}`, {
+          method: 'DELETE',
+          headers: { 'x-admin-key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`Template "${name}" deleted.`, 'success');
+          loadCustomTemplates();
+        } else {
+          showAlert(`Failed to delete: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        showAlert('Network error deleting template', 'error');
+      }
+    }
+
   </script>
 
   </div> <!-- Close adminPanel -->

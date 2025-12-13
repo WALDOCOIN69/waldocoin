@@ -408,27 +408,43 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	    try {
 	      setLoading(true)
 	      const apiUrl = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
-	      const response = await fetch(`${apiUrl}/api/memeology/templates/imgflip?tier=${tier}`)
-	      const data = await response.json()
 
-	      // Start from everything the backend returns and just enforce the
-	      // per-tier limits here so FREE always shows 50 entries and
-	      // WALDOCOIN shows 150. We no longer hard-remove specific IDs,
-	      // so the full count isn't reduced to 48 when a couple are flaky.
-	      const allTemplates = data.memes || []
+	      // Fetch both standard and custom templates in parallel
+	      const [standardRes, customRes] = await Promise.all([
+	        fetch(`${apiUrl}/api/memeology/templates/imgflip?tier=${tier}`),
+	        fetch(`${apiUrl}/api/memeology/templates/custom?tier=${tier}`)
+	      ])
 
-	      // All tiers now get unlimited templates
-	      const limitedTemplates = allTemplates
+	      const standardData = await standardRes.json()
+	      let customData = { templates: [] }
+	      try {
+	        customData = await customRes.json()
+	      } catch (e) {
+	        console.log('No custom templates available')
+	      }
 
-	      setTemplates(limitedTemplates)
-	      setTemplateCount(limitedTemplates.length)
-      setUpgradeMessage(data.upgrade_message || '')
-      setTierFeatures(data.features || null)
-    } catch (error) {
-      console.error('Error fetching templates:', error)
-      // Fallback templates - use proxy URLs to avoid CORS issues on download
-      const proxyBase = `${apiUrl}/api/memeology/templates/proxy?url=`
-      const fallbackTemplates = [
+	      // Standard templates from backend
+	      const standardTemplates = standardData.memes || []
+
+	      // Custom templates (from admin uploads) - add isCustom flag
+	      const customTemplates = (customData.templates || []).map(t => ({
+	        ...t,
+	        isCustom: true
+	      }))
+
+	      // Merge: custom templates first, then standard
+	      const allTemplates = [...customTemplates, ...standardTemplates]
+
+	      setTemplates(allTemplates)
+	      setTemplateCount(allTemplates.length)
+        setUpgradeMessage(standardData.upgrade_message || '')
+        setTierFeatures(standardData.features || null)
+      } catch (error) {
+        console.error('Error fetching templates:', error)
+        // Fallback templates - use proxy URLs to avoid CORS issues on download
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://waldocoin-backend-api.onrender.com'
+        const proxyBase = `${apiUrl}/api/memeology/templates/proxy?url=`
+        const fallbackTemplates = [
           { id: '181913649', name: 'Drake Hotline Bling', url: `${proxyBase}${encodeURIComponent('https://i.imgflip.com/30b1gx.jpg')}` },
           { id: '87743020', name: 'Two Buttons', url: `${proxyBase}${encodeURIComponent('https://i.imgflip.com/1g8my4.jpg')}` },
           { id: '112126428', name: 'Distracted Boyfriend', url: `${proxyBase}${encodeURIComponent('https://i.imgflip.com/1ur9b0.jpg')}` },
@@ -450,10 +466,10 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
         setTemplates(fallbackTemplates)
         setTemplateCount(fallbackTemplates.length)
 
-    } finally {
-      setLoading(false)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
   const generateMeme = async () => {
     if (!selectedTemplate || !user) {

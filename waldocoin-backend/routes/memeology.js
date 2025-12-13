@@ -27,6 +27,8 @@ import {
   updateSessionActivity,
   trackFeatureUsage
 } from '../utils/analytics.js';
+import { v2 as cloudinary } from 'cloudinary';
+import { validateAdminKey, getAdminKey } from '../utils/adminAuth.js';
 
 dotenv.config();
 
@@ -67,7 +69,31 @@ const MEMEOLOGY_KEYS = {
   communityList: 'memeology:community:memes',
   meme: (id) => `memeology:meme:${id}`,
   memeUpvotes: (id) => `memeology:meme:${id}:upvotes`,
-  memeDownvotes: (id) => `memeology:meme:${id}:downvotes`
+  memeDownvotes: (id) => `memeology:meme:${id}:downvotes`,
+  customTemplates: 'memeology:custom:templates',
+  customTemplate: (id) => `memeology:custom:template:${id}`
+};
+
+// Configure Cloudinary for image uploads
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  console.log('✅ Cloudinary configured for custom template uploads');
+} else {
+  console.warn('⚠️  Cloudinary not configured - custom template uploads disabled');
+}
+
+// Admin authentication middleware for memeology
+const requireMemeologyAdmin = (req, res, next) => {
+  const adminKey = getAdminKey(req);
+  const validation = validateAdminKey(adminKey);
+  if (!validation.valid) {
+    return res.status(403).json({ success: false, error: validation.error });
+  }
+  next();
 };
 
 // Helper: load & persist premium subscription in Redis
@@ -2304,6 +2330,216 @@ router.get('/templates/:id', async (req, res) => {
   } catch (error) {
     console.error('Error in /templates/:id:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// =====================================================
+// ADMIN ENDPOINTS - Custom Template Management
+// =====================================================
+
+// POST /api/memeology/admin/templates/upload - Upload a custom template image
+router.post('/admin/templates/upload', requireMemeologyAdmin, async (req, res) => {
+  try {
+    const { imageData, name, boxCount, tier, categories } = req.body;
+
+    if (!imageData || !name) {
+      return res.status(400).json({ success: false, error: 'Image data and name are required' });
+    }
+
+    // Check Cloudinary configuration
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      return res.status(500).json({ success: false, error: 'Cloudinary not configured' });
+    }
+
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(imageData, {
+      folder: 'memeology-templates',
+      resource_type: 'image',
+      public_id: `template_${Date.now()}_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+    });
+
+    // Create template object
+    const templateId = `custom_${Date.now()}`;
+    const template = {
+      id: templateId,
+      name: name.trim(),
+      url: uploadResult.secure_url,
+      cloudinaryId: uploadResult.public_id,
+      box_count: parseInt(boxCount) || 2,
+      tier: tier || 'free',
+      categories: categories ? (Array.isArray(categories) ? categories : [categories]) : ['custom'],
+      source: 'custom',
+      createdAt: new Date().toISOString(),
+      width: uploadResult.width,
+      height: uploadResult.height
+    };
+
+    // Save to Redis
+    await redis.hset(MEMEOLOGY_KEYS.customTemplate(templateId), template);
+    await redis.lpush(MEMEOLOGY_KEYS.customTemplates, templateId);
+
+    console.log(`🎨 Custom template uploaded: ${name} (${templateId})`);
+
+    res.json({
+      success: true,
+      message: 'Template uploaded successfully',
+      template
+    });
+
+  } catch (error) {
+    console.error('Error uploading custom template:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/memeology/admin/templates - Get all custom templates
+router.get('/admin/templates', requireMemeologyAdmin, async (req, res) => {
+  try {
+    const templateIds = await redis.lrange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
+    const templates = [];
+
+    for (const id of templateIds) {
+      const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+      if (template && Object.keys(template).length > 0) {
+        // Parse categories if stored as string
+        if (typeof template.categories === 'string') {
+          try {
+            template.categories = JSON.parse(template.categories);
+          } catch (e) {
+            template.categories = [template.categories];
+          }
+        }
+        templates.push(template);
+      }
+    }
+
+    res.json({
+      success: true,
+      templates,
+      count: templates.length
+    });
+
+  } catch (error) {
+    console.error('Error getting custom templates:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE /api/memeology/admin/templates/:id - Delete a custom template
+router.delete('/admin/templates/:id', requireMemeologyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get template to find Cloudinary ID
+    const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+    if (!template || Object.keys(template).length === 0) {
+      return res.status(404).json({ success: false, error: 'Template not found' });
+    }
+
+    // Delete from Cloudinary
+    if (template.cloudinaryId) {
+      try {
+        await cloudinary.uploader.destroy(template.cloudinaryId);
+      } catch (cloudErr) {
+        console.warn('Could not delete from Cloudinary:', cloudErr.message);
+      }
+    }
+
+    // Delete from Redis
+    await redis.del(MEMEOLOGY_KEYS.customTemplate(id));
+    await redis.lrem(MEMEOLOGY_KEYS.customTemplates, 0, id);
+
+    console.log(`🗑️ Custom template deleted: ${template.name} (${id})`);
+
+    res.json({
+      success: true,
+      message: 'Template deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting custom template:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PATCH /api/memeology/admin/templates/:id - Update a custom template
+router.patch('/admin/templates/:id', requireMemeologyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, boxCount, tier, categories } = req.body;
+
+    const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+    if (!template || Object.keys(template).length === 0) {
+      return res.status(404).json({ success: false, error: 'Template not found' });
+    }
+
+    // Update fields
+    if (name) template.name = name.trim();
+    if (boxCount) template.box_count = parseInt(boxCount);
+    if (tier) template.tier = tier;
+    if (categories) {
+      template.categories = Array.isArray(categories) ? JSON.stringify(categories) : JSON.stringify([categories]);
+    }
+    template.updatedAt = new Date().toISOString();
+
+    await redis.hset(MEMEOLOGY_KEYS.customTemplate(id), template);
+
+    console.log(`✏️ Custom template updated: ${template.name} (${id})`);
+
+    res.json({
+      success: true,
+      message: 'Template updated successfully',
+      template
+    });
+
+  } catch (error) {
+    console.error('Error updating custom template:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/memeology/templates/custom - Get custom templates (for frontend, no admin required)
+router.get('/templates/custom', async (req, res) => {
+  try {
+    const { tier } = req.query;
+    const userTier = tier || 'free';
+
+    const templateIds = await redis.lrange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
+    const templates = [];
+
+    for (const id of templateIds) {
+      const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+      if (template && Object.keys(template).length > 0) {
+        // Filter by tier
+        const templateTier = template.tier || 'free';
+        const tierOrder = ['free', 'waldocoin', 'premium', 'gold', 'platinum', 'king'];
+        const userTierIndex = tierOrder.indexOf(userTier);
+        const templateTierIndex = tierOrder.indexOf(templateTier);
+
+        if (userTierIndex >= templateTierIndex) {
+          // Parse categories
+          if (typeof template.categories === 'string') {
+            try {
+              template.categories = JSON.parse(template.categories);
+            } catch (e) {
+              template.categories = [template.categories];
+            }
+          }
+          templates.push(template);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      templates,
+      count: templates.length,
+      tier: userTier
+    });
+
+  } catch (error) {
+    console.error('Error getting custom templates:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
