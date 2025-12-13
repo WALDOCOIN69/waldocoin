@@ -58,6 +58,10 @@ function App() {
 					{activeTab === 'gallery' && <CommunityGallery />}
 					{activeTab === 'ai' && <AIBot onUseInEditor={handleUseInEditor} />}
 				</div>
+
+				<footer className="app-footer">
+					<p>Need help? Contact us at <a href="mailto:info@memeology.fun">info@memeology.fun</a></p>
+				</footer>
 			</div>
 		</AuthProvider>
 	)

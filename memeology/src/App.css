@@ -54,6 +54,28 @@
   gap: 20px;
 }
 
+/* Footer */
+.app-footer {
+  text-align: center;
+  padding: 30px 20px;
+  margin-top: 40px;
+  border-top: 1px solid var(--border);
+  color: var(--textSecondary);
+  font-size: 14px;
+}
+
+.app-footer a {
+  color: var(--neonAqua);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.app-footer a:hover {
+  color: var(--neonPurple);
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   /* Tighter, uniform padding on mobile so header and content line up cleanly */
   .container {
@@ -68,5 +90,11 @@
   .tab {
     padding: 8px 12px;
     font-size: 14px;
+  }
+
+  .app-footer {
+    padding: 20px 16px;
+    margin-top: 20px;
+    font-size: 13px;
   }
 }
