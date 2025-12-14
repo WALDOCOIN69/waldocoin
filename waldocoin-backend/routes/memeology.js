@@ -80,8 +80,19 @@ const MEMEOLOGY_KEYS = {
   memeUpvotes: (id) => `memeology:meme:${id}:upvotes`,
   memeDownvotes: (id) => `memeology:meme:${id}:downvotes`,
   customTemplates: 'memeology:custom:templates',
-  customTemplate: (id) => `memeology:custom:template:${id}`
+  customTemplate: (id) => `memeology:custom:template:${id}`,
+  // Template submission system
+  pendingTemplates: 'memeology:templates:pending',
+  pendingTemplate: (id) => `memeology:template:pending:${id}`,
+  approvedCreatorTemplates: 'memeology:templates:creator',
+  creatorTemplate: (id) => `memeology:template:creator:${id}`,
+  templateUsage: (id) => `memeology:template:usage:${id}`,
+  creatorEarnings: (wallet) => `memeology:creator:earnings:${wallet}`,
+  creatorSubmissions: (wallet, month) => `memeology:creator:submissions:${wallet}:${month}`
 };
+
+// Creator template payout amount (100 WLO per use)
+const CREATOR_PAYOUT_PER_USE = 100;
 
 // Configure Cloudinary for image uploads (if available)
 if (cloudinary && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
@@ -2517,6 +2528,297 @@ router.get('/templates/custom', async (req, res) => {
   } catch (error) {
     console.error('Error getting custom templates:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
+// CREATOR TEMPLATE SUBMISSION SYSTEM
+// Premium users can submit up to 3 templates/month for admin review
+// Approved templates earn creators 100 WLO per use
+// ============================================================================
+
+// POST /api/memeology/templates/submit - Submit a template for review (premium users only)
+router.post('/templates/submit', async (req, res) => {
+  try {
+    const { wallet, imageData, name, categories } = req.body;
+
+    if (!wallet || !imageData || !name) {
+      return res.status(400).json({ error: 'Wallet, image data, and name are required' });
+    }
+
+    // Check user tier - only non-free tiers can submit
+    const tierInfo = await getUserTier(wallet);
+    if (tierInfo.tier === 'free') {
+      return res.status(403).json({
+        error: 'Template submission requires WALDOCOIN tier or higher. Hold 1000+ WLO to unlock!',
+        tier: 'free'
+      });
+    }
+
+    // Check monthly submission limit (3 per month)
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const submissionsKey = MEMEOLOGY_KEYS.creatorSubmissions(wallet, currentMonth);
+    const currentSubmissions = parseInt(await redis.get(submissionsKey) || '0', 10);
+
+    if (currentSubmissions >= 3) {
+      return res.status(429).json({
+        error: 'Monthly submission limit reached (3 templates/month). Try again next month!',
+        limit: 3,
+        used: currentSubmissions
+      });
+    }
+
+    // Upload to Cloudinary if available
+    let imageUrl = imageData;
+    if (cloudinary && imageData.startsWith('data:')) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(imageData, {
+          folder: 'memeology/creator-submissions',
+          public_id: `template_${Date.now()}`
+        });
+        imageUrl = uploadResult.secure_url;
+      } catch (uploadErr) {
+        console.error('Cloudinary upload failed:', uploadErr.message);
+        // Continue with base64 if Cloudinary fails
+      }
+    }
+
+    const templateId = `creator_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+    const template = {
+      id: templateId,
+      name,
+      url: imageUrl,
+      categories: JSON.stringify(categories || ['community']),
+      creatorWallet: wallet,
+      submittedAt: new Date().toISOString(),
+      status: 'pending',
+      uses: 0
+    };
+
+    // Store pending template
+    await redis.hset(MEMEOLOGY_KEYS.pendingTemplate(templateId), template);
+    await redis.lpush(MEMEOLOGY_KEYS.pendingTemplates, templateId);
+
+    // Increment monthly submission count
+    await redis.incr(submissionsKey);
+    // Set expiry to 60 days so it auto-cleans
+    await redis.expire(submissionsKey, 60 * 24 * 60 * 60);
+
+    console.log(`📤 Template submitted: ${templateId} by ${wallet.slice(0, 10)}... (${currentSubmissions + 1}/3 this month)`);
+
+    res.json({
+      success: true,
+      templateId,
+      message: 'Template submitted for review! You\'ll earn 100 WLO each time someone uses it once approved.',
+      submissionsRemaining: 3 - currentSubmissions - 1
+    });
+
+  } catch (error) {
+    console.error('Error submitting template:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/templates/submissions - Get user's submitted templates
+router.get('/templates/submissions', async (req, res) => {
+  try {
+    const { wallet } = req.query;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet required' });
+    }
+
+    // Get all pending templates for this user
+    const pendingIds = await redis.lrange(MEMEOLOGY_KEYS.pendingTemplates, 0, -1);
+    const pendingTemplates = [];
+
+    for (const id of pendingIds) {
+      const template = await redis.hgetall(MEMEOLOGY_KEYS.pendingTemplate(id));
+      if (template && template.creatorWallet === wallet) {
+        pendingTemplates.push(template);
+      }
+    }
+
+    // Get approved creator templates for this user
+    const approvedIds = await redis.lrange(MEMEOLOGY_KEYS.approvedCreatorTemplates, 0, -1);
+    const approvedTemplates = [];
+
+    for (const id of approvedIds) {
+      const template = await redis.hgetall(MEMEOLOGY_KEYS.creatorTemplate(id));
+      if (template && template.creatorWallet === wallet) {
+        approvedTemplates.push(template);
+      }
+    }
+
+    // Get total earnings
+    const earnings = parseInt(await redis.get(MEMEOLOGY_KEYS.creatorEarnings(wallet)) || '0', 10);
+
+    // Get this month's submissions
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const submissionsThisMonth = parseInt(await redis.get(MEMEOLOGY_KEYS.creatorSubmissions(wallet, currentMonth)) || '0', 10);
+
+    res.json({
+      success: true,
+      pending: pendingTemplates,
+      approved: approvedTemplates,
+      totalEarnings: earnings,
+      submissionsThisMonth,
+      submissionsRemaining: Math.max(0, 3 - submissionsThisMonth)
+    });
+
+  } catch (error) {
+    console.error('Error getting submissions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/admin/templates/pending - Get pending templates for admin review
+router.get('/admin/templates/pending', requireMemeologyAdmin, async (req, res) => {
+  try {
+    const pendingIds = await redis.lrange(MEMEOLOGY_KEYS.pendingTemplates, 0, -1);
+    const templates = [];
+
+    for (const id of pendingIds) {
+      const template = await redis.hgetall(MEMEOLOGY_KEYS.pendingTemplate(id));
+      if (template && Object.keys(template).length > 0) {
+        templates.push(template);
+      }
+    }
+
+    res.json({
+      success: true,
+      templates,
+      count: templates.length
+    });
+
+  } catch (error) {
+    console.error('Error getting pending templates:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/admin/templates/review - Approve or reject a pending template
+router.post('/admin/templates/review', requireMemeologyAdmin, async (req, res) => {
+  try {
+    const { templateId, action, reason } = req.body;
+
+    if (!templateId || !action) {
+      return res.status(400).json({ error: 'templateId and action (approve/reject) required' });
+    }
+
+    const template = await redis.hgetall(MEMEOLOGY_KEYS.pendingTemplate(templateId));
+    if (!template || Object.keys(template).length === 0) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    // Remove from pending list
+    await redis.lrem(MEMEOLOGY_KEYS.pendingTemplates, 0, templateId);
+
+    if (action === 'approve') {
+      // Move to approved creator templates
+      template.status = 'approved';
+      template.approvedAt = new Date().toISOString();
+      template.uses = '0';
+
+      await redis.hset(MEMEOLOGY_KEYS.creatorTemplate(templateId), template);
+      await redis.lpush(MEMEOLOGY_KEYS.approvedCreatorTemplates, templateId);
+
+      // Also add to custom templates so it shows in the main gallery
+      await redis.hset(MEMEOLOGY_KEYS.customTemplate(templateId), {
+        ...template,
+        tier: 'free', // Available to all users
+        isCreatorTemplate: 'true'
+      });
+      await redis.lpush(MEMEOLOGY_KEYS.customTemplates, templateId);
+
+      console.log(`✅ Template approved: ${templateId} by ${template.creatorWallet?.slice(0, 10)}...`);
+
+      res.json({
+        success: true,
+        message: 'Template approved and added to gallery!',
+        template
+      });
+    } else if (action === 'reject') {
+      // Just remove from pending (already done above)
+      await redis.del(MEMEOLOGY_KEYS.pendingTemplate(templateId));
+
+      console.log(`❌ Template rejected: ${templateId} - ${reason || 'No reason given'}`);
+
+      res.json({
+        success: true,
+        message: 'Template rejected',
+        reason
+      });
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Use "approve" or "reject"' });
+    }
+
+  } catch (error) {
+    console.error('Error reviewing template:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/templates/use - Track template usage and pay creator
+router.post('/templates/use', async (req, res) => {
+  try {
+    const { templateId, wallet } = req.body;
+
+    if (!templateId) {
+      return res.json({ success: true }); // Silently succeed for non-tracked templates
+    }
+
+    // Check if this is a creator template
+    const creatorTemplate = await redis.hgetall(MEMEOLOGY_KEYS.creatorTemplate(templateId));
+    if (!creatorTemplate || Object.keys(creatorTemplate).length === 0) {
+      return res.json({ success: true }); // Not a creator template, just succeed
+    }
+
+    // Increment usage count
+    const newUses = await redis.hincrby(MEMEOLOGY_KEYS.creatorTemplate(templateId), 'uses', 1);
+
+    // Credit creator with 100 WLO
+    const creatorWallet = creatorTemplate.creatorWallet;
+    if (creatorWallet && creatorWallet !== wallet) { // Don't pay creator for their own usage
+      await redis.incrby(MEMEOLOGY_KEYS.creatorEarnings(creatorWallet), CREATOR_PAYOUT_PER_USE);
+      console.log(`💰 Creator ${creatorWallet.slice(0, 10)}... earned ${CREATOR_PAYOUT_PER_USE} WLO for template use (total uses: ${newUses})`);
+    }
+
+    res.json({
+      success: true,
+      templateUses: newUses,
+      creatorEarned: CREATOR_PAYOUT_PER_USE
+    });
+
+  } catch (error) {
+    console.error('Error tracking template use:', error);
+    res.json({ success: true }); // Don't fail the meme creation
+  }
+});
+
+// GET /api/memeology/creator/earnings - Get creator earnings and request payout
+router.get('/creator/earnings', async (req, res) => {
+  try {
+    const { wallet } = req.query;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'Wallet required' });
+    }
+
+    const earnings = parseInt(await redis.get(MEMEOLOGY_KEYS.creatorEarnings(wallet)) || '0', 10);
+
+    res.json({
+      success: true,
+      earnings,
+      earningsUsd: (earnings * 0.001).toFixed(2), // At $0.001 per WLO
+      minPayout: 1000, // Minimum 1000 WLO ($1) to request payout
+      canRequestPayout: earnings >= 1000
+    });
+
+  } catch (error) {
+    console.error('Error getting creator earnings:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

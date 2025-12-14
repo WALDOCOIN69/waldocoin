@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { parseGIF, decompressFrames } from 'gifuct-js'
 import './MemeGenerator.css'
 import PremiumModal from './PremiumModal'
 
@@ -33,6 +34,13 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	  const [gifResults, setGifResults] = useState([])
 	  const [loadingGifs, setLoadingGifs] = useState(false)
 	  const [lastSharedMemeUrl, setLastSharedMemeUrl] = useState(null)
+	  const [exportingVideo, setExportingVideo] = useState(false)
+	  const [videoProgress, setVideoProgress] = useState(0)
+	  const [showSubmitModal, setShowSubmitModal] = useState(false)
+	  const [submitTemplateName, setSubmitTemplateName] = useState('')
+	  const [submitTemplateImage, setSubmitTemplateImage] = useState(null)
+	  const [submittingTemplate, setSubmittingTemplate] = useState(false)
+	  const [creatorStats, setCreatorStats] = useState(null)
 
   // Multiple text boxes
   const [textBoxes, setTextBoxes] = useState([
@@ -50,8 +58,9 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 
   useEffect(() => {
     fetchTemplates()
-    if (user && (tier === 'waldocoin' || tier === 'premium')) {
+    if (user && tier !== 'free') {
       fetchUserNFTs()
+      fetchCreatorStats()
     }
   }, [tier])
 
@@ -91,6 +100,75 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
       }
     } catch (error) {
       console.error('Error fetching NFTs:', error)
+    }
+  }
+
+  const fetchCreatorStats = async () => {
+    if (!user?.wallet) return
+
+    try {
+      const response = await fetch(`${API_URL}/api/memeology/templates/submissions?wallet=${user.wallet}`)
+      const data = await response.json()
+      if (data.success) {
+        setCreatorStats(data)
+      }
+    } catch (error) {
+      console.error('Error fetching creator stats:', error)
+    }
+  }
+
+  const handleTemplateImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image too large. Max size is 5MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setSubmitTemplateImage(reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const submitTemplate = async () => {
+    if (!submitTemplateName.trim() || !submitTemplateImage) {
+      alert('Please provide a template name and image')
+      return
+    }
+
+    try {
+      setSubmittingTemplate(true)
+
+      const response = await fetch(`${API_URL}/api/memeology/templates/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: user.wallet,
+          imageData: submitTemplateImage,
+          name: submitTemplateName.trim(),
+          categories: ['community']
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert(`🎉 Template submitted! You'll earn 100 WLO each time someone uses it once approved. (${data.submissionsRemaining} submissions left this month)`)
+        setShowSubmitModal(false)
+        setSubmitTemplateName('')
+        setSubmitTemplateImage(null)
+        fetchCreatorStats()
+      } else {
+        alert(data.error || 'Failed to submit template')
+      }
+    } catch (error) {
+      console.error('Error submitting template:', error)
+      alert('Error submitting template')
+    } finally {
+      setSubmittingTemplate(false)
     }
   }
 
@@ -604,6 +682,169 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 	  }
 	}
 
+  // Export GIF meme as video (premium feature)
+  const exportAsVideo = async () => {
+    if (!selectedTemplate?.isGIF) {
+      alert('Video export is only available for GIF templates')
+      return
+    }
+
+    if (tier === 'free') {
+      alert('🎬 Video export is a premium feature. Upgrade to WALDOCOIN tier or higher!')
+      return
+    }
+
+    try {
+      setExportingVideo(true)
+      setVideoProgress(0)
+
+      // Fetch the GIF
+      const response = await fetch(selectedTemplate.url)
+      const buffer = await response.arrayBuffer()
+
+      // Parse GIF frames
+      const gif = parseGIF(buffer)
+      const frames = decompressFrames(gif, true)
+
+      if (!frames || frames.length === 0) {
+        throw new Error('Could not parse GIF frames')
+      }
+
+      // Create canvas for video
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      canvas.width = frames[0].dims.width
+      canvas.height = frames[0].dims.height
+
+      // Create MediaRecorder
+      const stream = canvas.captureStream(30) // 30 FPS
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+      })
+
+      const chunks = []
+      recorder.ondataavailable = (e) => chunks.push(e.data)
+
+      const videoPromise = new Promise((resolve) => {
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' })
+          resolve(blob)
+        }
+      })
+
+      recorder.start()
+
+      // Render each frame with text overlay
+      const tempCanvas = document.createElement('canvas')
+      const tempCtx = tempCanvas.getContext('2d')
+      let frameImageData = ctx.createImageData(canvas.width, canvas.height)
+
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i]
+        setVideoProgress(Math.round((i / frames.length) * 100))
+
+        // Draw frame to temp canvas
+        tempCanvas.width = frame.dims.width
+        tempCanvas.height = frame.dims.height
+
+        // Create image data from frame patch
+        const patchData = tempCtx.createImageData(frame.dims.width, frame.dims.height)
+        patchData.data.set(frame.patch)
+        tempCtx.putImageData(patchData, 0, 0)
+
+        // Composite frame onto main canvas
+        if (frame.disposalType === 2) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        }
+        ctx.drawImage(tempCanvas, frame.dims.left, frame.dims.top)
+
+        // Draw text overlays
+        drawTextOnCanvas(ctx, canvas.width, canvas.height)
+
+        // Wait for frame delay
+        const delay = frame.delay || 100
+        await new Promise(r => setTimeout(r, delay))
+      }
+
+      // Loop the GIF 3 times for video
+      for (let loop = 0; loop < 2; loop++) {
+        for (let i = 0; i < frames.length; i++) {
+          const frame = frames[i]
+          setVideoProgress(Math.round(((loop + 1) * frames.length + i) / (frames.length * 3) * 100))
+
+          tempCanvas.width = frame.dims.width
+          tempCanvas.height = frame.dims.height
+          const patchData = tempCtx.createImageData(frame.dims.width, frame.dims.height)
+          patchData.data.set(frame.patch)
+          tempCtx.putImageData(patchData, 0, 0)
+
+          if (frame.disposalType === 2) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+          }
+          ctx.drawImage(tempCanvas, frame.dims.left, frame.dims.top)
+          drawTextOnCanvas(ctx, canvas.width, canvas.height)
+
+          const delay = frame.delay || 100
+          await new Promise(r => setTimeout(r, delay))
+        }
+      }
+
+      recorder.stop()
+      const videoBlob = await videoPromise
+
+      // Download video
+      const url = URL.createObjectURL(videoBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `meme-${Date.now()}.webm`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setTimeout(() => URL.revokeObjectURL(url), 1500)
+
+      setVideoProgress(100)
+      alert('🎬 Video exported successfully!')
+
+    } catch (error) {
+      console.error('Error exporting video:', error)
+      alert('Failed to export video: ' + error.message)
+    } finally {
+      setExportingVideo(false)
+      setVideoProgress(0)
+    }
+  }
+
+  // Helper to draw text on canvas (for video export)
+  const drawTextOnCanvas = (ctx, width, height) => {
+    textBoxes.forEach(box => {
+      if (!box.text) return
+
+      const scaledFontSize = (box.fontSize / 100) * (width / 10)
+      ctx.font = `bold ${scaledFontSize}px ${box.fontFamily}, Arial Black, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+
+      const lines = box.text.toUpperCase().split('\n')
+      const lineHeight = scaledFontSize * 1.1
+      const centerX = box.x * width
+      const centerY = box.y * height
+
+      lines.forEach((line, idx) => {
+        const y = centerY + (idx - (lines.length - 1) / 2) * lineHeight
+
+        // Draw outline
+        ctx.strokeStyle = box.outlineColor
+        ctx.lineWidth = box.outlineWidth * 2
+        ctx.lineJoin = 'round'
+        ctx.strokeText(line, centerX, y)
+
+        // Draw fill
+        ctx.fillStyle = box.color
+        ctx.fillText(line, centerX, y)
+      })
+    })
+  }
+
   const shareToGallery = async () => {
     if (!user?.wallet) {
       alert('Please connect your wallet to share memes!')
@@ -894,6 +1135,15 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                     🎬 Browse GIFs
                   </button>
                 )}
+
+                {tier !== 'free' && (
+                  <button
+                    className="submit-template-button"
+                    onClick={() => setShowSubmitModal(true)}
+                  >
+                    📤 Submit Template
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1124,6 +1374,15 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                 >
                   ⬇️ Download Meme
                 </button>
+                {selectedTemplate?.isGIF && tier !== 'free' && (
+                  <button
+                    className="btn-primary video-export-btn"
+                    onClick={exportAsVideo}
+                    disabled={!imageLoaded || exportingVideo}
+                  >
+                    {exportingVideo ? `🎬 Exporting... ${videoProgress}%` : '🎬 Export Video'}
+                  </button>
+                )}
                 <button
                   className="btn-secondary"
                   onClick={() => setShowShareModal(true)}
@@ -1365,6 +1624,83 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
             <button className="modal-close" onClick={() => setEnlargedImage(null)}>✕</button>
             <div className="enlarged-image-container">
               <img src={enlargedImage} alt="Enlarged meme" className="enlarged-image" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Template Modal */}
+      {showSubmitModal && (
+        <div className="modal-overlay" onClick={() => setShowSubmitModal(false)}>
+          <div className="submit-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowSubmitModal(false)}>×</button>
+            <h2>📤 Submit Your Template</h2>
+            <p className="submit-subtitle">
+              Premium members can submit up to 3 templates per month.<br/>
+              Earn <strong>100 WLO</strong> each time someone uses your template!
+            </p>
+
+            {creatorStats && (
+              <div className="creator-stats">
+                <div className="stat-item">
+                  <span className="stat-value">{creatorStats.submissionsRemaining}/3</span>
+                  <span className="stat-label">Submissions Left</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{creatorStats.pending?.length || 0}</span>
+                  <span className="stat-label">Pending Review</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{creatorStats.approved?.length || 0}</span>
+                  <span className="stat-label">Approved</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{creatorStats.totalEarnings || 0} WLO</span>
+                  <span className="stat-label">Total Earned</span>
+                </div>
+              </div>
+            )}
+
+            <div className="submit-form">
+              <div className="form-group">
+                <label>Template Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g., 'Surprised Cat', 'Thumbs Up Guy'"
+                  value={submitTemplateName}
+                  onChange={(e) => setSubmitTemplateName(e.target.value)}
+                  maxLength={50}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Template Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleTemplateImageUpload}
+                />
+                <p className="form-hint">Max 5MB. JPG, PNG, or GIF.</p>
+              </div>
+
+              {submitTemplateImage && (
+                <div className="preview-upload">
+                  <img src={submitTemplateImage} alt="Preview" />
+                </div>
+              )}
+
+              <button
+                className="btn-primary submit-btn"
+                onClick={submitTemplate}
+                disabled={submittingTemplate || !submitTemplateName.trim() || !submitTemplateImage}
+              >
+                {submittingTemplate ? '⏳ Submitting...' : '📤 Submit for Review'}
+              </button>
+
+              <p className="submit-note">
+                ⚠️ Templates are reviewed by admins before appearing in the gallery.
+                Inappropriate content will be rejected.
+              </p>
             </div>
           </div>
         </div>

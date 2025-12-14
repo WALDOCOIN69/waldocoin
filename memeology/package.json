@@ -16,10 +16,11 @@
     "@vitejs/plugin-react": "^5.1.1",
     "axios": "^1.13.2",
     "dotenv": "^17.2.3",
+    "gifuct-js": "^2.1.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "vite": "^7.2.2",
-    "xumm-sdk": "^1.7.0",
-    "xrpl": "^2.11.0"
+    "xrpl": "^2.11.0",
+    "xumm-sdk": "^1.7.0"
   }
 }
