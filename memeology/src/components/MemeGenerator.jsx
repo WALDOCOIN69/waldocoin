@@ -1443,10 +1443,10 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <li>✅ Unlimited memes/day</li>
                   <li>✅ <strong>Unlimited AI suggestions</strong></li>
                   <li>✅ Custom fonts</li>
-                  <li>✅ <strong>Submit templates (3/mo) - earn 100 WLO per use!</strong></li>
                   <li>❌ GIF templates</li>
                   <li>❌ Use NFT images</li>
                   <li>❌ No watermark</li>
+                  <li>❌ Submit templates</li>
                   <li>💰 <strong>0.1 WLO per meme</strong></li>
                 </ul>
                 <button className="tier-button tier-button-waldocoin">

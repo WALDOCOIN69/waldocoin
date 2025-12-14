@@ -2554,12 +2554,13 @@ router.post('/templates/submit', async (req, res) => {
       return res.status(400).json({ error: 'Wallet, image data, and name are required' });
     }
 
-    // Check user tier - only non-free tiers can submit
+    // Check user tier - only premium+ tiers can submit (premium, gold, platinum, king)
     const tierInfo = await getUserTier(wallet);
-    if (tierInfo.tier === 'free') {
+    const allowedTiers = ['premium', 'gold', 'platinum', 'king'];
+    if (!allowedTiers.includes(tierInfo.tier)) {
       return res.status(403).json({
-        error: 'Template submission requires WALDOCOIN tier or higher. Hold 1000+ WLO to unlock!',
-        tier: 'free'
+        error: 'Template submission requires Premium tier or higher. Subscribe for $5/month to unlock!',
+        tier: tierInfo.tier
       });
     }
 
