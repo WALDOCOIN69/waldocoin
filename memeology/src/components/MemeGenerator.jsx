@@ -1468,6 +1468,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <li>✅ <strong>GIF templates</strong></li>
                   <li>✅ <strong>Use your NFT images!</strong></li>
                   <li>✅ No watermark</li>
+                  <li>✅ <strong>Submit templates (3/mo) - earn 100 WLO per use!</strong></li>
                   <li>💰 <strong>No fees!</strong></li>
                 </ul>
                 <button
