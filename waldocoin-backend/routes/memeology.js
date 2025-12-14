@@ -1159,9 +1159,10 @@ router.post('/premium/subscribe', async (req, res) => {
 
     const selectedDuration = duration || 'monthly';
 
-    // Premium pricing: $5 USD equivalent per month
-    const usdPerMonth = 5;
-    const usdTotal = selectedDuration === 'yearly' ? usdPerMonth * 10 : usdPerMonth; // Yearly = 10 months (2 free)
+    // Premium pricing: $5/month or $50/year lump sum
+    const monthlyUsd = 5;
+    const yearlyUsd = 50;
+    const usdTotal = selectedDuration === 'yearly' ? yearlyUsd : monthlyUsd;
 
     // Fetch real-time prices
     const prices = await getAllPrices();
@@ -1344,17 +1345,17 @@ router.post('/premium/subscribe', async (req, res) => {
 // GET /api/memeology/premium/pricing - Get current premium pricing in XRP and WLO
 router.get('/premium/pricing', async (req, res) => {
   try {
-    const usdPerMonth = 5;
-    const yearlyUsd = usdPerMonth * 10; // 2 months free
+    const monthlyUsd = 5;  // $5/month
+    const yearlyUsd = 50;  // $50/year lump sum
 
-    // Fetch real-time prices from price oracle
+    // Fetch prices (cached for 24 hours)
     const prices = await getAllPrices();
     const currentXrpPrice = prices.xrp;
     const currentWloPrice = prices.wlo;
 
     // Calculate token amounts needed
-    const monthlyXrp = await calculateTokenAmount(usdPerMonth, 'xrp');
-    const monthlyWlo = await calculateTokenAmount(usdPerMonth, 'wlo');
+    const monthlyXrp = await calculateTokenAmount(monthlyUsd, 'xrp');
+    const monthlyWlo = await calculateTokenAmount(monthlyUsd, 'wlo');
     const yearlyXrp = await calculateTokenAmount(yearlyUsd, 'xrp');
     const yearlyWlo = await calculateTokenAmount(yearlyUsd, 'wlo');
 
@@ -1362,7 +1363,7 @@ router.get('/premium/pricing', async (req, res) => {
       success: true,
       pricing: {
         monthly: {
-          usd: usdPerMonth,
+          usd: monthlyUsd,
           xrp: monthlyXrp,
           wlo: monthlyWlo,
           xrpPrice: currentXrpPrice,
@@ -1374,10 +1375,10 @@ router.get('/premium/pricing', async (req, res) => {
           wlo: yearlyWlo,
           xrpPrice: currentXrpPrice,
           wloPrice: currentWloPrice,
-          savings: `$${usdPerMonth * 2} USD (2 months free)`
+          savings: '$10 USD (2 months free)'
         }
       },
-      note: 'Prices are calculated based on current market rates and may fluctuate',
+      note: 'Prices updated once per day based on market rates',
       lastUpdated: new Date().toISOString()
     });
   } catch (error) {

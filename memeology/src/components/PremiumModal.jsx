@@ -198,14 +198,14 @@ function PremiumModal({ show, onClose, wallet }) {
                 onClick={() => setSelectedDuration('monthly')}
               >
                 <div className="duration-label">Monthly</div>
-                <div className="duration-price">${currentPricing?.usd || 5}/mo</div>
+                <div className="duration-price">${pricing?.monthly?.usd || 5}/mo</div>
               </button>
               <button
                 className={`duration-btn ${selectedDuration === 'yearly' ? 'active' : ''}`}
                 onClick={() => setSelectedDuration('yearly')}
               >
                 <div className="duration-label">Yearly</div>
-                <div className="duration-price">${currentPricing?.usd || 50}/yr</div>
+                <div className="duration-price">${pricing?.yearly?.usd || 50}/yr</div>
                 <div className="duration-savings">Save $10!</div>
               </button>
             </div>

@@ -9,13 +9,13 @@ import axios from 'axios';
 
 console.log("💰 Loaded: utils/priceOracle.js");
 
-// Cache prices for 5 minutes to avoid excessive API calls
+// Cache prices for 24 hours to reduce API calls
 let priceCache = {
   xrp: { price: null, timestamp: 0 },
   wlo: { price: null, timestamp: 0 }
 };
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Get current XRP price in USD from CoinGecko
