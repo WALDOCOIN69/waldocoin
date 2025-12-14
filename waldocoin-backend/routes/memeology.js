@@ -2371,8 +2371,8 @@ router.post('/admin/templates/upload', requireMemeologyAdmin, async (req, res) =
     };
 
     // Save to Redis
-    await redis.hset(MEMEOLOGY_KEYS.customTemplate(templateId), template);
-    await redis.lpush(MEMEOLOGY_KEYS.customTemplates, templateId);
+    await redis.hSet(MEMEOLOGY_KEYS.customTemplate(templateId), template);
+    await redis.lPush(MEMEOLOGY_KEYS.customTemplates, templateId);
 
     console.log(`🎨 Custom template uploaded: ${name} (${templateId})`);
 
@@ -2391,11 +2391,11 @@ router.post('/admin/templates/upload', requireMemeologyAdmin, async (req, res) =
 // GET /api/memeology/admin/templates - Get all custom templates
 router.get('/admin/templates', requireMemeologyAdmin, async (req, res) => {
   try {
-    const templateIds = await redis.lrange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
+    const templateIds = await redis.lRange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
     const templates = [];
 
     for (const id of templateIds) {
-      const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+      const template = await redis.hGetAll(MEMEOLOGY_KEYS.customTemplate(id));
       if (template && Object.keys(template).length > 0) {
         // Parse categories if stored as string
         if (typeof template.categories === 'string') {
@@ -2427,7 +2427,7 @@ router.delete('/admin/templates/:id', requireMemeologyAdmin, async (req, res) =>
     const { id } = req.params;
 
     // Get template to find Cloudinary ID
-    const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+    const template = await redis.hGetAll(MEMEOLOGY_KEYS.customTemplate(id));
     if (!template || Object.keys(template).length === 0) {
       return res.status(404).json({ success: false, error: 'Template not found' });
     }
@@ -2443,7 +2443,7 @@ router.delete('/admin/templates/:id', requireMemeologyAdmin, async (req, res) =>
 
     // Delete from Redis
     await redis.del(MEMEOLOGY_KEYS.customTemplate(id));
-    await redis.lrem(MEMEOLOGY_KEYS.customTemplates, 0, id);
+    await redis.lRem(MEMEOLOGY_KEYS.customTemplates, 0, id);
 
     console.log(`🗑️ Custom template deleted: ${template.name} (${id})`);
 
@@ -2464,7 +2464,7 @@ router.patch('/admin/templates/:id', requireMemeologyAdmin, async (req, res) => 
     const { id } = req.params;
     const { name, boxCount, tier, categories } = req.body;
 
-    const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+    const template = await redis.hGetAll(MEMEOLOGY_KEYS.customTemplate(id));
     if (!template || Object.keys(template).length === 0) {
       return res.status(404).json({ success: false, error: 'Template not found' });
     }
@@ -2478,7 +2478,7 @@ router.patch('/admin/templates/:id', requireMemeologyAdmin, async (req, res) => 
     }
     template.updatedAt = new Date().toISOString();
 
-    await redis.hset(MEMEOLOGY_KEYS.customTemplate(id), template);
+    await redis.hSet(MEMEOLOGY_KEYS.customTemplate(id), template);
 
     console.log(`✏️ Custom template updated: ${template.name} (${id})`);
 
@@ -2500,11 +2500,11 @@ router.get('/templates/custom', async (req, res) => {
     const { tier } = req.query;
     const userTier = tier || 'free';
 
-    const templateIds = await redis.lrange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
+    const templateIds = await redis.lRange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
     const templates = [];
 
     for (const id of templateIds) {
-      const template = await redis.hgetall(MEMEOLOGY_KEYS.customTemplate(id));
+      const template = await redis.hGetAll(MEMEOLOGY_KEYS.customTemplate(id));
       if (template && Object.keys(template).length > 0) {
         // Filter by tier
         const templateTier = template.tier || 'free';
@@ -2606,8 +2606,8 @@ router.post('/templates/submit', async (req, res) => {
     };
 
     // Store pending template
-    await redis.hset(MEMEOLOGY_KEYS.pendingTemplate(templateId), template);
-    await redis.lpush(MEMEOLOGY_KEYS.pendingTemplates, templateId);
+    await redis.hSet(MEMEOLOGY_KEYS.pendingTemplate(templateId), template);
+    await redis.lPush(MEMEOLOGY_KEYS.pendingTemplates, templateId);
 
     // Increment monthly submission count
     await redis.incr(submissionsKey);
@@ -2639,22 +2639,22 @@ router.get('/templates/submissions', async (req, res) => {
     }
 
     // Get all pending templates for this user
-    const pendingIds = await redis.lrange(MEMEOLOGY_KEYS.pendingTemplates, 0, -1);
+    const pendingIds = await redis.lRange(MEMEOLOGY_KEYS.pendingTemplates, 0, -1);
     const pendingTemplates = [];
 
     for (const id of pendingIds) {
-      const template = await redis.hgetall(MEMEOLOGY_KEYS.pendingTemplate(id));
+      const template = await redis.hGetAll(MEMEOLOGY_KEYS.pendingTemplate(id));
       if (template && template.creatorWallet === wallet) {
         pendingTemplates.push(template);
       }
     }
 
     // Get approved creator templates for this user
-    const approvedIds = await redis.lrange(MEMEOLOGY_KEYS.approvedCreatorTemplates, 0, -1);
+    const approvedIds = await redis.lRange(MEMEOLOGY_KEYS.approvedCreatorTemplates, 0, -1);
     const approvedTemplates = [];
 
     for (const id of approvedIds) {
-      const template = await redis.hgetall(MEMEOLOGY_KEYS.creatorTemplate(id));
+      const template = await redis.hGetAll(MEMEOLOGY_KEYS.creatorTemplate(id));
       if (template && template.creatorWallet === wallet) {
         approvedTemplates.push(template);
       }
@@ -2685,11 +2685,11 @@ router.get('/templates/submissions', async (req, res) => {
 // GET /api/memeology/admin/templates/pending - Get pending templates for admin review
 router.get('/admin/templates/pending', requireMemeologyAdmin, async (req, res) => {
   try {
-    const pendingIds = await redis.lrange(MEMEOLOGY_KEYS.pendingTemplates, 0, -1);
+    const pendingIds = await redis.lRange(MEMEOLOGY_KEYS.pendingTemplates, 0, -1);
     const templates = [];
 
     for (const id of pendingIds) {
-      const template = await redis.hgetall(MEMEOLOGY_KEYS.pendingTemplate(id));
+      const template = await redis.hGetAll(MEMEOLOGY_KEYS.pendingTemplate(id));
       if (template && Object.keys(template).length > 0) {
         templates.push(template);
       }
@@ -2716,13 +2716,13 @@ router.post('/admin/templates/review', requireMemeologyAdmin, async (req, res) =
       return res.status(400).json({ error: 'templateId and action (approve/reject) required' });
     }
 
-    const template = await redis.hgetall(MEMEOLOGY_KEYS.pendingTemplate(templateId));
+    const template = await redis.hGetAll(MEMEOLOGY_KEYS.pendingTemplate(templateId));
     if (!template || Object.keys(template).length === 0) {
       return res.status(404).json({ error: 'Template not found' });
     }
 
     // Remove from pending list
-    await redis.lrem(MEMEOLOGY_KEYS.pendingTemplates, 0, templateId);
+    await redis.lRem(MEMEOLOGY_KEYS.pendingTemplates, 0, templateId);
 
     if (action === 'approve') {
       // Move to approved creator templates
@@ -2730,16 +2730,16 @@ router.post('/admin/templates/review', requireMemeologyAdmin, async (req, res) =
       template.approvedAt = new Date().toISOString();
       template.uses = '0';
 
-      await redis.hset(MEMEOLOGY_KEYS.creatorTemplate(templateId), template);
-      await redis.lpush(MEMEOLOGY_KEYS.approvedCreatorTemplates, templateId);
+      await redis.hSet(MEMEOLOGY_KEYS.creatorTemplate(templateId), template);
+      await redis.lPush(MEMEOLOGY_KEYS.approvedCreatorTemplates, templateId);
 
       // Also add to custom templates so it shows in the main gallery
-      await redis.hset(MEMEOLOGY_KEYS.customTemplate(templateId), {
+      await redis.hSet(MEMEOLOGY_KEYS.customTemplate(templateId), {
         ...template,
         tier: 'free', // Available to all users
         isCreatorTemplate: 'true'
       });
-      await redis.lpush(MEMEOLOGY_KEYS.customTemplates, templateId);
+      await redis.lPush(MEMEOLOGY_KEYS.customTemplates, templateId);
 
       console.log(`✅ Template approved: ${templateId} by ${template.creatorWallet?.slice(0, 10)}...`);
 
@@ -2750,7 +2750,7 @@ router.post('/admin/templates/review', requireMemeologyAdmin, async (req, res) =
       });
     } else if (action === 'reject') {
       // Just remove from pending (already done above)
-      await redis.del(MEMEOLOGY_KEYS.pendingTemplate(templateId));
+      await redis.del(MEMEOLOGY_KEYS.pendingTemplate(templateId));  // Note: 'del' is lowercase in redis v4
 
       console.log(`❌ Template rejected: ${templateId} - ${reason || 'No reason given'}`);
 
@@ -2779,7 +2779,7 @@ router.post('/templates/use', async (req, res) => {
     }
 
     // Check if this is a creator template
-    const creatorTemplate = await redis.hgetall(MEMEOLOGY_KEYS.creatorTemplate(templateId));
+    const creatorTemplate = await redis.hGetAll(MEMEOLOGY_KEYS.creatorTemplate(templateId));
     if (!creatorTemplate || Object.keys(creatorTemplate).length === 0) {
       return res.json({ success: true }); // Not a creator template, just succeed
     }
