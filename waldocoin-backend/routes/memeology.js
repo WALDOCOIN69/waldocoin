@@ -352,7 +352,7 @@ async function checkUserTier(wallet) {
         customFonts: true,
         noWatermark: true,
         nftArtIntegration: true,
-        customUploads: 'unlimited',
+        useNftImages: true,
         gifTemplates: 'unlimited',
         communityGallery: true,
         canEarnWLO: true,
@@ -369,7 +369,7 @@ async function checkUserTier(wallet) {
         customFonts: true,
         noWatermark: true,
         nftArtIntegration: true,
-        customUploads: 'unlimited',
+        useNftImages: true,
         gifTemplates: 'unlimited',
         communityGallery: true,
         canEarnWLO: true,
@@ -386,7 +386,7 @@ async function checkUserTier(wallet) {
         customFonts: true,
         noWatermark: true,
         nftArtIntegration: true,
-        customUploads: 'unlimited',
+        useNftImages: true,
         gifTemplates: 'unlimited',
         communityGallery: true,
         canEarnWLO: true,
@@ -403,7 +403,7 @@ async function checkUserTier(wallet) {
         customFonts: true,
         noWatermark: true,
         nftArtIntegration: true,
-        customUploads: 'unlimited',
+        useNftImages: true,
         gifTemplates: 'unlimited',
         communityGallery: true,
         canEarnWLO: true,
@@ -420,14 +420,14 @@ async function checkUserTier(wallet) {
         customFonts: true,
         noWatermark: false,  // WALDOCOIN tier has watermark
         nftArtIntegration: true,
-        customUploads: '50/day',
+        useNftImages: true,
         gifTemplates: 'unlimited',
         communityGallery: true,
         canEarnWLO: true,
         badge: '🪙 WALDOCOIN'
       };
     }
-    // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY, NO GIFS
+    // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY, NO GIFS, NO NFT IMAGES
     else {
       features = {
         templates: 'unlimited',
@@ -437,7 +437,7 @@ async function checkUserTier(wallet) {
         customFonts: true,
         noWatermark: false,  // FREE tier has watermark
         nftArtIntegration: false,
-        customUploads: 'unlimited',
+        useNftImages: false,
         gifTemplates: 'none',
         communityGallery: true,
         canEarnWLO: false,
@@ -568,7 +568,7 @@ router.get('/templates/imgflip', async (req, res) => {
         custom_fonts: true,
         no_watermark: true,
         nft_art_integration: true,
-        custom_uploads: 'unlimited',
+        use_nft_images: true,
         gif_templates: 'unlimited',
         can_earn_wlo: true
       };
@@ -584,7 +584,7 @@ router.get('/templates/imgflip', async (req, res) => {
         custom_fonts: true,
         no_watermark: true,
         nft_art_integration: true,
-        custom_uploads: 'unlimited',
+        use_nft_images: true,
         gif_templates: 'unlimited',
         can_earn_wlo: true
       };
@@ -600,14 +600,14 @@ router.get('/templates/imgflip', async (req, res) => {
         custom_fonts: true,
         no_watermark: false,
         nft_art_integration: true,
-        custom_uploads: '50/day',
+        use_nft_images: true,
         gif_templates: 'unlimited',
         can_earn_wlo: true
       };
     }
-    // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY
+    // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY, NO NFT IMAGES
     else {
-      upgradeMessage = '🆓 Free Tier: All templates, unlimited memes! AI suggestions limited to 1/day. Upgrade for GIFs & more AI features!';
+      upgradeMessage = '🆓 Free Tier: All templates, unlimited memes! AI suggestions limited to 1/day. Upgrade for GIFs & NFT images!';
       features = {
         templates: 'unlimited',
         memes_per_day: 'unlimited',
@@ -616,7 +616,7 @@ router.get('/templates/imgflip', async (req, res) => {
         custom_fonts: true,
         no_watermark: false,
         nft_art_integration: false,
-        custom_uploads: 'unlimited',
+        use_nft_images: false,
         gif_templates: 'none',
         can_earn_wlo: false
       };
@@ -1099,49 +1099,25 @@ router.post('/community/vote', async (req, res) => {
   }
 });
 
-// POST /api/memeology/upload - Upload custom image
-router.post('/upload', async (req, res) => {
+// POST /api/memeology/upload - Upload custom image (ADMIN ONLY)
+// Users can only use templates or their own NFT images - no arbitrary uploads
+router.post('/upload', requireMemeologyAdmin, async (req, res) => {
   try {
-    const { wallet, imageData, tier } = req.body; // imageData is base64
+    const { imageData, name } = req.body;
 
-    if (!wallet || !imageData) {
-      return res.status(400).json({ error: 'Wallet and image data required' });
-    }
-
-    // Free tier now has unlimited uploads - no restrictions!
-
-    // Check upload limits based on tier (tracked in Redis)
-    const today = new Date().toISOString().split('T')[0];
-    const key = MEMEOLOGY_KEYS.usageUpload(wallet, today);
-    const raw = await redis.get(key);
-    const uploadCount = raw ? parseInt(raw, 10) || 0 : 0;
-
-    let uploadLimit = 50; // WALDOCOIN tier
-    if (tier === 'premium' || tier === 'king' || tier === 'platinum' || tier === 'gold') uploadLimit = 999999; // Unlimited for premium/king/platinum/gold
-
-    if (uploadCount >= uploadLimit) {
-      return res.status(429).json({
-        error: `Daily upload limit reached (${uploadLimit} uploads/day). Collect 3+ NFTs for unlimited uploads!`,
-        limit: uploadLimit,
-        used: uploadCount
-      });
+    if (!imageData) {
+      return res.status(400).json({ error: 'Image data required' });
     }
 
     const uploadId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // For now we persist the base64 image data directly and rely on the
-    // frontend to render it. This avoids broken placeholder URLs while still
-    // being compatible with future IPFS/cloud storage integration.
-    await redis.incr(key);
-
-    console.log(`📸 Image uploaded: ${uploadId} by ${wallet.slice(0, 10)}... (${uploadCount + 1}/${uploadLimit})`);
+    console.log(`📸 Admin image uploaded: ${uploadId} - ${name || 'unnamed'}`);
 
     res.json({
       success: true,
       uploadId: uploadId,
       imageUrl: imageData,
-      uploadsRemaining: uploadLimit - uploadCount - 1,
-      message: 'Image uploaded successfully! Use it as a meme template.'
+      message: 'Image uploaded successfully (admin).'
     });
   } catch (error) {
     console.error('Error in /upload:', error);

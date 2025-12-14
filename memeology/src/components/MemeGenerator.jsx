@@ -887,25 +887,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                 )}
 
                 {tier !== 'free' && (
-                  <>
-                    <button
-                      className="gif-browse-button"
-                      onClick={() => setShowGIFModal(true)}
-                    >
-                      🎬 Browse GIFs
-                    </button>
-
-                    <label className="upload-button">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        style={{ display: 'none' }}
-                        disabled={uploading}
-                      />
-                      {uploading ? '⏳ Uploading...' : '📤 Upload Image'}
-                    </label>
-                  </>
+                  <button
+                    className="gif-browse-button"
+                    onClick={() => setShowGIFModal(true)}
+                  >
+                    🎬 Browse GIFs
+                  </button>
                 )}
               </div>
             </div>
@@ -1175,12 +1162,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-price">$0/month</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ Unlimited meme templates</li>
+                  <li>✅ 380+ meme templates</li>
                   <li>✅ Unlimited memes/day</li>
-                  <li>✅ Custom uploads</li>
                   <li>✅ Custom fonts</li>
                   <li>⚠️ 1 AI suggestion/day</li>
                   <li>❌ GIF templates</li>
+                  <li>❌ Use NFT images</li>
                   <li>❌ No watermark</li>
                   <li>💰 No fees</li>
                 </ul>
@@ -1194,11 +1181,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-price">Hold 1000+ WLO</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ 150 meme templates</li>
+                  <li>✅ 380+ meme templates</li>
                   <li>✅ Unlimited memes/day</li>
-                  <li>✅ 50 AI suggestions/day</li>
+                  <li>✅ 10 AI suggestions/day</li>
                   <li>✅ Custom fonts</li>
-                  <li>✅ <strong>Use your NFTs as templates!</strong></li>
+                  <li>✅ GIF templates</li>
+                  <li>✅ <strong>Use your NFT images!</strong></li>
                   <li>❌ No watermark</li>
                   <li>💰 <strong>0.1 WLO per meme</strong></li>
                 </ul>
@@ -1215,11 +1203,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-payment">Pay with WLO or XRP</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ 200+ meme templates</li>
+                  <li>✅ 380+ meme templates</li>
                   <li>✅ Unlimited memes/day</li>
                   <li>✅ Unlimited AI suggestions</li>
                   <li>✅ Custom fonts</li>
-                  <li>✅ <strong>Use your NFTs as templates!</strong></li>
+                  <li>✅ GIF templates</li>
+                  <li>✅ <strong>Use your NFT images!</strong></li>
                   <li>✅ No watermark</li>
                   <li>💰 <strong>No fees!</strong></li>
                 </ul>
