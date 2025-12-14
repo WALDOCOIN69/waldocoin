@@ -66,8 +66,8 @@ const WLO_CURRENCY = 'WLO';
 const GROQ_API_KEY = process.env.GROQ_API_KEY; // Free Groq API key
 // Public URL used when generating per-meme share links for the community gallery
 const MEMEOLOGY_PUBLIC_URL = process.env.MEMEOLOGY_PUBLIC_URL || 'https://memeology.fun';
-// Treasury wallet for premium subscription payments (can be overridden by env)
-const TREASURY_WALLET = process.env.TREASURY_WALLET || 'r9ZKBDvtQbdv5v6i6vtP5RK2yYGZnyyk4K';
+// Distribution wallet for premium subscription payments (can be overridden by env)
+const TREASURY_WALLET = process.env.TREASURY_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
 
 // 510 Redis-backed key helpers for Memeology
 const MEMEOLOGY_KEYS = {
