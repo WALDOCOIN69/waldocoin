@@ -2891,6 +2891,18 @@
           <div id="uploadStatus" style="margin-top: 10px;"></div>
         </div>
 
+        <!-- Pending Template Submissions (from users) -->
+        <div class="admin-card margin-bottom-30">
+          <div class="card-title">📥 Pending User Submissions (<span id="pendingSubmissionCount">0</span>)</div>
+          <div class="alert alert-warning margin-bottom-15">
+            💰 Users earn <strong>100 WLO</strong> each time someone uses their approved template!
+          </div>
+          <button onclick="loadPendingSubmissions()" class="btn-secondary margin-bottom-15">🔄 Refresh</button>
+          <div id="pendingSubmissionsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            <div class="loading"><div class="spinner"></div> Loading submissions...</div>
+          </div>
+        </div>
+
         <!-- Custom Templates List -->
         <div class="admin-card">
           <div class="card-title">📚 Custom Templates (<span id="customTemplateCount">0</span>)</div>
@@ -4359,6 +4371,7 @@
             break;
           case 'memeology':
             await loadCustomTemplates();
+            await loadPendingSubmissions();
             break;
         }
       } catch (error) {
@@ -8987,6 +9000,87 @@ This action cannot be undone. Continue?`;
       } catch (error) {
         console.error('Delete error:', error);
         showAlert('Network error deleting template', 'error');
+      }
+    }
+
+    // =====================================================
+    // PENDING TEMPLATE SUBMISSIONS (USER-SUBMITTED)
+    // =====================================================
+
+    async function loadPendingSubmissions() {
+      const listEl = document.getElementById('pendingSubmissionsList');
+      const countEl = document.getElementById('pendingSubmissionCount');
+
+      listEl.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/memeology/admin/templates/pending`, {
+          headers: { 'X-Memeology-Admin-Key': adminKey }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          countEl.textContent = data.pending?.length || 0;
+
+          if (!data.pending || data.pending.length === 0) {
+            listEl.innerHTML = '<div style="color: #888; text-align: center; padding: 40px; grid-column: 1 / -1;">✅ No pending submissions to review!</div>';
+            return;
+          }
+
+          listEl.innerHTML = data.pending.map(t => `
+            <div style="background: #2a2a2a; border-radius: 12px; overflow: hidden; border: 2px solid #f39c12;">
+              <img src="${t.imageUrl}" alt="${t.name}" style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
+              <div style="padding: 15px;">
+                <div style="font-weight: bold; color: #fff; font-size: 16px; margin-bottom: 8px;">${t.name}</div>
+                <div style="font-size: 12px; color: #888; margin-bottom: 10px;">
+                  <div>👤 Creator: <span style="color: #25c2a0;">${t.creatorWallet.slice(0, 8)}...${t.creatorWallet.slice(-6)}</span></div>
+                  <div>📅 Submitted: ${new Date(t.submittedAt).toLocaleDateString()}</div>
+                  <div>🏷️ Categories: ${(t.categories || ['community']).join(', ')}</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                  <button onclick="reviewSubmission('${t.id}', 'approved')" style="flex: 1; background: #25c2a0; border: none; color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">✅ Approve</button>
+                  <button onclick="reviewSubmission('${t.id}', 'rejected')" style="flex: 1; background: #e74c3c; border: none; color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">❌ Reject</button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          listEl.innerHTML = `<div style="color: #e74c3c;">Error: ${data.error}</div>`;
+        }
+      } catch (error) {
+        console.error('Load pending submissions error:', error);
+        listEl.innerHTML = '<div style="color: #e74c3c;">Network error loading submissions</div>';
+      }
+    }
+
+    async function reviewSubmission(id, action) {
+      const actionText = action === 'approved' ? 'approve' : 'reject';
+      if (!confirm(`Are you sure you want to ${actionText} this template?`)) return;
+
+      try {
+        const adminKey = localStorage.getItem('adminKey');
+        const response = await fetch(`${API_BASE}/api/memeology/admin/templates/review`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Memeology-Admin-Key': adminKey
+          },
+          body: JSON.stringify({ templateId: id, action })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`Template ${action}! ${action === 'approved' ? 'Creator will earn 100 WLO per use.' : ''}`, 'success');
+          loadPendingSubmissions();
+        } else {
+          showAlert(`Failed to ${actionText}: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Review error:', error);
+        showAlert(`Network error ${actionText}ing template`, 'error');
       }
     }
 
