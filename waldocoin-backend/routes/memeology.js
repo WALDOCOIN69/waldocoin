@@ -413,7 +413,7 @@ async function checkUserTier(wallet) {
     // 🪙 WALDOCOIN TIER (1000+ WLO) - CAN EARN WLO - HAS WATERMARK
     else if (tier === 'waldocoin') {
       features = {
-        templates: 150,
+        templates: 'unlimited',
         memesPerDay: 'unlimited',
         feePerMeme: '0.1 WLO',
         aiSuggestions: '10/day',
@@ -594,13 +594,13 @@ router.get('/templates/imgflip', async (req, res) => {
           can_earn_wlo: true
         };
       }
-      // 🪙 WALDOCOIN TIER (1000+ WLO)
+      // 🪙 WALDOCOIN TIER (1000+ WLO) - UNLIMITED TEMPLATES
       else if (userTier === 'waldocoin') {
-        templates = allMemes.slice(0, 150); // 150 templates
-        templateLimit = 150;
-        upgradeMessage = '🪙 WALDOCOIN Tier: 150 templates, unlimited memes/day, 0.1 WLO per meme. Collect 3+ NFTs for unlimited free access!';
+        templates = allMemes; // All templates (unlimited)
+        templateLimit = allMemes.length;
+        upgradeMessage = '🪙 WALDOCOIN Tier: Unlimited templates, unlimited memes/day, 0.1 WLO per meme. Collect 3+ NFTs for no fees!';
         features = {
-          templates: 150,
+          templates: 'unlimited',
           memes_per_day: 'unlimited',
           fee_per_meme: '0.1 WLO',
           ai_suggestions: '10/day',
@@ -2270,16 +2270,16 @@ router.get('/templates/stats', async (req, res) => {
       stats: stats,
       tiers: {
         free: {
-          templates: stats.free,
-          description: 'Top 50 highest quality templates'
+          templates: stats.total,
+          description: 'All templates (unlimited)'
         },
         waldocoin: {
-          templates: stats.free + stats.waldocoin,
-          description: 'Top 150 templates (requires 1000+ WLO)'
+          templates: stats.total,
+          description: 'All templates + can earn WLO (requires 1000+ WLO)'
         },
         premium: {
           templates: stats.total,
-          description: 'All 380 templates from 7 sources'
+          description: 'All templates + no watermark + no fees'
         }
       }
     });
