@@ -4,9 +4,9 @@
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 40px 40px;
 }
 
 .tabs {
@@ -77,9 +77,9 @@
 }
 
 @media (max-width: 768px) {
-  /* Tighter, uniform padding on mobile so header and content line up cleanly */
+  /* Mobile padding */
   .container {
-    padding: 20px 16px;
+    padding: 20px 12px;
   }
 
   .tabs {
@@ -93,8 +93,21 @@
   }
 
   .app-footer {
-    padding: 20px 16px;
+    padding: 20px 12px;
     margin-top: 20px;
     font-size: 13px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .container {
+    padding: 40px 60px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .container {
+    max-width: 1800px;
+    padding: 40px 80px;
   }
 }
