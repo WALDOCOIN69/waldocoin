@@ -58,8 +58,13 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
 
   useEffect(() => {
     fetchTemplates()
-    if (user && tier !== 'free') {
+    // Only premium+ tiers (not free or waldocoin) get NFT images
+    const premiumTiers = ['premium', 'gold', 'platinum', 'king']
+    if (user && premiumTiers.includes(tier)) {
       fetchUserNFTs()
+    }
+    // Creator stats for paid tiers (waldocoin and above)
+    if (user && tier !== 'free') {
       fetchCreatorStats()
     }
   }, [tier])
@@ -973,19 +978,14 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
   }
 
   const getAISuggestion = async (boxId) => {
-    // Check tier limits
-    const limits = {
-      free: 1,
-      waldocoin: 10,
-      premium: 999999
-    }
-
-    const dailyLimit = limits[tier] || 1
-
-    if (aiSuggestionsToday >= dailyLimit) {
-      alert(`Daily AI suggestion limit reached (${dailyLimit}/day). ${tier === 'free' ? 'Connect your wallet and upgrade to get more suggestions!' : 'Try again tomorrow!'}`)
+    // Free tier has no AI access
+    if (tier === 'free') {
+      alert('🤖 AI suggestions are not available on FREE tier. Hold 1000+ WLO to unlock unlimited AI!')
       return
     }
+
+    // WALDOCOIN and above get unlimited AI
+    // (keeping the counter for tracking but no limit)
 
     try {
       setAiSuggesting(true)
@@ -1006,10 +1006,6 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
       if (data.success) {
         updateTextBox(boxId, 'text', data.suggestion)
         setAiSuggestionsToday(aiSuggestionsToday + 1)
-
-        if (tier === 'free') {
-          alert(`✨ AI suggestion added! You have ${dailyLimit - aiSuggestionsToday - 1} suggestions left today. Connect your wallet and upgrade for more!`)
-        }
       } else {
         alert(data.error || 'Failed to get AI suggestion')
       }
@@ -1027,8 +1023,9 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
       return
     }
 
-    if (tier === 'free') {
-      alert('🎬 GIF templates are not available on FREE tier. Upgrade to WALDOCOIN (1000+ WLO) or PREMIUM!')
+    // GIFs only for premium+ tiers (not free or waldocoin)
+    if (tier === 'free' || tier === 'waldocoin') {
+      alert('🎬 GIF templates are a PREMIUM feature. Subscribe to Premium ($5/mo) or collect 3+ NFTs!')
       return
     }
 
@@ -1118,6 +1115,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
               />
 
               <div className="template-actions">
+                {/* NFT images - only for premium+ tiers (not waldocoin) */}
                 {tierFeatures?.nft_art_integration && (
                   <button
                     className="nft-browse-button"
@@ -1127,7 +1125,8 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   </button>
                 )}
 
-                {tier !== 'free' && (
+                {/* GIFs - only for premium+ tiers (not waldocoin or free) */}
+                {tierFeatures?.gif_templates !== 'none' && (
                   <button
                     className="gif-browse-button"
                     onClick={() => setShowGIFModal(true)}
@@ -1136,6 +1135,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   </button>
                 )}
 
+                {/* Template submission - for paid tiers */}
                 {tier !== 'free' && (
                   <button
                     className="submit-template-button"
@@ -1421,10 +1421,10 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-price">$0/month</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ 380+ meme templates</li>
+                  <li>✅ 100 meme templates</li>
                   <li>✅ Unlimited memes/day</li>
                   <li>✅ Custom fonts</li>
-                  <li>⚠️ 1 AI suggestion/day</li>
+                  <li>❌ AI suggestions</li>
                   <li>❌ GIF templates</li>
                   <li>❌ Use NFT images</li>
                   <li>❌ No watermark</li>
@@ -1440,12 +1440,12 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-price">Hold 1000+ WLO</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ 380+ meme templates</li>
+                  <li>✅ <strong>380+ meme templates</strong></li>
                   <li>✅ Unlimited memes/day</li>
-                  <li>✅ 10 AI suggestions/day</li>
+                  <li>✅ <strong>Unlimited AI suggestions</strong></li>
                   <li>✅ Custom fonts</li>
-                  <li>✅ GIF templates</li>
-                  <li>✅ <strong>Use your NFT images!</strong></li>
+                  <li>❌ GIF templates</li>
+                  <li>❌ Use NFT images</li>
                   <li>❌ No watermark</li>
                   <li>💰 <strong>0.1 WLO per meme</strong></li>
                 </ul>
@@ -1462,11 +1462,11 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-payment">Pay with WLO or XRP</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ 380+ meme templates</li>
+                  <li>✅ <strong>380+ meme templates</strong></li>
                   <li>✅ Unlimited memes/day</li>
-                  <li>✅ Unlimited AI suggestions</li>
+                  <li>✅ <strong>Unlimited AI suggestions</strong></li>
                   <li>✅ Custom fonts</li>
-                  <li>✅ GIF templates</li>
+                  <li>✅ <strong>GIF templates</strong></li>
                   <li>✅ <strong>Use your NFT images!</strong></li>
                   <li>✅ No watermark</li>
                   <li>💰 <strong>No fees!</strong></li>

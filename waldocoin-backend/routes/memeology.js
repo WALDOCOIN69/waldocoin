@@ -556,10 +556,18 @@ router.get('/templates/imgflip', async (req, res) => {
     const allMemes = getTemplatesForTier('king'); // Get ALL templates first, then filter
     const totalCount = allMemes.length;
 
-    // All tiers now get unlimited templates
-    const templates = allMemes;
+    // Filter templates based on tier
+    let templates;
     let upgradeMessage = '';
     let features = {};
+
+    // FREE tier only gets the top 100 imgflip templates
+    if (userTier === 'free') {
+      templates = allMemes.slice(0, 100);
+    } else {
+      // All paid tiers get all templates
+      templates = allMemes;
+    }
 
     // 👑 KING, 💎 PLATINUM (10+ NFTs), 🥇 GOLD (3-9 NFTs) - UNLIMITED FREE ACCESS
     if (userTier === 'king' || userTier === 'platinum' || userTier === 'gold') {
@@ -600,30 +608,30 @@ router.get('/templates/imgflip', async (req, res) => {
         can_earn_wlo: true
       };
     }
-    // 🪙 WALDOCOIN TIER (1000+ WLO) - UNLIMITED TEMPLATES
+    // 🪙 WALDOCOIN TIER (1000+ WLO) - ALL TEMPLATES + UNLIMITED AI, NO GIFS/NFTS
     else if (userTier === 'waldocoin') {
-      upgradeMessage = '🪙 WALDOCOIN Tier: Unlimited templates, unlimited memes/day, 0.1 WLO per meme. Collect 3+ NFTs for no fees!';
+      upgradeMessage = '🪙 WALDOCOIN Tier: All 380+ templates, unlimited AI! Upgrade to Premium for GIFs & NFT images!';
       features = {
-        templates: 'unlimited',
+        templates: 'all (380+)',
         memes_per_day: 'unlimited',
         fee_per_meme: '0.1 WLO',
-        ai_suggestions: '10/day',
+        ai_suggestions: 'unlimited',
         custom_fonts: true,
         no_watermark: false,
-        nft_art_integration: true,
-        use_nft_images: true,
-        gif_templates: 'unlimited',
+        nft_art_integration: false,
+        use_nft_images: false,
+        gif_templates: 'none',
         can_earn_wlo: true
       };
     }
-    // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY, NO NFT IMAGES
+    // 🆓 FREE TIER - 100 TEMPLATES ONLY, NO AI, NO GIFS, NO NFT IMAGES
     else {
-      upgradeMessage = '🆓 Free Tier: All templates, unlimited memes! AI suggestions limited to 1/day. Upgrade for GIFs & NFT images!';
+      upgradeMessage = '🆓 Free Tier: 100 templates. Hold 1000+ WLO for all templates & unlimited AI!';
       features = {
-        templates: 'unlimited',
+        templates: '100',
         memes_per_day: 'unlimited',
         fee_per_meme: 'none',
-        ai_suggestions: '1/day',
+        ai_suggestions: 'none',
         custom_fonts: true,
         no_watermark: false,
         nft_art_integration: false,
