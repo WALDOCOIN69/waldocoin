@@ -27,10 +27,19 @@ import {
   updateSessionActivity,
   trackFeatureUsage
 } from '../utils/analytics.js';
-import { v2 as cloudinary } from 'cloudinary';
 import { validateAdminKey, getAdminKey } from '../utils/adminAuth.js';
 
 dotenv.config();
+
+// Try to import cloudinary, but make it optional
+let cloudinary = null;
+try {
+  const cloudinaryModule = await import('cloudinary');
+  cloudinary = cloudinaryModule.v2;
+  console.log('✅ Cloudinary loaded successfully');
+} catch (error) {
+  console.warn('⚠️  Cloudinary not available - custom template uploads disabled:', error.message);
+}
 
 // Try to import sharp, but make it optional
 let sharp = null;
@@ -74,16 +83,18 @@ const MEMEOLOGY_KEYS = {
   customTemplate: (id) => `memeology:custom:template:${id}`
 };
 
-// Configure Cloudinary for image uploads
-if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+// Configure Cloudinary for image uploads (if available)
+if (cloudinary && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
   });
   console.log('✅ Cloudinary configured for custom template uploads');
+} else if (!cloudinary) {
+  console.warn('⚠️  Cloudinary module not available - custom template uploads disabled');
 } else {
-  console.warn('⚠️  Cloudinary not configured - custom template uploads disabled');
+  console.warn('⚠️  Cloudinary env vars missing - custom template uploads disabled');
 }
 
 // Admin authentication middleware for memeology
@@ -2346,7 +2357,10 @@ router.post('/admin/templates/upload', requireMemeologyAdmin, async (req, res) =
       return res.status(400).json({ success: false, error: 'Image data and name are required' });
     }
 
-    // Check Cloudinary configuration
+    // Check Cloudinary is available and configured
+    if (!cloudinary) {
+      return res.status(500).json({ success: false, error: 'Cloudinary module not available' });
+    }
     if (!process.env.CLOUDINARY_CLOUD_NAME) {
       return res.status(500).json({ success: false, error: 'Cloudinary not configured' });
     }
@@ -2436,8 +2450,8 @@ router.delete('/admin/templates/:id', requireMemeologyAdmin, async (req, res) =>
       return res.status(404).json({ success: false, error: 'Template not found' });
     }
 
-    // Delete from Cloudinary
-    if (template.cloudinaryId) {
+    // Delete from Cloudinary if available
+    if (template.cloudinaryId && cloudinary) {
       try {
         await cloudinary.uploader.destroy(template.cloudinaryId);
       } catch (cloudErr) {
