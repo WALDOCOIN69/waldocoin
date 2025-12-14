@@ -132,15 +132,15 @@ async function savePremiumSubscription(wallet, subscription) {
 // Helper: Map Imgflip template IDs to Memegen template names
 // Returns a slug string for known IDs or null for unknown ones.
 function getMemgenTemplate(imgflipId) {
-	const mapping = {
-	  '181913649': 'drake',           // Drake Hotline Bling
-	  '112126428': 'bf',              // Distracted Boyfriend
-	  '87743020': 'buttons',          // Two Buttons
-	  '129242436': 'cmm',             // Change My Mind
-	  '100777631': 'iw',              // Is This A Pigeon (memegen uses 'iw')
-	  '131087935': 'ants'             // Running Away Balloon (memegen uses 'ants')
-	};
-	return mapping[imgflipId] || null; // Unknown IDs handled elsewhere
+  const mapping = {
+    '181913649': 'drake',           // Drake Hotline Bling
+    '112126428': 'bf',              // Distracted Boyfriend
+    '87743020': 'buttons',          // Two Buttons
+    '129242436': 'cmm',             // Change My Mind
+    '100777631': 'iw',              // Is This A Pigeon (memegen uses 'iw')
+    '131087935': 'ants'             // Running Away Balloon (memegen uses 'ants')
+  };
+  return mapping[imgflipId] || null; // Unknown IDs handled elsewhere
 }
 
 // Helper: Send WLO rewards to meme creator
@@ -614,9 +614,9 @@ router.get('/templates/imgflip', async (req, res) => {
       }
       // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY
       else {
-	        // Free tier now gets full template access - only AI features are limited
-	        templates = allMemes;
-	        templateLimit = allMemes.length;
+        // Free tier now gets full template access - only AI features are limited
+        templates = allMemes;
+        templateLimit = allMemes.length;
         upgradeMessage = '🆓 Free Tier: All templates, unlimited memes! AI suggestions limited to 1/day. Upgrade for GIFs & more AI features!';
         features = {
           templates: 'unlimited',
@@ -632,25 +632,25 @@ router.get('/templates/imgflip', async (req, res) => {
         };
       }
 
-	      console.log(`📋 Templates endpoint: tier=${userTier}, returning ${templates.length}/${allMemes.length} templates`);
+      console.log(`📋 Templates endpoint: tier=${userTier}, returning ${templates.length}/${allMemes.length} templates`);
 
-	      // 🔁 Proxy template image URLs through our backend so Memeology's
-	      // canvas can safely read pixels (for downloads & gallery sharing)
-	      // without being blocked by third-party CORS restrictions.
-	      const proxyBase = `${req.protocol}://${req.get('host')}/api/memeology/templates/proxy?url=`;
-	      const proxiedTemplates = templates.map((meme) => ({
-	        ...meme,
-	        url: `${proxyBase}${encodeURIComponent(meme.url)}`
-	      }));
+      // 🔁 Proxy template image URLs through our backend so Memeology's
+      // canvas can safely read pixels (for downloads & gallery sharing)
+      // without being blocked by third-party CORS restrictions.
+      const proxyBase = `${req.protocol}://${req.get('host')}/api/memeology/templates/proxy?url=`;
+      const proxiedTemplates = templates.map((meme) => ({
+        ...meme,
+        url: `${proxyBase}${encodeURIComponent(meme.url)}`
+      }));
 
-	      res.json({
-	        success: true,
-	        memes: proxiedTemplates,
-	        tier: userTier,
-	        template_count: templates.length,
-	        upgrade_message: upgradeMessage,
-	        features: features
-	      });
+      res.json({
+        success: true,
+        memes: proxiedTemplates,
+        tier: userTier,
+        template_count: templates.length,
+        upgrade_message: upgradeMessage,
+        features: features
+      });
     } else {
       res.status(500).json({ error: 'Failed to fetch templates' });
     }
@@ -660,42 +660,42 @@ router.get('/templates/imgflip', async (req, res) => {
   }
 });
 
-	// GET /api/memeology/templates/proxy - Proxy external template images so
-	// they can be used in a canvas without CORS tainting (needed for
-	// downloads and community sharing on memeology.fun).
-	router.get('/templates/proxy', async (req, res) => {
-	  try {
-	    const { url } = req.query;
+// GET /api/memeology/templates/proxy - Proxy external template images so
+// they can be used in a canvas without CORS tainting (needed for
+// downloads and community sharing on memeology.fun).
+router.get('/templates/proxy', async (req, res) => {
+  try {
+    const { url } = req.query;
 
-	    if (!url || typeof url !== 'string') {
-	      return res.status(400).send('Missing or invalid url parameter');
-	    }
+    if (!url || typeof url !== 'string') {
+      return res.status(400).send('Missing or invalid url parameter');
+    }
 
-	    // Basic safety: only allow http/https URLs
-	    if (!/^https?:\/\//i.test(url)) {
-	      return res.status(400).send('Invalid image URL');
-	    }
+    // Basic safety: only allow http/https URLs
+    if (!/^https?:\/\//i.test(url)) {
+      return res.status(400).send('Invalid image URL');
+    }
 
-	    const response = await axios.get(url, {
-	      responseType: 'arraybuffer',
-	      timeout: 15000
-	    });
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 15000
+    });
 
-	    const contentType = response.headers['content-type'] || 'image/jpeg';
-	    res.setHeader('Content-Type', contentType);
-	    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const contentType = response.headers['content-type'] || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
 
-	    // Explicitly set CORS headers to allow canvas access from any origin.
-	    // This overrides Helmet's restrictive Cross-Origin-Resource-Policy.
-	    res.setHeader('Access-Control-Allow-Origin', '*');
-	    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    // Explicitly set CORS headers to allow canvas access from any origin.
+    // This overrides Helmet's restrictive Cross-Origin-Resource-Policy.
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
-	    return res.send(Buffer.from(response.data));
-	  } catch (error) {
-	    console.error('Error in /templates/proxy:', error.message || error);
-	    return res.status(500).send('Failed to load template image');
-	  }
-	});
+    return res.send(Buffer.from(response.data));
+  } catch (error) {
+    console.error('Error in /templates/proxy:', error.message || error);
+    return res.status(500).send('Failed to load template image');
+  }
+});
 
 // GET /api/memeology/templates/giphy - Get GIF templates from Giphy
 router.get('/templates/giphy', async (req, res) => {
@@ -1407,68 +1407,68 @@ router.get('/premium/pricing', async (req, res) => {
 // POST /api/memeology/premium/test-activate - ADMIN: Manually activate premium for testing
 router.post('/premium/test-activate', async (req, res) => {
   try {
-	  const { wallet, duration } = req.body;
+    const { wallet, duration } = req.body;
 
     if (!wallet) {
       return res.status(400).json({ error: 'Wallet address required' });
     }
 
-	  const selectedDuration = duration || 'yearly'; // Default to yearly for testing
+    const selectedDuration = duration || 'yearly'; // Default to yearly for testing
 
-	  const now = new Date();
-	  const expiresAt = new Date(now);
-	  const gracePeriodDays = 3;
+    const now = new Date();
+    const expiresAt = new Date(now);
+    const gracePeriodDays = 3;
 
-	  if (selectedDuration === 'monthly') {
-	    expiresAt.setMonth(expiresAt.getMonth() + 1);
-	  } else {
-	    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-	  }
+    if (selectedDuration === 'monthly') {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    } else {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    }
 
-	  const graceExpiresAt = new Date(expiresAt);
-	  graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+    const graceExpiresAt = new Date(expiresAt);
+    graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
 
-	  // Store premium subscription in Redis (test activation)
-	  const subscriptionRecord = {
-	    wallet,
-	    tier: 'premium',
-	    subscribedAt: now.toISOString(),
-	    lastRenewalAt: now.toISOString(),
-	    expiresAt: expiresAt.toISOString(),
-	    graceExpiresAt: graceExpiresAt.toISOString(),
-	    duration: selectedDuration,
-	    paymentMethod: 'TEST',
-	    paymentTxHash: 'TEST_ACTIVATION_' + Date.now(),
-	    amountPaid: 0,
-	    currency: 'TEST',
-	    usdValue: 0,
-	    active: true,
-	    autoRenew: false,
-	    renewalReminders: {
-	      threeDaysSent: false,
-	      oneDaySent: false,
-	      expirationSent: false
-	    }
-	  };
+    // Store premium subscription in Redis (test activation)
+    const subscriptionRecord = {
+      wallet,
+      tier: 'premium',
+      subscribedAt: now.toISOString(),
+      lastRenewalAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      graceExpiresAt: graceExpiresAt.toISOString(),
+      duration: selectedDuration,
+      paymentMethod: 'TEST',
+      paymentTxHash: 'TEST_ACTIVATION_' + Date.now(),
+      amountPaid: 0,
+      currency: 'TEST',
+      usdValue: 0,
+      active: true,
+      autoRenew: false,
+      renewalReminders: {
+        threeDaysSent: false,
+        oneDaySent: false,
+        expirationSent: false
+      }
+    };
 
-	  await savePremiumSubscription(wallet, subscriptionRecord);
+    await savePremiumSubscription(wallet, subscriptionRecord);
 
-	  console.log(`🧪 TEST: Premium subscription activated for ${wallet.slice(0, 10)}... (${selectedDuration})`);
+    console.log(`🧪 TEST: Premium subscription activated for ${wallet.slice(0, 10)}... (${selectedDuration})`);
 
-	  res.json({
-	    success: true,
-	    message: `✅ TEST: Premium subscription activated!`,
-	    subscription: {
-	      tier: 'premium',
-	      duration: selectedDuration,
-	      subscribedAt: now.toISOString(),
-	      expiresAt: expiresAt.toISOString(),
-	      graceExpiresAt: graceExpiresAt.toISOString(),
-	      gracePeriodDays: gracePeriodDays,
-	      daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
-	      testMode: true
-	    }
-	  });
+    res.json({
+      success: true,
+      message: `✅ TEST: Premium subscription activated!`,
+      subscription: {
+        tier: 'premium',
+        duration: selectedDuration,
+        subscribedAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        graceExpiresAt: graceExpiresAt.toISOString(),
+        gracePeriodDays: gracePeriodDays,
+        daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
+        testMode: true
+      }
+    });
   } catch (error) {
     console.error('Error in /premium/test-activate:', error);
     res.status(500).json({ error: error.message });
@@ -1477,10 +1477,10 @@ router.post('/premium/test-activate', async (req, res) => {
 
 // GET /api/memeology/premium/status - Check premium subscription status
 router.get('/premium/status/:wallet', async (req, res) => {
-	  try {
-	    const { wallet } = req.params;
+  try {
+    const { wallet } = req.params;
 
-	    const subscription = await getPremiumSubscription(wallet);
+    const subscription = await getPremiumSubscription(wallet);
 
     if (!subscription) {
       return res.json({
@@ -1506,11 +1506,11 @@ router.get('/premium/status/:wallet', async (req, res) => {
     // Determine if user needs renewal reminder
     const needsRenewalReminder = daysRemaining <= 3 && daysRemaining > 0;
 
-	    // Update subscription status if fully expired
-	    if (isFullyExpired && subscription.active) {
-	      subscription.active = false;
-	      await savePremiumSubscription(wallet, subscription);
-	    }
+    // Update subscription status if fully expired
+    if (isFullyExpired && subscription.active) {
+      subscription.active = false;
+      await savePremiumSubscription(wallet, subscription);
+    }
 
     res.json({
       success: true,
