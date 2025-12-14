@@ -283,11 +283,10 @@ export const AuthProvider = ({ children }) => {
             <a
               href={qrData.qr_uri}
               onClick={(e) => {
-                // For mobile, navigate directly without opening new tab
-                if (isMobile) {
-                  e.preventDefault()
-                  window.location.href = qrData.qr_uri
-                }
+                // For mobile, let the anchor tag handle navigation naturally
+                // Don't preventDefault - iOS Safari needs the native anchor behavior
+                // for custom URL schemes like xumm://
+                console.log('📱 Opening Xaman with URI:', qrData.qr_uri)
               }}
               style={{
                 display: 'inline-block',

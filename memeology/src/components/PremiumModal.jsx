@@ -12,6 +12,10 @@ function PremiumModal({ show, onClose, wallet }) {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [xummQrCode, setXummQrCode] = useState(null)
   const [xummPayloadId, setXummPayloadId] = useState(null)
+  const [xummDeepLink, setXummDeepLink] = useState(null)
+
+  // Detect mobile device
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
   useEffect(() => {
     if (show) {
@@ -78,7 +82,7 @@ function PremiumModal({ show, onClose, wallet }) {
       }
 
       // Request XUMM signature
-      const xummResponse = await fetch(`${API_URL}/api/xumm/create-payload`, {
+      const xummResponse = await fetch(`${API_URL}/api/auth/xumm/create-payload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,21 +102,28 @@ function PremiumModal({ show, onClose, wallet }) {
         throw new Error('Failed to create payment request')
       }
 
-      // Show QR code instead of opening in new window
+      // Show QR code (desktop) or deep link (mobile)
       setXummQrCode(xummData.refs.qr_png)
       setXummPayloadId(xummData.uuid)
+      setXummDeepLink(xummData.refs.qr_uri)
+
+      // On mobile, automatically open Xaman app
+      if (isMobile && xummData.refs.qr_uri) {
+        window.location.href = xummData.refs.qr_uri
+      }
 
       // Poll for payment confirmation
       const checkPayment = setInterval(async () => {
-        const statusResponse = await fetch(`${API_URL}/api/xumm/payload/${xummData.uuid}`)
+        const statusResponse = await fetch(`${API_URL}/api/auth/xumm/payload/${xummData.uuid}`)
         const statusData = await statusResponse.json()
 
         if (statusData.meta.signed) {
           clearInterval(checkPayment)
 
-          // Hide QR code
+          // Hide QR code / deep link
           setXummQrCode(null)
           setXummPayloadId(null)
+          setXummDeepLink(null)
 
           if (statusData.meta.resolved) {
             // Payment successful, activate premium
@@ -150,6 +161,7 @@ function PremiumModal({ show, onClose, wallet }) {
         clearInterval(checkPayment)
         setXummQrCode(null)
         setXummPayloadId(null)
+        setXummDeepLink(null)
         setProcessing(false)
         alert('⏱️ Payment request timed out. Please try again.')
       }, 300000)
@@ -279,9 +291,44 @@ function PremiumModal({ show, onClose, wallet }) {
         {xummQrCode && (
           <div className="qr-overlay">
             <div className="qr-popup">
-              <h3>📱 Scan with Xaman</h3>
-              <p className="qr-instructions">Open Xaman app and scan this QR code to sign the transaction</p>
-              <img src={xummQrCode} alt="XUMM QR Code" className="qr-code-image" />
+              <h3>📱 {isMobile ? 'Open Xaman' : 'Scan with Xaman'}</h3>
+
+              {/* Desktop: Show QR code */}
+              {!isMobile && (
+                <>
+                  <p className="qr-instructions">Open Xaman app and scan this QR code to sign the transaction</p>
+                  <img src={xummQrCode} alt="XUMM QR Code" className="qr-code-image" />
+                </>
+              )}
+
+              {/* Mobile: Show button to open Xaman */}
+              {isMobile && (
+                <>
+                  <p className="qr-instructions">Tap the button below to sign the transaction in Xaman</p>
+                  <a
+                    href={xummDeepLink}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      window.location.href = xummDeepLink
+                    }}
+                    style={{
+                      display: 'inline-block',
+                      padding: '15px 30px',
+                      background: 'linear-gradient(135deg, #ff3df7 0%, #00f7ff 100%)',
+                      color: '#fff',
+                      textDecoration: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      marginBottom: '15px'
+                    }}
+                  >
+                    🚀 Open Xaman App
+                  </a>
+                </>
+              )}
+
               <div className="qr-details">
                 <p><strong>Amount:</strong> {currentPricing?.[selectedPayment === 'xrp' ? 'xrp' : 'wlo']} {selectedPayment.toUpperCase()}</p>
                 <p><strong>Destination:</strong> Treasury Wallet</p>
@@ -292,6 +339,7 @@ function PremiumModal({ show, onClose, wallet }) {
                 onClick={() => {
                   setXummQrCode(null)
                   setXummPayloadId(null)
+                  setXummDeepLink(null)
                   setProcessing(false)
                 }}
               >

@@ -69,10 +69,18 @@ router.post('/login', async (req, res) => {
 
     const created = await xummClient.payload.create(payload);
 
+    // Build the deep link URI - XUMM SDK may return it in different places
+    // or we can construct it from the UUID
+    const deepLink = created.refs?.qr_uri ||
+                     created.next?.always ||
+                     `https://xumm.app/sign/${created.uuid}`;
+
     console.log('✅ XUMM login payload created:', {
       uuid: created.uuid,
-      qr_png: created.refs.qr_png,
-      qr_uri: created.refs.qr_uri
+      qr_png: created.refs?.qr_png,
+      qr_uri: deepLink,
+      refs: JSON.stringify(created.refs),
+      next: JSON.stringify(created.next)
     });
 
     // Store session
@@ -85,9 +93,9 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       uuid: created.uuid,
-      qr_url: created.refs.qr_png,
-      qr_uri: created.refs.qr_uri,
-      websocket: created.refs.websocket_status
+      qr_url: created.refs?.qr_png,
+      qr_uri: deepLink,
+      websocket: created.refs?.websocket_status
     });
 
   } catch (error) {
@@ -244,6 +252,111 @@ router.get('/status', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error checking XUMM status:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// POST /api/auth/xumm/create-payload - Create generic XUMM payment payload
+// Used by PremiumModal for subscription payments
+router.post('/create-payload', async (req, res) => {
+  if (!xummClient) {
+    return res.status(503).json({
+      success: false,
+      error: 'XUMM is not available (API keys not configured)'
+    });
+  }
+
+  try {
+    const { txjson, options, custom_meta } = req.body;
+
+    if (!txjson) {
+      return res.status(400).json({
+        success: false,
+        error: 'txjson is required'
+      });
+    }
+
+    console.log('💳 Creating XUMM payment payload:', txjson.TransactionType);
+
+    const payload = {
+      txjson,
+      options: {
+        submit: true,
+        expire: 300, // 5 minutes
+        return_url: {
+          app: 'xumm://xumm.app/done',
+          web: options?.return_url?.web || null
+        },
+        ...options
+      },
+      custom_meta
+    };
+
+    const created = await xummClient.payload.create(payload);
+
+    // Build the deep link URI
+    const deepLink = created.refs?.qr_uri ||
+                     created.next?.always ||
+                     `https://xumm.app/sign/${created.uuid}`;
+
+    console.log('✅ XUMM payment payload created:', {
+      uuid: created.uuid,
+      deepLink
+    });
+
+    res.json({
+      success: true,
+      uuid: created.uuid,
+      refs: {
+        qr_png: created.refs?.qr_png,
+        qr_uri: deepLink,
+        websocket_status: created.refs?.websocket_status
+      },
+      next: created.next
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating XUMM payload:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/auth/xumm/payload/:uuid - Get payload status
+// Used by PremiumModal to check payment status
+router.get('/payload/:uuid', async (req, res) => {
+  if (!xummClient) {
+    return res.status(503).json({
+      success: false,
+      error: 'XUMM is not available'
+    });
+  }
+
+  try {
+    const { uuid } = req.params;
+
+    if (!uuid) {
+      return res.status(400).json({
+        success: false,
+        error: 'UUID is required'
+      });
+    }
+
+    const payload = await xummClient.payload.get(uuid);
+
+    res.json({
+      success: true,
+      meta: payload.meta,
+      response: payload.response
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting XUMM payload:', error);
     res.status(500).json({
       success: false,
       error: error.message
