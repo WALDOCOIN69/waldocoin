@@ -533,127 +533,114 @@ router.get('/user/usage', async (req, res) => {
   }
 });
 
-// GET /api/memeology/templates/imgflip - Get meme templates from Imgflip
+// GET /api/memeology/templates/imgflip - Get meme templates (from ranked templates file)
+// NOTE: Despite the name, this now serves from our curated templates-ranked.json (380+ templates)
+// instead of live Imgflip API (which only returns 100)
 router.get('/templates/imgflip', async (req, res) => {
   try {
     const { tier } = req.query;
     const userTier = tier || 'free';
 
-    const response = await axios.get('https://api.imgflip.com/get_memes');
+    // Get templates from our ranked templates file (380+ templates from multiple sources)
+    const allMemes = getTemplatesForTier('king'); // Get ALL templates first, then filter
+    const totalCount = allMemes.length;
 
-    if (response.data.success) {
-      const allMemes = response.data.data.memes;
+    // All tiers now get unlimited templates
+    const templates = allMemes;
+    let upgradeMessage = '';
+    let features = {};
 
-      // Filter templates based on tier
-      let templates = [];
-      let templateLimit = 0;
-      let upgradeMessage = '';
-      let features = {};
-
-      // 👑 KING, 💎 PLATINUM (10+ NFTs), 🥇 GOLD (3-9 NFTs) - UNLIMITED FREE ACCESS
-      if (userTier === 'king' || userTier === 'platinum' || userTier === 'gold') {
-        templates = allMemes; // All templates
-        templateLimit = allMemes.length;
-
-        if (userTier === 'king') {
-          upgradeMessage = '👑 KING NFT HOLDER: Unlimited everything, no fees! You are royalty!';
-        } else if (userTier === 'platinum') {
-          upgradeMessage = '💎 PLATINUM NFT HOLDER (10+ NFTs): Unlimited everything, no fees! Thank you for your support!';
-        } else {
-          upgradeMessage = '🥇 GOLD NFT HOLDER (3-9 NFTs): Unlimited everything, no fees! Collect 10+ NFTs for Platinum tier!';
-        }
-
-        features = {
-          templates: 'unlimited',
-          memes_per_day: 'unlimited',
-          fee_per_meme: 'none',
-          ai_suggestions: 'unlimited',
-          custom_fonts: true,
-          no_watermark: true,
-          nft_art_integration: true,
-          custom_uploads: 'unlimited',
-          gif_templates: 'unlimited',
-          can_earn_wlo: true
-        };
-      }
-      // 💵 PREMIUM SUBSCRIPTION ($5/month)
-      else if (userTier === 'premium') {
-        templates = allMemes; // All templates
-        templateLimit = allMemes.length;
-        upgradeMessage = '💵 PREMIUM SUBSCRIBER: Unlimited everything! Collect 3+ NFTs for free unlimited access!';
-        features = {
-          templates: 'unlimited',
-          memes_per_day: 'unlimited',
-          fee_per_meme: 'none',
-          ai_suggestions: 'unlimited',
-          custom_fonts: true,
-          no_watermark: true,
-          nft_art_integration: true,
-          custom_uploads: 'unlimited',
-          gif_templates: 'unlimited',
-          can_earn_wlo: true
-        };
-      }
-      // 🪙 WALDOCOIN TIER (1000+ WLO) - UNLIMITED TEMPLATES
-      else if (userTier === 'waldocoin') {
-        templates = allMemes; // All templates (unlimited)
-        templateLimit = allMemes.length;
-        upgradeMessage = '🪙 WALDOCOIN Tier: Unlimited templates, unlimited memes/day, 0.1 WLO per meme. Collect 3+ NFTs for no fees!';
-        features = {
-          templates: 'unlimited',
-          memes_per_day: 'unlimited',
-          fee_per_meme: '0.1 WLO',
-          ai_suggestions: '10/day',
-          custom_fonts: true,
-          no_watermark: false,
-          nft_art_integration: true,
-          custom_uploads: '50/day',
-          gif_templates: 'unlimited',
-          can_earn_wlo: true
-        };
-      }
-      // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY
-      else {
-        // Free tier now gets full template access - only AI features are limited
-        templates = allMemes;
-        templateLimit = allMemes.length;
-        upgradeMessage = '🆓 Free Tier: All templates, unlimited memes! AI suggestions limited to 1/day. Upgrade for GIFs & more AI features!';
-        features = {
-          templates: 'unlimited',
-          memes_per_day: 'unlimited',
-          fee_per_meme: 'none',
-          ai_suggestions: '1/day',
-          custom_fonts: true,
-          no_watermark: false,
-          nft_art_integration: false,
-          custom_uploads: 'unlimited',
-          gif_templates: 'none',
-          can_earn_wlo: false
-        };
+    // 👑 KING, 💎 PLATINUM (10+ NFTs), 🥇 GOLD (3-9 NFTs) - UNLIMITED FREE ACCESS
+    if (userTier === 'king' || userTier === 'platinum' || userTier === 'gold') {
+      if (userTier === 'king') {
+        upgradeMessage = '👑 KING NFT HOLDER: Unlimited everything, no fees! You are royalty!';
+      } else if (userTier === 'platinum') {
+        upgradeMessage = '💎 PLATINUM NFT HOLDER (10+ NFTs): Unlimited everything, no fees! Thank you for your support!';
+      } else {
+        upgradeMessage = '🥇 GOLD NFT HOLDER (3-9 NFTs): Unlimited everything, no fees! Collect 10+ NFTs for Platinum tier!';
       }
 
-      console.log(`📋 Templates endpoint: tier=${userTier}, returning ${templates.length}/${allMemes.length} templates`);
-
-      // 🔁 Proxy template image URLs through our backend so Memeology's
-      // canvas can safely read pixels (for downloads & gallery sharing)
-      // without being blocked by third-party CORS restrictions.
-      const proxyBase = `${req.protocol}://${req.get('host')}/api/memeology/templates/proxy?url=`;
-      const proxiedTemplates = templates.map((meme) => ({
-        ...meme,
-        url: `${proxyBase}${encodeURIComponent(meme.url)}`
-      }));
-
-      res.json({
-        success: true,
-        memes: proxiedTemplates,
-        tier: userTier,
-        template_count: templates.length,
-        upgrade_message: upgradeMessage,
-        features: features
-      });
-    } else {
-      res.status(500).json({ error: 'Failed to fetch templates' });
+      features = {
+        templates: 'unlimited',
+        memes_per_day: 'unlimited',
+        fee_per_meme: 'none',
+        ai_suggestions: 'unlimited',
+        custom_fonts: true,
+        no_watermark: true,
+        nft_art_integration: true,
+        custom_uploads: 'unlimited',
+        gif_templates: 'unlimited',
+        can_earn_wlo: true
+      };
     }
+    // 💵 PREMIUM SUBSCRIPTION ($5/month)
+    else if (userTier === 'premium') {
+      upgradeMessage = '💵 PREMIUM SUBSCRIBER: Unlimited everything! Collect 3+ NFTs for free unlimited access!';
+      features = {
+        templates: 'unlimited',
+        memes_per_day: 'unlimited',
+        fee_per_meme: 'none',
+        ai_suggestions: 'unlimited',
+        custom_fonts: true,
+        no_watermark: true,
+        nft_art_integration: true,
+        custom_uploads: 'unlimited',
+        gif_templates: 'unlimited',
+        can_earn_wlo: true
+      };
+    }
+    // 🪙 WALDOCOIN TIER (1000+ WLO) - UNLIMITED TEMPLATES
+    else if (userTier === 'waldocoin') {
+      upgradeMessage = '🪙 WALDOCOIN Tier: Unlimited templates, unlimited memes/day, 0.1 WLO per meme. Collect 3+ NFTs for no fees!';
+      features = {
+        templates: 'unlimited',
+        memes_per_day: 'unlimited',
+        fee_per_meme: '0.1 WLO',
+        ai_suggestions: '10/day',
+        custom_fonts: true,
+        no_watermark: false,
+        nft_art_integration: true,
+        custom_uploads: '50/day',
+        gif_templates: 'unlimited',
+        can_earn_wlo: true
+      };
+    }
+    // 🆓 FREE TIER - FULL TEMPLATE ACCESS, AI LIMITS ONLY
+    else {
+      upgradeMessage = '🆓 Free Tier: All templates, unlimited memes! AI suggestions limited to 1/day. Upgrade for GIFs & more AI features!';
+      features = {
+        templates: 'unlimited',
+        memes_per_day: 'unlimited',
+        fee_per_meme: 'none',
+        ai_suggestions: '1/day',
+        custom_fonts: true,
+        no_watermark: false,
+        nft_art_integration: false,
+        custom_uploads: 'unlimited',
+        gif_templates: 'none',
+        can_earn_wlo: false
+      };
+    }
+
+    console.log(`📋 Templates endpoint: tier=${userTier}, returning ${templates.length}/${totalCount} templates`);
+
+    // 🔁 Proxy template image URLs through our backend so Memeology's
+    // canvas can safely read pixels (for downloads & gallery sharing)
+    // without being blocked by third-party CORS restrictions.
+    const proxyBase = `${req.protocol}://${req.get('host')}/api/memeology/templates/proxy?url=`;
+    const proxiedTemplates = templates.map((meme) => ({
+      ...meme,
+      url: `${proxyBase}${encodeURIComponent(meme.url)}`
+    }));
+
+    res.json({
+      success: true,
+      memes: proxiedTemplates,
+      tier: userTier,
+      template_count: templates.length,
+      upgrade_message: upgradeMessage,
+      features: features
+    });
   } catch (error) {
     console.error('Error in /templates/imgflip:', error);
     res.status(500).json({ error: error.message });
