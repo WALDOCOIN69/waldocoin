@@ -813,6 +813,32 @@
     max-height: none;
   }
 
+  /* Fix templates header wrapping on mobile */
+  .templates-title-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .templates-header h2 {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .tier-info {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tier-badge {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .template-count {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
   .preview-box {
     min-height: 280px;
     padding: 6px;
