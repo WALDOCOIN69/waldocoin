@@ -978,14 +978,13 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
   }
 
   const getAISuggestion = async (boxId) => {
-    // Free tier has no AI access
-    if (tier === 'free') {
-      alert('🤖 AI suggestions are not available on FREE tier. Hold 1000+ WLO to unlock unlimited AI!')
+    // Free tier gets 10 AI suggestions per month
+    if (tier === 'free' && aiSuggestionsToday >= 10) {
+      alert('🤖 You\'ve used all 10 AI suggestions this month. Hold 1000+ WLO for unlimited AI!')
       return
     }
 
     // WALDOCOIN and above get unlimited AI
-    // (keeping the counter for tracking but no limit)
 
     try {
       setAiSuggesting(true)
@@ -1424,7 +1423,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <li>✅ 100 meme templates</li>
                   <li>✅ Unlimited memes/day</li>
                   <li>✅ Custom fonts</li>
-                  <li>❌ AI suggestions</li>
+                  <li>⚠️ 10 AI suggestions/month</li>
                   <li>❌ GIF templates</li>
                   <li>❌ Use NFT images</li>
                   <li>❌ No watermark</li>

@@ -624,14 +624,14 @@ router.get('/templates/imgflip', async (req, res) => {
         can_earn_wlo: true
       };
     }
-    // 🆓 FREE TIER - 100 TEMPLATES ONLY, NO AI, NO GIFS, NO NFT IMAGES
+    // 🆓 FREE TIER - 100 TEMPLATES ONLY, 10 AI/MONTH, NO GIFS, NO NFT IMAGES
     else {
-      upgradeMessage = '🆓 Free Tier: 100 templates. Hold 1000+ WLO for all templates & unlimited AI!';
+      upgradeMessage = '🆓 Free Tier: 100 templates, 10 AI/month. Hold 1000+ WLO for all templates & unlimited AI!';
       features = {
         templates: '100',
         memes_per_day: 'unlimited',
         fee_per_meme: 'none',
-        ai_suggestions: 'none',
+        ai_suggestions: '10/month',
         custom_fonts: true,
         no_watermark: false,
         nft_art_integration: false,
@@ -1563,33 +1563,36 @@ router.post('/ai/suggest', async (req, res) => {
     // Allow anonymous users for free tier
     const userKey = wallet || 'anonymous';
 
-    // Check tier limits
-    const limits = {
-      free: 1,
-      waldocoin: 10,
-      premium: 999999,
-      gold: 999999,
-      platinum: 999999,
-      king: 999999
-    };
+    // Free tier: 10/month, WALDOCOIN+: unlimited
+    if (tier === 'free') {
+      // Track monthly usage for free tier
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const usageKey = `memeology:usage:ai:monthly:${userKey}:${currentMonth}`;
+      const rawUsage = await redis.get(usageKey);
+      const usageCount = rawUsage ? parseInt(rawUsage, 10) || 0 : 0;
 
-    const dailyLimit = limits[tier] || 1;
+      if (usageCount >= 10) {
+        return res.status(429).json({
+          error: 'Monthly AI suggestion limit reached (10/month)',
+          message: 'Hold 1000+ WLO for unlimited AI suggestions!',
+          limit: 10,
+          used: usageCount
+        });
+      }
 
-	  // Track daily usage in Redis so limits survive restarts and scale
-	  const today = new Date().toISOString().split('T')[0];
-	  const usageKey = MEMEOLOGY_KEYS.usageAi(userKey, today);
-	  const rawUsage = await redis.get(usageKey);
-	  const usageCount = rawUsage ? parseInt(rawUsage, 10) || 0 : 0;
-
-    if (usageCount >= dailyLimit) {
-      return res.status(429).json({
-        error: `Daily AI suggestion limit reached (${dailyLimit}/day)`,
-        message: tier === 'free'
-          ? 'Upgrade to WALDOCOIN (1000+ WLO) for 10 suggestions/day or PREMIUM for unlimited!'
-          : 'Daily limit reached. Try again tomorrow!',
-        limit: dailyLimit,
-        used: usageCount
-      });
+      // Increment monthly counter
+      await redis.set(usageKey, usageCount + 1);
+      // Set expiry to end of month + 1 day buffer (max 32 days)
+      await redis.expire(usageKey, 32 * 24 * 60 * 60);
+    }
+    // WALDOCOIN and above: unlimited, but still track for analytics
+    else {
+      const today = new Date().toISOString().split('T')[0];
+      const usageKey = MEMEOLOGY_KEYS.usageAi(userKey, today);
+      const rawUsage = await redis.get(usageKey);
+      const usageCount = rawUsage ? parseInt(rawUsage, 10) || 0 : 0;
+      await redis.set(usageKey, usageCount + 1);
+      await redis.expire(usageKey, 2 * 24 * 60 * 60); // 2 days TTL
     }
 
     // Generate AI suggestion using Groq (free and fast)
@@ -1632,13 +1635,9 @@ Only respond with the meme text, nothing else.`;
       suggestion = getFallbackSuggestion(templateName, position);
     }
 
-	  // Increment usage count for today
-	  await redis.incr(usageKey);
-
     res.json({
       success: true,
-      suggestion: suggestion,
-      remaining: dailyLimit - usageCount - 1
+      suggestion: suggestion
     });
   } catch (error) {
     console.error('Error in /ai/suggest:', error);
