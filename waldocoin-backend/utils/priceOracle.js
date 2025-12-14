@@ -58,30 +58,45 @@ async function getXRPPrice() {
 }
 
 /**
- * Get current WLO price in USD
- * Currently uses a fixed price, but can be updated to fetch from DEX or price feed
+ * Get current WLO price in USD from GeckoTerminal (XRPL DEX)
+ * Pool: WLO / XRP on First Ledger DEX
  * @returns {Promise<number>} WLO price in USD
  */
 async function getWLOPrice() {
   try {
     const now = Date.now();
-    
+
     // Return cached price if still valid
     if (priceCache.wlo.price && (now - priceCache.wlo.timestamp) < CACHE_DURATION) {
       console.log(`🪙 Using cached WLO price: $${priceCache.wlo.price}`);
       return priceCache.wlo.price;
     }
 
-    // TODO: Fetch from XRPL DEX or price oracle
-    // For now, use a fixed price based on market cap / supply
-    const price = 0.001; // $0.001 per WLO (placeholder)
+    // Fetch from GeckoTerminal - WLO/XRP pool on XRPL
+    // Pool address: WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP
+    const poolId = 'xrpl_WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP';
+    const response = await axios.get(`https://api.geckoterminal.com/api/v2/networks/xrpl/pools/${encodeURIComponent(poolId)}`, {
+      timeout: 10000,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
 
-    priceCache.wlo = { price, timestamp: now };
-    console.log(`🪙 WLO price: $${price} (fixed)`);
-    return price;
+    const priceUsd = response.data?.data?.attributes?.base_token_price_usd;
+
+    if (priceUsd) {
+      const price = parseFloat(priceUsd);
+      priceCache.wlo = { price, timestamp: now };
+      console.log(`🪙 Fetched WLO price from GeckoTerminal: $${price}`);
+      return price;
+    }
+
+    // Fallback to default if API fails
+    console.warn('⚠️ Failed to fetch WLO price from GeckoTerminal, using default $0.00003');
+    return 0.00003;
   } catch (error) {
     console.error('❌ Error fetching WLO price:', error.message);
-    return 0.001; // Default fallback
+    return 0.00003; // Default fallback based on current market price
   }
 }
 
