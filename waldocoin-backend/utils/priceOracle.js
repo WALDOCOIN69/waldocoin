@@ -73,8 +73,8 @@ async function getWLOPrice() {
     }
 
     // Fetch from GeckoTerminal - WLO/XRP pool on XRPL
-    // Pool address: WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP
-    const poolId = 'xrpl_WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP';
+    // Pool address: WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP (without xrpl_ prefix in URL)
+    const poolId = 'WLO.rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY_XRP';
     const response = await axios.get(`https://api.geckoterminal.com/api/v2/networks/xrpl/pools/${encodeURIComponent(poolId)}`, {
       timeout: 10000,
       headers: {
