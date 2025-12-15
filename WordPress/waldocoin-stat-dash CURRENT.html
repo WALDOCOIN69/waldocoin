@@ -3804,7 +3804,18 @@
           <div class="large-number large-number-red" id="totalBurnedDisplay">0</div>
           <div class="subtitle-text">WALDO Burned Forever</div>
         </div>
-        <div style="margin-top: 20px;">
+        <!-- Burn Breakdown -->
+        <div style="margin-top: 15px; padding: 10px; background: rgba(255,87,87,0.1); border-radius: 8px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+            <div style="text-align: left;">🔙 Returned to Issuer:</div>
+            <div style="text-align: right; font-weight: bold;" id="burnIssuerAmount">0</div>
+            <div style="text-align: left;">🕳️ Blackhole Burns:</div>
+            <div style="text-align: right; font-weight: bold;" id="burnBlackholeAmount">0</div>
+            <div style="text-align: left;">📊 In Circulation:</div>
+            <div style="text-align: right; font-weight: bold; color: #4ade80;" id="burnCirculationAmount">0</div>
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
           <h3 style="font-size: 14px; margin-bottom: 10px;">Recent Burns:</h3>
           <ul id="recentBurnsList" class="activity-feed activity-feed-padded">
             <li class="activity-item">
@@ -6269,6 +6280,23 @@
             const totalBurnedEl = document.getElementById('totalBurnedDisplay');
             if (totalBurnedEl) {
               totalBurnedEl.textContent = (data.totalBurned || 0).toLocaleString();
+            }
+
+            // Update burn breakdown
+            if (data.breakdown) {
+              const issuerEl = document.getElementById('burnIssuerAmount');
+              const blackholeEl = document.getElementById('burnBlackholeAmount');
+              const circulationEl = document.getElementById('burnCirculationAmount');
+
+              if (issuerEl) {
+                issuerEl.textContent = (data.breakdown.returnedToIssuer || 0).toLocaleString() + ' WLO';
+              }
+              if (blackholeEl) {
+                blackholeEl.textContent = (data.breakdown.blackholeBurned || 0).toLocaleString() + ' WLO';
+              }
+              if (circulationEl) {
+                circulationEl.textContent = (data.inCirculation || 0).toLocaleString() + ' WLO';
+              }
             }
 
             // Update recent burns list

@@ -15,31 +15,80 @@ const TOTAL_SUPPLY = 1000000000;
 
 console.log("🔥 Loaded: routes/burn.js");
 
-// Helper function to get total burned from XRPL
+// Blackhole burn address (tokens sent here are burned forever)
+const BLACKHOLE_ADDRESS = BURN_ADDRESS || 'rrrrrrrrrrrrrrrrrrrrrhoLvTp';
+
+// Helper function to get WLO balance sent to blackhole address
+async function getBlackholeBurnedFromXRPL(client) {
+  try {
+    // Check if blackhole has any WLO trustline and balance
+    const response = await client.request({
+      command: 'account_lines',
+      account: BLACKHOLE_ADDRESS,
+      ledger_index: 'validated'
+    });
+
+    const wloLine = response.result.lines?.find(
+      line => line.currency === 'WLO' && line.account === WALDO_ISSUER
+    );
+
+    const blackholeBurned = parseFloat(wloLine?.balance || 0);
+    console.log(`🕳️ Blackhole burns: ${blackholeBurned.toLocaleString()} WLO`);
+    return blackholeBurned;
+  } catch (error) {
+    // Blackhole might not have any trustlines, which is fine
+    console.log(`ℹ️ No WLO in blackhole address (normal if no burns sent there)`);
+    return 0;
+  }
+}
+
+// Helper function to get total burned from XRPL (combines all burn methods)
 async function getTotalBurnedFromXRPL() {
   let client;
   try {
     client = new Client(XRPL_SERVER);
     await client.connect();
 
-    // Get issuer's account lines to see how much has been returned (burned)
+    // Method 1: Get issuer's gateway_balances (tokens returned to issuer)
     const response = await client.request({
       command: 'gateway_balances',
       account: WALDO_ISSUER,
       ledger_index: 'validated'
     });
 
-    await client.disconnect();
-
-    // The obligations show how much is currently in circulation
-    // Burned = Total Supply - Obligations
     const obligations = response.result.obligations || {};
     const wloInCirculation = parseFloat(obligations.WLO || 0);
-    const totalBurned = TOTAL_SUPPLY - wloInCirculation;
+    const burnedToIssuer = TOTAL_SUPPLY - wloInCirculation;
 
-    console.log(`📊 XRPL Data: ${wloInCirculation.toLocaleString()} WLO in circulation, ${totalBurned.toLocaleString()} burned`);
+    // Method 2: Get burns sent to blackhole address
+    const blackholeBurned = await getBlackholeBurnedFromXRPL(client);
 
-    return totalBurned;
+    // Method 3: Get any manual tracking from Redis (for off-chain burns or corrections)
+    const manualBurns = parseFloat(await redis.get('manual_burns') || 0);
+
+    await client.disconnect();
+
+    // Total burned = tokens returned to issuer + tokens in blackhole + manual burns
+    // Note: If tokens are in blackhole, they're still in "circulation" per gateway_balances
+    // So we ADD blackhole burns to get the true picture
+    const totalBurned = burnedToIssuer + blackholeBurned + manualBurns;
+
+    console.log(`📊 XRPL Burn Breakdown:
+      - Returned to issuer: ${burnedToIssuer.toLocaleString()} WLO
+      - Sent to blackhole: ${blackholeBurned.toLocaleString()} WLO
+      - Manual tracking: ${manualBurns.toLocaleString()} WLO
+      - TOTAL BURNED: ${totalBurned.toLocaleString()} WLO
+      - In circulation: ${(wloInCirculation - blackholeBurned).toLocaleString()} WLO`);
+
+    return {
+      total: totalBurned,
+      breakdown: {
+        returnedToIssuer: burnedToIssuer,
+        blackholeBurned: blackholeBurned,
+        manualBurns: manualBurns
+      },
+      inCirculation: wloInCirculation - blackholeBurned
+    };
 
   } catch (error) {
     console.error('❌ Error fetching burn data from XRPL:', error);
@@ -48,7 +97,11 @@ async function getTotalBurnedFromXRPL() {
     }
     // Fallback to Redis if XRPL fails
     const redisBurned = await redis.get('total_tokens_burned') || 0;
-    return parseFloat(redisBurned);
+    return {
+      total: parseFloat(redisBurned),
+      breakdown: { returnedToIssuer: 0, blackholeBurned: 0, manualBurns: parseFloat(redisBurned) },
+      inCirculation: TOTAL_SUPPLY - parseFloat(redisBurned)
+    };
   }
 }
 
@@ -264,8 +317,8 @@ router.post('/set-total', async (req, res) => {
 // ✅ GET /api/burn/total - Get total burned from XRPL (PUBLIC)
 router.get('/total', async (req, res) => {
   try {
-    // Get actual burned amount from XRPL
-    const totalBurned = await getTotalBurnedFromXRPL();
+    // Get actual burned amount from XRPL (now includes all burn methods)
+    const burnData = await getTotalBurnedFromXRPL();
 
     // Get recent burn events from Redis (for history display)
     const burnHistory = await redis.lRange('token_burns', 0, 9); // Last 10 burns
@@ -285,9 +338,10 @@ router.get('/total', async (req, res) => {
 
     res.json({
       success: true,
-      totalBurned: totalBurned,
+      totalBurned: burnData.total,
       totalSupply: TOTAL_SUPPLY,
-      inCirculation: TOTAL_SUPPLY - totalBurned,
+      inCirculation: burnData.inCirculation,
+      breakdown: burnData.breakdown,
       recentBurns: recentBurns,
       count: recentBurns.length,
       source: 'xrpl'
