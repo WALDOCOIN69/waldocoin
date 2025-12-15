@@ -221,6 +221,7 @@ const startServer = async () => {
   app.use("/api/fees", feesRoute);
   app.use("/api/referral", (await import("./routes/referral.js")).default);
   app.use("/api/system", (await import("./routes/system.js")).default);
+  app.use("/api/boost", (await import("./routes/boost.js")).default);
 
   // 🎨 Memeology Routes
   console.log("🎨 Registering Memeology routes...");
