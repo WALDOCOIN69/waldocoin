@@ -2,35 +2,29 @@
 # This file should be hosted at: https://waldocoin.live/.well-known/xrp-ledger.toml
 
 [METADATA]
-modified_date = "2025-12-10"  # update whenever changes are made
+modified_date = "2025-12-15"  # update whenever changes are made
 
 [[CURRENCIES]]
 code = "WLO"
 issuer = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
 name = "WALDOcoin"
 display_decimals = 6
-
-# Small icon (used in wallets and explorers)
 icon = "https://waldocoin.live/wp-content/uploads/waldo-icon-156.png"
-
-# Larger preview image
 image = "https://waldocoin.live/wp-content/uploads/waldo-token-logo.png"
-
-# Short description
 desc = "Meme-to-earn token on XRPL. Create viral memes, earn WALDO."
-
-# Helpful links
 website = "https://waldocoin.live"
 whitepaper = "https://waldocoin.live/white-paper-waldocoin"
 twitter = "https://x.com/W_A_L_D_O_coin"
 telegram = "https://t.me/WALDOCOINxrp"
-
-# Supply information
 max_supply = "1000000000"
 total_supply = "876849999"
 circulating_supply = "172500000"
 
-# Active distributor wallet
-[[ISSUERS]]
+# Verified accounts (for domain verification)
+[[ACCOUNTS]]
 address = "rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL"
-name = "WALDOcoin Distributor (Active)"
+desc = "WALDOcoin Distributor (Active) - Domain verified"
+
+[[ACCOUNTS]]
+address = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
+desc = "WALDOcoin Issuer (Blackholed)"

@@ -4962,51 +4962,41 @@
         }
 
         try {
-          // STEP 1: Get real-time price from DEX (same as exchange widget)
-          const marketRes = await fetch(`${baseURL}/api/market/wlo?_=${Date.now()}`, { cache: 'no-store' });
-          if (!marketRes.ok) {
-            throw new Error(`Market API failed: ${marketRes.status}`);
-          }
-          const marketData = await marketRes.json();
-
-          // Get current XRP price per WLO from DEX
-          const xrpPerWlo = (marketData?.xrpPerWlo && isFinite(marketData.xrpPerWlo))
-            ? marketData.xrpPerWlo
-            : (marketData?.best?.mid || 0.0001);
-
-          // Approximate USD rate (XRP ~$0.50)
-          const xrpUsdRate = 0.50;
-          const usdPerWlo = xrpPerWlo * xrpUsdRate;
-
-          // Update rate displays immediately with REAL price
-          const xrpEl = $("waldoXrpRate");
-          const usdEl = $("waldoUsdRate");
-
-          if (xrpEl) {
-            xrpEl.textContent = `${xrpPerWlo.toFixed(8)} XRP`;
-          }
-          if (usdEl) {
-            usdEl.textContent = `$${usdPerWlo.toFixed(8)}`;
-          }
-
-          // STEP 2: Get historical data for charts
+          // STEP 1: Get historical data for charts (includes real XRP/USD rate)
           const res = await fetch(`${baseURL}/api/market/price-history?days=7`);
           const data = await res.json();
 
           if (data.success && data.history && data.history.length > 0) {
+            // Get real XRP/USD rate from API response
+            const xrpUsdRate = parseFloat(data.current?.xrpUsdRate) || 2.50;
+            console.log('📊 Using real XRP/USD rate:', xrpUsdRate);
+
             const labels = data.history.map(h => {
               const date = new Date(h.timestamp);
               return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             });
-            const prices = data.history.map(h => h.usdPrice || 0);
+            const wloPrices = data.history.map(h => h.usdPrice || 0);
+            const xrpPrices = data.history.map(h => h.xrpUsdPrice || xrpUsdRate);
+
+            // Update rate displays with REAL prices
+            const xrpEl = $("waldoXrpRate");
+            const usdEl = $("waldoUsdRate");
+            const currentWloPrice = wloPrices[wloPrices.length - 1];
+            const currentXrpPrice = xrpPrices[xrpPrices.length - 1];
+
+            if (xrpEl) {
+              xrpEl.textContent = `${(currentWloPrice / currentXrpPrice).toFixed(8)} XRP`;
+            }
+            if (usdEl) {
+              usdEl.textContent = `$${currentWloPrice.toFixed(8)}`;
+            }
 
             // Calculate 24h and 7d changes
-            const currentPrice = prices[prices.length - 1];
-            const price24hAgo = prices.length > 1 ? prices[prices.length - 2] : currentPrice;
-            const price7dAgo = prices[0];
+            const price24hAgo = wloPrices.length > 1 ? wloPrices[wloPrices.length - 2] : currentWloPrice;
+            const price7dAgo = wloPrices[0];
 
-            const change24h = ((currentPrice - price24hAgo) / price24hAgo * 100).toFixed(2);
-            const change7d = ((currentPrice - price7dAgo) / price7dAgo * 100).toFixed(2);
+            const change24h = ((currentWloPrice - price24hAgo) / price24hAgo * 100).toFixed(2);
+            const change7d = ((currentWloPrice - price7dAgo) / price7dAgo * 100).toFixed(2);
 
             // Update change displays
             const change24hEl = $("change24h");
@@ -5022,43 +5012,75 @@
               change7dEl.className = `trend-value ${change7d >= 0 ? 'trend-positive' : 'trend-negative'}`;
             }
 
+            // Chart data with BOTH WLO and XRP price lines
             const chartData = {
               labels: labels,
-              datasets: [{
-                label: 'WALDO/USD',
-                data: prices,
-                borderColor: '#25c2a0',
-                backgroundColor: 'rgba(37, 194, 160, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                pointBackgroundColor: '#25c2a0',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
-              }]
+              datasets: [
+                {
+                  label: 'WALDO/USD',
+                  data: wloPrices,
+                  borderColor: '#25c2a0',
+                  backgroundColor: 'rgba(37, 194, 160, 0.1)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 3,
+                  pointHoverRadius: 5,
+                  pointBackgroundColor: '#25c2a0',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2,
+                  yAxisID: 'y'
+                },
+                {
+                  label: 'XRP/USD',
+                  data: xrpPrices,
+                  borderColor: '#ff4444',
+                  backgroundColor: 'rgba(255, 68, 68, 0.05)',
+                  borderWidth: 2,
+                  fill: false,
+                  tension: 0.4,
+                  pointRadius: 2,
+                  pointHoverRadius: 4,
+                  pointBackgroundColor: '#ff4444',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 1,
+                  yAxisID: 'y1'
+                }
+              ]
             };
 
             // Store chart data for modal
-            lastChartData = { data: chartData, labels: labels, prices: prices };
+            lastChartData = { data: chartData, labels: labels, prices: wloPrices, xrpPrices: xrpPrices };
 
             const chartOptions = {
               responsive: true,
               maintainAspectRatio: false,
+              interaction: {
+                mode: 'index',
+                intersect: false,
+              },
               plugins: {
-                legend: { display: false },
+                legend: {
+                  display: true,
+                  labels: { color: '#ccc', font: { size: 11 } }
+                },
                 tooltip: {
                   backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                  titleColor: '#25c2a0',
+                  titleColor: '#fff',
                   bodyColor: '#fff',
                   borderColor: '#25c2a0',
                   borderWidth: 1,
                   padding: 10,
-                  displayColors: false,
+                  displayColors: true,
                   callbacks: {
                     label: function (context) {
-                      return `$${context.parsed.y.toFixed(6)}`;
+                      const label = context.dataset.label || '';
+                      const value = context.parsed.y;
+                      if (label === 'WALDO/USD') {
+                        return `${label}: $${value.toFixed(8)}`;
+                      } else {
+                        return `${label}: $${value.toFixed(4)}`;
+                      }
                     }
                   }
                 }
@@ -5069,13 +5091,41 @@
                   ticks: { color: '#ccc', font: { size: 10 } }
                 },
                 y: {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
                   grid: { color: 'rgba(255, 255, 255, 0.1)' },
                   ticks: {
-                    color: '#ccc',
+                    color: '#25c2a0',
                     font: { size: 10 },
                     callback: function (value) {
                       return '$' + value.toFixed(6);
                     }
+                  },
+                  title: {
+                    display: true,
+                    text: 'WALDO/USD',
+                    color: '#25c2a0',
+                    font: { size: 10 }
+                  }
+                },
+                y1: {
+                  type: 'linear',
+                  display: true,
+                  position: 'right',
+                  grid: { drawOnChartArea: false },
+                  ticks: {
+                    color: '#ff4444',
+                    font: { size: 10 },
+                    callback: function (value) {
+                      return '$' + value.toFixed(2);
+                    }
+                  },
+                  title: {
+                    display: true,
+                    text: 'XRP/USD',
+                    color: '#ff4444',
+                    font: { size: 10 }
                   }
                 }
               }
@@ -5120,7 +5170,8 @@
       function showPlaceholderCharts() {
         // Show placeholder data when API isn't available
         const labels = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
-        const prices = [0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001];
+        const wloPrices = [0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001];
+        const xrpPrices = [2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50];
 
         $("waldoXrpRate") && ($("waldoXrpRate").textContent = 'Loading...');
         $("waldoUsdRate") && ($("waldoUsdRate").textContent = 'Loading...');
@@ -5129,22 +5180,35 @@
 
         const chartData = {
           labels: labels,
-          datasets: [{
-            label: 'WALDO/USD',
-            data: prices,
-            borderColor: '#666',
-            backgroundColor: 'rgba(102, 102, 102, 0.1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4
-          }]
+          datasets: [
+            {
+              label: 'WALDO/USD',
+              data: wloPrices,
+              borderColor: '#666',
+              backgroundColor: 'rgba(102, 102, 102, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              yAxisID: 'y'
+            },
+            {
+              label: 'XRP/USD',
+              data: xrpPrices,
+              borderColor: '#993333',
+              backgroundColor: 'rgba(153, 51, 51, 0.05)',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              yAxisID: 'y1'
+            }
+          ]
         };
 
         const chartOptions = {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
+            legend: { display: true, labels: { color: '#666' } },
             tooltip: { enabled: false }
           },
           scales: {
@@ -5153,8 +5217,18 @@
               ticks: { color: '#666' }
             },
             y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
               grid: { color: 'rgba(255, 255, 255, 0.1)' },
               ticks: { color: '#666' }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: { color: '#993333' }
             }
           }
         };

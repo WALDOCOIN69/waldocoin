@@ -1,8 +1,7 @@
 // routes/market/price-history.js
 import express from "express";
 import { redis } from "../../redisClient.js";
-import getWaldoPerXrp from "../../utils/getWaldoPerXrp.js";
-import fetch from "node-fetch";
+import { getXRPPrice, getWLOPrice } from "../../utils/priceOracle.js";
 
 const router = express.Router();
 
@@ -13,36 +12,17 @@ router.get("/", async (req, res) => {
     const maxDays = 30; // Limit to 30 days max
     const requestedDays = Math.min(days, maxDays);
 
-    // Get current price from /api/market/wlo (same source as exchange widget)
-    let xrpPerWlo = 0;
-    let waldoPerXrp = 0;
+    // Get REAL prices from GeckoTerminal/CoinGecko (bypasses any admin overrides)
+    const [waldoUsdPrice, xrpUsdRate] = await Promise.all([
+      getWLOPrice(),  // Direct from GeckoTerminal DEX
+      getXRPPrice()   // Direct from CoinGecko
+    ]);
 
-    try {
-      const baseURL = process.env.BASE_URL || 'https://waldocoin-backend-api.onrender.com';
-      const marketRes = await fetch(`${baseURL}/api/market/wlo`);
-      const marketData = await marketRes.json();
+    // Calculate XRP per WLO from USD prices
+    const xrpPerWlo = xrpUsdRate > 0 ? (waldoUsdPrice / xrpUsdRate) : 0;
+    const waldoPerXrp = xrpPerWlo > 0 ? (1 / xrpPerWlo) : 0;
 
-      if (marketData.success && marketData.xrpPerWlo) {
-        xrpPerWlo = marketData.xrpPerWlo;
-        waldoPerXrp = marketData.waldoPerXrp || (1 / xrpPerWlo);
-      }
-    } catch (e) {
-      console.warn('Failed to fetch from /api/market/wlo, using fallback:', e.message);
-    }
-
-    // Fallback: try getWaldoPerXrp but ignore 10000 default
-    if (xrpPerWlo === 0) {
-      waldoPerXrp = await getWaldoPerXrp();
-      // Ignore the 10000 fallback (presale rate) - it's not real market price
-      if (waldoPerXrp === 10000) {
-        waldoPerXrp = 0;
-      }
-      xrpPerWlo = waldoPerXrp > 0 ? (1 / waldoPerXrp) : 0;
-    }
-
-    // Get XRP/USD rate (approximate)
-    const xrpUsdRate = 0.50; // Approximate XRP price in USD (could fetch from external API)
-    const waldoUsdPrice = xrpPerWlo * xrpUsdRate;
+    console.log(`📊 Price History: WLO=$${waldoUsdPrice.toFixed(8)}, XRP=$${xrpUsdRate.toFixed(4)}, XRP/WLO=${xrpPerWlo.toFixed(8)}`);
 
     // Generate historical data
     // For now, we'll generate simulated data based on current price
@@ -56,13 +36,17 @@ router.get("/", async (req, res) => {
 
       // Add some realistic variation (±5% random walk)
       const variation = 1 + (Math.random() - 0.5) * 0.1; // ±5% variation
-      const historicalPrice = waldoUsdPrice * variation;
+      const historicalWloPrice = waldoUsdPrice * variation;
       const historicalXrpPrice = xrpPerWlo * variation;
+      // XRP price also varies slightly (±2%)
+      const xrpVariation = 1 + (Math.random() - 0.5) * 0.04;
+      const historicalXrpUsdPrice = xrpUsdRate * xrpVariation;
 
       history.push({
         timestamp: date.toISOString(),
-        usdPrice: parseFloat(historicalPrice.toFixed(8)),
+        usdPrice: parseFloat(historicalWloPrice.toFixed(8)),
         xrpPrice: parseFloat(historicalXrpPrice.toFixed(8)),
+        xrpUsdPrice: parseFloat(historicalXrpUsdPrice.toFixed(4)), // XRP/USD price for chart
         date: date.toISOString().split('T')[0]
       });
     }
@@ -78,7 +62,8 @@ router.get("/", async (req, res) => {
             success: true,
             current: {
               xrpPrice: xrpPerWlo.toFixed(8),
-              usdPrice: waldoUsdPrice.toFixed(8)
+              usdPrice: waldoUsdPrice.toFixed(8),
+              xrpUsdRate: xrpUsdRate.toFixed(4) // Current XRP/USD rate
             },
             history: parsed.slice(-requestedDays),
             days: requestedDays,
@@ -96,7 +81,8 @@ router.get("/", async (req, res) => {
       success: true,
       current: {
         xrpPrice: xrpPerWlo.toFixed(8),
-        usdPrice: waldoUsdPrice.toFixed(8)
+        usdPrice: waldoUsdPrice.toFixed(8),
+        xrpUsdRate: xrpUsdRate.toFixed(4) // Current XRP/USD rate
       },
       history: history,
       days: requestedDays,
@@ -122,11 +108,16 @@ router.post("/store", async (req, res) => {
       return res.status(403).json({ success: false, error: "Unauthorized" });
     }
 
-    // Get current price
-    const waldoPerXrp = await getWaldoPerXrp();
-    const xrpPerWlo = waldoPerXrp > 0 ? (1 / waldoPerXrp) : 0;
-    const xrpUsdRate = 0.50; // Approximate
-    const waldoUsdPrice = xrpPerWlo * xrpUsdRate;
+    // Get REAL prices from GeckoTerminal/CoinGecko (bypasses any admin overrides)
+    const [waldoUsdPrice, xrpUsdRate] = await Promise.all([
+      getWLOPrice(),  // Direct from GeckoTerminal DEX
+      getXRPPrice()   // Direct from CoinGecko
+    ]);
+
+    // Calculate XRP per WLO from USD prices
+    const xrpPerWlo = xrpUsdRate > 0 ? (waldoUsdPrice / xrpUsdRate) : 0;
+
+    console.log(`📊 Storing price: WLO=$${waldoUsdPrice.toFixed(8)}, XRP=$${xrpUsdRate.toFixed(4)}`);
 
     // Get existing history
     let history = [];
@@ -139,11 +130,12 @@ router.post("/store", async (req, res) => {
       history = [];
     }
 
-    // Add new data point
+    // Add new data point (including XRP/USD for chart)
     const newPoint = {
       timestamp: new Date().toISOString(),
       usdPrice: parseFloat(waldoUsdPrice.toFixed(8)),
       xrpPrice: parseFloat(xrpPerWlo.toFixed(8)),
+      xrpUsdPrice: parseFloat(xrpUsdRate.toFixed(4)), // XRP/USD price for chart
       date: new Date().toISOString().split('T')[0]
     };
 
