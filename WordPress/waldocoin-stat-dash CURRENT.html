@@ -2470,6 +2470,119 @@
       }
     }
 
+    /* === WALDO MARKET DATA CARD === */
+    .waldo-market-container {
+      padding: 10px 0;
+    }
+
+    .market-section {
+      padding: 15px 0;
+    }
+
+    .market-section-title {
+      color: #25c2a0;
+      font-size: 1em;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+    }
+
+    .market-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .market-item {
+      background: rgba(37, 194, 160, 0.08);
+      border: 1px solid rgba(37, 194, 160, 0.2);
+      border-radius: 10px;
+      padding: 12px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .market-label {
+      color: #888;
+      font-size: 0.85em;
+    }
+
+    .market-value {
+      color: #25c2a0;
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+
+    .market-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(37, 194, 160, 0.3), transparent);
+      margin: 5px 0;
+    }
+
+    .holdings-display {
+      background: linear-gradient(135deg, rgba(37, 194, 160, 0.15), rgba(37, 194, 160, 0.05));
+      border: 1px solid rgba(37, 194, 160, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .holdings-main {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(37, 194, 160, 0.2);
+    }
+
+    .holdings-amount {
+      font-size: 2em;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .holdings-symbol {
+      font-size: 1.2em;
+      color: #25c2a0;
+      font-weight: 600;
+    }
+
+    .holdings-converted {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .holdings-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .holdings-label {
+      color: #888;
+      font-size: 0.85em;
+    }
+
+    .holdings-value {
+      color: #25c2a0;
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+
+    @media (max-width: 480px) {
+      .market-grid,
+      .holdings-converted {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
     /* === STAKING PROCESS STYLES === */
     .staking-process-section {
       background: #222;
@@ -3403,6 +3516,21 @@
         </div>
       </div>
 
+      <!-- Price Chart Card -->
+      <div class="card">
+        <h2>📈 Price Chart</h2>
+        <div class="chart-header">
+          <div class="chart-range-buttons">
+            <button class="range-btn" data-days="1" onclick="changeChartRange(1)">24h</button>
+            <button class="range-btn active" data-days="7" onclick="changeChartRange(7)">7d</button>
+            <button class="range-btn" data-days="30" onclick="changeChartRange(30)">30d</button>
+          </div>
+        </div>
+        <div class="chart-container-enhanced" style="margin-top: 15px;">
+          <canvas height="160" id="waldoPriceChartMerged" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
       <!-- Eligibility Badge Card (top status, now includes Per‑Meme Matured Redemptions) -->
       <div class="card" id="eligibilityCard">
         <h2 id="eligibilityTitle" style="margin-bottom: 15px;">✅ WALDO Eligibility</h2>
@@ -3456,52 +3584,59 @@
       <!-- WALDO Value & Trend -->
       <div class="card">
         <h2>💸 WALDO Market Data</h2>
-        <div class="waldo-merged-container">
+        <div class="waldo-market-container">
 
-          <!-- Current Value Section -->
-          <div class="waldo-section">
-            <div class="waldo-section-header">
-              <h3 class="waldo-section-title">💰 Current Value</h3>
-              <div class="waldo-section-divider"></div>
+          <!-- Price Rates Section -->
+          <div class="market-section">
+            <h3 class="market-section-title">📊 Current Rates</h3>
+            <div class="market-grid">
+              <div class="market-item">
+                <span class="market-label">1 WALDO =</span>
+                <span class="market-value" id="waldoXrpRate">Loading...</span>
+              </div>
+              <div class="market-item">
+                <span class="market-label">1 WALDO =</span>
+                <span class="market-value" id="waldoUsdRate">Loading...</span>
+              </div>
             </div>
-            <div class="waldo-section-content">
-              <div class="waldo-value-details">
-                <div class="value-detail-item">
-                  <span class="value-label">XRP Rate:</span>
-                  <span class="value-amount" id="waldoXrpRate">Loading...</span>
+          </div>
+
+          <div class="market-divider"></div>
+
+          <!-- Your Holdings Section -->
+          <div class="market-section">
+            <h3 class="market-section-title">💰 Your Holdings</h3>
+            <div class="holdings-display">
+              <div class="holdings-main">
+                <span class="holdings-amount" id="userWloBalance">0</span>
+                <span class="holdings-symbol">WALDO</span>
+              </div>
+              <div class="holdings-converted">
+                <div class="holdings-item">
+                  <span class="holdings-label">Value in XRP:</span>
+                  <span class="holdings-value" id="userWloValueXrp">0.00 XRP</span>
                 </div>
-                <div class="value-detail-item">
-                  <span class="value-label">USD Rate:</span>
-                  <span class="value-amount" id="waldoUsdRate">Loading...</span>
+                <div class="holdings-item">
+                  <span class="holdings-label">Value in USD:</span>
+                  <span class="holdings-value" id="userWloValueUsd">$0.00</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Trend Chart Section -->
-          <div class="waldo-section">
-            <div class="waldo-section-header">
-              <h3 class="waldo-section-title">📈 Price Trend</h3>
-              <div class="chart-range-buttons">
-                <button class="range-btn" data-days="1" onclick="changeChartRange(1)">24h</button>
-                <button class="range-btn active" data-days="7" onclick="changeChartRange(7)">7d</button>
-                <button class="range-btn" data-days="30" onclick="changeChartRange(30)">30d</button>
+          <div class="market-divider"></div>
+
+          <!-- 24h Stats Section -->
+          <div class="market-section">
+            <h3 class="market-section-title">📈 Market Stats</h3>
+            <div class="market-grid">
+              <div class="market-item">
+                <span class="market-label">24h Change:</span>
+                <span class="market-value trend-positive" id="change24h">+0.00%</span>
               </div>
-              <div class="waldo-section-divider"></div>
-            </div>
-            <div class="waldo-section-content">
-              <div class="chart-container-enhanced">
-                <canvas height="140" id="waldoPriceChartMerged" class="chart-canvas"></canvas>
-              </div>
-              <div class="trend-stats">
-                <div class="trend-stat-item">
-                  <span class="trend-label">24h Change:</span>
-                  <span class="trend-value trend-positive" id="change24h">+0.00%</span>
-                </div>
-                <div class="trend-stat-item">
-                  <span class="trend-label">7d Change:</span>
-                  <span class="trend-value trend-positive" id="change7d">+0.00%</span>
-                </div>
+              <div class="market-item">
+                <span class="market-label">7d Change:</span>
+                <span class="market-value trend-positive" id="change7d">+0.00%</span>
               </div>
             </div>
           </div>
@@ -4990,6 +5125,32 @@
         }
       }
 
+      // Store current prices for holdings calculation
+      let currentWloUsdPrice = 0;
+      let currentWloXrpPrice = 0;
+
+      // Update wallet holdings display with converted values
+      function updateWalletHoldings(balance) {
+        const balanceEl = $("userWloBalance");
+        const xrpValueEl = $("userWloValueXrp");
+        const usdValueEl = $("userWloValueUsd");
+
+        if (balanceEl) {
+          balanceEl.textContent = Number(balance).toLocaleString(undefined, { maximumFractionDigits: 0 });
+        }
+
+        // Calculate converted values using current prices
+        if (currentWloXrpPrice > 0 && xrpValueEl) {
+          const xrpValue = balance * currentWloXrpPrice;
+          xrpValueEl.textContent = xrpValue.toFixed(4) + ' XRP';
+        }
+
+        if (currentWloUsdPrice > 0 && usdValueEl) {
+          const usdValue = balance * currentWloUsdPrice;
+          usdValueEl.textContent = '$' + usdValue.toFixed(2);
+        }
+      }
+
       // Initialize price charts with real-time data
       // Current chart range (default 7 days)
       let currentChartDays = 7;
@@ -5044,8 +5205,12 @@
             const currentWloPrice = wloPrices[wloPrices.length - 1];
             const currentXrpPrice = xrpPrices[xrpPrices.length - 1];
 
+            // Store prices globally for holdings calculation
+            currentWloUsdPrice = currentWloPrice;
+            currentWloXrpPrice = currentXrpPrice;
+
             if (xrpEl) {
-              xrpEl.textContent = `${(currentWloPrice / currentXrpPrice).toFixed(8)} XRP`;
+              xrpEl.textContent = `${currentXrpPrice.toFixed(8)} XRP`;
             }
             if (usdEl) {
               usdEl.textContent = `$${currentWloPrice.toFixed(8)}`;
@@ -7305,6 +7470,9 @@
             const bal = Number(data.balance || 0);
             const req = Number(data.requiredWaldo || 0);
             const needed = Math.max(0, req - bal);
+
+            // Update wallet holdings in Market Data card
+            updateWalletHoldings(bal);
 
             const iconEl = $("eligibilityIcon");
 
