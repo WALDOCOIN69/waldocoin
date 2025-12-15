@@ -5104,9 +5104,9 @@
                   },
                   title: {
                     display: true,
-                    text: 'WALDO/USD',
+                    text: 'USD (WALDO)',
                     color: '#25c2a0',
-                    font: { size: 10 }
+                    font: { size: 12, weight: 'bold' }
                   }
                 },
                 y1: {
@@ -5123,9 +5123,9 @@
                   },
                   title: {
                     display: true,
-                    text: 'XRP/USD',
+                    text: 'XRP (USD)',
                     color: '#ff4444',
-                    font: { size: 10 }
+                    font: { size: 12, weight: 'bold' }
                   }
                 }
               }
@@ -5221,14 +5221,26 @@
               display: true,
               position: 'left',
               grid: { color: 'rgba(255, 255, 255, 0.1)' },
-              ticks: { color: '#666' }
+              ticks: { color: '#666' },
+              title: {
+                display: true,
+                text: 'USD (WALDO)',
+                color: '#25c2a0',
+                font: { size: 12, weight: 'bold' }
+              }
             },
             y1: {
               type: 'linear',
               display: true,
               position: 'right',
               grid: { drawOnChartArea: false },
-              ticks: { color: '#993333' }
+              ticks: { color: '#993333' },
+              title: {
+                display: true,
+                text: 'XRP (USD)',
+                color: '#ff4444',
+                font: { size: 12, weight: 'bold' }
+              }
             }
           }
         };
@@ -6388,12 +6400,39 @@
                   ticks: { color: '#ccc' }
                 },
                 y: {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
                   grid: { color: 'rgba(255, 255, 255, 0.1)' },
                   ticks: {
-                    color: '#ccc',
+                    color: '#25c2a0',
                     callback: function (value) {
-                      return '$' + value.toFixed(8);
+                      return '$' + value.toFixed(6);
                     }
+                  },
+                  title: {
+                    display: true,
+                    text: 'USD (WALDO)',
+                    color: '#25c2a0',
+                    font: { size: 14, weight: 'bold' }
+                  }
+                },
+                y1: {
+                  type: 'linear',
+                  display: true,
+                  position: 'right',
+                  grid: { drawOnChartArea: false },
+                  ticks: {
+                    color: '#ff4444',
+                    callback: function (value) {
+                      return '$' + value.toFixed(2);
+                    }
+                  },
+                  title: {
+                    display: true,
+                    text: 'XRP (USD)',
+                    color: '#ff4444',
+                    font: { size: 14, weight: 'bold' }
                   }
                 }
               }
