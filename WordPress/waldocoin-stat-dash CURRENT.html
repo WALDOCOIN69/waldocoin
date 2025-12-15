@@ -2583,6 +2583,37 @@
       margin-top: 10px;
     }
 
+    .chart-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .chart-card-header h2 {
+      margin: 0;
+    }
+
+    #chartRangeLabel {
+      font-size: 0.7em;
+      opacity: 0.7;
+      margin-left: 5px;
+    }
+
+    .modal-chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .modal-chart-header .modal-title {
+      margin: 0;
+    }
+
     /* === STAKING PROCESS STYLES === */
     .staking-process-section {
       background: #222;
@@ -3516,21 +3547,6 @@
         </div>
       </div>
 
-      <!-- Price Chart Card -->
-      <div class="card">
-        <h2>📈 Price Chart</h2>
-        <div class="chart-header">
-          <div class="chart-range-buttons">
-            <button class="range-btn" data-days="1" onclick="changeChartRange(1)">24h</button>
-            <button class="range-btn active" data-days="7" onclick="changeChartRange(7)">7d</button>
-            <button class="range-btn" data-days="30" onclick="changeChartRange(30)">30d</button>
-          </div>
-        </div>
-        <div class="chart-container-enhanced" style="margin-top: 15px;">
-          <canvas height="160" id="waldoPriceChartMerged" class="chart-canvas"></canvas>
-        </div>
-      </div>
-
       <!-- Eligibility Badge Card (top status, now includes Per‑Meme Matured Redemptions) -->
       <div class="card" id="eligibilityCard">
         <h2 id="eligibilityTitle" style="margin-bottom: 15px;">✅ WALDO Eligibility</h2>
@@ -3687,11 +3703,19 @@
 
 
       <!-- WALDO/USD Trend -->
-      <div class="card" onclick="openChartModal()" style="cursor: pointer;">
-        <h2>📈 WALDO/USD Trend (7 Days) <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to expand</span></h2>
-        <div class="chart-container">
+      <div class="card">
+        <div class="chart-card-header">
+          <h2>📈 WALDO Price <span id="chartRangeLabel">7d</span></h2>
+          <div class="chart-range-buttons" onclick="event.stopPropagation();">
+            <button class="range-btn" data-days="1" onclick="changeChartRange(1)">24h</button>
+            <button class="range-btn active" data-days="7" onclick="changeChartRange(7)">7d</button>
+            <button class="range-btn" data-days="30" onclick="changeChartRange(30)">30d</button>
+          </div>
+        </div>
+        <div class="chart-container" onclick="openChartModal()" style="cursor: pointer;" title="Click to expand">
           <canvas height="160" id="waldoPriceChartNew" class="chart-canvas"></canvas>
         </div>
+        <div style="text-align: center; color: #888; font-size: 11px; margin-top: 8px;">🔍 Click chart to expand</div>
       </div>
 
       <!-- XP Gain Breakdown -->
@@ -4160,7 +4184,14 @@
     <div id="chartModal" class="nft-modal modal-container" style="display: none;">
       <div class="modal-content" style="max-width: 1200px; width: 95%;">
         <span onclick="closeChartModal()" class="close-nft-modal modal-close">&times;</span>
-        <h3 class="modal-title">📈 WALDO/USD Price Trend (7 Days)</h3>
+        <div class="modal-chart-header">
+          <h3 class="modal-title" id="expandedChartTitle">📈 WALDO Price Trend</h3>
+          <div class="chart-range-buttons">
+            <button class="range-btn" data-days="1" onclick="changeChartRange(1)">24h</button>
+            <button class="range-btn active" data-days="7" onclick="changeChartRange(7)">7d</button>
+            <button class="range-btn" data-days="30" onclick="changeChartRange(30)">30d</button>
+          </div>
+        </div>
         <div class="chart-container" style="margin-top: 20px;">
           <canvas id="waldoPriceChartExpanded" class="chart-canvas" height="400"></canvas>
         </div>
@@ -4981,7 +5012,6 @@
         }
       }
 
-      let priceChartMergedInstance = null;
       let priceChartNewInstance = null;
       let priceChartExpandedInstance = null;
       let lastChartData = null; // Store chart data for modal
@@ -5165,6 +5195,10 @@
             btn.classList.add('active');
           }
         });
+        // Update label
+        const label = days === 1 ? '24h' : days === 30 ? '30d' : '7d';
+        const labelEl = $("chartRangeLabel");
+        if (labelEl) labelEl.textContent = label;
         // Reload chart with new range
         initializePriceCharts(days);
       }
@@ -5356,21 +5390,7 @@
               }
             };
 
-            // Render merged chart
-            const mergedEl = $("waldoPriceChartMerged");
-            if (mergedEl) {
-              const ctx = mergedEl.getContext("2d");
-              if (priceChartMergedInstance) {
-                priceChartMergedInstance.destroy();
-              }
-              priceChartMergedInstance = new Chart(ctx, {
-                type: "line",
-                data: chartData,
-                options: chartOptions
-              });
-            }
-
-            // Render new chart
+            // Render main price chart
             const newEl = $("waldoPriceChartNew");
             if (newEl) {
               const ctx = newEl.getContext("2d");
@@ -5469,17 +5489,6 @@
             }
           }
         };
-
-        const mergedEl = $("waldoPriceChartMerged");
-        if (mergedEl) {
-          const ctx = mergedEl.getContext("2d");
-          if (priceChartMergedInstance) priceChartMergedInstance.destroy();
-          priceChartMergedInstance = new Chart(ctx, {
-            type: "line",
-            data: chartData,
-            options: chartOptions
-          });
-        }
 
         const newEl = $("waldoPriceChartNew");
         if (newEl) {
