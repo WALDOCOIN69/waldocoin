@@ -30,25 +30,42 @@ router.get("/", async (req, res) => {
     const history = [];
     const now = new Date();
 
-    for (let i = requestedDays - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
+    // For 1 day (24h), generate hourly data points
+    if (requestedDays === 1) {
+      for (let i = 23; i >= 0; i--) {
+        const date = new Date(now);
+        date.setHours(date.getHours() - i);
 
-      // Add some realistic variation (±5% random walk)
-      const variation = 1 + (Math.random() - 0.5) * 0.1; // ±5% variation
-      const historicalWloPrice = waldoUsdPrice * variation;
-      const historicalXrpPrice = xrpPerWlo * variation;
-      // XRP price also varies slightly (±2%)
-      const xrpVariation = 1 + (Math.random() - 0.5) * 0.04;
-      const historicalXrpUsdPrice = xrpUsdRate * xrpVariation;
+        // Add some realistic variation (±3% for hourly)
+        const variation = 1 + (Math.random() - 0.5) * 0.06;
+        const historicalWloPrice = waldoUsdPrice * variation;
+        const historicalXrpPrice = xrpPerWlo * variation;
 
-      history.push({
-        timestamp: date.toISOString(),
-        usdPrice: parseFloat(historicalWloPrice.toFixed(8)),
-        xrpPrice: parseFloat(historicalXrpPrice.toFixed(8)),
-        xrpUsdPrice: parseFloat(historicalXrpUsdPrice.toFixed(4)), // XRP/USD price for chart
-        date: date.toISOString().split('T')[0]
-      });
+        history.push({
+          timestamp: date.toISOString(),
+          usdPrice: parseFloat(historicalWloPrice.toFixed(8)),
+          xrpPrice: parseFloat(historicalXrpPrice.toFixed(8)),
+          date: date.toISOString().split('T')[0]
+        });
+      }
+    } else {
+      // For multi-day views, generate daily data points
+      for (let i = requestedDays - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+
+        // Add some realistic variation (±5% random walk)
+        const variation = 1 + (Math.random() - 0.5) * 0.1;
+        const historicalWloPrice = waldoUsdPrice * variation;
+        const historicalXrpPrice = xrpPerWlo * variation;
+
+        history.push({
+          timestamp: date.toISOString(),
+          usdPrice: parseFloat(historicalWloPrice.toFixed(8)),
+          xrpPrice: parseFloat(historicalXrpPrice.toFixed(8)),
+          date: date.toISOString().split('T')[0]
+        });
+      }
     }
 
     // Try to get stored historical data from Redis (if available)

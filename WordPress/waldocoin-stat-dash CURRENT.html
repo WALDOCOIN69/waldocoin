@@ -2327,6 +2327,39 @@
 
     .waldo-section-header {
       margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chart-range-buttons {
+      display: flex;
+      gap: 5px;
+      margin-left: auto;
+    }
+
+    .range-btn {
+      background: rgba(37, 194, 160, 0.1);
+      border: 1px solid rgba(37, 194, 160, 0.3);
+      color: #aaa;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 0.75em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .range-btn:hover {
+      background: rgba(37, 194, 160, 0.2);
+      color: #25c2a0;
+    }
+
+    .range-btn.active {
+      background: #25c2a0;
+      color: #000;
+      border-color: #25c2a0;
+      font-weight: bold;
     }
 
     .waldo-section-title {
@@ -3448,7 +3481,12 @@
           <!-- Trend Chart Section -->
           <div class="waldo-section">
             <div class="waldo-section-header">
-              <h3 class="waldo-section-title">📈 7-Day Price Trend</h3>
+              <h3 class="waldo-section-title">📈 Price Trend</h3>
+              <div class="chart-range-buttons">
+                <button class="range-btn" data-days="1" onclick="changeChartRange(1)">24h</button>
+                <button class="range-btn active" data-days="7" onclick="changeChartRange(7)">7d</button>
+                <button class="range-btn" data-days="30" onclick="changeChartRange(30)">30d</button>
+              </div>
               <div class="waldo-section-divider"></div>
             </div>
             <div class="waldo-section-content">
@@ -4953,7 +4991,24 @@
       }
 
       // Initialize price charts with real-time data
-      async function initializePriceCharts() {
+      // Current chart range (default 7 days)
+      let currentChartDays = 7;
+
+      // Function to change chart time range
+      function changeChartRange(days) {
+        currentChartDays = days;
+        // Update button states
+        document.querySelectorAll('.range-btn').forEach(btn => {
+          btn.classList.remove('active');
+          if (parseInt(btn.dataset.days) === days) {
+            btn.classList.add('active');
+          }
+        });
+        // Reload chart with new range
+        initializePriceCharts(days);
+      }
+
+      async function initializePriceCharts(days = 7) {
         // Check if Chart.js is loaded
         if (typeof Chart === 'undefined') {
           console.error('❌ Chart.js is not loaded!');
@@ -4962,21 +5017,26 @@
         }
 
         try {
-          // STEP 1: Get historical data for charts (includes real XRP/USD rate)
-          const res = await fetch(`${baseURL}/api/market/price-history?days=7`);
+          // STEP 1: Get historical data for charts
+          const res = await fetch(`${baseURL}/api/market/price-history?days=${days}`);
           const data = await res.json();
 
           if (data.success && data.history && data.history.length > 0) {
-            // Get real XRP/USD rate from API response
-            const xrpUsdRate = parseFloat(data.current?.xrpUsdRate) || 2.50;
-            console.log('📊 Using real XRP/USD rate:', xrpUsdRate);
+            // Get real prices from API response
+            const currentXrpPerWlo = parseFloat(data.current?.xrpPrice) || 0.00001;
+            console.log('📊 Using real WALDO/XRP rate:', currentXrpPerWlo);
 
+            // Format labels based on time range
             const labels = data.history.map(h => {
               const date = new Date(h.timestamp);
-              return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              if (days === 1) {
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              }
             });
             const wloPrices = data.history.map(h => h.usdPrice || 0);
-            const xrpPrices = data.history.map(h => h.xrpUsdPrice || xrpUsdRate);
+            const xrpPrices = data.history.map(h => h.xrpPrice || currentXrpPerWlo); // WALDO price in XRP
 
             // Update rate displays with REAL prices
             const xrpEl = $("waldoXrpRate");
@@ -5032,7 +5092,7 @@
                   yAxisID: 'y'
                 },
                 {
-                  label: 'XRP/USD',
+                  label: 'WALDO/XRP',
                   data: xrpPrices,
                   borderColor: '#ff4444',
                   backgroundColor: 'rgba(255, 68, 68, 0.05)',
@@ -5104,7 +5164,7 @@
                   },
                   title: {
                     display: true,
-                    text: 'USD (WALDO)',
+                    text: 'USD',
                     color: '#25c2a0',
                     font: { size: 12, weight: 'bold' }
                   }
@@ -5118,12 +5178,12 @@
                     color: '#ff4444',
                     font: { size: 10 },
                     callback: function (value) {
-                      return '$' + value.toFixed(2);
+                      return value.toFixed(8) + ' XRP';
                     }
                   },
                   title: {
                     display: true,
-                    text: 'XRP (USD)',
+                    text: 'XRP',
                     color: '#ff4444',
                     font: { size: 12, weight: 'bold' }
                   }
@@ -5224,7 +5284,7 @@
               ticks: { color: '#666' },
               title: {
                 display: true,
-                text: 'USD (WALDO)',
+                text: 'USD',
                 color: '#25c2a0',
                 font: { size: 12, weight: 'bold' }
               }
@@ -5237,7 +5297,7 @@
               ticks: { color: '#993333' },
               title: {
                 display: true,
-                text: 'XRP (USD)',
+                text: 'XRP',
                 color: '#ff4444',
                 font: { size: 12, weight: 'bold' }
               }
@@ -6412,7 +6472,7 @@
                   },
                   title: {
                     display: true,
-                    text: 'USD (WALDO)',
+                    text: 'USD',
                     color: '#25c2a0',
                     font: { size: 14, weight: 'bold' }
                   }
@@ -6425,12 +6485,12 @@
                   ticks: {
                     color: '#ff4444',
                     callback: function (value) {
-                      return '$' + value.toFixed(2);
+                      return value.toFixed(8) + ' XRP';
                     }
                   },
                   title: {
                     display: true,
-                    text: 'XRP (USD)',
+                    text: 'XRP',
                     color: '#ff4444',
                     font: { size: 14, weight: 'bold' }
                   }
