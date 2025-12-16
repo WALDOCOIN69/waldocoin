@@ -1,9 +1,24 @@
 import express from 'express';
+import xrpl from 'xrpl';
 import { redis } from '../redisClient.js';
+import { getXP, getXPLevel } from '../utils/xpManager.js';
 
 const router = express.Router();
 
 console.log("⚙️ Loaded: routes/system.js");
+
+// Monthly meme limits by XP level
+const MONTHLY_MEME_LIMITS = {
+  1: 100,    // Fresh Poster
+  2: 300,    // Shitposter
+  3: 600,    // Meme Dealer
+  4: 1000,   // OG Degen
+  5: 2000    // WALDO Master
+};
+
+// KING NFT issuer for unlimited access check
+const WLO_ISSUER = process.env.WLO_ISSUER || process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
+const XRPL_SERVER = process.env.XRPL_SERVER || 'wss://s1.ripple.com';
 
 // GET /api/system/waldo-requirements - Get current WALDO requirements
 router.get('/waldo-requirements', async (req, res) => {
@@ -549,6 +564,135 @@ router.get('/meme-usage-stats', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: "Failed to get meme usage stats"
+    });
+  }
+});
+
+// Monthly meme limits by XP level
+const MONTHLY_MEME_LIMITS = {
+  1: 10,    // Fresh Poster
+  2: 25,    // Shitposter
+  3: 50,    // Meme Dealer
+  4: 100,   // OG Degen
+  5: 200,   // WALDO Master
+  king: 2000 // KING NFT holder
+};
+
+const LEVEL_TITLES = {
+  1: "Fresh Poster",
+  2: "Shitposter",
+  3: "Meme Dealer",
+  4: "OG Degen",
+  5: "WALDO Master"
+};
+
+const XP_THRESHOLDS = [
+  { level: 1, threshold: 0 },
+  { level: 2, threshold: 250 },
+  { level: 3, threshold: 850 },
+  { level: 4, threshold: 1750 },
+  { level: 5, threshold: 3000 }
+];
+
+function getXPLevel(xp) {
+  for (let i = XP_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (xp >= XP_THRESHOLDS[i].threshold) {
+      return XP_THRESHOLDS[i].level;
+    }
+  }
+  return 1;
+}
+
+// GET /api/system/monthly-meme-usage/:wallet - Get monthly meme usage and limits
+router.get('/monthly-meme-usage/:wallet', async (req, res) => {
+  try {
+    const { wallet } = req.params;
+
+    if (!wallet || wallet.length < 25) {
+      return res.status(400).json({ success: false, error: "Invalid wallet address" });
+    }
+
+    // Get current month key
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const usageKey = `meme:monthly:${wallet}:${monthKey}`;
+
+    // Get user's XP to determine level
+    const xp = parseInt(await redis.get(`xp:${wallet}`)) || 0;
+    const level = getXPLevel(xp);
+    const levelTitle = LEVEL_TITLES[level];
+
+    // Check for KING NFT (stored in user data or separate key)
+    const hasKingNFT = await redis.get(`user:${wallet}:kingNFT`) === 'true';
+
+    // Determine monthly limit
+    const monthlyLimit = hasKingNFT ? MONTHLY_MEME_LIMITS.king : MONTHLY_MEME_LIMITS[level];
+
+    // Get current month's usage
+    const memesThisMonth = parseInt(await redis.get(usageKey)) || 0;
+    const remaining = Math.max(0, monthlyLimit - memesThisMonth);
+
+    // Calculate days until reset (first of next month)
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const daysUntilReset = Math.ceil((nextMonth - now) / (1000 * 60 * 60 * 24));
+
+    return res.json({
+      success: true,
+      usage: {
+        wallet,
+        level,
+        levelTitle,
+        hasKingNFT,
+        xp,
+        monthlyLimit,
+        memesThisMonth,
+        remaining,
+        month: monthKey,
+        daysUntilReset,
+        nextReset: nextMonth.toISOString().split('T')[0]
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting monthly meme usage:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get monthly meme usage"
+    });
+  }
+});
+
+// POST /api/system/increment-monthly-meme/:wallet - Increment monthly meme count
+router.post('/increment-monthly-meme/:wallet', async (req, res) => {
+  try {
+    const { wallet } = req.params;
+
+    if (!wallet || wallet.length < 25) {
+      return res.status(400).json({ success: false, error: "Invalid wallet address" });
+    }
+
+    // Get current month key
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const usageKey = `meme:monthly:${wallet}:${monthKey}`;
+
+    // Increment and get new count
+    const newCount = await redis.incr(usageKey);
+
+    // Set expiry to 35 days (covers month + buffer)
+    await redis.expire(usageKey, 35 * 24 * 60 * 60);
+
+    return res.json({
+      success: true,
+      memesThisMonth: newCount,
+      month: monthKey
+    });
+
+  } catch (error) {
+    console.error('❌ Error incrementing monthly meme count:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to increment meme count"
     });
   }
 });

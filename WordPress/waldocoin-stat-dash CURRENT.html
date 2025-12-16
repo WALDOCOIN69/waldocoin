@@ -3754,6 +3754,24 @@
       <!-- Social Stats -->
       <div class="card">
         <h2 style="margin-bottom: 15px;">📱 Social Stats</h2>
+        <!-- Monthly Meme Limit -->
+        <div style="background: rgba(255, 217, 61, 0.1); border: 1px solid #ffd93d; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="color: #ffd93d; font-weight: bold;">🖼️ Monthly Memes</span>
+            <span id="memeMonthlyStatus" style="color: #25c2a0; font-size: 0.9em;">Loading...</span>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border-radius: 4px; height: 8px; overflow: hidden;">
+            <div id="memeMonthlyBar" style="background: linear-gradient(90deg, #25c2a0, #ffd93d); height: 100%; width: 0%; transition: width 0.5s;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.8em; color: #888;">
+            <span id="memeMonthlyUsed">0 used</span>
+            <span id="memeMonthlyLimit">Limit: --</span>
+          </div>
+          <div style="text-align: center; margin-top: 8px; font-size: 0.85em;">
+            <span style="color: #ccc;">Level: </span><span id="memeMonthlyLevel" style="color: #ffd93d;">--</span>
+            <span style="color: #666; margin-left: 10px;">Resets: </span><span id="memeMonthlyReset" style="color: #888;">--</span>
+          </div>
+        </div>
         <p style="margin-bottom: 8px;"><strong>🔥 Top Meme:</strong> <span id="socialHandle">Loading...</span></p>
         <p style="margin-bottom: 8px;"><strong>👥 Followers:</strong> <span id="socialFollowers">—</span></p>
         <p style="margin-bottom: 8px;"><strong>🔥 Total Likes:</strong> <span id="totalLikes">Loading...</span></p>
@@ -6388,6 +6406,69 @@
         }
       }
 
+      // Load monthly meme usage
+      async function loadMonthlyMemeUsage() {
+        try {
+          const wallet = localStorage.getItem('wallet');
+          if (!wallet) return;
+
+          const res = await fetch(`${baseURL}/api/system/monthly-meme-usage/${wallet}`);
+          const data = await res.json();
+
+          if (!data || !data.success) return;
+
+          const usage = data.usage;
+          const used = usage.memesThisMonth || 0;
+          const limit = usage.monthlyLimit || 10;
+          const remaining = usage.remaining || 0;
+          const level = usage.level || 1;
+          const title = usage.hasKingNFT ? '👑 KING' : usage.levelTitle || 'Fresh Poster';
+          const daysLeft = usage.daysUntilReset || 0;
+
+          // Update UI elements
+          const statusEl = document.getElementById('memeMonthlyStatus');
+          const barEl = document.getElementById('memeMonthlyBar');
+          const usedEl = document.getElementById('memeMonthlyUsed');
+          const limitEl = document.getElementById('memeMonthlyLimit');
+          const levelEl = document.getElementById('memeMonthlyLevel');
+          const resetEl = document.getElementById('memeMonthlyReset');
+
+          if (statusEl) statusEl.textContent = `${remaining} remaining`;
+          if (usedEl) usedEl.textContent = `${used} used`;
+          if (limitEl) limitEl.textContent = `Limit: ${limit}`;
+          if (levelEl) levelEl.textContent = title;
+          if (resetEl) resetEl.textContent = `${daysLeft} days`;
+
+          // Update progress bar
+          if (barEl) {
+            const percent = Math.min(100, (used / limit) * 100);
+            barEl.style.width = `${percent}%`;
+            // Change color based on usage
+            if (percent >= 90) {
+              barEl.style.background = 'linear-gradient(90deg, #ff6b6b, #ff4757)';
+            } else if (percent >= 70) {
+              barEl.style.background = 'linear-gradient(90deg, #ffd93d, #ff9f43)';
+            } else {
+              barEl.style.background = 'linear-gradient(90deg, #25c2a0, #ffd93d)';
+            }
+          }
+
+          // Update status color based on remaining
+          if (statusEl) {
+            if (remaining === 0) {
+              statusEl.style.color = '#ff4757';
+            } else if (remaining <= 5) {
+              statusEl.style.color = '#ff9f43';
+            } else {
+              statusEl.style.color = '#25c2a0';
+            }
+          }
+
+        } catch (err) {
+          console.warn('Monthly meme usage not available:', err.message);
+        }
+      }
+
       // Load staking stats summary (Per‑Meme redemptions + ecosystem total)
       async function fetchStakingStatsSummary() {
         try {
@@ -7781,6 +7862,7 @@
             // Add all other data fetches here
             fetchConversionRate().catch(e => console.warn('Conversion rate failed:', e)),
             loadTopMeme().catch(e => console.warn('Top meme failed:', e)),
+            loadMonthlyMemeUsage().catch(e => console.warn('Monthly meme usage failed:', e)),
             fetchMemes(wallet).catch(e => console.warn('Memes failed:', e)),
             fetchNFTCollection(wallet).catch(e => console.warn('NFT collection failed:', e)),
             fetchActivity(wallet).catch(e => console.warn('Activity failed:', e)),
