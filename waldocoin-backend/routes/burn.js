@@ -46,10 +46,23 @@ async function getBlackholeBurnedFromXRPL(client) {
 async function getTotalBurnedFromXRPL() {
   let client;
   try {
-    client = new Client(XRPL_SERVER);
-    await client.connect();
+    console.log('🔗 Connecting to XRPL for burn data...');
+    client = new Client(XRPL_SERVER, {
+      timeout: 20000, // 20 second timeout
+      connectionTimeout: 15000
+    });
+
+    // Add connection timeout
+    const connectPromise = client.connect();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('XRPL connection timeout')), 15000)
+    );
+
+    await Promise.race([connectPromise, timeoutPromise]);
+    console.log('✅ Connected to XRPL');
 
     // Method 1: Get issuer's gateway_balances (tokens returned to issuer)
+    console.log('📡 Fetching gateway_balances for issuer:', WALDO_ISSUER);
     const response = await client.request({
       command: 'gateway_balances',
       account: WALDO_ISSUER,
@@ -59,6 +72,8 @@ async function getTotalBurnedFromXRPL() {
     const obligations = response.result.obligations || {};
     const wloInCirculation = parseFloat(obligations.WLO || 0);
     const burnedToIssuer = TOTAL_SUPPLY - wloInCirculation;
+
+    console.log(`📊 Gateway balances: WLO obligations = ${wloInCirculation}, burned to issuer = ${burnedToIssuer}`);
 
     // Method 2: Get burns sent to blackhole address
     const blackholeBurned = await getBlackholeBurnedFromXRPL(client);
@@ -91,11 +106,19 @@ async function getTotalBurnedFromXRPL() {
     };
 
   } catch (error) {
-    console.error('❌ Error fetching burn data from XRPL:', error);
-    if (client && client.isConnected()) {
-      await client.disconnect();
+    console.error('❌ Error fetching burn data from XRPL:', error.message);
+    console.error('❌ Full error:', error);
+    if (client) {
+      try {
+        if (client.isConnected()) {
+          await client.disconnect();
+        }
+      } catch (disconnectError) {
+        console.error('Error disconnecting:', disconnectError);
+      }
     }
     // Fallback to Redis if XRPL fails
+    console.log('⚠️ Falling back to Redis for burn data');
     const redisBurned = await redis.get('total_tokens_burned') || 0;
     return {
       total: parseFloat(redisBurned),
