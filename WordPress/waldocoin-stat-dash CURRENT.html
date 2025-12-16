@@ -195,11 +195,9 @@
       grid-column: 1 / -1;
     }
 
-    /* Match Eligibility and XP Trends card size to XP Boost card */
-    #eligibilityCard,
-    .card:has(#xpChart) {
-      max-height: 360px;
-      overflow-y: auto;
+    /* Align all cards to the top (not stretch) */
+    .container {
+      align-items: start;
     }
 
     .reward-logic-table {
