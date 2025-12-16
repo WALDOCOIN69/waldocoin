@@ -3187,6 +3187,89 @@
         grid-template-columns: 1fr;
         gap: 15px;
       }
+
+      /* Long Term Bonus Zone - push to margins */
+      .staking-zone-bar {
+        margin: 10px 8px;
+        padding: 15px 10px;
+        width: calc(100% - 16px);
+      }
+
+      /* Short Term Bonus Section - push to margins */
+      .collapsible-container {
+        margin: 10px 8px;
+        padding: 15px 10px;
+        width: calc(100% - 16px);
+        box-sizing: border-box;
+      }
+
+      /* Inner cards inside bonus sections - full width */
+      .collapsible-content .card,
+      .staking-zone-content .card,
+      .collapsible-content .big-card,
+      .staking-zone-content .big-card {
+        margin: 0 0 10px 0;
+        padding: 12px 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Reward tables - fully scrollable */
+      .reward-logic-table {
+        padding: 10px 5px;
+        overflow-x: auto;
+      }
+
+      .reward-logic-table .overflow-auto,
+      .staking-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+      }
+
+      .reward-logic-table table,
+      #longTermBonusTable {
+        min-width: 600px;
+        width: max-content;
+      }
+
+      /* Table cells - smaller on mobile */
+      .reward-logic-table th,
+      .reward-logic-table td {
+        padding: 8px 6px;
+        font-size: 0.85em;
+        white-space: nowrap;
+      }
+    }
+
+    /* Extra small mobile - even tighter margins */
+    @media (max-width: 480px) {
+      .staking-zone-bar {
+        margin: 8px 6px;
+        padding: 12px 8px;
+        width: calc(100% - 12px);
+      }
+
+      .collapsible-container {
+        margin: 8px 6px;
+        padding: 12px 8px;
+        width: calc(100% - 12px);
+      }
+
+      .collapsible-header,
+      .staking-zone-header {
+        font-size: 1.1em;
+      }
+
+      .staking-stats {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .staking-stat-item {
+        width: 100%;
+        text-align: center;
+      }
     }
 
     #waldoNotification {
