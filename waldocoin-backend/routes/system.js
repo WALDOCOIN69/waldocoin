@@ -1,24 +1,9 @@
 import express from 'express';
-import xrpl from 'xrpl';
 import { redis } from '../redisClient.js';
-import { getXP, getXPLevel } from '../utils/xpManager.js';
 
 const router = express.Router();
 
 console.log("⚙️ Loaded: routes/system.js");
-
-// Monthly meme limits by XP level
-const MONTHLY_MEME_LIMITS = {
-  1: 100,    // Fresh Poster
-  2: 300,    // Shitposter
-  3: 600,    // Meme Dealer
-  4: 1000,   // OG Degen
-  5: 2000    // WALDO Master
-};
-
-// KING NFT issuer for unlimited access check
-const WLO_ISSUER = process.env.WLO_ISSUER || process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
-const XRPL_SERVER = process.env.XRPL_SERVER || 'wss://s1.ripple.com';
 
 // GET /api/system/waldo-requirements - Get current WALDO requirements
 router.get('/waldo-requirements', async (req, res) => {
