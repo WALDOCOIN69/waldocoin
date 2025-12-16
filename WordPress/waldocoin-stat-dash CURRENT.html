@@ -8151,8 +8151,11 @@
           const data = await response.json();
 
           if (data.success) {
-            // Show XUMM QR code
-            showXummModal(data.qr, `Pay ${selectedBoostPrice.toLocaleString()} WALDO for ${selectedBoostMonths} month XP boost`);
+            // Show XUMM QR code - pass title and data object
+            showXummModal(`Pay ${selectedBoostPrice.toLocaleString()} WALDO for ${selectedBoostMonths} month XP boost`, {
+              qr: data.qr,
+              next: { always: data.deepLink }
+            });
 
             // Poll for payment confirmation
             pollBoostPayment(data.uuid);
@@ -8347,9 +8350,9 @@
           style="display: inline-block; background: #25c2a0; color: #000; padding: 12px 24px; border-radius: 25px; text-decoration: none; font-weight: bold; margin: 15px 0;">📱
           Open in Xaman</a>
         <br>
-        <button onclick="window.location.href='https://waldocoin.live'"
-          style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin-top: 10px;">🏠
-          Return to Home</button>
+        <button onclick="hideXummModal()"
+          style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin-top: 10px;">✕
+          Close</button>
       </div>
       <div id="xummLoader" class="xumm-loader" style="display:none;">
         <div class="spinner"></div>
