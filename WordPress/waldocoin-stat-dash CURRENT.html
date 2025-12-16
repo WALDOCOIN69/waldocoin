@@ -195,10 +195,7 @@
       grid-column: 1 / -1;
     }
 
-    /* Align all cards to the top (not stretch) */
-    .container {
-      align-items: start;
-    }
+
 
     .reward-logic-table {
       grid-column: 1 / -1;
@@ -3706,7 +3703,7 @@
       </div>
 
       <!-- Eligibility Badge Card (top status, now includes Per‑Meme Matured Redemptions) -->
-      <div class="card" id="eligibilityCard">
+      <div class="card" id="eligibilityCard" style="margin: 20px 0;">
         <h2 id="eligibilityTitle" style="margin-bottom: 15px;">✅ WALDO Eligibility</h2>
         <div class="content-center">
           <div class="large-number" id="eligibilityStatus">Checking…</div>
@@ -3733,7 +3730,7 @@
       </div>
 
       <!-- XP Trends -->
-      <div class="card" onclick="openXPChartModal()" style="cursor: pointer;">
+      <div class="card" onclick="openXPChartModal()" style="margin: 20px 0; cursor: pointer;">
         <h2 style="margin-bottom: 15px;">📊 Meme XP Trends <span style="font-size: 0.7em; opacity: 0.7;">🔍 Click to
             expand</span></h2>
         <canvas width="800" height="300" id="xpChart"
