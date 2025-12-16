@@ -99,6 +99,43 @@
       width: 100%;
     }
 
+    /* Mobile: Push tiles to margins, full width */
+    @media (max-width: 480px) {
+      .container {
+        grid-template-columns: 1fr;
+        padding: 15px 12px;
+        gap: 12px;
+      }
+
+      .card {
+        padding: 15px;
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Chart containers - prevent overflow */
+      .chart-container,
+      .chart-container-enhanced {
+        max-width: 100%;
+        overflow: hidden;
+        padding: 10px 5px;
+      }
+
+      canvas {
+        max-width: 100% !important;
+      }
+    }
+
+    /* Tablet: Adjust grid */
+    @media (max-width: 768px) and (min-width: 481px) {
+      .container {
+        grid-template-columns: 1fr;
+        padding: 20px 15px;
+        gap: 12px;
+      }
+    }
+
     /* Responsive! */
     .dashboard-title-card,
     .instruction-card {
@@ -1289,10 +1326,22 @@
       align-items: center;
       justify-content: center;
       padding: 20px 0;
+      max-width: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
     .chart-canvas {
       max-width: 100%;
+      height: auto !important;
+    }
+
+    /* Mobile chart fixes */
+    @media (max-width: 480px) {
+      .chart-container {
+        height: 180px;
+        padding: 10px 0;
+      }
     }
 
     .activity-feed-padded {
