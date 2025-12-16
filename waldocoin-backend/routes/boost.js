@@ -2,18 +2,21 @@ import express from 'express';
 import { redis } from '../redisClient.js';
 import { xummClient } from '../utils/xummClient.js';
 import { WALDO_ISSUER, TREASURY_WALLET } from '../constants.js';
+import { getXRPPrice, getWLOPrice } from '../utils/priceOracle.js';
 
 const router = express.Router();
 
 const BOOST_DESTINATION = TREASURY_WALLET || process.env.DISTRIBUTOR_WALLET;
-const CURRENCY = 'WLO';
 
-// Boost pricing: WALDO per month
-const BOOST_PRICES = {
-  1: 250000,   // 1 month
-  2: 450000,   // 2 months (10% off)
-  3: 600000    // 3 months (20% off)
+// Boost pricing in USD (fixed USD prices)
+const BOOST_PRICES_USD = {
+  1: 3.75,    // 1 month
+  2: 6.75,    // 2 months (10% off)
+  3: 9.00     // 3 months (20% off)
 };
+
+// Price tolerance for validation (10% to account for price fluctuations during payment)
+const PRICE_TOLERANCE = 0.10;
 
 // GET /api/boost/status/:wallet - Get current boost status
 router.get('/status/:wallet', async (req, res) => {
@@ -52,43 +55,117 @@ router.get('/status/:wallet', async (req, res) => {
   }
 });
 
-// POST /api/boost/purchase - Initiate XP boost purchase
+// GET /api/boost/prices - Get current dynamic prices for XP boost
+router.get('/prices', async (req, res) => {
+  try {
+    // Get current prices from oracles
+    const [wloPrice, xrpPrice] = await Promise.all([
+      getWLOPrice(),
+      getXRPPrice()
+    ]);
+
+    console.log(`💰 Boost prices: WLO=$${wloPrice}, XRP=$${xrpPrice}`);
+
+    // Calculate token amounts for each tier
+    const prices = {};
+    for (const [months, usdPrice] of Object.entries(BOOST_PRICES_USD)) {
+      const wloAmount = Math.ceil(usdPrice / wloPrice);
+      const xrpAmount = Math.ceil((usdPrice / xrpPrice) * 100) / 100; // Round to 2 decimals
+
+      prices[months] = {
+        usd: usdPrice,
+        wlo: wloAmount,
+        xrp: xrpAmount
+      };
+    }
+
+    res.json({
+      success: true,
+      prices,
+      rates: {
+        wloUsd: wloPrice,
+        xrpUsd: xrpPrice
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting boost prices:', error);
+    res.status(500).json({ success: false, error: 'Failed to get boost prices' });
+  }
+});
+
+// POST /api/boost/purchase - Initiate XP boost purchase (supports WALDO and XRP)
 router.post('/purchase', async (req, res) => {
   try {
-    const { wallet, months, amount } = req.body;
+    const { wallet, months, amount, currency = 'WLO' } = req.body;
 
     if (!wallet || wallet.length < 25) {
       return res.status(400).json({ success: false, error: 'Invalid wallet' });
     }
 
-    if (!months || !BOOST_PRICES[months]) {
+    if (!months || !BOOST_PRICES_USD[months]) {
       return res.status(400).json({ success: false, error: 'Invalid boost duration' });
     }
 
-    const expectedAmount = BOOST_PRICES[months];
-    if (amount !== expectedAmount) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid amount. Expected ${expectedAmount} for ${months} month(s)` 
+    const validCurrencies = ['WLO', 'XRP'];
+    if (!validCurrencies.includes(currency.toUpperCase())) {
+      return res.status(400).json({ success: false, error: 'Invalid currency. Use WLO or XRP' });
+    }
+
+    // Get current prices to validate amount
+    const [wloPrice, xrpPrice] = await Promise.all([
+      getWLOPrice(),
+      getXRPPrice()
+    ]);
+
+    const usdPrice = BOOST_PRICES_USD[months];
+    let expectedAmount, minAmount, maxAmount;
+
+    if (currency.toUpperCase() === 'XRP') {
+      expectedAmount = Math.ceil((usdPrice / xrpPrice) * 100) / 100;
+      minAmount = expectedAmount * (1 - PRICE_TOLERANCE);
+      maxAmount = expectedAmount * (1 + PRICE_TOLERANCE);
+    } else {
+      expectedAmount = Math.ceil(usdPrice / wloPrice);
+      minAmount = expectedAmount * (1 - PRICE_TOLERANCE);
+      maxAmount = expectedAmount * (1 + PRICE_TOLERANCE);
+    }
+
+    // Validate amount is within tolerance
+    if (amount < minAmount || amount > maxAmount) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid amount. Expected ~${expectedAmount} ${currency} (±10%)`
       });
     }
 
-    console.log(`⚡ Creating boost purchase: ${wallet} - ${months} months for ${amount} WALDO`);
+    console.log(`⚡ Creating boost purchase: ${wallet} - ${months} months for ${amount} ${currency}`);
+
+    // Build payment Amount based on currency
+    let paymentAmount;
+    if (currency.toUpperCase() === 'XRP') {
+      // XRP amount in drops (1 XRP = 1,000,000 drops)
+      paymentAmount = String(Math.round(amount * 1000000));
+    } else {
+      // WALDO token payment
+      paymentAmount = {
+        currency: 'WLO',
+        issuer: WALDO_ISSUER,
+        value: String(amount)
+      };
+    }
 
     // Create XUMM payment payload
     const payload = {
       txjson: {
         TransactionType: 'Payment',
         Destination: BOOST_DESTINATION,
-        Amount: {
-          currency: CURRENCY,
-          issuer: WALDO_ISSUER,
-          value: String(amount)
-        },
+        Amount: paymentAmount,
         Memos: [{
           Memo: {
             MemoType: Buffer.from('XP_BOOST').toString('hex').toUpperCase(),
-            MemoData: Buffer.from(`${months}M:${wallet.slice(-8)}`).toString('hex').toUpperCase()
+            MemoData: Buffer.from(`${months}M:${currency}:${wallet.slice(-8)}`).toString('hex').toUpperCase()
           }
         }]
       },
@@ -101,8 +178,8 @@ router.post('/purchase', async (req, res) => {
         }
       },
       custom_meta: {
-        identifier: `BOOST:${wallet.slice(-8)}:${months}M`,
-        instruction: `Pay ${amount.toLocaleString()} WALDO for ${months} month XP boost`
+        identifier: `BOOST:${wallet.slice(-8)}:${months}M:${currency}`,
+        instruction: `Pay ${currency === 'XRP' ? amount.toFixed(2) : amount.toLocaleString()} ${currency} for ${months} month XP boost`
       }
     };
 
@@ -113,6 +190,7 @@ router.post('/purchase', async (req, res) => {
       wallet,
       months: String(months),
       amount: String(amount),
+      currency: currency.toUpperCase(),
       createdAt: new Date().toISOString()
     });
     await redis.expire(`boost:pending:${created.uuid}`, 900); // 15 minute expiry
@@ -123,7 +201,9 @@ router.post('/purchase', async (req, res) => {
       success: true,
       uuid: created.uuid,
       qr: created.refs.qr_png,
-      deepLink: created.next.always
+      deepLink: created.next.always,
+      currency: currency.toUpperCase(),
+      amount
     });
 
   } catch (error) {

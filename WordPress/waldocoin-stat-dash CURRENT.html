@@ -3662,25 +3662,37 @@
         </div>
 
         <div id="boostPurchaseInfo">
+          <!-- Payment Method Toggle -->
+          <div style="display: flex; justify-content: center; margin-bottom: 15px; gap: 5px;">
+            <button id="payWloBtn" onclick="setBoostPaymentMethod('WLO')"
+              style="flex: 1; padding: 10px; border: 2px solid #ffd93d; background: rgba(255, 217, 61, 0.2); color: #ffd93d; font-weight: bold; border-radius: 8px 0 0 8px; cursor: pointer;">
+              💰 Pay with WALDO
+            </button>
+            <button id="payXrpBtn" onclick="setBoostPaymentMethod('XRP')"
+              style="flex: 1; padding: 10px; border: 2px solid #25c2a0; background: transparent; color: #25c2a0; font-weight: bold; border-radius: 0 8px 8px 0; cursor: pointer;">
+              💎 Pay with XRP
+            </button>
+          </div>
+
           <div
             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px;">
             <div class="boost-option" data-months="1"
               style="background: rgba(37, 194, 160, 0.1); border: 1px solid #25c2a0; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s;">
               <div style="color: #25c2a0; font-weight: bold;">1 Month</div>
-              <div style="color: #ffd93d; font-size: 1.1em; font-weight: bold;">250K WALDO</div>
-              <div style="color: #888; font-size: 0.8em;">~$3.75</div>
+              <div style="color: #ffd93d; font-size: 1.1em; font-weight: bold;" id="boost1Price">Loading...</div>
+              <div style="color: #888; font-size: 0.8em;">$3.75</div>
             </div>
             <div class="boost-option" data-months="2"
               style="background: rgba(37, 194, 160, 0.1); border: 1px solid #25c2a0; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s;">
               <div style="color: #25c2a0; font-weight: bold;">2 Months</div>
-              <div style="color: #ffd93d; font-size: 1.1em; font-weight: bold;">450K WALDO</div>
-              <div style="color: #888; font-size: 0.8em;">~$6.75 <span style="color: #25c2a0;">(10% off)</span></div>
+              <div style="color: #ffd93d; font-size: 1.1em; font-weight: bold;" id="boost2Price">Loading...</div>
+              <div style="color: #888; font-size: 0.8em;">$6.75 <span style="color: #25c2a0;">(10% off)</span></div>
             </div>
             <div class="boost-option" data-months="3"
               style="background: rgba(37, 194, 160, 0.1); border: 1px solid #25c2a0; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s;">
               <div style="color: #25c2a0; font-weight: bold;">3 Months</div>
-              <div style="color: #ffd93d; font-size: 1.1em; font-weight: bold;">600K WALDO</div>
-              <div style="color: #888; font-size: 0.8em;">~$9.00 <span style="color: #25c2a0;">(20% off)</span></div>
+              <div style="color: #ffd93d; font-size: 1.1em; font-weight: bold;" id="boost3Price">Loading...</div>
+              <div style="color: #888; font-size: 0.8em;">$9.00 <span style="color: #25c2a0;">(20% off)</span></div>
             </div>
           </div>
 
@@ -8158,9 +8170,110 @@
       // === XP BOOST SYSTEM ===
       let selectedBoostMonths = 0;
       let selectedBoostPrice = 0;
+      let selectedBoostCurrency = 'WLO';
+      let boostPrices = null; // Will be loaded from API
+
+      // Set payment method for boost
+      function setBoostPaymentMethod(currency) {
+        selectedBoostCurrency = currency;
+        const wloBtn = document.getElementById('payWloBtn');
+        const xrpBtn = document.getElementById('payXrpBtn');
+
+        if (currency === 'WLO') {
+          wloBtn.style.background = 'rgba(255, 217, 61, 0.2)';
+          wloBtn.style.borderColor = '#ffd93d';
+          wloBtn.style.color = '#ffd93d';
+          xrpBtn.style.background = 'transparent';
+          xrpBtn.style.borderColor = '#25c2a0';
+          xrpBtn.style.color = '#25c2a0';
+        } else {
+          xrpBtn.style.background = 'rgba(37, 194, 160, 0.2)';
+          xrpBtn.style.borderColor = '#ffd93d';
+          xrpBtn.style.color = '#ffd93d';
+          wloBtn.style.background = 'transparent';
+          wloBtn.style.borderColor = '#25c2a0';
+          wloBtn.style.color = '#25c2a0';
+        }
+
+        // Update displayed prices
+        updateBoostPriceDisplay();
+
+        // Update selected price if months already selected
+        if (selectedBoostMonths && boostPrices) {
+          selectedBoostPrice = currency === 'WLO'
+            ? boostPrices[selectedBoostMonths].wlo
+            : boostPrices[selectedBoostMonths].xrp;
+          updatePurchaseButton();
+        }
+      }
+      window.setBoostPaymentMethod = setBoostPaymentMethod;
+
+      // Update price display based on selected currency
+      function updateBoostPriceDisplay() {
+        if (!boostPrices) return;
+
+        const currency = selectedBoostCurrency;
+        for (let months = 1; months <= 3; months++) {
+          const priceEl = document.getElementById(`boost${months}Price`);
+          if (priceEl && boostPrices[months]) {
+            if (currency === 'WLO') {
+              const wloAmount = boostPrices[months].wlo;
+              priceEl.textContent = wloAmount >= 1000
+                ? `${(wloAmount / 1000).toFixed(0)}K WALDO`
+                : `${wloAmount.toLocaleString()} WALDO`;
+            } else {
+              priceEl.textContent = `${boostPrices[months].xrp.toFixed(2)} XRP`;
+            }
+          }
+        }
+      }
+
+      // Update purchase button text
+      function updatePurchaseButton() {
+        const purchaseBtn = document.getElementById('purchaseBoostBtn');
+        if (!purchaseBtn) return;
+
+        if (!selectedBoostMonths) {
+          purchaseBtn.disabled = true;
+          purchaseBtn.textContent = 'Select Duration Above';
+          return;
+        }
+
+        purchaseBtn.disabled = false;
+        const priceText = selectedBoostCurrency === 'WLO'
+          ? `${selectedBoostPrice >= 1000 ? (selectedBoostPrice / 1000).toFixed(0) + 'K' : selectedBoostPrice} WALDO`
+          : `${selectedBoostPrice.toFixed(2)} XRP`;
+        purchaseBtn.textContent = `Purchase ${selectedBoostMonths} Month${selectedBoostMonths > 1 ? 's' : ''} - ${priceText}`;
+      }
+
+      // Load dynamic boost prices from API
+      async function loadBoostPrices() {
+        try {
+          const response = await fetch(`${baseURL}/api/boost/prices`);
+          const data = await response.json();
+
+          if (data.success && data.prices) {
+            boostPrices = data.prices;
+            console.log('💰 Loaded boost prices:', boostPrices);
+            updateBoostPriceDisplay();
+          }
+        } catch (error) {
+          console.error('Error loading boost prices:', error);
+          // Fallback to static prices
+          boostPrices = {
+            1: { usd: 3.75, wlo: 250000, xrp: 1.50 },
+            2: { usd: 6.75, wlo: 450000, xrp: 2.70 },
+            3: { usd: 9.00, wlo: 600000, xrp: 3.60 }
+          };
+          updateBoostPriceDisplay();
+        }
+      }
 
       // Initialize boost option selection
       document.addEventListener('DOMContentLoaded', function () {
+        // Load prices first
+        loadBoostPrices();
+
         const boostOptions = document.querySelectorAll('.boost-option');
         boostOptions.forEach(option => {
           option.addEventListener('click', function () {
@@ -8176,13 +8289,13 @@
 
             // Update selection
             selectedBoostMonths = parseInt(this.dataset.months);
-            const prices = { 1: 250000, 2: 450000, 3: 600000 };
-            selectedBoostPrice = prices[selectedBoostMonths];
+            if (boostPrices && boostPrices[selectedBoostMonths]) {
+              selectedBoostPrice = selectedBoostCurrency === 'WLO'
+                ? boostPrices[selectedBoostMonths].wlo
+                : boostPrices[selectedBoostMonths].xrp;
+            }
 
-            // Enable purchase button
-            const purchaseBtn = document.getElementById('purchaseBoostBtn');
-            purchaseBtn.disabled = false;
-            purchaseBtn.textContent = `Purchase ${selectedBoostMonths} Month${selectedBoostMonths > 1 ? 's' : ''} Boost`;
+            updatePurchaseButton();
           });
         });
 
@@ -8250,15 +8363,21 @@
             body: JSON.stringify({
               wallet: wallet,
               months: selectedBoostMonths,
-              amount: selectedBoostPrice
+              amount: selectedBoostPrice,
+              currency: selectedBoostCurrency
             })
           });
 
           const data = await response.json();
 
           if (data.success) {
+            // Format price display based on currency
+            const priceText = selectedBoostCurrency === 'WLO'
+              ? `${selectedBoostPrice.toLocaleString()} WALDO`
+              : `${selectedBoostPrice.toFixed(2)} XRP`;
+
             // Show XUMM QR code - pass title and data object
-            showXummModal(`Pay ${selectedBoostPrice.toLocaleString()} WALDO for ${selectedBoostMonths} month XP boost`, {
+            showXummModal(`Pay ${priceText} for ${selectedBoostMonths} month XP boost`, {
               qr: data.qr,
               next: { always: data.deepLink }
             });
