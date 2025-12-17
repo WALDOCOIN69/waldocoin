@@ -6186,12 +6186,7 @@
 
       async function fetchBattleData(wallet) {
         try {
-          // Try multiple endpoints for comprehensive battle data
-          const [historyResponse, statsResponse] = await Promise.all([
-            fetch(`${baseURL}/api/battle/history/${wallet}`).catch(() => null),
-            fetch(`${baseURL}/api/battle/management/user-stats?wallet=${wallet}`).catch(() => null)
-          ]);
-
+          // Default battle data
           let battleData = {
             totalWins: 0,
             totalLosses: 0,
@@ -6203,68 +6198,64 @@
             votingAccuracy: 0
           };
 
-          // Process stats endpoint (preferred)
-          if (statsResponse) {
-            const statsData = await statsResponse.json();
-            if (statsData.success) {
-              battleData = {
-                totalWins: statsData.stats.totalWins || 0,
-                totalLosses: statsData.stats.totalLosses || 0,
-                totalBattles: statsData.stats.totalBattles || 0,
-                currentStreak: statsData.stats.currentStreak || 0,
-                longestStreak: statsData.stats.longestStreak || 0,
-                winRate: statsData.stats.winRate || 0,
-                totalVotes: statsData.stats.totalVotes || 0,
-                votingAccuracy: statsData.stats.votingAccuracy || 0
-              };
-
-              // Update display immediately
-              updateBattleStatsDisplay(battleData);
-              return battleData;
-            }
-          }
-
-          // Fallback to history endpoint
-          if (historyResponse) {
-            const historyData = await historyResponse.json();
-            if (historyData.success && historyData.battles) {
-              const wins = historyData.battles.filter(battle => battle.winner === wallet).length;
-              const totalBattles = historyData.battles.length;
-
-              // Calculate current win streak
-              let currentStreak = 0;
-              for (let i = historyData.battles.length - 1; i >= 0; i--) {
-                if (historyData.battles[i].winner === wallet) {
-                  currentStreak++;
-                } else {
-                  break;
-                }
+          // Try user-stats endpoint (includes wallet-specific battle stats)
+          try {
+            const statsResponse = await fetch(`${baseURL}/api/battle/management/user-stats?wallet=${wallet}`);
+            if (statsResponse.ok) {
+              const statsData = await statsResponse.json();
+              if (statsData.success && statsData.stats) {
+                battleData = {
+                  totalWins: statsData.stats.totalWins || 0,
+                  totalLosses: statsData.stats.totalLosses || 0,
+                  totalBattles: statsData.stats.totalBattles || 0,
+                  currentStreak: statsData.stats.currentStreak || 0,
+                  longestStreak: statsData.stats.longestStreak || 0,
+                  winRate: statsData.stats.winRate || 0,
+                  totalVotes: statsData.stats.totalVotes || 0,
+                  votingAccuracy: statsData.stats.votingAccuracy || 0
+                };
+                updateBattleStatsDisplay(battleData);
+                return battleData;
               }
-
-              battleData = {
-                totalWins: wins,
-                totalLosses: totalBattles - wins,
-                totalBattles: totalBattles,
-                currentStreak: currentStreak,
-                longestStreak: currentStreak, // Simplified for now
-                winRate: totalBattles > 0 ? (wins / totalBattles * 100) : 0,
-                totalVotes: 0, // Not available from history
-                votingAccuracy: 0 // Not available from history
-              };
-
-              // Update display immediately
-              updateBattleStatsDisplay(battleData);
-              return battleData;
             }
-          }
+          } catch (e) { /* stats endpoint not available */ }
 
-          // Return default data if no endpoints worked
-          console.warn('No battle data available from any endpoint');
+          // Fallback: try history endpoint
+          try {
+            const historyResponse = await fetch(`${baseURL}/api/battle/history?wallet=${wallet}`);
+            if (historyResponse.ok) {
+              const historyData = await historyResponse.json();
+              if (historyData.success && historyData.battles) {
+                const wins = historyData.battles.filter(b => b.winner === wallet).length;
+                const totalBattles = historyData.battles.length;
+                let currentStreak = 0;
+                for (let i = historyData.battles.length - 1; i >= 0; i--) {
+                  if (historyData.battles[i].winner === wallet) currentStreak++;
+                  else break;
+                }
+                battleData = {
+                  totalWins: wins,
+                  totalLosses: totalBattles - wins,
+                  totalBattles: totalBattles,
+                  currentStreak: currentStreak,
+                  longestStreak: currentStreak,
+                  winRate: totalBattles > 0 ? (wins / totalBattles * 100) : 0,
+                  totalVotes: 0,
+                  votingAccuracy: 0
+                };
+                updateBattleStatsDisplay(battleData);
+                return battleData;
+              }
+            }
+          } catch (e) { /* history endpoint not available */ }
+
+          // Return default if nothing worked
+          updateBattleStatsDisplay(battleData);
           return battleData;
 
         } catch (error) {
-          console.error('❌ Error fetching battle data:', error);
-          return { error: error.message };
+          console.warn('Battle data not available:', error.message);
+          return { totalWins: 0, totalLosses: 0, totalBattles: 0, currentStreak: 0 };
         }
       }
 

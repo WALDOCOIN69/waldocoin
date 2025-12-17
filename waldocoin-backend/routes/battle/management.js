@@ -274,4 +274,79 @@ router.get("/stats", async (req, res) => {
   }
 });
 
+// GET /api/battle/management/user-stats - Get battle stats for a specific user
+router.get("/user-stats", async (req, res) => {
+  try {
+    const { wallet } = req.query;
+
+    if (!wallet) {
+      return res.status(400).json({ success: false, error: "Wallet address required" });
+    }
+
+    // Get all battles and filter by user
+    const battleKeys = await redis.keys("battle:*:data");
+    let totalWins = 0, totalLosses = 0, totalBattles = 0;
+    let currentStreak = 0, longestStreak = 0;
+    const userBattles = [];
+
+    for (const key of battleKeys) {
+      const battleData = await redis.hGetAll(key);
+      if (!battleData || !["paid", "ended", "refunded", "expired"].includes(battleData.status)) continue;
+
+      // Check if user was part of this battle
+      if (battleData.challenger !== wallet && battleData.acceptor !== wallet) continue;
+
+      const battleId = key.split(":")[1];
+      const votesA = parseInt(await redis.get(`battle:${battleId}:count:A`) || "0");
+      const votesB = parseInt(await redis.get(`battle:${battleId}:count:B`) || "0");
+
+      let winner = null;
+      if (votesA > votesB) winner = battleData.challenger;
+      else if (votesB > votesA) winner = battleData.acceptor;
+
+      userBattles.push({
+        battleId,
+        isChallenger: battleData.challenger === wallet,
+        winner,
+        endTime: battleData.payoutAt || battleData.endedAt || battleData.createdAt
+      });
+
+      totalBattles++;
+      if (winner === wallet) totalWins++;
+      else if (winner) totalLosses++;
+    }
+
+    // Sort by time and calculate streak
+    userBattles.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
+    for (const battle of userBattles) {
+      if (battle.winner === wallet) {
+        currentStreak++;
+        if (currentStreak > longestStreak) longestStreak = currentStreak;
+      } else {
+        break;
+      }
+    }
+
+    const winRate = totalBattles > 0 ? Math.round((totalWins / totalBattles) * 100) : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalWins,
+        totalLosses,
+        totalBattles,
+        currentStreak,
+        longestStreak,
+        winRate,
+        totalVotes: 0,
+        votingAccuracy: 0
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching user battle stats:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch user stats" });
+  }
+});
+
 export default router;
