@@ -6419,7 +6419,7 @@
       // Load monthly meme usage
       async function loadMonthlyMemeUsage() {
         try {
-          const wallet = localStorage.getItem('wallet');
+          const wallet = sessionStorage.getItem('xummWallet') || localStorage.getItem('xummWallet');
           if (!wallet) return;
 
           const res = await fetch(`${baseURL}/api/system/monthly-meme-usage/${wallet}`);
