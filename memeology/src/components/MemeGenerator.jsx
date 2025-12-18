@@ -1420,7 +1420,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   <p className="tier-price">$0/month</p>
                 </div>
                 <ul className="tier-features-list">
-                  <li>✅ 100 meme templates</li>
+                  <li>✅ 100+ meme templates</li>
                   <li>✅ Unlimited memes/day</li>
                   <li>✅ Custom fonts</li>
                   <li>⚠️ 10 AI suggestions/month</li>

@@ -624,11 +624,11 @@ router.get('/templates/imgflip', async (req, res) => {
         can_earn_wlo: true
       };
     }
-    // 🆓 FREE TIER - 100 TEMPLATES ONLY, 10 AI/MONTH, NO GIFS, NO NFT IMAGES
+    // 🆓 FREE TIER - 100+ TEMPLATES, 10 AI/MONTH, NO GIFS, NO NFT IMAGES
     else {
-      upgradeMessage = '🆓 Free Tier: 100 templates, 10 AI/month. Hold 1000+ WLO for all templates & unlimited AI!';
+      upgradeMessage = '🆓 Free Tier: 100+ templates, 10 AI/month. Hold 1000+ WLO for all templates & unlimited AI!';
       features = {
-        templates: '100',
+        templates: '100+',
         memes_per_day: 'unlimited',
         fee_per_meme: 'none',
         ai_suggestions: '10/month',
