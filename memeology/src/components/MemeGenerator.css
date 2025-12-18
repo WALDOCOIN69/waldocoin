@@ -319,23 +319,44 @@
 
 .new-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: linear-gradient(135deg, #ff3d3d, #ff9500);
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-  padding: 3px 8px;
-  border-radius: 4px;
+  top: 4px;
+  right: 4px;
+  background: linear-gradient(135deg, #ffd700, #ffaa00, #ffd700);
+  background-size: 200% 200%;
+  color: #1a1a2e;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 5px;
+  border-radius: 3px;
   z-index: 10;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  box-shadow: 0 2px 6px rgba(255, 61, 61, 0.4);
-  animation: pulse-new 2s infinite;
+  text-shadow: 0 0 2px rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 0 0 4px rgba(255, 170, 0, 0.8);
+  animation: spin-glow 3s linear infinite;
+  letter-spacing: 0.5px;
 }
 
-@keyframes pulse-new {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+@keyframes spin-glow {
+  0% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 0 0 4px rgba(255, 170, 0, 0.8);
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(3deg) scale(1.05);
+  }
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.9), 0 0 6px rgba(255, 170, 0, 1);
+    transform: rotate(0deg) scale(1);
+  }
+  75% {
+    transform: rotate(-3deg) scale(1.05);
+  }
+  100% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 0 0 4px rgba(255, 170, 0, 0.8);
+    transform: rotate(0deg) scale(1);
+  }
 }
 
 .template-item:hover {
