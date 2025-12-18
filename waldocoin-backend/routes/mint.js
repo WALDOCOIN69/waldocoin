@@ -13,7 +13,7 @@ const router = express.Router();
 
 // NFT Deposit/Base Value Configuration
 const NFT_DEPOSIT = {
-  min: 10000,   // 10k WLO minimum
+  min: 0,       // 0 WLO minimum (optional deposit)
   max: 100000,  // 100k WLO maximum
   step: 10000   // 10k increments
 };
@@ -27,8 +27,8 @@ router.post("/", mintFraudPrevention, async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing tweetId or wallet." });
     }
 
-    // Validate deposit amount (base value for the NFT)
-    const depositAmount = parseInt(deposit) || NFT_DEPOSIT.min;
+    // Validate deposit amount (base value for the NFT) - 0 is allowed (no deposit)
+    const depositAmount = parseInt(deposit) || 0;
     if (depositAmount < NFT_DEPOSIT.min || depositAmount > NFT_DEPOSIT.max) {
       return res.status(400).json({
         success: false,

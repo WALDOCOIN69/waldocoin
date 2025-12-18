@@ -31,11 +31,11 @@ router.post("/", async (req, res) => {
       mintData = JSON.parse(mintPendingRaw);
     } catch (e) {
       // Legacy format - just the UUID string
-      mintData = { uuid: mintPendingRaw, deposit: 10000 };
+      mintData = { uuid: mintPendingRaw, deposit: 0 };
     }
 
     const mintUuid = mintData.uuid;
-    const depositAmount = mintData.deposit || 10000;
+    const depositAmount = mintData.deposit ?? 0; // Use nullish coalescing to allow 0
 
     // ✅ Verify XUMM payload was signed and corresponds to the mint payment
     const payload = await xummClient.payload.get(mintUuid);

@@ -4346,15 +4346,15 @@
         </div>
 
         <div class="modal-field">
-          <label class="modal-label">💰 NFT Base Value (Deposit)</label>
+          <label class="modal-label">💰 NFT Base Value (Deposit) <span style="color: #888; font-weight: normal;">- Optional</span></label>
           <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
-            <input type="range" id="depositSlider" min="10000" max="100000" step="10000" value="10000"
+            <input type="range" id="depositSlider" min="0" max="100000" step="10000" value="0"
               style="flex: 1; height: 8px; accent-color: #25c2a0; cursor: pointer;"
               oninput="updateDepositDisplay()">
-            <span id="depositValue" style="font-size: 1.2em; font-weight: bold; color: #25c2a0; min-width: 80px; text-align: right;">10k WLO</span>
+            <span id="depositValue" style="font-size: 1.2em; font-weight: bold; color: #25c2a0; min-width: 100px; text-align: right;">No Deposit</span>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 5px;">
-            <span>10k WLO</span>
+            <span>None</span>
             <span>100k WLO</span>
           </div>
         </div>
@@ -4364,18 +4364,18 @@
             <span style="color: #888;">Mint Fee:</span>
             <span id="mintFeeDisplay" style="color: #ccc;">500 WLO</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <div id="depositRow" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span style="color: #888;">Base Value Deposit:</span>
-            <span id="depositDisplay" style="color: #25c2a0; font-weight: bold;">10,000 WLO</span>
+            <span id="depositDisplay" style="color: #25c2a0; font-weight: bold;">None</span>
           </div>
           <div style="border-top: 1px solid #333; padding-top: 8px; display: flex; justify-content: space-between;">
             <span style="color: #fff; font-weight: bold;">Total Payment:</span>
-            <span id="totalPaymentDisplay" style="color: #ffd700; font-weight: bold; font-size: 1.1em;">10,500 WLO</span>
+            <span id="totalPaymentDisplay" style="color: #ffd700; font-weight: bold; font-size: 1.1em;">500 WLO</span>
           </div>
         </div>
 
         <div style="font-size: 12px; color: #888; margin-top: 15px; text-align: center;">
-          💡 Higher deposits = higher NFT base value in marketplace
+          💡 Optional: Add a deposit to increase your NFT's base value in the marketplace
         </div>
 
         <button type="button" id="confirmMintBtn" onclick="confirmMintWithDeposit()"
@@ -6807,9 +6807,9 @@
             console.warn("Could not fetch mint config:", e);
           }
 
-          // Reset slider to minimum
+          // Reset slider to 0 (no deposit)
           const slider = document.getElementById("depositSlider");
-          if (slider) slider.value = 10000;
+          if (slider) slider.value = 0;
           updateDepositDisplay();
         }
       }
@@ -6826,12 +6826,21 @@
         const depositValue = document.getElementById("depositValue");
         const depositDisplay = document.getElementById("depositDisplay");
         const totalDisplay = document.getElementById("totalPaymentDisplay");
+        const depositRow = document.getElementById("depositRow");
 
-        const deposit = parseInt(slider?.value) || 10000;
+        const deposit = parseInt(slider?.value) || 0;
         const total = deposit + mintFee;
 
-        if (depositValue) depositValue.textContent = `${(deposit/1000)}k WLO`;
-        if (depositDisplay) depositDisplay.textContent = `${deposit.toLocaleString()} WLO`;
+        // Handle "No Deposit" display when 0
+        if (deposit === 0) {
+          if (depositValue) depositValue.textContent = "No Deposit";
+          if (depositDisplay) depositDisplay.textContent = "None";
+          if (depositRow) depositRow.style.opacity = "0.5";
+        } else {
+          if (depositValue) depositValue.textContent = `${(deposit/1000)}k WLO`;
+          if (depositDisplay) depositDisplay.textContent = `${deposit.toLocaleString()} WLO`;
+          if (depositRow) depositRow.style.opacity = "1";
+        }
         if (totalDisplay) totalDisplay.textContent = `${total.toLocaleString()} WLO`;
       }
 
@@ -6848,7 +6857,7 @@
         }
 
         const slider = document.getElementById("depositSlider");
-        const deposit = parseInt(slider?.value) || 10000;
+        const deposit = parseInt(slider?.value) || 0;
         const btn = document.getElementById("confirmMintBtn");
 
         if (btn) {
