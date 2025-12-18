@@ -2331,9 +2331,10 @@ router.get('/templates/:id', async (req, res) => {
 // =====================================================
 
 // POST /api/memeology/admin/templates/upload - Upload a custom template image
+// Admin can optionally specify a creatorWallet to credit a user for template usage payouts
 router.post('/admin/templates/upload', requireMemeologyAdmin, async (req, res) => {
   try {
-    const { imageData, name, boxCount, tier, categories } = req.body;
+    const { imageData, name, boxCount, tier, categories, creatorWallet } = req.body;
 
     if (!imageData || !name) {
       return res.status(400).json({ success: false, error: 'Image data and name are required' });
@@ -2356,25 +2357,37 @@ router.post('/admin/templates/upload', requireMemeologyAdmin, async (req, res) =
 
     // Create template object
     const templateId = `custom_${Date.now()}`;
+    const categoriesArray = categories ? (Array.isArray(categories) ? categories : [categories]) : ['custom'];
     const template = {
       id: templateId,
       name: name.trim(),
       url: uploadResult.secure_url,
       cloudinaryId: uploadResult.public_id,
-      box_count: parseInt(boxCount) || 2,
+      box_count: String(parseInt(boxCount) || 2),
       tier: tier || 'free',
-      categories: categories ? (Array.isArray(categories) ? categories : [categories]) : ['custom'],
+      categories: JSON.stringify(categoriesArray),
       source: 'custom',
       createdAt: new Date().toISOString(),
-      width: uploadResult.width,
-      height: uploadResult.height
+      width: String(uploadResult.width),
+      height: String(uploadResult.height),
+      // Optional: credit a user's wallet for template usage payouts (100 WLO per use)
+      creatorWallet: creatorWallet || '',
+      isCreatorTemplate: creatorWallet ? 'true' : 'false',
+      uses: '0'
     };
 
-    // Save to Redis
+    // Save to Redis - all values must be strings
     await redis.hSet(MEMEOLOGY_KEYS.customTemplate(templateId), template);
     await redis.lPush(MEMEOLOGY_KEYS.customTemplates, templateId);
 
-    console.log(`🎨 Custom template uploaded: ${name} (${templateId})`);
+    // If this is a creator template, also add to creator templates list for tracking
+    if (creatorWallet) {
+      await redis.hSet(MEMEOLOGY_KEYS.creatorTemplate(templateId), template);
+      await redis.lPush(MEMEOLOGY_KEYS.approvedCreatorTemplates, templateId);
+      console.log(`🎨 Custom template uploaded with creator payout: ${name} (${templateId}) -> ${creatorWallet}`);
+    } else {
+      console.log(`🎨 Custom template uploaded: ${name} (${templateId})`);
+    }
 
     res.json({
       success: true,
@@ -2594,6 +2607,7 @@ router.post('/templates/submit', async (req, res) => {
 
     const templateId = `creator_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
+    // All values must be strings for Redis hSet
     const template = {
       id: templateId,
       name,
@@ -2602,7 +2616,7 @@ router.post('/templates/submit', async (req, res) => {
       creatorWallet: wallet,
       submittedAt: new Date().toISOString(),
       status: 'pending',
-      uses: 0
+      uses: '0'
     };
 
     // Store pending template
