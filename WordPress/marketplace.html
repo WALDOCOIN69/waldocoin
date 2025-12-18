@@ -717,12 +717,533 @@
         font-size: 0.9rem;
       }
     }
+    /* Navigation Header */
+    .nav-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      background: linear-gradient(135deg, rgba(17, 17, 17, 0.98) 0%, rgba(26, 26, 26, 0.98) 100%);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+    }
+
+    .nav-logo {
+      font-size: 1.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--accent-color) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      padding: 10px 16px;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-link:hover {
+      color: var(--text-light);
+      background: rgba(37, 194, 160, 0.1);
+      border-color: var(--border-light);
+    }
+
+    .nav-link.active {
+      color: var(--primary-light);
+      background: rgba(37, 194, 160, 0.15);
+      border-color: var(--primary-color);
+    }
+
+    /* Search Bar */
+    .search-container {
+      display: flex;
+      gap: 12px;
+      max-width: 500px;
+      margin: 0 auto 30px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 12px;
+      background: rgba(34, 34, 34, 0.9);
+      color: white;
+      border: 2px solid var(--border-light);
+      font-size: 1rem;
+      font-family: 'Orbitron', sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 20px rgba(37, 194, 160, 0.3);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-button {
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      font-family: 'Orbitron', sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    .search-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(37, 194, 160, 0.4);
+    }
+
+    /* NFT Deposit Badge */
+    .nft-deposit {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: var(--accent-color);
+      margin-bottom: 12px;
+    }
+
+    .nft-deposit-icon {
+      font-size: 1rem;
+    }
+
+    /* Seller Info */
+    .nft-seller {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nft-seller a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+
+    .nft-seller a:hover {
+      text-decoration: underline;
+    }
+
+    /* Activity Sidebar */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 30px;
+    }
+
+    .activity-sidebar {
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-hover) 100%);
+      border-radius: 16px;
+      border: 1px solid var(--border-light);
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 90px;
+    }
+
+    .activity-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-light);
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(37, 194, 160, 0.05);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+
+    .activity-item:hover {
+      background: rgba(37, 194, 160, 0.1);
+      border-color: var(--primary-color);
+    }
+
+    .activity-image {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .activity-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-type {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .activity-type.sale {
+      color: var(--success);
+    }
+
+    .activity-type.listing {
+      color: var(--primary-light);
+    }
+
+    .activity-nft-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .activity-price {
+      font-size: 0.8rem;
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+
+    .activity-time {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* NFT Detail Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, var(--bg-card) 0%, #1a1a1a 100%);
+      border-radius: 20px;
+      border: 1px solid var(--border-light);
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .modal-close:hover {
+      background: var(--secondary-color);
+      transform: rotate(90deg);
+    }
+
+    .modal-image-container {
+      width: 100%;
+      max-height: 400px;
+      overflow: hidden;
+      border-radius: 20px 20px 0 0;
+      background: #0a0a0a;
+    }
+
+    .modal-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      max-height: 400px;
+    }
+
+    .modal-details {
+      padding: 30px;
+    }
+
+    .modal-rarity {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 15px;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      line-height: 1.4;
+    }
+
+    .modal-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .modal-stat {
+      background: rgba(37, 194, 160, 0.1);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .modal-stat-value {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--primary-light);
+      margin-bottom: 5px;
+    }
+
+    .modal-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .modal-deposit-banner {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+      border: 2px solid rgba(255, 215, 0, 0.4);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    .modal-deposit-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .modal-deposit-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent-color);
+    }
+
+    .modal-seller-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      margin-bottom: 25px;
+    }
+
+    .modal-seller-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .modal-seller-details {
+      flex: 1;
+    }
+
+    .modal-seller-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .modal-seller-wallet {
+      font-size: 0.9rem;
+      color: var(--primary-light);
+      font-family: monospace;
+    }
+
+    .modal-price-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .modal-price {
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .modal-buy-button {
+      padding: 18px 40px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.1rem;
+      font-family: 'Orbitron', sans-serif;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 25px rgba(37, 194, 160, 0.4);
+    }
+
+    .modal-buy-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 35px rgba(37, 194, 160, 0.5);
+    }
+
+    /* Skeleton Loading */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: 8px;
+    }
+
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .skeleton-image {
+      height: 240px;
+      background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+
+    .skeleton-content {
+      padding: 24px;
+    }
+
+    .skeleton-line {
+      height: 16px;
+      margin-bottom: 12px;
+      border-radius: 4px;
+    }
+
+    .skeleton-line.short {
+      width: 60%;
+    }
+
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+
+      .activity-sidebar {
+        display: none;
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
   </style>
+
+  <!-- Navigation Header -->
+  <nav class="nav-header">
+    <a href="/" class="nav-logo">🦊 WALDO</a>
+    <div class="nav-links">
+      <a href="/stats" class="nav-link">📊 Stats</a>
+      <a href="/staking" class="nav-link">💎 Staking</a>
+      <a href="/dao" class="nav-link">🗳️ DAO</a>
+      <a href="/marketplace" class="nav-link active">🏪 Marketplace</a>
+      <a href="/my-nfts" class="nav-link">🎨 My NFTs</a>
+      <a href="/hall-of-fame" class="nav-link">🏆 Hall of Fame</a>
+      <a href="/battle-arena" class="nav-link">⚔️ Arena</a>
+    </div>
+  </nav>
 
   <div class="container">
     <div class="header">
       <h1>🏪 WALDO NFT Marketplace</h1>
       <p>Buy, sell, and trade exclusive meme NFTs with WALDO tokens</p>
+
+      <!-- Search Bar -->
+      <div class="search-container" style="margin-top: 30px;">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search memes by text or @handle..." onkeypress="if(event.key==='Enter') searchNFTs()">
+        <button class="search-button" onclick="searchNFTs()">🔍 Search</button>
+      </div>
 
       <!-- Wallet Display -->
       <div id="walletDisplay" style="color: var(--primary-light); font-size: 0.95em; margin-top: 20px; display: none; background: rgba(37, 194, 160, 0.1); padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border-light); position: relative; z-index: 1;">
@@ -787,13 +1308,81 @@
       <button class="filter-button" onclick="applyFilters()">Apply Filters</button>
     </div>
 
-    <!-- NFT Grid -->
-    <div id="marketplaceGrid" class="marketplace-grid">
-      <div class="loading">Loading marketplace...</div>
-    </div>
+    <!-- Main Content with Sidebar -->
+    <div class="main-content">
+      <div class="marketplace-section">
+        <!-- NFT Grid -->
+        <div id="marketplaceGrid" class="marketplace-grid">
+          <!-- Skeleton Loading -->
+          <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-content"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-content"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-content"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-content"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>
+        </div>
 
-    <!-- Pagination -->
-    <div id="pagination" class="pagination"></div>
+        <!-- Pagination -->
+        <div id="pagination" class="pagination"></div>
+      </div>
+
+      <!-- Activity Sidebar -->
+      <aside class="activity-sidebar">
+        <h3 class="activity-title">⚡ Recent Activity</h3>
+        <div id="activityFeed">
+          <div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- NFT Detail Modal -->
+  <div class="modal-overlay" id="nftModal" onclick="if(event.target===this) closeModal()">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <div class="modal-image-container">
+        <img id="modalImage" class="modal-image" src="" alt="NFT">
+      </div>
+      <div class="modal-details">
+        <div id="modalRarity" class="modal-rarity rarity-common">Common</div>
+        <h2 id="modalTitle" class="modal-title">Loading...</h2>
+
+        <div class="modal-stats-grid">
+          <div class="modal-stat">
+            <div class="modal-stat-value" id="modalLikes">0</div>
+            <div class="modal-stat-label">❤️ Likes</div>
+          </div>
+          <div class="modal-stat">
+            <div class="modal-stat-value" id="modalRetweets">0</div>
+            <div class="modal-stat-label">🔁 Retweets</div>
+          </div>
+          <div class="modal-stat">
+            <div class="modal-stat-value" id="modalXP">0</div>
+            <div class="modal-stat-label">⭐ XP</div>
+          </div>
+          <div class="modal-stat">
+            <div class="modal-stat-value" id="modalRoyalty">5%</div>
+            <div class="modal-stat-label">👑 Royalty</div>
+          </div>
+        </div>
+
+        <div class="modal-deposit-banner">
+          <div class="modal-deposit-label">🔒 Locked Base Value (WLO Deposit)</div>
+          <div class="modal-deposit-value" id="modalDeposit">10,000 WLO</div>
+        </div>
+
+        <div class="modal-seller-info">
+          <div class="modal-seller-avatar">🦊</div>
+          <div class="modal-seller-details">
+            <div class="modal-seller-label">Listed by</div>
+            <div class="modal-seller-wallet" id="modalSeller">rXXX...XXX</div>
+          </div>
+        </div>
+
+        <div class="modal-price-section">
+          <div class="modal-price" id="modalPrice">0 WALDO</div>
+          <button class="modal-buy-button" id="modalBuyBtn" onclick="buyFromModal()">💰 Buy Now</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -801,6 +1390,8 @@
     let currentPage = 1;
     let currentFilters = {};
     let favorites = new Set();
+    let currentListings = []; // Store listings for modal
+    let selectedListing = null;
 
     // Utility functions
     function $(id) { return document.getElementById(id); }
@@ -808,14 +1399,30 @@
 
     // Escape HTML to prevent XSS
     function escapeHtml(text) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
       return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Format number with K/M suffix
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
+    }
+
+    // Format wallet address
+    function formatWallet(wallet) {
+      if (!wallet) return 'Unknown';
+      return wallet.substring(0, 6) + '...' + wallet.substring(wallet.length - 4);
+    }
+
+    // Time ago function
+    function timeAgo(dateString) {
+      const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+      if (seconds < 60) return 'Just now';
+      if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+      if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+      return Math.floor(seconds / 86400) + 'd ago';
     }
 
     // Notification system
@@ -824,7 +1431,6 @@
       notification.className = `notification ${type}`;
       notification.textContent = message;
       document.body.appendChild(notification);
-
       setTimeout(() => {
         notification.classList.add('hide');
         setTimeout(() => notification.remove(), 300);
@@ -834,9 +1440,7 @@
     // Load favorites from localStorage
     function loadFavorites() {
       const saved = localStorage.getItem('nftFavorites');
-      if (saved) {
-        favorites = new Set(JSON.parse(saved));
-      }
+      if (saved) favorites = new Set(JSON.parse(saved));
     }
 
     // Save favorites to localStorage
@@ -849,11 +1453,8 @@
       document.querySelectorAll('.favorite-button').forEach(btn => {
         const card = btn.closest('.nft-card');
         const listingId = card.dataset.listingId;
-        if (favorites.has(listingId)) {
-          btn.classList.add('favorited');
-        } else {
-          btn.classList.remove('favorited');
-        }
+        if (favorites.has(listingId)) btn.classList.add('favorited');
+        else btn.classList.remove('favorited');
       });
     }
 
@@ -862,15 +1463,115 @@
       loadFavorites();
       loadMarketplaceStats();
       loadMarketplace();
+      loadActivityFeed();
 
-      // Check for wallet and update display
       const wallet = getWallet();
-      if (wallet) {
-        updateWalletDisplay(wallet);
+      if (wallet) updateWalletDisplay(wallet);
+
+      // Refresh stats and activity every 30 seconds
+      setInterval(loadMarketplaceStats, 30000);
+      setInterval(loadActivityFeed, 30000);
+    });
+
+    // Load activity feed
+    async function loadActivityFeed() {
+      try {
+        const response = await fetch(`${baseURL}/api/marketplace/activity?limit=8`);
+        const data = await response.json();
+        const feed = $('activityFeed');
+
+        if (data.success && data.activity.length > 0) {
+          feed.innerHTML = data.activity.map(item => `
+            <div class="activity-item">
+              <img src="${item.imageUrl}" alt="" class="activity-image" onerror="this.src='https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg'">
+              <div class="activity-info">
+                <div class="activity-type ${item.type}">${item.type === 'sale' ? '🎉 Sold' : '📢 Listed'}</div>
+                <div class="activity-nft-title">${escapeHtml(item.title)}</div>
+                <div class="activity-price">${formatNumber(item.price)} WALDO</div>
+                <div class="activity-time">${timeAgo(item.timestamp)}</div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          feed.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No recent activity</div>';
+        }
+      } catch (error) {
+        console.error('Error loading activity:', error);
+      }
+    }
+
+    // Search NFTs
+    async function searchNFTs() {
+      const query = $('searchInput').value.trim();
+      if (!query || query.length < 2) {
+        showNotification('Enter at least 2 characters to search', 'warning');
+        return;
       }
 
-      // Refresh stats every 30 seconds
-      setInterval(loadMarketplaceStats, 30000);
+      const grid = $('marketplaceGrid');
+      grid.innerHTML = '<div class="loading">Searching...</div>';
+
+      try {
+        const response = await fetch(`${baseURL}/api/marketplace/search?q=${encodeURIComponent(query)}&limit=20`);
+        const data = await response.json();
+
+        if (data.success) {
+          currentListings = data.results;
+          if (data.results.length === 0) {
+            grid.innerHTML = `<div class="empty-state"><h3>🔍 No results for "${escapeHtml(query)}"</h3><p>Try different keywords</p></div>`;
+          } else {
+            displayListings(data.results);
+            showNotification(`Found ${data.totalResults} NFTs`, 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        grid.innerHTML = '<div class="empty-state"><h3>Search failed</h3><p>Please try again</p></div>';
+      }
+    }
+
+    // Open NFT detail modal
+    function openModal(listingId) {
+      const nft = currentListings.find(l => l.listingId === listingId);
+      if (!nft) return;
+
+      selectedListing = nft;
+      const modal = $('nftModal');
+
+      $('modalImage').src = nft.imageUrl;
+      $('modalTitle').textContent = nft.title;
+      $('modalRarity').textContent = nft.rarity;
+      $('modalRarity').className = `modal-rarity rarity-${nft.rarity.toLowerCase()}`;
+      $('modalLikes').textContent = formatNumber(nft.likes);
+      $('modalRetweets').textContent = formatNumber(nft.retweets);
+      $('modalXP').textContent = formatNumber(nft.xp);
+      $('modalRoyalty').textContent = ((nft.royaltyRate || 0.05) * 100).toFixed(0) + '%';
+      $('modalDeposit').textContent = formatNumber(nft.deposit || 10000) + ' WLO';
+      $('modalSeller').textContent = formatWallet(nft.seller);
+      $('modalPrice').textContent = formatNumber(nft.price) + ' WALDO';
+
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Close modal
+    function closeModal() {
+      $('nftModal').classList.remove('active');
+      document.body.style.overflow = '';
+      selectedListing = null;
+    }
+
+    // Buy from modal
+    function buyFromModal() {
+      if (selectedListing) {
+        closeModal();
+        buyNFT(selectedListing.listingId, selectedListing.price);
+      }
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
     });
 
     // Update wallet display
@@ -920,6 +1621,7 @@
         const data = await response.json();
 
         if (data.success) {
+          currentListings = data.listings; // Store for modal
           displayListings(data.listings);
           displayPagination(data.pagination);
         } else {
@@ -931,35 +1633,45 @@
       }
     }
 
-    // Display NFT listings
+    // Display NFT listings with deposit and clickable cards
     function displayListings(listings) {
       const grid = document.getElementById('marketplaceGrid');
 
       if (listings.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><h3>🔍 No NFTs Found</h3><p>Try adjusting your filters or check back later</p></div>';
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <h3>🏪 No NFTs Listed Yet</h3>
+            <p>Be the first to list your meme NFT for sale!</p>
+            <a href="/my-nfts" style="display: inline-block; margin-top: 20px; padding: 15px 30px; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: white; border-radius: 10px; text-decoration: none; font-weight: bold;">View My NFTs</a>
+          </div>`;
         return;
       }
 
       grid.innerHTML = listings.map(nft => `
-    <div class="nft-card" data-listing-id="${nft.listingId}">
+    <div class="nft-card" data-listing-id="${nft.listingId}" onclick="openModal('${nft.listingId}')" style="cursor: pointer;">
       <div class="nft-image-container">
-        <img src="${nft.imageUrl}" alt="${nft.title}" class="nft-image" onerror="this.src='https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg'">
+        <img src="${nft.imageUrl}" alt="${escapeHtml(nft.title)}" class="nft-image" onerror="this.src='https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg'">
         <div class="nft-badge">${nft.rarity}</div>
       </div>
       <div class="nft-content">
         <div class="nft-rarity rarity-${nft.rarity.toLowerCase()}">${nft.rarity}</div>
+        <div class="nft-seller">👤 ${formatWallet(nft.seller)} ${nft.twitterHandle ? `<a href="https://twitter.com/${nft.twitterHandle}" target="_blank" onclick="event.stopPropagation()">@${nft.twitterHandle}</a>` : ''}</div>
         <div class="nft-title">${escapeHtml(nft.title)}</div>
-        <div class="nft-stats">
-          <div class="nft-stat">❤️ <span>${nft.likes || 0}</span></div>
-          <div class="nft-stat">🔁 <span>${nft.retweets || 0}</span></div>
-          <div class="nft-stat">⭐ <span>${nft.xp || 0} XP</span></div>
+        <div class="nft-deposit">
+          <span class="nft-deposit-icon">🔒</span>
+          <span>${formatNumber(nft.deposit || 10000)} WLO Locked</span>
         </div>
-        <div class="nft-price">${nft.price} WALDO</div>
+        <div class="nft-stats">
+          <div class="nft-stat">❤️ <span>${formatNumber(nft.likes || 0)}</span></div>
+          <div class="nft-stat">🔁 <span>${formatNumber(nft.retweets || 0)}</span></div>
+          <div class="nft-stat">⭐ <span>${formatNumber(nft.xp || 0)}</span></div>
+        </div>
+        <div class="nft-price">${formatNumber(nft.price)} WALDO</div>
         <div class="nft-actions">
-          <button class="buy-button" onclick="buyNFT('${nft.listingId}', ${nft.price})" title="Buy this NFT">
+          <button class="buy-button" onclick="event.stopPropagation(); buyNFT('${nft.listingId}', ${nft.price})" title="Buy this NFT">
             💰 Buy Now
           </button>
-          <button class="favorite-button" onclick="favoriteNFT('${nft.listingId}')" title="Add to favorites">
+          <button class="favorite-button" onclick="event.stopPropagation(); favoriteNFT('${nft.listingId}')" title="Add to favorites">
             ❤️
           </button>
         </div>

@@ -414,7 +414,77 @@
         width: 95%;
       }
     }
+
+    /* Navigation Header */
+    .nav-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      background: linear-gradient(135deg, rgba(17, 17, 17, 0.98) 0%, rgba(26, 26, 26, 0.98) 100%);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+    }
+
+    .nav-logo {
+      font-size: 1.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      padding: 10px 16px;
+      color: #aaa;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-link:hover {
+      color: #eee;
+      background: rgba(37, 194, 160, 0.1);
+      border-color: #444;
+    }
+
+    .nav-link.active {
+      color: var(--primary-color);
+      background: rgba(37, 194, 160, 0.15);
+      border-color: var(--primary-color);
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
   </style>
+
+  <!-- Navigation Header -->
+  <nav class="nav-header">
+    <a href="/" class="nav-logo">🦊 WALDO</a>
+    <div class="nav-links">
+      <a href="/stats" class="nav-link">📊 Stats</a>
+      <a href="/staking" class="nav-link">💎 Staking</a>
+      <a href="/dao" class="nav-link">🗳️ DAO</a>
+      <a href="/marketplace" class="nav-link">🏪 Marketplace</a>
+      <a href="/my-nfts" class="nav-link active">🎨 My NFTs</a>
+      <a href="/hall-of-fame" class="nav-link">🏆 Hall of Fame</a>
+      <a href="/battle-arena" class="nav-link">⚔️ Arena</a>
+    </div>
+  </nav>
 
   <div class="container">
     <div class="header">

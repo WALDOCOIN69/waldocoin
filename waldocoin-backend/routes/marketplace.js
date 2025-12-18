@@ -98,6 +98,9 @@ router.get('/listings', async (req, res) => {
             Date.now() - new Date(memeData.created_at).getTime()
           );
 
+          // Get deposit/base value for this NFT
+          const depositAmount = await redis.get(`nft:deposit:${listingData.tweetId}`) || 10000;
+
           const listing = {
             listingId: listingData.listingId,
             nftId: listingData.nftId,
@@ -115,7 +118,9 @@ router.get('/listings', async (req, res) => {
             xp: parseInt(memeData.xp) || 0,
             createdAt: listingData.createdAt,
             royaltyRate: parseFloat(listingData.royaltyRate) || 0.05,
-            originalCreator: memeData.wallet
+            originalCreator: memeData.wallet,
+            deposit: parseInt(depositAmount),
+            twitterHandle: memeData.twitter_handle || null
           };
 
           // Apply filters
@@ -712,6 +717,140 @@ router.get('/listing/:listingId', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch listing details'
+    });
+  }
+});
+
+// ✅ GET /api/marketplace/activity - Get recent marketplace activity
+router.get('/activity', async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    const activity = [];
+
+    // Get recent sales from completed listings
+    const listingKeys = await redis.keys('marketplace:listing:*');
+
+    for (const key of listingKeys) {
+      try {
+        const listingData = await redis.hGetAll(key);
+
+        if (listingData.status === 'sold' && listingData.soldAt) {
+          const memeData = await redis.hGetAll(`meme:${listingData.tweetId}`);
+          activity.push({
+            type: 'sale',
+            listingId: listingData.listingId,
+            nftId: listingData.nftId,
+            title: memeData.text?.substring(0, 50) || 'Meme NFT',
+            imageUrl: memeData.image_url || 'https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg',
+            price: parseFloat(listingData.price),
+            seller: listingData.seller,
+            buyer: listingData.buyer,
+            timestamp: listingData.soldAt
+          });
+        } else if (listingData.status === 'active') {
+          const memeData = await redis.hGetAll(`meme:${listingData.tweetId}`);
+          activity.push({
+            type: 'listing',
+            listingId: listingData.listingId,
+            nftId: listingData.nftId,
+            title: memeData.text?.substring(0, 50) || 'Meme NFT',
+            imageUrl: memeData.image_url || 'https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg',
+            price: parseFloat(listingData.price),
+            seller: listingData.seller,
+            timestamp: listingData.createdAt
+          });
+        }
+      } catch (e) {
+        // Skip invalid entries
+      }
+    }
+
+    // Sort by timestamp (newest first)
+    activity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({
+      success: true,
+      activity: activity.slice(0, parseInt(limit))
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching marketplace activity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch marketplace activity'
+    });
+  }
+});
+
+// ✅ GET /api/marketplace/search - Search NFTs by text
+router.get('/search', async (req, res) => {
+  try {
+    const { q, limit = 20 } = req.query;
+
+    if (!q || q.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query must be at least 2 characters'
+      });
+    }
+
+    const searchTerm = q.toLowerCase();
+    const listingKeys = await redis.keys('marketplace:listing:*');
+    const results = [];
+
+    for (const key of listingKeys) {
+      try {
+        const listingData = await redis.hGetAll(key);
+
+        if (listingData.status === 'active') {
+          const memeData = await redis.hGetAll(`meme:${listingData.tweetId}`);
+          const memeText = (memeData.text || '').toLowerCase();
+          const twitterHandle = (memeData.twitter_handle || '').toLowerCase();
+
+          // Check if search term matches text or twitter handle
+          if (memeText.includes(searchTerm) || twitterHandle.includes(searchTerm)) {
+            const depositAmount = await redis.get(`nft:deposit:${listingData.tweetId}`) || 10000;
+            const rarityInfo = calculateNFTRarity(
+              parseInt(memeData.likes) || 0,
+              parseInt(memeData.retweets) || 0,
+              parseInt(memeData.xp) || 0,
+              Date.now() - new Date(memeData.created_at).getTime()
+            );
+
+            results.push({
+              listingId: listingData.listingId,
+              nftId: listingData.nftId,
+              tweetId: listingData.tweetId,
+              seller: listingData.seller,
+              price: parseFloat(listingData.price),
+              title: memeData.text?.substring(0, 100) || 'Untitled Meme',
+              imageUrl: memeData.image_url || 'https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg',
+              rarity: rarityInfo.rarity,
+              likes: parseInt(memeData.likes) || 0,
+              retweets: parseInt(memeData.retweets) || 0,
+              xp: parseInt(memeData.xp) || 0,
+              deposit: parseInt(depositAmount),
+              twitterHandle: memeData.twitter_handle || null
+            });
+          }
+        }
+      } catch (e) {
+        // Skip invalid entries
+      }
+    }
+
+    res.json({
+      success: true,
+      query: q,
+      results: results.slice(0, parseInt(limit)),
+      totalResults: results.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error searching marketplace:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search marketplace'
     });
   }
 });
