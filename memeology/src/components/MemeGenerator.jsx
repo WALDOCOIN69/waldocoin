@@ -1156,6 +1156,7 @@ function MemeGenerator({ initialTemplate = null, onTemplateConsumed }) {
                   className={`template-item ${selectedTemplate?.id === template.id ? 'selected' : ''}`}
                   onClick={() => handleTemplateSelect(template)}
                 >
+                  {template.isNew && <span className="new-badge">NEW</span>}
                   <img
                     src={template.url}
                     alt={template.name}

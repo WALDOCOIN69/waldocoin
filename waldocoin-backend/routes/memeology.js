@@ -2326,6 +2326,12 @@ router.get('/templates/custom', async (req, res) => {
               template.categories = [template.categories];
             }
           }
+
+          // Add "isNew" flag if template was created within the last 2 months
+          const twoMonthsAgo = Date.now() - (60 * 24 * 60 * 60 * 1000); // 60 days in ms
+          const createdAt = template.createdAt ? new Date(template.createdAt).getTime() : 0;
+          template.isNew = createdAt > twoMonthsAgo;
+
           templates.push(template);
         }
       }
