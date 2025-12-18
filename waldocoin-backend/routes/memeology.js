@@ -2298,6 +2298,52 @@ router.get('/templates/random', async (req, res) => {
   }
 });
 
+// GET /api/memeology/templates/custom - Get custom templates (for frontend, no admin required)
+// NOTE: This route MUST be defined BEFORE /templates/:id to avoid route conflict
+router.get('/templates/custom', async (req, res) => {
+  try {
+    const { tier } = req.query;
+    const userTier = tier || 'free';
+
+    const templateIds = await redis.lRange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
+    const templates = [];
+
+    for (const id of templateIds) {
+      const template = await redis.hGetAll(MEMEOLOGY_KEYS.customTemplate(id));
+      if (template && Object.keys(template).length > 0) {
+        // Filter by tier
+        const templateTier = template.tier || 'free';
+        const tierOrder = ['free', 'waldocoin', 'premium', 'gold', 'platinum', 'king'];
+        const userTierIndex = tierOrder.indexOf(userTier);
+        const templateTierIndex = tierOrder.indexOf(templateTier);
+
+        if (userTierIndex >= templateTierIndex) {
+          // Parse categories
+          if (typeof template.categories === 'string') {
+            try {
+              template.categories = JSON.parse(template.categories);
+            } catch (e) {
+              template.categories = [template.categories];
+            }
+          }
+          templates.push(template);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      templates,
+      count: templates.length,
+      tier: userTier
+    });
+
+  } catch (error) {
+    console.error('Error getting custom templates:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // GET /api/memeology/templates/:id - Get specific template by ID
 router.get('/templates/:id', async (req, res) => {
   try {
@@ -2503,51 +2549,6 @@ router.patch('/admin/templates/:id', requireMemeologyAdmin, async (req, res) => 
 
   } catch (error) {
     console.error('Error updating custom template:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// GET /api/memeology/templates/custom - Get custom templates (for frontend, no admin required)
-router.get('/templates/custom', async (req, res) => {
-  try {
-    const { tier } = req.query;
-    const userTier = tier || 'free';
-
-    const templateIds = await redis.lRange(MEMEOLOGY_KEYS.customTemplates, 0, -1);
-    const templates = [];
-
-    for (const id of templateIds) {
-      const template = await redis.hGetAll(MEMEOLOGY_KEYS.customTemplate(id));
-      if (template && Object.keys(template).length > 0) {
-        // Filter by tier
-        const templateTier = template.tier || 'free';
-        const tierOrder = ['free', 'waldocoin', 'premium', 'gold', 'platinum', 'king'];
-        const userTierIndex = tierOrder.indexOf(userTier);
-        const templateTierIndex = tierOrder.indexOf(templateTier);
-
-        if (userTierIndex >= templateTierIndex) {
-          // Parse categories
-          if (typeof template.categories === 'string') {
-            try {
-              template.categories = JSON.parse(template.categories);
-            } catch (e) {
-              template.categories = [template.categories];
-            }
-          }
-          templates.push(template);
-        }
-      }
-    }
-
-    res.json({
-      success: true,
-      templates,
-      count: templates.length,
-      tier: userTier
-    });
-
-  } catch (error) {
-    console.error('Error getting custom templates:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
