@@ -2877,6 +2877,11 @@
                   <label class="form-label">Categories (comma-separated)</label>
                   <input type="text" id="templateCategories" class="form-control" placeholder="e.g., crypto, funny, reaction">
                 </div>
+                <div class="form-group" style="margin-top: 15px;">
+                  <label class="form-label">💰 Creator Wallet (optional)</label>
+                  <input type="text" id="templateCreatorWallet" class="form-control" placeholder="r... XRP wallet address">
+                  <small style="color: #888; font-size: 11px;">User earns 100 WLO each time someone uses this template</small>
+                </div>
                 <div style="margin-top: 20px; display: flex; gap: 10px;">
                   <button onclick="uploadTemplate()" class="btn-primary" style="flex: 1;">
                     ⬆️ Upload Template
@@ -8877,6 +8882,7 @@ This action cannot be undone. Continue?`;
       document.getElementById('templateFileInput').value = '';
       document.getElementById('templateName').value = '';
       document.getElementById('templateCategories').value = '';
+      document.getElementById('templateCreatorWallet').value = '';
       document.getElementById('uploadStatus').innerHTML = '';
     }
 
@@ -8896,25 +8902,33 @@ This action cannot be undone. Continue?`;
       const tier = document.getElementById('templateTier').value;
       const categoriesRaw = document.getElementById('templateCategories').value;
       const categories = categoriesRaw ? categoriesRaw.split(',').map(c => c.trim()).filter(c => c) : ['custom'];
+      const creatorWallet = document.getElementById('templateCreatorWallet').value.trim();
 
       const statusEl = document.getElementById('uploadStatus');
       statusEl.innerHTML = '<div style="color: #f39c12;">⏳ Uploading template...</div>';
 
       try {
         const adminKey = localStorage.getItem('adminKey');
+        const requestBody = {
+          imageData: selectedTemplateData,
+          name,
+          boxCount,
+          tier,
+          categories
+        };
+
+        // Add creator wallet if provided (user earns 100 WLO per template use)
+        if (creatorWallet && creatorWallet.startsWith('r')) {
+          requestBody.creatorWallet = creatorWallet;
+        }
+
         const response = await fetch(`${API_BASE}/api/memeology/admin/templates/upload`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-admin-key': adminKey
           },
-          body: JSON.stringify({
-            imageData: selectedTemplateData,
-            name,
-            boxCount,
-            tier,
-            categories
-          })
+          body: JSON.stringify(requestBody)
         });
 
         const data = await response.json();
