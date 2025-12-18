@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "modified_date": "2025-01-11"
+  },
+  "token": {
+    "code": "WLO",
+    "issuer": "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY",
+    "name": "WALDOcoin",
+    "desc": "The first meme-to-earn cryptocurrency on XRPL.",
+    "image": "https://waldocoin.live/wp-content/uploads/waldo-token-logo.png",
+    "icon": "https://waldocoin.live/wp-content/uploads/waldo-icon-156.png",
+    "domain": "waldocoin.live",
+    "launch_date": "2025-08-01",
+    "category": "Meme Token",
+    "tags": ["meme", "social", "rewards", "xrpl", "nft"]
+  },
+  "supply": {
+    "total_supply": 876849999,
+    "circulating_supply": 172500000,
+    "max_supply": 1000000000,
+    "supply_notes": "Total supply is 876849999 WLO. Original max supply was 1B, with 123,150,001 burned."
+  },
+  "use_cases": [
+    "Meme rewards and incentives",
+    "Staking for enhanced rewards",
+    "NFT minting and trading",
+    "Governance participation",
+    "Battle system entry fees",
+    "Premium features access"
+  ],
+  "features": [
+    "Meme-to-earn rewards system",
+    "Multi-tier staking with APY up to 35%",
+    "NFT minting for viral memes",
+    "Battle system for competitive rewards",
+    "Level-based progression system",
+    "Cross-platform social integration"
+  ],
+  "compliance": {
+    "kyc_required": false,
+    "accredited_investors_only": false,
+    "restricted_countries": []
+  },
+  "risks": [
+    "Cryptocurrency investments carry inherent risks",
+    "Token value may fluctuate significantly",
+    "Meme token with speculative nature",
+    "Regulatory changes may affect token utility"
+  ],
+  "contact": {
+    "support_email": "support@waldocoin.live",
+    "business_email": "waldocoin@outlook.com"
+  },
+  "socials": {
+    "twitter": "https://x.com/W_A_L_D_O_coin",
+    "telegram": "https://t.me/WALDOCOINxrp",
+    "website": "https://waldocoin.live",
+    "whitepaper": "https://waldocoin.live/white-paper-waldocoin"
+  }
+}
+

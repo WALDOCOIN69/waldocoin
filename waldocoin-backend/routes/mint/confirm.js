@@ -20,11 +20,22 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const mintUuid = await redis.get(`meme:mint_pending:${tweetId}`);
-    if (!mintUuid) {
+    const mintPendingRaw = await redis.get(`meme:mint_pending:${tweetId}`);
+    if (!mintPendingRaw) {
       return res.status(403).json({ success: false, error: "No pending mint found or session expired." });
     }
 
+    // Parse pending mint data (now includes deposit info)
+    let mintData;
+    try {
+      mintData = JSON.parse(mintPendingRaw);
+    } catch (e) {
+      // Legacy format - just the UUID string
+      mintData = { uuid: mintPendingRaw, deposit: 10000 };
+    }
+
+    const mintUuid = mintData.uuid;
+    const depositAmount = mintData.deposit || 10000;
 
     // ✅ Verify XUMM payload was signed and corresponds to the mint payment
     const payload = await xummClient.payload.get(mintUuid);
@@ -96,14 +107,27 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Mark NFT as minted and clean up pending status
-    await redis.set(`meme:nft_minted:${tweetId}`, result.result.hash);
+    // ✅ Mark NFT as minted with deposit info and clean up pending status
+    const nftData = {
+      txHash: result.result.hash,
+      wallet,
+      tweetId,
+      deposit: depositAmount,
+      mintedAt: Date.now()
+    };
+    await redis.set(`meme:nft_minted:${tweetId}`, JSON.stringify(nftData));
     await redis.del(`meme:mint_pending:${tweetId}`);
+
+    // Store deposit/base value for the NFT (for marketplace reference)
+    await redis.set(`nft:deposit:${tweetId}`, depositAmount);
+
+    console.log(`🖼️ NFT minted: ${tweetId} with ${depositAmount.toLocaleString()} WLO deposit`);
 
     return res.json({
       success: true,
       txHash: result.result.hash,
-      metadataUrl
+      metadataUrl,
+      deposit: depositAmount
     });
 
   } catch (err) {

@@ -8,6 +8,7 @@ import { redis } from "../../redisClient.js";
 import { addXP } from "../../utils/xpManager.js";
 import { rateLimitMiddleware } from "../../utils/rateLimiter.js";
 import { createErrorResponse, logError } from "../../utils/errorHandler.js";
+import { getNFTVotingPower } from "../../utils/nftUtilities.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,8 +57,15 @@ router.post("/", rateLimitMiddleware('API_GENERAL', (req) => req.body.wallet), a
       });
     }
 
-    // Calculate voting power: 1 vote per 50k WALDO
-    const votingPower = Math.floor(waldoBalance / requiredWaldo);
+    // Calculate BASE voting power: 1 vote per 50k WALDO
+    const baseVotingPower = Math.floor(waldoBalance / requiredWaldo);
+
+    // 🖼️ NFT HOLDER VOTING BOOST: Get multiplier based on NFT tier
+    // Silver (1-2 NFTs): 1.1x | Gold (3-9): 1.25x | Platinum (10+): 1.5x | King: 3.0x
+    const nftMultiplier = await getNFTVotingPower(wallet);
+    const votingPower = Math.floor(baseVotingPower * nftMultiplier);
+
+    console.log(`🗳️ DAO Vote: ${wallet} - Base: ${baseVotingPower}, NFT Multiplier: ${nftMultiplier}x, Final: ${votingPower}`);
 
     // ⛔ Prevent duplicate voting
     const existing = await redis.hGet(`proposalVotes:${proposalId}`, wallet);
@@ -75,6 +83,8 @@ router.post("/", rateLimitMiddleware('API_GENERAL', (req) => req.body.wallet), a
     const voteData = {
       choice,
       votingPower,
+      baseVotingPower,
+      nftMultiplier,
       waldoBalance,
       timestamp: new Date().toISOString()
     };
@@ -83,8 +93,12 @@ router.post("/", rateLimitMiddleware('API_GENERAL', (req) => req.body.wallet), a
     return res.json({
       success: true,
       votingPower,
+      baseVotingPower,
+      nftMultiplier: `${nftMultiplier}x`,
       waldoBalance,
-      message: `Vote recorded with ${votingPower} voting power (${waldoBalance.toLocaleString()} WALDO)`
+      message: nftMultiplier > 1
+        ? `Vote recorded with ${votingPower} voting power (${baseVotingPower} base × ${nftMultiplier}x NFT bonus)`
+        : `Vote recorded with ${votingPower} voting power (${waldoBalance.toLocaleString()} WALDO)`
     });
   } catch (err) {
     console.error("❌ Voting error:", err);

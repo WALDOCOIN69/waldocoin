@@ -3554,6 +3554,9 @@
       <a href="https://nft-marketplace.waldocoin.live" class="nav-link"
         style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🏪
         NFT Market</a>
+      <a href="https://hall-of-fame.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🏆
+        Hall of Fame</a>
       <a href="#" class="nav-link"
         onclick="openMemeology(); return false;"
         style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🎨
@@ -4329,6 +4332,57 @@
       <span onclick="closeNFTModal()" class="close-nft-modal">&times;</span>
       <img id="nftModalImg" src="https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg" alt="NFT Preview"
         class="nft-modal-image">
+    </div>
+
+    <!-- 🖼️ MINT NFT Modal with Deposit Slider -->
+    <div id="mintModal" class="nft-modal modal-container" style="display: none;">
+      <div class="modal-content" style="max-width: 500px;">
+        <span onclick="closeMintModal()" class="close-nft-modal modal-close">&times;</span>
+        <h3 class="modal-title">🖼️ Mint Meme NFT</h3>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img id="mintPreviewImg" src="" alt="Meme Preview"
+            style="max-width: 100%; max-height: 200px; border-radius: 12px; border: 2px solid #25c2a0;">
+        </div>
+
+        <div class="modal-field">
+          <label class="modal-label">💰 NFT Base Value (Deposit)</label>
+          <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+            <input type="range" id="depositSlider" min="10000" max="100000" step="10000" value="10000"
+              style="flex: 1; height: 8px; accent-color: #25c2a0; cursor: pointer;"
+              oninput="updateDepositDisplay()">
+            <span id="depositValue" style="font-size: 1.2em; font-weight: bold; color: #25c2a0; min-width: 80px; text-align: right;">10k WLO</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 5px;">
+            <span>10k WLO</span>
+            <span>100k WLO</span>
+          </div>
+        </div>
+
+        <div class="modal-field" style="background: rgba(37,194,160,0.1); padding: 15px; border-radius: 10px; margin-top: 15px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #888;">Mint Fee:</span>
+            <span id="mintFeeDisplay" style="color: #ccc;">500 WLO</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #888;">Base Value Deposit:</span>
+            <span id="depositDisplay" style="color: #25c2a0; font-weight: bold;">10,000 WLO</span>
+          </div>
+          <div style="border-top: 1px solid #333; padding-top: 8px; display: flex; justify-content: space-between;">
+            <span style="color: #fff; font-weight: bold;">Total Payment:</span>
+            <span id="totalPaymentDisplay" style="color: #ffd700; font-weight: bold; font-size: 1.1em;">10,500 WLO</span>
+          </div>
+        </div>
+
+        <div style="font-size: 12px; color: #888; margin-top: 15px; text-align: center;">
+          💡 Higher deposits = higher NFT base value in marketplace
+        </div>
+
+        <button type="button" id="confirmMintBtn" onclick="confirmMintWithDeposit()"
+          class="button-style modal-button" style="margin-top: 20px; width: 100%;">
+          🖼️ Mint NFT
+        </button>
+      </div>
     </div>
 
     <!-- Staking Modal -->
@@ -6724,35 +6778,134 @@
           fetchMemes(getWallet());
         } catch (e) { showToast("Stake error", "error"); }
       }
+      // === MINT NFT WITH DEPOSIT MODAL ===
+      let pendingMintId = null;
+      let pendingMintImg = null;
+      let mintFee = 500; // Default, fetched from backend
+
       async function mintMeme(id, img) {
-        // Open modal for mint confirmation if needed, then call backend
-        showNFTModal(img);
-        if (!confirm("Mint this meme as NFT? (50 WALDO fee applies)")) return;
+        // Open the mint modal with deposit slider
+        pendingMintId = id;
+        pendingMintImg = img;
+
+        // Show the mint modal
+        const modal = document.getElementById("mintModal");
+        const previewImg = document.getElementById("mintPreviewImg");
+        if (modal) {
+          modal.style.display = "flex";
+          if (previewImg) previewImg.src = img;
+
+          // Fetch mint config from backend
+          try {
+            const res = await fetch(`${baseURL}/api/mint/config`);
+            const data = await res.json();
+            if (data.success) {
+              mintFee = data.mintFee || 500;
+              document.getElementById("mintFeeDisplay").textContent = `${mintFee.toLocaleString()} WLO`;
+            }
+          } catch (e) {
+            console.warn("Could not fetch mint config:", e);
+          }
+
+          // Reset slider to minimum
+          const slider = document.getElementById("depositSlider");
+          if (slider) slider.value = 10000;
+          updateDepositDisplay();
+        }
+      }
+
+      function closeMintModal() {
+        const modal = document.getElementById("mintModal");
+        if (modal) modal.style.display = "none";
+        pendingMintId = null;
+        pendingMintImg = null;
+      }
+
+      function updateDepositDisplay() {
+        const slider = document.getElementById("depositSlider");
+        const depositValue = document.getElementById("depositValue");
+        const depositDisplay = document.getElementById("depositDisplay");
+        const totalDisplay = document.getElementById("totalPaymentDisplay");
+
+        const deposit = parseInt(slider?.value) || 10000;
+        const total = deposit + mintFee;
+
+        if (depositValue) depositValue.textContent = `${(deposit/1000)}k WLO`;
+        if (depositDisplay) depositDisplay.textContent = `${deposit.toLocaleString()} WLO`;
+        if (totalDisplay) totalDisplay.textContent = `${total.toLocaleString()} WLO`;
+      }
+
+      async function confirmMintWithDeposit() {
+        if (!pendingMintId) {
+          showToast("No meme selected for minting", "error");
+          return;
+        }
+
+        const wallet = getWallet();
+        if (!wallet) {
+          showToast("Please connect your wallet first", "error");
+          return;
+        }
+
+        const slider = document.getElementById("depositSlider");
+        const deposit = parseInt(slider?.value) || 10000;
+        const btn = document.getElementById("confirmMintBtn");
+
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "⏳ Processing...";
+        }
+
         try {
           const res = await fetch(`${baseURL}/api/mint`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: getWallet(), memeId: id })
+            body: JSON.stringify({
+              wallet: wallet,
+              tweetId: pendingMintId,
+              deposit: deposit
+            })
           });
           const data = await res.json();
+
           if (data.success) {
-            showToast("Mint initiated. Sign in wallet!", "success");
-            // Refresh both memes and NFT collection
-            fetchMemes(getWallet());
-            fetchNFTCollection(getWallet());
+            showToast(`Mint initiated! Pay ${data.totalPayment?.toLocaleString() || 'total'} WLO in wallet.`, "success");
+            closeMintModal();
+
+            // Open XUMM if redirect available
+            if (data.redirect) {
+              window.open(data.redirect, '_blank');
+            }
+
+            // Refresh memes and NFT collection after delay
+            setTimeout(() => {
+              fetchMemes(getWallet());
+              fetchNFTCollection(getWallet());
+            }, 5000);
           } else {
-            if (data && data.details && data.details.requiredWaldo !== undefined) {
+            if (data?.details?.requiredWaldo !== undefined) {
               const { waldoPerXrp, minXrp, requiredWaldo, balance } = data.details;
-              showToast(`You need at least ${requiredWaldo.toLocaleString()} WALDO (~${minXrp} XRP at ${waldoPerXrp.toLocaleString()} WALDO/XRP). You currently have ${Number(balance).toLocaleString()} WALDO.`, "error");
+              showToast(`You need at least ${requiredWaldo.toLocaleString()} WALDO (~${minXrp} XRP). You have ${Number(balance).toLocaleString()} WALDO.`, "error");
             } else {
               showToast(data.error || "Mint failed", "error");
             }
           }
-        } catch (e) { showToast("Mint error", "error"); }
+        } catch (e) {
+          showToast("Mint error", "error");
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "🖼️ Mint NFT";
+          }
+        }
       }
+
       window.claimMeme = claimMeme;
       window.stakeMeme = stakeMeme;
       window.mintMeme = mintMeme;
+      window.closeMintModal = closeMintModal;
+      window.updateDepositDisplay = updateDepositDisplay;
+      window.confirmMintWithDeposit = confirmMintWithDeposit;
       window.showNFTModal = showNFTModal; // Needed for thumbnail click
       window.showNFTDetails = showNFTDetails; // Needed for NFT collection clicks
 

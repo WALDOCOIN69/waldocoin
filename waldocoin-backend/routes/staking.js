@@ -17,7 +17,7 @@ import {
   calculateEarlyUnstakePenalty
 } from '../utils/stakingUtils.js';
 import { DISTRIBUTOR_WALLET, TREASURY_WALLET, WALDO_ISSUER } from '../constants.js';
-import { addToHolderRewardPool } from '../utils/nftUtilities.js';
+import { addToHolderRewardPool, getStakingBoost, getHolderTier } from '../utils/nftUtilities.js';
 import { getStakingConfig } from '../utils/config.js';
 
 // XRPL connection with fallback nodes for better reliability
@@ -379,8 +379,17 @@ router.post("/long-term", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.bod
       });
     }
 
-    // Calculate APY with Level 5 bonus
-    const apy = calculateStakeAPY(parseInt(duration), userLevel.level);
+    // Calculate BASE APY with Level 5 bonus
+    const baseApy = calculateStakeAPY(parseInt(duration), userLevel.level);
+
+    // 🖼️ NFT HOLDER STAKING BOOST: Get APY boost based on NFT tier
+    // Silver (1-2 NFTs): +1% | Gold (3-9): +3% | Platinum (10+): +5% | King: +15%
+    const nftApyBoost = await getStakingBoost(wallet);
+    const nftApyBoostPercent = nftApyBoost * 100; // Convert 0.15 to 15
+    const apy = baseApy + nftApyBoostPercent; // Add NFT boost to base APY
+
+    const holderTier = await getHolderTier(wallet);
+    console.log(`🏦 Staking APY: ${wallet} - Base: ${baseApy}%, NFT Boost: +${nftApyBoostPercent}% (${holderTier.tier}), Final: ${apy}%`);
 
     // Calculate expected rewards as flat bonus (not annualized APY)
     const rewardCalculation = stakeAmount * (apy / 100); // Simple percentage bonus
@@ -397,6 +406,9 @@ router.post("/long-term", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.bod
       amount: stakeAmount,
       duration: parseInt(duration),
       apy: apy,
+      baseApy: baseApy,
+      nftApyBoost: nftApyBoostPercent,
+      nftTier: holderTier.tier,
       userLevel: userLevel.level,
       userTitle: userLevel.title,
       expectedReward: expectedReward,
@@ -447,12 +459,17 @@ router.post("/long-term", rateLimitMiddleware('PAYMENT_CREATE', (req) => req.bod
 
     res.json({
       success: true,
-      message: `Sign in Xaman to lock ${stakeAmount} WALDO for ${duration} days`,
+      message: nftApyBoostPercent > 0
+        ? `Sign in Xaman to lock ${stakeAmount} WALDO for ${duration} days (${baseApy}% base + ${nftApyBoostPercent}% NFT bonus = ${apy}% APY)`
+        : `Sign in Xaman to lock ${stakeAmount} WALDO for ${duration} days`,
       stakeData: {
         stakeId,
         amount: stakeAmount,
         duration: parseInt(duration),
         apy: `${apy}%`,
+        baseApy: `${baseApy}%`,
+        nftApyBoost: nftApyBoostPercent > 0 ? `+${nftApyBoostPercent}%` : null,
+        nftTier: holderTier.tier !== 'none' ? holderTier.name : null,
         userLevel: userLevel.level,
         userTitle: userLevel.title,
         expectedReward: expectedReward,
@@ -712,13 +729,23 @@ router.get("/info/:wallet", async (req, res) => {
       }
     }
 
-    // Calculate available durations with APY rates
-    const availableDurations = userLevel.availableDurations.map(duration => ({
-      days: duration,
-      apy: `${calculateStakeAPY(duration, userLevel.level)}%`,
-      baseAPY: `${LONG_TERM_APY_RATES[duration]}%`,
-      legendBonus: userLevel.level === 5 ? `+${LEGEND_BONUS * 100}%` : null
-    }));
+    // 🖼️ Get NFT staking boost for this wallet
+    const nftApyBoost = await getStakingBoost(wallet);
+    const nftApyBoostPercent = nftApyBoost * 100;
+    const holderTier = await getHolderTier(wallet);
+
+    // Calculate available durations with APY rates (including NFT boost)
+    const availableDurations = userLevel.availableDurations.map(duration => {
+      const baseApy = calculateStakeAPY(duration, userLevel.level);
+      const totalApy = baseApy + nftApyBoostPercent;
+      return {
+        days: duration,
+        apy: `${totalApy}%`,
+        baseAPY: `${LONG_TERM_APY_RATES[duration]}%`,
+        legendBonus: userLevel.level === 5 ? `+${LEGEND_BONUS * 100}%` : null,
+        nftBonus: nftApyBoostPercent > 0 ? `+${nftApyBoostPercent}%` : null
+      };
+    });
 
     res.json({
       success: true,
@@ -728,7 +755,9 @@ router.get("/info/:wallet", async (req, res) => {
         level: userLevel.level,
         title: userLevel.title,
         currentBalance: currentBalance,
-        availableDurations: userLevel.availableDurations
+        availableDurations: userLevel.availableDurations,
+        nftTier: holderTier.tier !== 'none' ? holderTier.name : null,
+        nftApyBoost: nftApyBoostPercent > 0 ? `+${nftApyBoostPercent}% APY` : null
       },
       longTermStaking: {
         activeStakes: longTermStakes,

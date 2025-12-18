@@ -1118,6 +1118,120 @@ router.post('/community/vote', async (req, res) => {
   }
 });
 
+// ============================================================================
+// 🏆 HALL OF FAME ENDPOINTS
+// ============================================================================
+
+// GET /api/memeology/hall-of-fame - Get all Hall of Fame memes
+router.get('/hall-of-fame', async (req, res) => {
+  try {
+    // Get featured memes from Redis
+    const [bestEver, memeOfWeek, memeOfMonth] = await Promise.all([
+      redis.get('hallOfFame:bestEver'),
+      redis.get('hallOfFame:memeOfWeek'),
+      redis.get('hallOfFame:memeOfMonth')
+    ]);
+
+    res.json({
+      success: true,
+      hallOfFame: {
+        bestEver: bestEver ? JSON.parse(bestEver) : null,
+        memeOfWeek: memeOfWeek ? JSON.parse(memeOfWeek) : null,
+        memeOfMonth: memeOfMonth ? JSON.parse(memeOfMonth) : null
+      }
+    });
+  } catch (error) {
+    console.error('Error in /hall-of-fame:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/memeology/hall-of-fame/set - Set a Hall of Fame meme (ADMIN ONLY)
+router.post('/hall-of-fame/set', requireMemeologyAdmin, async (req, res) => {
+  try {
+    const { category, memeData } = req.body;
+
+    if (!category || !memeData) {
+      return res.status(400).json({ error: 'Category and memeData required' });
+    }
+
+    const validCategories = ['bestEver', 'memeOfWeek', 'memeOfMonth'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        error: `Invalid category. Must be one of: ${validCategories.join(', ')}`
+      });
+    }
+
+    // Validate required meme fields
+    if (!memeData.imageUrl || !memeData.title) {
+      return res.status(400).json({ error: 'memeData must include imageUrl and title' });
+    }
+
+    // Add timestamp and category
+    const meme = {
+      ...memeData,
+      category,
+      featuredAt: new Date().toISOString(),
+      id: memeData.id || `hof_${Date.now()}`
+    };
+
+    // Store in Redis
+    await redis.set(`hallOfFame:${category}`, JSON.stringify(meme));
+
+    // Also add to history list for that category
+    await redis.lPush(`hallOfFame:${category}:history`, JSON.stringify(meme));
+    // Keep only last 52 entries (1 year of weeks, or 4+ years of months)
+    await redis.lTrim(`hallOfFame:${category}:history`, 0, 51);
+
+    console.log(`🏆 Hall of Fame updated: ${category} - "${meme.title}"`);
+
+    res.json({
+      success: true,
+      message: `Hall of Fame ${category} updated!`,
+      meme
+    });
+  } catch (error) {
+    console.error('Error in /hall-of-fame/set:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/memeology/hall-of-fame/history/:category - Get history for a category
+router.get('/hall-of-fame/history/:category', async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { limit = 12 } = req.query;
+
+    const validCategories = ['bestEver', 'memeOfWeek', 'memeOfMonth'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        error: `Invalid category. Must be one of: ${validCategories.join(', ')}`
+      });
+    }
+
+    const numericLimit = Math.min(parseInt(limit, 10) || 12, 52);
+    const history = await redis.lRange(`hallOfFame:${category}:history`, 0, numericLimit - 1);
+
+    const memes = history.map(raw => {
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        return null;
+      }
+    }).filter(Boolean);
+
+    res.json({
+      success: true,
+      category,
+      history: memes,
+      total: memes.length
+    });
+  } catch (error) {
+    console.error('Error in /hall-of-fame/history:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/memeology/upload - Upload custom image (ADMIN ONLY)
 // Users can only use templates or their own NFT images - no arbitrary uploads
 router.post('/upload', requireMemeologyAdmin, async (req, res) => {

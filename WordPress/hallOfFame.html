@@ -11,6 +11,28 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <!-- Sticky Navigation Header -->
+  <div class="nav-header"
+    style="background: #000; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #25c2a0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.5); backdrop-filter: blur(10px);">
+    <div class="nav-logo" style="color: #25c2a0; font-size: 1.5rem; font-weight: bold;">🏆 WALDO Hall of Fame</div>
+    <div class="nav-links" style="display: flex; align-items: center; gap: 20px;">
+      <a href="https://stats-page.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">📊
+        Dashboard</a>
+      <a href="https://dao-portal.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🗳️
+        DAO</a>
+      <a href="https://battle-arena.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">⚔️
+        Battle Arena</a>
+      <a href="https://staking.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">💰
+        Staking</a>
+      <a href="https://nft-marketplace.waldocoin.live" class="nav-link"
+        style="color: #25c2a0; text-decoration: none; padding: 8px 16px; border-radius: 20px; background: #333; transition: all 0.3s ease;">🏪
+        NFT Market</a>
+    </div>
+  </div>
 <style>
   :root {
     --padding-default: 15px;
@@ -409,6 +431,135 @@
     max-height: 90%;
     border-radius: 10px;
   }
+
+  /* Featured Memes Grid */
+  .featured-memes-section {
+    margin-bottom: 40px;
+  }
+
+  .featured-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+  }
+
+  .featured-meme-card {
+    background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid #333;
+    transition: all 0.3s ease;
+  }
+
+  .featured-meme-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .featured-meme-card.best-ever {
+    border-color: #ffd700;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+  }
+
+  .featured-meme-card.meme-of-month {
+    border-color: #25c2a0;
+    box-shadow: 0 0 30px rgba(37, 194, 160, 0.3);
+  }
+
+  .featured-meme-card.meme-of-week {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 30px rgba(255, 107, 107, 0.3);
+  }
+
+  .featured-badge {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    z-index: 10;
+    text-align: center;
+    backdrop-filter: blur(10px);
+  }
+
+  .best-ever .featured-badge {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+
+  .meme-of-month .featured-badge {
+    background: linear-gradient(135deg, #25c2a0, #1ea085);
+    color: #000;
+    box-shadow: 0 0 20px rgba(37, 194, 160, 0.5);
+  }
+
+  .meme-of-week .featured-badge {
+    background: linear-gradient(135deg, #ff6b6b, #ff5252);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+  }
+
+  .featured-content {
+    padding: 60px 20px 20px;
+    text-align: center;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .featured-content img {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .featured-content img:hover {
+    transform: scale(1.05);
+  }
+
+  .featured-info {
+    margin-top: 15px;
+    color: #eee;
+  }
+
+  .featured-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+
+  .featured-meta {
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+
+  .featured-creator {
+    color: #25c2a0;
+    font-weight: 600;
+  }
+
+  .loading-placeholder {
+    color: #666;
+    font-style: italic;
+  }
+
+  .empty-featured {
+    color: #555;
+    font-size: 1rem;
+    padding: 40px;
+  }
 </style>
 
 <div class="container">
@@ -434,6 +585,36 @@
       <div class="stat-card">
         <div class="stat-value" id="totalXP">-</div>
         <div class="stat-label">Total XP Earned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🏆 FEATURED MEMES SECTION -->
+  <div class="section-card featured-memes-section">
+    <h2 class="section-title">🏆 Featured Memes</h2>
+    <div class="featured-grid">
+      <!-- Best Meme Ever -->
+      <div class="featured-meme-card best-ever">
+        <div class="featured-badge">👑 BEST MEME EVER</div>
+        <div id="bestEverMeme" class="featured-content">
+          <div class="loading-placeholder">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Meme of the Month -->
+      <div class="featured-meme-card meme-of-month">
+        <div class="featured-badge">🌟 MEME OF THE MONTH</div>
+        <div id="memeOfMonthFeatured" class="featured-content">
+          <div class="loading-placeholder">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Meme of the Week -->
+      <div class="featured-meme-card meme-of-week">
+        <div class="featured-badge">⚡ MEME OF THE WEEK</div>
+        <div id="memeOfWeekFeatured" class="featured-content">
+          <div class="loading-placeholder">Loading...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -557,11 +738,13 @@ document.addEventListener('DOMContentLoaded', function() {
   loadLeaderboards();
   setupFilters();
   loadMemeData();
+  loadHallOfFame(); // Load featured memes
 
   // Auto-refresh every 5 minutes
   setInterval(() => {
     loadStats();
     loadLeaderboards();
+    loadHallOfFame();
   }, 5 * 60 * 1000);
 });
 
@@ -593,6 +776,66 @@ async function loadStats() {
   } catch (error) {
     console.error('Error loading stats:', error);
   }
+}
+
+// Load Hall of Fame featured memes
+async function loadHallOfFame() {
+  try {
+    const res = await fetch(`${API_BASE}/api/memeology/hall-of-fame`);
+    const data = await res.json();
+
+    if (data.success && data.hallOfFame) {
+      const { bestEver, memeOfWeek, memeOfMonth } = data.hallOfFame;
+
+      // Render Best Ever
+      renderFeaturedMeme('bestEverMeme', bestEver, '👑');
+
+      // Render Meme of the Month
+      renderFeaturedMeme('memeOfMonthFeatured', memeOfMonth, '🌟');
+
+      // Render Meme of the Week
+      renderFeaturedMeme('memeOfWeekFeatured', memeOfWeek, '⚡');
+    } else {
+      // Show empty states
+      ['bestEverMeme', 'memeOfMonthFeatured', 'memeOfWeekFeatured'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="empty-featured">No meme featured yet</div>';
+      });
+    }
+  } catch (error) {
+    console.error('Error loading Hall of Fame:', error);
+    ['bestEverMeme', 'memeOfMonthFeatured', 'memeOfWeekFeatured'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="empty-featured">Failed to load</div>';
+    });
+  }
+}
+
+// Render a featured meme card
+function renderFeaturedMeme(containerId, meme, emoji) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  if (!meme) {
+    container.innerHTML = '<div class="empty-featured">No meme featured yet</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <img src="${meme.imageUrl}"
+         alt="${meme.title || 'Featured Meme'}"
+         onclick="showFull('${meme.imageUrl}')"
+         onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Found'">
+    <div class="featured-info">
+      <div class="featured-title">${meme.title || 'Untitled Meme'}</div>
+      <div class="featured-meta">
+        ${meme.wallet ? `<span class="featured-creator">by ${formatWallet(meme.wallet)}</span>` : ''}
+        ${meme.upvotes ? `<span>👍 ${meme.upvotes}</span>` : ''}
+        ${meme.featuredAt ? `<span>📅 ${new Date(meme.featuredAt).toLocaleDateString()}</span>` : ''}
+      </div>
+      ${meme.caption ? `<div style="margin-top: 10px; font-style: italic; color: #888;">"${meme.caption}"</div>` : ''}
+    </div>
+  `;
 }
 
 // Load meme data from existing API
