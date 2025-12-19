@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WALDO NFT Marketplace</title>
+  <title>WALDO MNFT Marketplace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
@@ -1228,7 +1228,7 @@
       <a href="/staking" class="nav-link">💎 Staking</a>
       <a href="/dao" class="nav-link">🗳️ DAO</a>
       <a href="/marketplace" class="nav-link active">🏪 Marketplace</a>
-      <a href="/my-nfts" class="nav-link">🎨 My NFTs</a>
+      <a href="/my-nfts" class="nav-link">🎨 My MNFTs</a>
       <a href="/hall-of-fame" class="nav-link">🏆 Hall of Fame</a>
       <a href="/battle-arena" class="nav-link">⚔️ Arena</a>
     </div>
@@ -1236,12 +1236,12 @@
 
   <div class="container">
     <div class="header">
-      <h1>🏪 WALDO NFT Marketplace</h1>
-      <p>Buy, sell, and trade exclusive meme NFTs with WALDO tokens</p>
+      <h1>🏪 WALDO MNFT Marketplace</h1>
+      <p>Buy, sell, and trade exclusive MNFTs (Meme NFTs) with WALDO tokens</p>
 
       <!-- Search Bar -->
       <div class="search-container" style="margin-top: 30px;">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search memes by text or @handle..." onkeypress="if(event.key==='Enter') searchNFTs()">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search MNFTs by text or @handle..." onkeypress="if(event.key==='Enter') searchNFTs()">
         <button class="search-button" onclick="searchNFTs()">🔍 Search</button>
       </div>
 
@@ -1521,7 +1521,7 @@
             grid.innerHTML = `<div class="empty-state"><h3>🔍 No results for "${escapeHtml(query)}"</h3><p>Try different keywords</p></div>`;
           } else {
             displayListings(data.results);
-            showNotification(`Found ${data.totalResults} NFTs`, 'success');
+            showNotification(`Found ${data.totalResults} MNFTs`, 'success');
           }
         }
       } catch (error) {
@@ -1640,9 +1640,9 @@
       if (listings.length === 0) {
         grid.innerHTML = `
           <div class="empty-state" style="grid-column: 1/-1;">
-            <h3>🏪 No NFTs Listed Yet</h3>
-            <p>Be the first to list your meme NFT for sale!</p>
-            <a href="/my-nfts" style="display: inline-block; margin-top: 20px; padding: 15px 30px; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: white; border-radius: 10px; text-decoration: none; font-weight: bold;">View My NFTs</a>
+            <h3>🏪 No MNFTs Listed Yet</h3>
+            <p>Be the first to list your MNFT for sale!</p>
+            <a href="/my-nfts" style="display: inline-block; margin-top: 20px; padding: 15px 30px; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: white; border-radius: 10px; text-decoration: none; font-weight: bold;">View My MNFTs</a>
           </div>`;
         return;
       }

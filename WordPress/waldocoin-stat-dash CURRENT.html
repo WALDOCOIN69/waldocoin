@@ -3587,7 +3587,7 @@
         <li>🖼 Post a meme on Twitter with the hashtag <strong>#WaldoMeme</strong></li>
         <li>📊 Watch your meme earn XP and rewards</li>
         <li>🏆 Claim or stake your rewards on the dashboard</li>
-        <li>🔥 Mint your meme as an NFT when it hits 60 XP</li>
+        <li>🔥 Mint your meme as an MNFT when it hits 60 XP</li>
       </ul>
     </div>
     <!-- Notification bar -->
@@ -4033,7 +4033,7 @@
             <h2 class="margin-top-0">📸 My Memes</h2>
             <div class="tooltip-wrapper">
               <span class="tooltip-icon">i</span>
-              <span class="tooltip-text">Each meme must reach 60 XP to be eligible for minting as an NFT.</span>
+              <span class="tooltip-text">Each meme must reach 60 XP to be eligible for minting as an MNFT (Meme NFT).</span>
             </div>
           </div>
           <div class="overflow-auto">
@@ -4309,7 +4309,7 @@
         <h2 class="margin-top-0">🖼️ My NFT Collection</h2>
         <div class="tooltip-wrapper">
           <span class="tooltip-icon">i</span>
-          <span class="tooltip-text">Your minted NFTs. Click to view details or list for sale on the marketplace.</span>
+          <span class="tooltip-text">Your minted MNFTs (Meme NFTs). Click to view details or list for sale on the marketplace.</span>
         </div>
       </div>
       <div id="nftCollectionContainer" class="nft-collection-grid">
@@ -4334,11 +4334,11 @@
         class="nft-modal-image">
     </div>
 
-    <!-- 🖼️ MINT NFT Modal with Deposit Slider -->
+    <!-- 🖼️ MINT MNFT Modal with Deposit Slider -->
     <div id="mintModal" class="nft-modal modal-container" style="display: none;">
       <div class="modal-content" style="max-width: 500px;">
         <span onclick="closeMintModal()" class="close-nft-modal modal-close">&times;</span>
-        <h3 class="modal-title">🖼️ Mint Meme NFT</h3>
+        <h3 class="modal-title">🖼️ Mint MNFT (Meme NFT)</h3>
 
         <div style="text-align: center; margin-bottom: 20px;">
           <img id="mintPreviewImg" src="" alt="Meme Preview"
@@ -4346,7 +4346,7 @@
         </div>
 
         <div class="modal-field">
-          <label class="modal-label">💰 NFT Base Value (Deposit) <span style="color: #888; font-weight: normal;">- Optional</span></label>
+          <label class="modal-label">💰 MNFT Base Value (Deposit) <span style="color: #888; font-weight: normal;">- Optional</span></label>
           <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
             <input type="range" id="depositSlider" min="0" max="100000" step="10000" value="0"
               style="flex: 1; height: 8px; accent-color: #25c2a0; cursor: pointer;"
@@ -4375,12 +4375,12 @@
         </div>
 
         <div style="font-size: 12px; color: #888; margin-top: 15px; text-align: center;">
-          💡 Optional: Add a deposit to increase your NFT's base value in the marketplace
+          💡 Optional: Add a deposit to increase your MNFT's base value in the marketplace
         </div>
 
         <button type="button" id="confirmMintBtn" onclick="confirmMintWithDeposit()"
           class="button-style modal-button" style="margin-top: 20px; width: 100%;">
-          🖼️ Mint NFT
+          🖼️ Mint MNFT
         </button>
       </div>
     </div>
@@ -6904,7 +6904,7 @@
         } finally {
           if (btn) {
             btn.disabled = false;
-            btn.textContent = "🖼️ Mint NFT";
+            btn.textContent = "🖼️ Mint MNFT";
           }
         }
       }
@@ -7682,9 +7682,9 @@
             if (mintedNFTs.length === 0) {
               container.innerHTML = `
           <div class="nft-empty-state">
-            <h3>🖼️ No NFTs Yet</h3>
-            <p>Mint your first NFT from your memes above!</p>
-            <p>Any meme can be minted for 50 WALDO</p>
+            <h3>🖼️ No MNFTs Yet</h3>
+            <p>Mint your first MNFT from your memes above!</p>
+            <p>Any meme can be minted for 500 WALDO</p>
           </div>
         `;
               return;

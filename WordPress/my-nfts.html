@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My WALDO NFTs</title>
+  <title>My WALDO MNFTs</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
@@ -480,7 +480,7 @@
       <a href="/staking" class="nav-link">💎 Staking</a>
       <a href="/dao" class="nav-link">🗳️ DAO</a>
       <a href="/marketplace" class="nav-link">🏪 Marketplace</a>
-      <a href="/my-nfts" class="nav-link active">🎨 My NFTs</a>
+      <a href="/my-nfts" class="nav-link active">🎨 My MNFTs</a>
       <a href="/hall-of-fame" class="nav-link">🏆 Hall of Fame</a>
       <a href="/battle-arena" class="nav-link">⚔️ Arena</a>
     </div>
@@ -488,8 +488,8 @@
 
   <div class="container">
     <div class="header">
-      <h1>🖼️ My WALDO NFTs</h1>
-      <p>Manage your meme NFT collection and marketplace listings</p>
+      <h1>🖼️ My WALDO MNFTs</h1>
+      <p>Manage your MNFT (Meme NFT) collection and marketplace listings</p>
     </div>
 
     <!-- Wallet Connection -->
@@ -500,7 +500,7 @@
       </div>
       <div id="walletDisconnected">
         <button class="connect-wallet" onclick="connectWallet()">Connect Wallet</button>
-        <p>Connect your wallet to view and manage your NFTs</p>
+        <p>Connect your wallet to view and manage your MNFTs</p>
       </div>
     </div>
 
@@ -510,10 +510,10 @@
       <button class="tab" onclick="switchTab('listings')">My Listings</button>
     </div>
 
-    <!-- Owned NFTs Tab -->
+    <!-- Owned MNFTs Tab -->
     <div id="ownedTab" class="tab-content active">
       <div id="ownedNFTs" class="nft-grid">
-        <div class="loading">Loading your NFT collection...</div>
+        <div class="loading">Loading your MNFT collection...</div>
       </div>
     </div>
 
@@ -525,11 +525,11 @@
     </div>
   </div>
 
-  <!-- List NFT Modal -->
+  <!-- List MNFT Modal -->
   <div id="listModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">List NFT for Sale</div>
+        <div class="modal-title">List MNFT for Sale</div>
         <span class="close" onclick="closeListModal()">&times;</span>
       </div>
       <div class="form-group">
@@ -604,7 +604,7 @@
       const container = document.getElementById('ownedNFTs');
 
       if (!wallet) {
-        container.innerHTML = '<div class="empty-state"><h3>Wallet Not Connected</h3><p>Please connect your wallet to view your NFTs</p></div>';
+        container.innerHTML = '<div class="empty-state"><h3>Wallet Not Connected</h3><p>Please connect your wallet to view your MNFTs</p></div>';
         return;
       }
 
@@ -617,7 +617,7 @@
           const mintedNFTs = data.memes.filter(meme => meme.nft_minted === 'true' || meme.nft_minted === true);
 
           if (mintedNFTs.length === 0) {
-            container.innerHTML = '<div class="empty-state"><h3>No NFTs Found</h3><p>You haven\'t minted any NFTs yet. Visit your memes and mint some!</p></div>';
+            container.innerHTML = '<div class="empty-state"><h3>No MNFTs Found</h3><p>You haven\'t minted any MNFTs yet. Visit your memes and mint some!</p></div>';
             return;
           }
 
@@ -643,11 +643,11 @@
         </div>
       `).join('');
         } else {
-          container.innerHTML = '<div class="empty-state"><h3>Failed to Load NFTs</h3><p>Please try again later</p></div>';
+          container.innerHTML = '<div class="empty-state"><h3>Failed to Load MNFTs</h3><p>Please try again later</p></div>';
         }
       } catch (error) {
-        console.error('Error loading owned NFTs:', error);
-        container.innerHTML = '<div class="empty-state"><h3>Connection Error</h3><p>Unable to load your NFT collection</p></div>';
+        console.error('Error loading owned MNFTs:', error);
+        container.innerHTML = '<div class="empty-state"><h3>Connection Error</h3><p>Unable to load your MNFT collection</p></div>';
       }
     }
 
@@ -667,7 +667,7 @@
 
         if (data.success) {
           if (data.listings.length === 0) {
-            container.innerHTML = '<div class="empty-state"><h3>No Listings Found</h3><p>You haven\'t listed any NFTs for sale yet</p></div>';
+            container.innerHTML = '<div class="empty-state"><h3>No Listings Found</h3><p>You haven\'t listed any MNFTs for sale yet</p></div>';
             return;
           }
 
@@ -744,21 +744,21 @@
         const data = await response.json();
 
         if (data.success) {
-          alert('NFT listed successfully!');
+          alert('MNFT listed successfully!');
           closeListModal();
           loadMyListings(); // Refresh listings
         } else {
-          alert(`Failed to list NFT: ${data.error}`);
+          alert(`Failed to list MNFT: ${data.error}`);
         }
       } catch (error) {
-        console.error('Error listing NFT:', error);
-        alert('Failed to list NFT');
+        console.error('Error listing MNFT:', error);
+        alert('Failed to list MNFT');
       }
     }
 
-    // Delist NFT
+    // Delist MNFT
     async function delistNFT(listingId) {
-      if (!confirm('Are you sure you want to remove this NFT from the marketplace?')) {
+      if (!confirm('Are you sure you want to remove this MNFT from the marketplace?')) {
         return;
       }
 
@@ -779,18 +779,18 @@
         const data = await response.json();
 
         if (data.success) {
-          alert('NFT delisted successfully!');
+          alert('MNFT delisted successfully!');
           loadMyListings(); // Refresh listings
         } else {
-          alert(`Failed to delist NFT: ${data.error}`);
+          alert(`Failed to delist MNFT: ${data.error}`);
         }
       } catch (error) {
-        console.error('Error delisting NFT:', error);
-        alert('Failed to delist NFT');
+        console.error('Error delisting MNFT:', error);
+        alert('Failed to delist MNFT');
       }
     }
 
-    // View NFT details (placeholder)
+    // View MNFT details (placeholder)
     function viewNFT(tweetId) {
       window.open(`https://twitter.com/i/status/${tweetId}`, '_blank');
     }
