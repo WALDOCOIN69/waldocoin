@@ -52,9 +52,20 @@ To begin earning with WALDOcoin, users first connect their Xaman Wallet to the W
 
 Users earn WALDOcoin based on their engagement metrics on social media. Every 25 likes unlocks a reward tier, and retweets increase the reward multiplier. A maximum of 10 posts per day are eligible, with a 1,000 likes cap per post.
 
-The engagement tiers work as follows: 25 likes earns 1.00 WALDO, 50 likes with 5 retweets earns 2.00 WALDO, 100 likes with 10 retweets earns 5.00 WALDO, 500 likes with 50 retweets earns 25.00 WALDO, and 1,000 likes with 100 retweets earns 50.00 WALDO.
+| Tier | Likes Required | Retweets Required | Base Reward |
+|------|----------------|-------------------|-------------|
+| 1 | 25+ | 0+ | 1.00 WLO |
+| 2 | 50+ | 5+ | 2.00 WLO |
+| 3 | 100+ | 10+ | 5.00 WLO |
+| 4 | 500+ | 50+ | 25.00 WLO |
+| 5 | 1000+ | 100+ | 50.00 WLO |
 
-When claiming rewards, users choose between instant payout with a 10% fee or staking with only a 5% fee plus a 15% bonus after one month. For example, earning 50 WALDO would yield 45 WALDO instantly, or 54.63 WALDO through staking. All fees contribute to the ecosystem, with 2% burned and the remainder going to the treasury.
+When claiming rewards, users choose between instant payout with a 10% fee or staking with only a 5% fee plus a 15% bonus after one month. All fees contribute to the ecosystem, with 2% burned and the remainder going to the treasury.
+
+| Method | Fee | Bonus | Example (50 WLO earned) |
+|--------|-----|-------|--------------------------|
+| Instant | 10% | None | Receive 45 WLO immediately |
+| Staking | 5% | +15% | Receive 54.63 WLO after 1 month |
 
 To prevent spam and maintain legitimacy, users must hold at least 6 XRP worth of WALDOcoin in their XRPL wallet to qualify for payouts.
 
@@ -64,7 +75,13 @@ To prevent spam and maintain legitimacy, users must hold at least 6 XRP worth of
 
 The XP Level system fuels engagement and rewards long-term participation through a merit-based creator economy. Users earn 1 XP per 25 likes, 1 XP per 15 retweets, with a maximum of 10 XP per meme. Battle wins award 100 XP, losses give 25 XP, and voting participation earns 2 XP.
 
-There are five levels in the system. Level 1 is Waldo Watcher, the starting point with base rates. Level 2 is Waldo Scout at 100 XP, which unlocks reduced fees. Level 3 is Waldo Agent at 3,000 XP with staking bonuses. Level 4 is Waldo Commander at 7,000 XP with governance rights. Level 5 is Waldo Legend at 15,000+ XP with access to all premium features.
+| Level | Title | XP Required | Benefits |
+|-------|-------|-------------|----------|
+| 1 | Waldo Watcher | 0 | Base rates |
+| 2 | Waldo Scout | 100 | Reduced fees |
+| 3 | Waldo Agent | 3,000 | Staking bonuses |
+| 4 | Waldo Commander | 7,000 | Governance rights |
+| 5 | Waldo Legend | 15,000+ | All premium features |
 
 ---
 
@@ -72,9 +89,24 @@ There are five levels in the system. Level 1 is Waldo Watcher, the starting poin
 
 WALDOcoin introduces MNFTs, or Meme NFTs, a new asset class where memes become tradable digital assets with verifiable social metrics. An MNFT is a meme minted as an NFT on the XRPL, carrying verified engagement metrics like likes, retweets, and XP, along with an optional base value deposit, rarity classification based on performance, and creator royalties on secondary sales.
 
-To mint an MNFT, users need a minimum of 60 XP and pay a 500 WLO minting fee. The base value deposit is optional, ranging from 0 to 100,000 WLO in 10,000 WLO increments. This deposit system allows creators to add intrinsic value to their MNFTs, providing higher marketplace visibility, increased buyer confidence, and a built-in floor value. Minting with no deposit costs just 500 WLO, while adding a 50,000 WLO deposit would cost 50,500 WLO total.
+To mint an MNFT, users need a minimum of 60 XP and pay a 500 WLO minting fee. The base value deposit is optional, ranging from 0 to 100,000 WLO in 10,000 WLO increments. This deposit system allows creators to add intrinsic value to their MNFTs.
 
-MNFTs are classified by rarity based on engagement metrics. Common rarity covers engagement scores of 0-99, Uncommon is 100-499, Rare is 500-999, Epic is 1,000-4,999, and Legendary is reserved for scores of 5,000 and above.
+| Deposit Amount | Display | Total Cost |
+|----------------|---------|------------|
+| 0 WLO | No Deposit | 500 WLO (fee only) |
+| 10,000 WLO | 10k WLO Locked | 10,500 WLO |
+| 50,000 WLO | 50k WLO Locked | 50,500 WLO |
+| 100,000 WLO | 100k WLO Locked | 100,500 WLO |
+
+MNFTs are classified by rarity based on engagement metrics:
+
+| Rarity | Engagement Score | XP Range |
+|--------|------------------|----------|
+| 🟤 Common | 0-99 | 60-99 |
+| 🟢 Uncommon | 100-499 | 100-199 |
+| 🔵 Rare | 500-999 | 200-499 |
+| 🟣 Epic | 1,000-4,999 | 500-999 |
+| 🟡 Legendary | 5,000+ | 1,000+ |
 
 ---
 
@@ -82,15 +114,37 @@ MNFTs are classified by rarity based on engagement metrics. Common rarity covers
 
 The WALDO MNFT Marketplace is a professional trading platform for meme assets. Users can search and filter MNFTs by text, creator, or handle, browse by rarity, view real-time sales and listing updates in the activity feed, and access full MNFT details including engagement stats and locked WLO deposits.
 
-To list an MNFT for sale, users navigate to the My MNFTs section, select their MNFT, set a price in WALDO, and confirm via their XUMM wallet. Listing is free. Sales incur a 5% fee split between 2% burn and 3% treasury, plus a 5% royalty paid to the original creator.
+To list an MNFT for sale, users navigate to the My MNFTs section, select their MNFT, set a price in WALDO, and confirm via their XUMM wallet.
+
+| Action | Fee | Distribution |
+|--------|-----|--------------|
+| Listing | Free | — |
+| Sale | 5% | 2% burn, 3% treasury |
+| Royalty | 5% | To original creator |
 
 ---
 
 ## 9. MNFT Holder Benefits
 
-Holding MNFTs unlocks exclusive ecosystem benefits through the tier system. The tiers are based on how many MNFTs a user holds: Silver requires 1-2 MNFTs, Gold requires 3-9, Platinum requires 10 or more, and KING is a special tier reserved for holders of the unique KING NFT.
+Holding MNFTs unlocks exclusive ecosystem benefits through the tier system:
 
-Silver holders receive a 10% XP boost, 1% staking APY boost, 1.1x DAO voting power, 5% claim fee discount, 15% minting fee discount, and 10% battle fee discount. Gold holders receive 2x revenue shares, 15% XP boost, 3% APY boost, 1.25x voting power, 10% claim discount, 30% minting discount, and 20% battle discount. Platinum holders receive 5x revenue shares, 25% XP boost, 5% APY boost, 1.5x voting power, 15% claim discount, and 50% minting discount. KING holders receive the maximum benefits: 10x revenue shares, 50% XP boost, 15% APY boost, 3x voting power, and 25% claim fee discount.
+| Tier | MNFTs Required | Icon |
+|------|----------------|------|
+| None | 0 | ⚪ |
+| Silver | 1-2 | 🥈 |
+| Gold | 3-9 | 🥇 |
+| Platinum | 10+ | 💎 |
+| KING | Special KING NFT | 👑 |
+
+| Benefit | Silver | Gold | Platinum | KING |
+|---------|--------|------|----------|------|
+| Revenue Shares | — | 2× | 5× | 10× |
+| XP Boost | +10% | +15% | +25% | +50% |
+| Staking APY Boost | +1% | +3% | +5% | +15% |
+| DAO Voting Power | 1.1× | 1.25× | 1.5× | 3× |
+| Claim Fee Discount | 5% | 10% | 15% | 25% |
+| Minting Fee Discount | 15% | 30% | 50% | — |
+| Battle Fee Discount | 10% | 20% | 30% | — |
 
 Note that Silver tier holders are excluded from monthly revenue sharing. Users need 3+ MNFTs (Gold tier) to receive that benefit.
 
@@ -100,7 +154,18 @@ Note that Silver tier holders are excluded from monthly revenue sharing. Users n
 
 The WALDOcoin Meme Battle Arena is a 24-hour showdown where creativity meets community. To initiate a battle, a user submits their meme along with a 100 WALDO entry fee. An opponent can accept the challenge by submitting their own meme with a 50 WALDO fee. The community then votes by staking 5 WALDO per vote, and after 24 hours, the meme with the most votes wins.
 
-The prize pool is distributed as follows: the winner receives 65%, voters who backed the winner split 30% equally, 2% is burned, and 3% goes to the treasury. Participants earn XP regardless of outcome: winners receive 100 XP, losers receive 25 XP, and voters earn 2 XP for participation.
+| Recipient | Share |
+|-----------|-------|
+| Winner | 65% of pool |
+| Winning Voters | 30% of pool (split equally) |
+| Token Burn | 2% of pool |
+| Treasury | 3% of pool |
+
+| Outcome | XP Earned |
+|---------|-----------|
+| Battle Win | +100 XP |
+| Battle Loss | +25 XP |
+| Vote Participation | +2 XP |
 
 Live leaderboards display the top users by total XP, most battle wins, top memes by engagement, and Hall of Fame winners.
 
@@ -108,9 +173,23 @@ Live leaderboards display the top users by total XP, most battle wins, top memes
 
 ## 11. Staking Portal
 
-The WALDO Staking Portal offers flexible staking options with MNFT-boosted returns. Short-term staking runs from 7 to 30 days with a base APY of 8-12% and flexible lock periods. Long-term staking runs from 90 to 365 days with a base APY of 15-25% and fixed lock periods.
+The WALDO Staking Portal offers flexible staking options with MNFT-boosted returns:
 
-MNFT holders receive additional APY boosts on top of the base rates. Silver holders get an extra 1%, Gold holders get 3%, Platinum holders get 5%, and KING holders receive a 15% APY boost. The staking portal includes auto-compound rewards, real-time APY display, staking history tracking, and full XUMM wallet integration. Early withdrawal from long-term staking incurs a penalty.
+| Tier | Duration | Base APY | Lock Period |
+|------|----------|----------|-------------|
+| Short-Term | 7-30 days | 8-12% | Flexible |
+| Long-Term | 90-365 days | 15-25% | Fixed |
+
+MNFT holders receive additional APY boosts on top of the base rates:
+
+| MNFT Tier | APY Boost |
+|-----------|-----------|
+| Silver (1-2 MNFTs) | +1% |
+| Gold (3-9 MNFTs) | +3% |
+| Platinum (10+ MNFTs) | +5% |
+| KING | +15% |
+
+The staking portal includes auto-compound rewards, real-time APY display, staking history tracking, and full XUMM wallet integration. Early withdrawal from long-term staking incurs a penalty.
 
 ---
 
@@ -118,7 +197,13 @@ MNFT holders receive additional APY boosts on top of the base rates. Silver hold
 
 WALDOcoin is transitioning toward a fully decentralized governance model where the community makes key decisions about the ecosystem's future. Users need a minimum WALDO balance to vote, with XP level and MNFT holdings providing additional voting power.
 
-Voting power is calculated based on WALDO holdings with MNFT multipliers applied. Silver holders receive 1.1x voting power, Gold holders receive 1.25x, Platinum holders receive 1.5x, and KING holders receive 3x voting power on all proposals.
+| Factor | Voting Multiplier |
+|--------|-------------------|
+| Base (per WLO) | 1× |
+| MNFT Silver | 1.1× |
+| MNFT Gold | 1.25× |
+| MNFT Platinum | 1.5× |
+| MNFT KING | 3× |
 
 The community can vote on feature updates and roadmap changes, ecosystem fund allocation, battle rule modifications, fee structure adjustments, and partnership approvals. The governance process begins with proposal submission by a community member, followed by a 3-7 day discussion period for feedback, then a 7-day voting period, and finally implementation of approved proposals.
 
@@ -126,7 +211,13 @@ The community can vote on feature updates and roadmap changes, ecosystem fund al
 
 ## 13. Hall of Fame
 
-The Hall of Fame immortalizes the greatest memes in WALDO history. There are three categories: Best Meme Ever for the all-time greatest meme based on highest XP ever achieved, Meme of the Month for the monthly champion with the highest XP that month, and Meme of the Week for weekly winners.
+The Hall of Fame immortalizes the greatest memes in WALDO history:
+
+| Category | Description | Selection Criteria |
+|----------|-------------|-------------------|
+| 🏆 Best Meme Ever | All-time greatest | Highest XP ever achieved |
+| 📅 Meme of the Month | Monthly champion | Highest XP that month |
+| 📆 Meme of the Week | Weekly winner | Highest XP that week |
 
 Hall of Fame recognition comes with permanent showcase on the Hall of Fame page, special badges on the meme's MNFT, creator spotlight features, bonus XP rewards, and priority visibility in the marketplace.
 
@@ -136,7 +227,13 @@ Hall of Fame recognition comes with permanent showcase on the Hall of Fame page,
 
 Memeology is the professional meme creation studio for the WALDO ecosystem. It features a template library with pre-built meme formats, custom background uploads, multiple text tools with various fonts and styles, a WALDO-themed sticker library, and direct posting to X/Twitter.
 
-Template access is tiered based on XP level. Waldo Watchers have access to 10 basic templates, Waldo Scouts unlock 25 standard templates, Waldo Agents get 50 premium templates, Waldo Commanders access 100 elite templates, and Waldo Legends have access to all templates plus exclusives.
+| Level | Templates Available |
+|-------|---------------------|
+| Waldo Watcher | Basic (10 templates) |
+| Waldo Scout | Standard (25 templates) |
+| Waldo Agent | Premium (50 templates) |
+| Waldo Commander | Elite (100 templates) |
+| Waldo Legend | All templates + exclusives |
 
 ---
 
@@ -144,7 +241,12 @@ Template access is tiered based on XP level. Waldo Watchers have access to 10 ba
 
 WALDOcoin employs a multi-layered security framework to protect the ecosystem from abuse. AI-powered verification handles content originality checks, bot detection, engagement pattern analysis, and account age verification.
 
-Fraud prevention measures include engagement analysis to detect irregular like and retweet patterns, reputation scoring that weights engagement by user history, real-time monitoring that flags suspicious transactions, and a blacklist system that bans repeat offenders.
+| Measure | Description |
+|---------|-------------|
+| Engagement Analysis | Detects irregular like/retweet patterns |
+| Reputation Scoring | Weights engagement by user history |
+| Real-Time Monitoring | Flags suspicious transactions |
+| Blacklist System | Bans repeat offenders |
 
 Wallet security is maintained through XRP holding requirements, wallet verification, transaction monitoring, and anti-sybil protections.
 
@@ -152,7 +254,16 @@ Wallet security is maintained through XRP holding requirements, wallet verificat
 
 ## 16. Revenue & Sustainability
 
-The ecosystem generates revenue through multiple streams. Instant meme claims incur a 10% fee with 2% burned and 8% going to treasury. Staked claims incur only a 5% fee with 2% burned and 3% to treasury. MNFT minting costs 500 WLO which goes to treasury. Marketplace sales have a 5% fee split between 2% burn and 3% treasury. Battle entry fees are 100 WLO to initiate and 50 WLO to accept, with voting costing 5 WLO per vote.
+The ecosystem generates revenue through multiple streams:
+
+| Source | Fee | Distribution |
+|--------|-----|--------------|
+| Meme Claims (Instant) | 10% | 2% burn, 8% treasury |
+| Meme Claims (Staked) | 5% | 2% burn, 3% treasury |
+| MNFT Minting | 500 WLO | Treasury |
+| Marketplace Sales | 5% | 2% burn, 3% treasury |
+| Battle Entry | 100/50 WLO | Prize pool + fees |
+| Battle Voting | 5 WLO | Prize pool |
 
 The tokenomics include several deflationary mechanisms: a 2% burn on all transactions, burns from MNFT minting, burns from battle fees, and periodic buyback programs.
 
@@ -190,7 +301,14 @@ Phase 7 (Full Decentralization) is planned for the future. This will include com
 
 ## 19. Token Distribution
 
-The total supply of 1,000,000,000 WLO is distributed as follows: 40% (400 million) for community rewards, 20% (200 million) for the staking pool, 15% (150 million) for treasury, 15% (150 million) for liquidity, 5% (50 million) for the team with vesting, and 5% (50 million) for marketing.
+| Allocation | Percentage | Amount |
+|------------|------------|--------|
+| Community Rewards | 40% | 400,000,000 WLO |
+| Staking Pool | 20% | 200,000,000 WLO |
+| Treasury | 15% | 150,000,000 WLO |
+| Liquidity | 15% | 150,000,000 WLO |
+| Team (Vested) | 5% | 50,000,000 WLO |
+| Marketing | 5% | 50,000,000 WLO |
 
 ---
 
