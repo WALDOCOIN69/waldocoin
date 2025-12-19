@@ -5,14 +5,16 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { redis } from "../redisClient.js";
 
-// Shared level thresholds and titles (must match frontend)
-const LEVEL_THRESHOLDS = [0, 1000, 3000, 7000, 15000];
+// Shared level thresholds and titles (must match frontend) - 7 levels
+const LEVEL_THRESHOLDS = [0, 1000, 3000, 7000, 15000, 30000, 50000];
 const LEVEL_TITLES = {
   1: "Waldo Watcher",
   2: "Waldo Scout",
   3: "Waldo Agent",
   4: "Waldo Commander",
-  5: "Waldo Legend"
+  5: "Waldo Legend",
+  6: "Waldo Master",
+  7: "Waldo King"
 };
 
 // Prefer the new canonical XP key but gracefully fall back to legacy keys
@@ -46,11 +48,15 @@ const LEVEL_MIN_REQ = {
   2: { minted: 1, battles: 0, referrals: 1 },
   3: { minted: 3, battles: 1, referrals: 2 },
   4: { minted: 7, battles: 3, referrals: 3 },
-  5: { minted: 10, battles: 5, referrals: 5 }
+  5: { minted: 10, battles: 5, referrals: 5 },
+  6: { minted: 15, battles: 10, referrals: 8 },
+  7: { minted: 25, battles: 20, referrals: 15 }
 };
 
 function deriveLevelFromXP(xp) {
   const val = Number.isFinite(xp) ? xp : 0;
+  if (val >= LEVEL_THRESHOLDS[6]) return 7;
+  if (val >= LEVEL_THRESHOLDS[5]) return 6;
   if (val >= LEVEL_THRESHOLDS[4]) return 5;
   if (val >= LEVEL_THRESHOLDS[3]) return 4;
   if (val >= LEVEL_THRESHOLDS[2]) return 3;

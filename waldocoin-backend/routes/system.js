@@ -553,30 +553,36 @@ router.get('/meme-usage-stats', async (req, res) => {
   }
 });
 
-// Monthly meme limits by XP level
+// Monthly meme limits by XP level - 7 levels
 const MONTHLY_MEME_LIMITS = {
-  1: 10,    // Fresh Poster
-  2: 25,    // Shitposter
-  3: 50,    // Meme Dealer
-  4: 100,   // OG Degen
-  5: 200,   // WALDO Master
-  king: 2000 // KING NFT holder
+  1: 10,    // Waldo Watcher
+  2: 25,    // Waldo Scout
+  3: 50,    // Waldo Agent
+  4: 100,   // Waldo Commander
+  5: 200,   // Waldo Legend
+  6: 500,   // Waldo Master
+  7: 1000,  // Waldo King
+  king: 2000 // KING NFT holder (special override)
 };
 
 const LEVEL_TITLES = {
-  1: "Fresh Poster",
-  2: "Shitposter",
-  3: "Meme Dealer",
-  4: "OG Degen",
-  5: "WALDO Master"
+  1: "Waldo Watcher",
+  2: "Waldo Scout",
+  3: "Waldo Agent",
+  4: "Waldo Commander",
+  5: "Waldo Legend",
+  6: "Waldo Master",
+  7: "Waldo King"
 };
 
 const XP_THRESHOLDS = [
   { level: 1, threshold: 0 },
-  { level: 2, threshold: 250 },
-  { level: 3, threshold: 850 },
-  { level: 4, threshold: 1750 },
-  { level: 5, threshold: 3000 }
+  { level: 2, threshold: 1000 },
+  { level: 3, threshold: 3000 },
+  { level: 4, threshold: 7000 },
+  { level: 5, threshold: 15000 },
+  { level: 6, threshold: 30000 },
+  { level: 7, threshold: 50000 }
 ];
 
 function getXPLevel(xp) {

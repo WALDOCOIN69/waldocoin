@@ -101,26 +101,25 @@ router.post("/addXP", async (req, res) => {
 // GET /api/userLevel/levels - Get all level information
 router.get("/", async (_, res) => {
   try {
-    // Import the levels array from xpManager
-    const { default: xpManagerModule } = await import("../utils/xpManager.js");
-    
     return res.json({
       success: true,
       levels: [
-        { level: 1, threshold: 0, title: "Fresh Poster", multiplier: 1.0 },
-        { level: 2, threshold: 250, title: "Shitposter", multiplier: 0.9 },
-        { level: 3, threshold: 850, title: "Meme Dealer", multiplier: 0.8 },
-        { level: 4, threshold: 1750, title: "OG Degen", multiplier: 0.7 },
-        { level: 5, threshold: 3000, title: "WALDO Master", multiplier: 0.6 }
+        { level: 1, threshold: 0, title: "Waldo Watcher", multiplier: 1.0 },
+        { level: 2, threshold: 1000, title: "Waldo Scout", multiplier: 0.95 },
+        { level: 3, threshold: 3000, title: "Waldo Agent", multiplier: 0.9 },
+        { level: 4, threshold: 7000, title: "Waldo Commander", multiplier: 0.85 },
+        { level: 5, threshold: 15000, title: "Waldo Legend", multiplier: 0.8 },
+        { level: 6, threshold: 30000, title: "Waldo Master", multiplier: 0.7 },
+        { level: 7, threshold: 50000, title: "Waldo King", multiplier: 0.6 }
       ],
-      description: "5-level progression system with diminishing XP returns as users advance"
+      description: "7-level progression system with diminishing XP returns as users advance"
     });
 
   } catch (error) {
     console.error("❌ Error getting levels:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Failed to get level information" 
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get level information"
     });
   }
 });

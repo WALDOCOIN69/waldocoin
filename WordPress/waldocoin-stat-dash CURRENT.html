@@ -4786,21 +4786,25 @@
         }
       }
 
-      /** === LEVELS === **/
+      /** === LEVELS - 7-level system === **/
       const levelTitles = {
         1: "Waldo Watcher",
         2: "Waldo Scout",
         3: "Waldo Agent",
         4: "Waldo Commander",
-        5: "Waldo Legend"
+        5: "Waldo Legend",
+        6: "Waldo Master",
+        7: "Waldo King"
       };
-      const levelThresholds = [0, 1000, 3000, 7000, 15000];
+      const levelThresholds = [0, 1000, 3000, 7000, 15000, 30000, 50000];
       const levelImages = {
         1: "https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg",
         2: "https://waldocoin.live/wp-content/uploads/2025/03/1737843965414.jpeg",
         3: "https://waldocoin.live/wp-content/uploads/2025/03/F.A.F.O.png",
         4: "https://waldocoin.live/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-03-at-22.52.10.jpeg",
-        5: "https://waldocoin.live/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-03-at-22.53.38.jpeg"
+        5: "https://waldocoin.live/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-03-at-22.53.38.jpeg",
+        6: "level-6-master.png",
+        7: "level-7-king.png"
       };
       const rewardTiers = [
         { tier: 1, likes: 25, retweets: 0, base: 1 },
@@ -6406,8 +6410,8 @@
           if (nextLevelInfoEl) {
             const xpNeeded = calculateXPToNextLevel(xp);
             const nextLevel = currentLevel + 1;
-            if (currentLevel >= 5) {
-              nextLevelInfoEl.textContent = "Max Level Reached! 🎉";
+            if (currentLevel >= 7) {
+              nextLevelInfoEl.textContent = "Max Level Reached! 👑 Waldo King!";
             } else {
               nextLevelInfoEl.textContent = `${xpNeeded} XP to Level ${nextLevel}`;
             }

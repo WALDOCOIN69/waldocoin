@@ -29,14 +29,16 @@ export const TRANSACTION_STATES = {
 };
 
 /**
- * User levels and XP thresholds
+ * User levels and XP thresholds - 7 levels
  */
 export const USER_LEVELS = {
-  1: { name: 'Waldo Watcher', minXP: 0, maxXP: 249 },
-  2: { name: 'Shitposter', minXP: 250, maxXP: 849 },
-  3: { name: 'Meme Dealer', minXP: 850, maxXP: 1749 },
-  4: { name: 'OG Degen', minXP: 1750, maxXP: 2999 },
-  5: { name: 'Waldo Legend', minXP: 3000, maxXP: Infinity }
+  1: { name: 'Waldo Watcher', minXP: 0, maxXP: 999 },
+  2: { name: 'Waldo Scout', minXP: 1000, maxXP: 2999 },
+  3: { name: 'Waldo Agent', minXP: 3000, maxXP: 6999 },
+  4: { name: 'Waldo Commander', minXP: 7000, maxXP: 14999 },
+  5: { name: 'Waldo Legend', minXP: 15000, maxXP: 29999 },
+  6: { name: 'Waldo Master', minXP: 30000, maxXP: 49999 },
+  7: { name: 'Waldo King', minXP: 50000, maxXP: Infinity }
 };
 
 /**

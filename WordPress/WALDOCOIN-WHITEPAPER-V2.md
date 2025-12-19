@@ -75,13 +75,15 @@ To prevent spam and maintain legitimacy, users must hold at least 6 XRP worth of
 
 The XP Level system fuels engagement and rewards long-term participation through a merit-based creator economy. Users earn 1 XP per 25 likes, 1 XP per 15 retweets, with a maximum of 10 XP per meme. Battle wins award 100 XP, losses give 25 XP, and voting participation earns 2 XP.
 
-| Level | Title | XP Required | Benefits |
-|-------|-------|-------------|----------|
-| 1 | Waldo Watcher | 0 | Base rates |
-| 2 | Waldo Scout | 100 | Reduced fees |
-| 3 | Waldo Agent | 3,000 | Staking bonuses |
-| 4 | Waldo Commander | 7,000 | Governance rights |
-| 5 | Waldo Legend | 15,000+ | All premium features |
+| Level | Title | XP Required | Image | Benefits |
+|-------|-------|-------------|-------|----------|
+| 1 | Waldo Watcher | 0 | ![Level 1](level-1-watcher.png) | Base rates |
+| 2 | Waldo Scout | 1,000 | ![Level 2](level-2-scout.png) | Reduced fees |
+| 3 | Waldo Agent | 3,000 | ![Level 3](level-3-agent.png) | Staking bonuses |
+| 4 | Waldo Commander | 7,000 | ![Level 4](level-4-commander.png) | Governance rights |
+| 5 | Waldo Legend | 15,000 | ![Level 5](level-5-legend.png) | Premium features |
+| 6 | Waldo Master | 30,000 | ![Level 6](level-6-master.png) | Elite access |
+| 7 | Waldo King | 50,000 | ![Level 7](level-7-king.png) | Maximum benefits |
 
 ---
 
@@ -227,13 +229,15 @@ Hall of Fame recognition comes with permanent showcase on the Hall of Fame page,
 
 Memeology is the professional meme creation studio for the WALDO ecosystem. It features a template library with pre-built meme formats, custom background uploads, multiple text tools with various fonts and styles, a WALDO-themed sticker library, and direct posting to X/Twitter.
 
-| Level | Templates Available |
-|-------|---------------------|
-| Waldo Watcher | Basic (10 templates) |
-| Waldo Scout | Standard (25 templates) |
-| Waldo Agent | Premium (50 templates) |
-| Waldo Commander | Elite (100 templates) |
-| Waldo Legend | All templates + exclusives |
+| Level | Title | Templates Available |
+|-------|-------|---------------------|
+| 1 | Waldo Watcher | Basic (10 templates) |
+| 2 | Waldo Scout | Standard (25 templates) |
+| 3 | Waldo Agent | Premium (50 templates) |
+| 4 | Waldo Commander | Elite (100 templates) |
+| 5 | Waldo Legend | All standard templates |
+| 6 | Waldo Master | All templates + exclusives |
+| 7 | Waldo King | All templates + creator tools |
 
 ---
 
@@ -333,6 +337,79 @@ Marketplace: waldocoin.live/marketplace
 WALDOcoin represents the evolution of meme culture into a sustainable, rewarding ecosystem. By combining engagement-based rewards that value creativity, MNFTs that give memes real tradable value, staking for passive income generation, the Battle Arena for competitive entertainment, DAO governance for community ownership, and the Hall of Fame for legendary recognition, WALDOcoin creates a complete meme economy where participation is rewarded, creativity is valued, and community drives the future.
 
 **Where the Meme's the Limit.**
+
+---
+
+## Appendix A: XP Level System Details
+
+The 7-level progression system rewards long-term engagement and provides increasing benefits as users advance.
+
+### Level Progression Table
+
+| Level | Title | XP Required | XP to Next | Monthly Meme Limit | Image |
+|-------|-------|-------------|------------|-------------------|-------|
+| 1 | Waldo Watcher | 0 | 1,000 | 10 | ![](level-1-watcher.png) |
+| 2 | Waldo Scout | 1,000 | 2,000 | 25 | ![](level-2-scout.png) |
+| 3 | Waldo Agent | 3,000 | 4,000 | 50 | ![](level-3-agent.png) |
+| 4 | Waldo Commander | 7,000 | 8,000 | 100 | ![](level-4-commander.png) |
+| 5 | Waldo Legend | 15,000 | 15,000 | 200 | ![](level-5-legend.png) |
+| 6 | Waldo Master | 30,000 | 20,000 | 500 | ![](level-6-master.png) |
+| 7 | Waldo King | 50,000 | MAX | Unlimited | ![](level-7-king.png) |
+
+### Level Benefits Summary
+
+| Level | Fee Discount | Staking Bonus | Voting Power | Memeology Access |
+|-------|--------------|---------------|--------------|------------------|
+| 1 | 0% | 0% | 1.0× | Basic (10) |
+| 2 | 5% | +2% | 1.05× | Standard (25) |
+| 3 | 10% | +5% | 1.1× | Premium (50) |
+| 4 | 15% | +8% | 1.2× | Elite (100) |
+| 5 | 20% | +12% | 1.35× | All standard |
+| 6 | 25% | +18% | 1.5× | All + exclusives |
+| 7 | 30% | +25% | 2.0× | All + creator tools |
+
+### Level Requirements
+
+In addition to XP, levels 2-7 have optional activity requirements that can accelerate progression:
+
+| Level | XP Required | MNFTs Minted | Battles Won | Referrals |
+|-------|-------------|--------------|-------------|-----------|
+| 1 | 0 | 0 | 0 | 0 |
+| 2 | 1,000 | 1 | 0 | 1 |
+| 3 | 3,000 | 3 | 1 | 2 |
+| 4 | 7,000 | 7 | 3 | 3 |
+| 5 | 15,000 | 10 | 5 | 5 |
+| 6 | 30,000 | 15 | 10 | 8 |
+| 7 | 50,000 | 25 | 20 | 15 |
+
+---
+
+## Appendix B: MNFT Deposit Options
+
+| Slider Position | Deposit Amount | Total Cost (with 500 WLO fee) |
+|-----------------|----------------|-------------------------------|
+| 0 | No Deposit | 500 WLO |
+| 1 | 10,000 WLO | 10,500 WLO |
+| 2 | 20,000 WLO | 20,500 WLO |
+| 3 | 30,000 WLO | 30,500 WLO |
+| 4 | 40,000 WLO | 40,500 WLO |
+| 5 | 50,000 WLO | 50,500 WLO |
+| 6 | 60,000 WLO | 60,500 WLO |
+| 7 | 70,000 WLO | 70,500 WLO |
+| 8 | 80,000 WLO | 80,500 WLO |
+| 9 | 90,000 WLO | 90,500 WLO |
+| 10 | 100,000 WLO | 100,500 WLO |
+
+---
+
+## Appendix C: Battle Arena Payout Examples
+
+| Pool Size | Winner (65%) | Voters (30%) | Burn (2%) | Treasury (3%) |
+|-----------|--------------|--------------|-----------|---------------|
+| 200 WLO | 130 WLO | 60 WLO | 4 WLO | 6 WLO |
+| 500 WLO | 325 WLO | 150 WLO | 10 WLO | 15 WLO |
+| 1,000 WLO | 650 WLO | 300 WLO | 20 WLO | 30 WLO |
+| 5,000 WLO | 3,250 WLO | 1,500 WLO | 100 WLO | 150 WLO |
 
 ---
 

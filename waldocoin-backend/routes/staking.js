@@ -50,13 +50,15 @@ const STAKING_VAULT = process.env.WALDO_STAKING_VAULT || TREASURY_WALLET || DIST
 
 // ✅ DUAL STAKING SYSTEM CONFIGURATION
 
-// XP level thresholds (using xpManager.js structure)
+// XP level thresholds (using xpManager.js structure) - 7 levels
 const XP_LEVELS = {
   1: { min: 0, max: 999, title: "Waldo Watcher" },
   2: { min: 1000, max: 2999, title: "Waldo Scout" },
   3: { min: 3000, max: 6999, title: "Waldo Agent" },
   4: { min: 7000, max: 14999, title: "Waldo Commander" },
-  5: { min: 15000, max: Infinity, title: "Waldo Legend" }
+  5: { min: 15000, max: 29999, title: "Waldo Legend" },
+  6: { min: 30000, max: 49999, title: "Waldo Master" },
+  7: { min: 50000, max: Infinity, title: "Waldo King" }
 };
 
 // Long-term staking bonus rates by duration (encourage immediate staking with good 30-day rate)

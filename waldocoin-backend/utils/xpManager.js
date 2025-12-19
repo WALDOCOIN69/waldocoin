@@ -1,22 +1,26 @@
 // utils/xpManager.js - Consolidated XP Management System
 import { redis } from "../redisClient.js";
 
-// 🔢 XP thresholds for 5-level progression system
+// 🔢 XP thresholds for 7-level progression system
 const XP_LEVELS = [
-  { level: 1, threshold: 0, title: "Fresh Poster", multiplier: 1.0 },
-  { level: 2, threshold: 250, title: "Shitposter", multiplier: 0.9 },
-  { level: 3, threshold: 850, title: "Meme Dealer", multiplier: 0.8 },
-  { level: 4, threshold: 1750, title: "OG Degen", multiplier: 0.7 },
-  { level: 5, threshold: 3000, title: "WALDO Master", multiplier: 0.6 }
+  { level: 1, threshold: 0, title: "Waldo Watcher", multiplier: 1.0 },
+  { level: 2, threshold: 1000, title: "Waldo Scout", multiplier: 0.95 },
+  { level: 3, threshold: 3000, title: "Waldo Agent", multiplier: 0.9 },
+  { level: 4, threshold: 7000, title: "Waldo Commander", multiplier: 0.85 },
+  { level: 5, threshold: 15000, title: "Waldo Legend", multiplier: 0.8 },
+  { level: 6, threshold: 30000, title: "Waldo Master", multiplier: 0.7 },
+  { level: 7, threshold: 50000, title: "Waldo King", multiplier: 0.6 }
 ];
 
 // Legacy XP thresholds for backward compatibility
 const XP_THRESHOLDS = {
-  common: 0,
-  rare: 250,
-  epic: 850,
-  legendary: 1750,
-  master: 3000
+  watcher: 0,
+  scout: 1000,
+  agent: 3000,
+  commander: 7000,
+  legend: 15000,
+  master: 30000,
+  king: 50000
 };
 
 // 🧠 XP gain rules (from legacy xp.js):
