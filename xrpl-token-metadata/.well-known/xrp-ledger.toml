@@ -21,12 +21,12 @@ website = "https://waldocoin.live"
 whitepaper = "https://waldocoin.live/white-paper-waldocoin"
 
 # Token Economics
-total_supply = "976849999"
-circulating_supply = "976849999"
+total_supply = "876690000"
+circulating_supply = "876690000"
 max_supply = "1000000000"
 
 # Additional Metadata
-conditions = "WALDOcoin is a utility token for the WALDO ecosystem. Total supply is fixed at 976,849,999 tokens with no additional minting possible. Issuer account is blackholed."
+conditions = "WALDOcoin is a utility token for the WALDO ecosystem. Total supply is 876.69M tokens with no additional minting possible. Issuer account is blackholed."
 launch_date = "2024-12-01"
 category = "Meme Token"
 tags = ["meme", "social", "rewards", "xrpl", "nft"]
