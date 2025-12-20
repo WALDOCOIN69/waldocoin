@@ -12,14 +12,14 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 
 | Feature | Benefit | Tier |
 |---------|---------|------|
-| 💰 Revenue-Share Pool | Monthly WALDO airdrops | All |
+| 💰 Allocation Pool Access | Discretionary ecosystem allocations | Gold+ |
 | 🚀 XP Boost | +10-25% XP on memes | All |
 | 💳 Fee Discounts | 5-15% off claim fees | All |
 | 🎟️ Battle Access | Exclusive holder battles | All |
-| 📈 Staking Boost | +1-5% APY | All |
+| 📈 Staking Bonus | +1-5% bonus | All |
 | 🏆 Leaderboard | Top holder recognition | All |
 | 💎 DAO Voting | 1.1-1.5× voting power | All |
-| 🎁 Monthly Perks | Rotating benefits | All |
+| 🎁 Periodic Perks | Rotating benefits | All |
 | 👑 VIP Discord | Private channels | All |
 | 🌍 Physical Cards | IRL utility (future) | 5+ NFTs |
 
@@ -30,11 +30,11 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 ### Platinum (10+ NFTs)
 ```
 👑 Platinum Tier
-├─ 5× reward shares
+├─ 5× allocation priority
 ├─ +25% XP boost
 ├─ 15% claim fee discount
 ├─ 30% battle fee discount
-├─ +5% staking APY
+├─ +5% staking bonus
 ├─ 1.5× voting power
 ├─ 50% minting fee discount
 ├─ 3 free battles/month
@@ -45,11 +45,11 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 ### Gold (3-9 NFTs)
 ```
 🥇 Gold Tier
-├─ 2× reward shares
+├─ 2× allocation priority
 ├─ +15% XP boost
 ├─ 10% claim fee discount
 ├─ 20% battle fee discount
-├─ +3% staking APY
+├─ +3% staking bonus
 ├─ 1.25× voting power
 ├─ 30% minting fee discount
 ├─ Discounted battles
@@ -60,11 +60,11 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 ### Silver (1-2 NFTs)
 ```
 🥈 Silver Tier
-├─ 1× reward share
+├─ Basic utility access (no allocation pool)
 ├─ +10% XP boost
 ├─ 5% claim fee discount
 ├─ 10% battle fee discount
-├─ +1% staking APY
+├─ +1% staking bonus
 ├─ 1.1× voting power
 ├─ 15% minting fee discount
 └─ Silver Discord lounge
@@ -72,19 +72,20 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 
 ---
 
-## 💰 Revenue-Share Pool
+## 💰 Discretionary Ecosystem Allocation Pool
 
 ### How It Works
 
-1. **Funding Sources**
-	   - 10% of all platform fees (claim fees, staking rewards, battle fees)
-	   - 2% of secondary NFT sales (royalties)
-	   - 0.25% of all fees are burned as a deflationary mechanism
+**IMPORTANT:** Allocations are discretionary, variable, non-guaranteed, and do not represent revenue sharing, profit participation, or investment returns. NFT ownership does not create a partnership or financial claim.
 
-2. **Monthly Distribution**
-   - Snapshot taken on 1st of each month
-   - Pro-rata distribution based on tier shares
-   - Automatic WALDO airdrop to wallets
+1. **Pool Funding**
+   - Discretionary portion of platform fees (variable)
+   - 0.25% of all fees are burned as a deflationary mechanism
+
+2. **Periodic Distribution**
+   - Distribution based on platform conditions
+   - Pro-rata allocation based on tier priority
+   - Allocations may change or be discontinued at any time
 
 3. **Example**
    ```

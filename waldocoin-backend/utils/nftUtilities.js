@@ -3,14 +3,15 @@ import { redis } from "../redisClient.js";
 /**
  * 🖼️ WALDO NFT Utilities System
  *
- * Handles all NFT holder benefits, rewards, and utility features
+ * Handles all NFT holder utility features and ecosystem access
  *
- * 💰 REVENUE SHARE STRUCTURE (3+ NFTs only):
- * - 10% of all platform fees (claim fees, staking rewards, battle fees) → Revenue pool
+ * 💰 DISCRETIONARY ALLOCATION POOL (3+ NFTs only):
+ * - Variable portion of platform fees → Utility pool (discretionary, non-guaranteed)
  * - 0.25% of all fees → Burned
- * - 2% of secondary NFT sales → Revenue pool
+ * - Allocations are capped, variable, and may change at any time
  *
- * Monthly distribution on 1st of each month to holders with 3+ NFTs
+ * Periodic distribution to eligible holders (3+ NFTs) based on platform conditions
+ * NFT ownership does not guarantee allocations or constitute an investment
  */
 
 // ============================================================================
@@ -197,7 +198,7 @@ export async function distributeHolderRewards() {
       const nftCount = parseInt(await redis.get(key)) || 0;
 
       // ONLY include holders with 3+ NFTs (Gold, Platinum, KING tiers)
-      // Silver tier (1-2 NFTs) is excluded from revenue sharing
+      // Silver tier (1-2 NFTs) has basic utility but no allocation pool access
       if (nftCount >= 3) {
         const tier = await getHolderTier(wallet);
         holders.push({ wallet, nftCount, tier: tier.name, shares: tier.shares });

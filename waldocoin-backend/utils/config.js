@@ -12,7 +12,7 @@ const DEFAULTS = {
 	    instantFeeRate: 0.10,
 	    stakedFeeRate: 0.05,
 	    burnRate: 0.0025,      // 0.25% burned (changed from 2%)
-	    revenueShareRate: 0.10,   // 10% to NFT holder revenue share
+	    utilityPoolRate: 0.10,   // 10% to NFT holder utility pool (discretionary)
 	    useDefaults: true
 	  },
   nft: {

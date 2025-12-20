@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>WALDOcoin Staking Portal - Earn Rewards</title>
+  <title>WALDOcoin Staking Portal - Ecosystem Participation</title>
   <style>
     html,
     body {
@@ -259,7 +259,7 @@
 
   <div class="staking-header">
     <h1 class="staking-title">💰 WALDOCOIN Staking</h1>
-    <p class="staking-subtitle">Stake your WALDO tokens and earn passive rewards</p>
+    <p class="staking-subtitle">Stake your WALDO tokens for enhanced ecosystem participation</p>
 
 
 
@@ -286,7 +286,7 @@
       <!-- Staking Options -->
       <div class="staking-card">
         <h2 style="color: #25c2a0; margin-bottom: 20px;">💰 Long-Term Staking Options</h2>
-        <p style="color: #ccc; margin-bottom: 20px;">Choose your staking duration and earn competitive APY rewards</p>
+        <p style="color: #ccc; margin-bottom: 20px;">Choose your staking duration for variable allocation benefits (not guaranteed)</p>
 
         <div class="staking-grid">
           <div class="stake-option">
@@ -639,7 +639,7 @@
       const container = $('stakingPositions');
 
       if (positions.length === 0) {
-        container.innerHTML = '<p style="color: #ccc;">No active staking positions. Start staking to earn rewards!</p>';
+        container.innerHTML = '<p style="color: #ccc;">No active staking positions. Start staking to participate!</p>';
         return;
       }
 
@@ -754,6 +754,13 @@
     window.openStakeModal = openStakeModal;
     window.closeXummModal = closeXummModal;
   </script>
+
+  <!-- Legal Disclaimer Footer -->
+  <div style="background: #1a1a1a; padding: 20px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #333; margin-top: 40px;">
+    <p style="max-width: 800px; margin: 0 auto; line-height: 1.6;">
+      <strong>Important Disclosure:</strong> Staking allocations are variable, discretionary, and non-guaranteed. APY rates shown are estimates and may change based on platform conditions. Staking does not represent an investment contract or guarantee of returns. Cryptocurrency involves significant risk. Past performance is not indicative of future results.
+    </p>
+  </div>
 </body>
 
 </html>

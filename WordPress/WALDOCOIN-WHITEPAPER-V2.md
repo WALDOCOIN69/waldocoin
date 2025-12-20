@@ -10,6 +10,8 @@ WALDOCoin is a community-driven meme token without guarantees of financial retur
 
 WALDOcoin ("WLO") is a decentralized utility token operating on the XRP Ledger (XRPL). The total supply of 1,000,000,000 WLO has been fully minted and permanently locked through issuer blackholing at address rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY. No additional WLO tokens can ever be created.
 
+**Important Disclosure:** WALDO MNFTs are digital collectibles with ecosystem utility. Any WALDO token allocations associated with NFT ownership are discretionary, variable, and non-guaranteed. These allocations do not represent revenue sharing, profit participation, dividends, or investment returns. NFT ownership does not create a partnership, ownership interest, or financial claim against WALDO or its operators. Allocations may increase, decrease, or be discontinued at any time.
+
 In short: Don't bet your life savings, don't sue us, and most importantly, have fun.
 
 ---
@@ -18,7 +20,7 @@ In short: Don't bet your life savings, don't sue us, and most importantly, have 
 
 The meme economy is the digital frontier of community engagement, humor, and viral culture. WALDOcoin is designed to supercharge this economy by rewarding participation, creativity, and competition.
 
-Through WALDOcoin, users can earn rewards for creating viral content, mint their memes as MNFTs (Meme NFTs) with real value, stake tokens for passive income, compete in the Meme Battle Arena for prizes, vote on ecosystem decisions through the DAO, and achieve legendary status in the Hall of Fame. The Memeology template library provides professional creation tools for all skill levels.
+Through WALDOcoin, users can earn allocations for creating viral content, mint their memes as MNFTs (Meme NFTs) with ecosystem utility, stake tokens for enhanced participation benefits, compete in the Meme Battle Arena for prizes, vote on ecosystem decisions through the DAO, and achieve legendary status in the Hall of Fame. The Memeology template library provides professional creation tools for all skill levels.
 
 Leveraging the XRPL's speed and efficiency, WALDOcoin ensures that users interact seamlessly with near-zero fees and near-instant transactions. With the WALDO issuer wallet blackholed, the WALDO supply is fully transparent, immutable, and secured forever.
 
@@ -28,7 +30,7 @@ Leveraging the XRPL's speed and efficiency, WALDOcoin ensures that users interac
 
 WALDOcoin envisions a decentralized world where meme creators, community members, and innovators are rewarded for their participation and creativity. The ecosystem fosters a fun, engaging, and merit-based community, backed by immutable blockchain technology.
 
-Participants can earn WALDO by creating and sharing memes, mint their best work as MNFTs with built-in base value, trade these assets on the WALDO Marketplace, stake tokens for passive income with NFT-boosted APY, vote on ecosystem proposals through the DAO, compete in Meme Battles for prizes and glory, and achieve legendary status in the Hall of Fame.
+Participants can earn WALDO allocations by creating and sharing memes, mint their best work as MNFTs with ecosystem utility, trade these assets on the WALDO Marketplace, stake tokens for enhanced participation benefits, vote on ecosystem proposals through the DAO, compete in Meme Battles for prizes and glory, and achieve legendary status in the Hall of Fame.
 
 ---
 
@@ -60,7 +62,7 @@ Users earn WALDOcoin based on their engagement metrics on social media. Every 25
 | 4 | 500+ | 50+ | 25.00 WLO |
 | 5 | 1000+ | 100+ | 50.00 WLO |
 
-When claiming rewards, users choose between instant payout with a 10% fee or staking with only a 5% fee plus a 15% bonus after one month. All fees contribute to the ecosystem: 10% of fees go to the NFT holder revenue pool, 0.25% of fees are burned, and the remainder goes to the treasury.
+When claiming allocations, users choose between instant payout with a 10% fee or staking with only a 5% fee plus a 15% bonus after one month. All fees contribute to the ecosystem: 10% of fees go to the NFT holder utility pool, 0.25% of fees are burned, and the remainder goes to the treasury.
 
 | Method | Fee | Bonus | Example (50 WLO earned) |
 |--------|-----|-------|--------------------------|
@@ -125,9 +127,9 @@ To list an MNFT for sale, users navigate to the My MNFTs section, select their M
 
 ---
 
-## 9. MNFT Holder Benefits
+## 9. MNFT Holder Utility Access
 
-Holding MNFTs unlocks exclusive ecosystem benefits through the tier system:
+Holding MNFTs unlocks exclusive ecosystem utility features through the tier system:
 
 | Tier | MNFTs Required | Icon |
 |------|----------------|------|
@@ -137,17 +139,17 @@ Holding MNFTs unlocks exclusive ecosystem benefits through the tier system:
 | Platinum | 10+ | 💎 |
 | KING | Special KING NFT | 👑 |
 
-| Benefit | Silver | Gold | Platinum | KING |
-|---------|--------|------|----------|------|
-| Revenue Shares | — | 2× | 5× | 10× |
+| Utility Feature | Silver | Gold | Platinum | KING |
+|-----------------|--------|------|----------|------|
+| Allocation Pool Access | — | 2× | 5× | 10× |
 | XP Boost | +10% | +15% | +25% | +50% |
-| Staking APY Boost | +1% | +3% | +5% | +15% |
+| Staking Bonus | +1% | +3% | +5% | +15% |
 | DAO Voting Power | 1.1× | 1.25× | 1.5× | 3× |
 | Claim Fee Discount | 5% | 10% | 15% | 25% |
 | Minting Fee Discount | 15% | 30% | 50% | — |
 | Battle Fee Discount | 10% | 20% | 30% | — |
 
-Note that Silver tier holders are excluded from monthly revenue sharing. Users need 3+ MNFTs (Gold tier) to receive that benefit.
+Silver tier holders have basic utility access. Gold tier and above (3+ MNFTs) unlock eligibility for the discretionary ecosystem allocation pool. Allocations are variable, non-guaranteed, and may change at any time based on platform conditions.
 
 ---
 
@@ -161,7 +163,7 @@ The WALDOcoin Meme Battle Arena is a 24-hour showdown where creativity meets com
 | Winning Voters | 45% of prize pool + losing side bets (split equally) |
 | House Fee | 2% of voting pool |
 
-House fee distribution: 10% to NFT holder revenue pool, 0.25% burned, remainder to treasury.
+House fee distribution: 10% to NFT holder utility pool, 0.25% burned, remainder to treasury.
 
 | Outcome | XP Earned |
 |---------|-----------|
@@ -175,7 +177,7 @@ Live leaderboards display the top users by total XP, most battle wins, top memes
 
 ## 11. Staking Portal
 
-The WALDO Staking Portal offers flexible staking options with MNFT-boosted returns:
+The WALDO Staking Portal offers flexible staking options with MNFT-boosted participation benefits. Staking allocations are variable, discretionary, and not guaranteed:
 
 | Duration | Base APY | Lock Period |
 |----------|----------|-------------|
@@ -258,21 +260,21 @@ Wallet security is maintained through XRP holding requirements, wallet verificat
 
 ---
 
-## 16. Revenue & Sustainability
+## 16. Ecosystem Sustainability
 
-The ecosystem generates revenue through multiple streams:
+The ecosystem maintains sustainability through platform usage fees:
 
 | Source | Fee | Distribution |
 |--------|-----|--------------|
-| Meme Claims (Instant) | 10% | 10% to NFT holders, 0.25% burn, remainder treasury |
-| Meme Claims (Staked) | 5% | 10% to NFT holders, 0.25% burn, remainder treasury |
+| Meme Claims (Instant) | 10% | 10% to utility pool, 0.25% burn, remainder treasury |
+| Meme Claims (Staked) | 5% | 10% to utility pool, 0.25% burn, remainder treasury |
 | MNFT Minting | 500 WLO | Treasury |
 | Marketplace Sales | 5% | 2% burn, 3% treasury |
 | Battle Entry | 150K/75K WLO | Prize pool |
 | Battle Voting | 30K WLO | Prize pool + 2% house fee |
-| Staking Fees | 2% | 10% to NFT holders, 0.25% burn, remainder treasury |
+| Staking Fees | 2% | 10% to utility pool, 0.25% burn, remainder treasury |
 
-The tokenomics include several deflationary mechanisms: 0.25% burn on platform fees, burns from battle house fees, and periodic buyback programs. NFT holders (Gold tier and above with 3+ MNFTs) receive 10% of all platform fees distributed monthly.
+The tokenomics include several deflationary mechanisms: 0.25% burn on platform fees, burns from battle house fees, and periodic buyback programs. A discretionary ecosystem allocation pool may be made available to eligible NFT holders (Gold tier and above with 3+ MNFTs) based on platform conditions. Allocations are variable, capped, and may change or be discontinued at any time.
 
 Treasury funds are used for ecosystem development, bug bounties, community grants, liquidity provisions, and marketing initiatives.
 
@@ -337,7 +339,7 @@ Marketplace: waldocoin.live/marketplace
 
 ## 21. Conclusion
 
-WALDOcoin represents the evolution of meme culture into a sustainable, rewarding ecosystem. By combining engagement-based rewards that value creativity, MNFTs that give memes real tradable value, staking for passive income generation, the Battle Arena for competitive entertainment, DAO governance for community ownership, and the Hall of Fame for legendary recognition, WALDOcoin creates a complete meme economy where participation is rewarded, creativity is valued, and community drives the future.
+WALDOcoin represents the evolution of meme culture into a sustainable, engaging ecosystem. By combining engagement-based allocations that value creativity, MNFTs that give memes ecosystem utility, staking for enhanced participation benefits, the Battle Arena for competitive entertainment, DAO governance for community ownership, and the Hall of Fame for legendary recognition, WALDOcoin creates a complete meme economy where participation is valued, creativity is recognized, and community drives the future.
 
 **Where the Meme's the Limit.**
 

@@ -41,7 +41,7 @@
 
 ```
 User has 5 NFTs → Gold Tier
-- Earns 2× shares in monthly reward pool
+- 2× priority in ecosystem allocation pool
 - Gets +15% XP boost on all memes
 - Pays 10% less on claim fees
 - Gets 1.25× voting power in DAO
@@ -49,42 +49,39 @@ User has 5 NFTs → Gold Tier
 
 ---
 
-## 💰 Revenue-Share Pool (Holder Yield)
+## 💰 Discretionary Ecosystem Allocation Pool
 
-### Monthly Reward Distribution
+### Variable Allocation Distribution
 
 **Pool Funding:**
-- 10% of all platform fees (claim fees, staking rewards, battle fees)
-- 2% of secondary NFT sales (royalties)
+- Discretionary portion of platform fees (variable, non-guaranteed)
 - 0.25% of all fees are burned as a deflationary mechanism
 
 **Distribution Method:**
-- Snapshot taken on 1st of each month
-- Pro-rata distribution based on tier shares
-- Automatic WALDO airdrop to wallets
+- Periodic distribution based on platform conditions
+- Pro-rata allocation based on tier priority
+- Allocations are variable, capped, and may change at any time
 
-### Example Distribution
+**IMPORTANT DISCLAIMER:**
+NFT ownership does not guarantee allocations. Allocations are discretionary, variable, and do not represent revenue sharing, profit participation, or investment returns. NFT ownership does not create a partnership or financial claim against WALDO.
+
+### Example Allocation (Illustrative Only)
 
 ```
-Total Pool: 10,000 WALDO
-Total Shares: 100
+Pool Size: Variable (not guaranteed)
+Total Priority: 100
 
-Platinum Holder (5 NFTs) = 5 shares
-  Reward = (5/100) × 10,000 = 500 WALDO
-
-Gold Holder (3 NFTs) = 2 shares
-  Reward = (2/100) × 10,000 = 200 WALDO
-
-Silver Holder (1 NFT) = 1 share
-  Reward = (1/100) × 10,000 = 100 WALDO
+Platinum Holder (10+ NFTs) = 5× priority
+Gold Holder (3-9 NFTs) = 2× priority
+Silver Holder (1-2 NFTs) = Basic utility only (no allocation pool access)
 ```
 
-### Claiming Rewards
+### Receiving Allocations
 
 ```javascript
-// Automatic - no action needed
-// Rewards appear in wallet pending balance
-// Can be claimed with other WALDO earnings
+// Requires active participation
+// Allocations are discretionary and not guaranteed
+// May be adjusted based on platform conditions
 ```
 
 ---

@@ -3581,18 +3581,18 @@
 
     <!-- Instructions Card moved up -->
     <div class="instruction-card">
-      <h2>🚀 How to Earn WALDO</h2>
+      <h2>🚀 How to Get WALDO Allocations</h2>
       <ul>
         <li>🔗 Link your Twitter handle to your WALDO wallet below</li>
         <li>🖼 Post a meme on Twitter with the hashtag <strong>#WaldoMeme</strong></li>
-        <li>📊 Watch your meme earn XP and rewards</li>
-        <li>🏆 Claim or stake your rewards on the dashboard</li>
+        <li>📊 Watch your meme gain XP and unlock allocations</li>
+        <li>🏆 Claim or stake your allocations on the dashboard</li>
         <li>🔥 Mint your meme as an MNFT when it hits 60 XP</li>
       </ul>
     </div>
     <!-- Notification bar -->
     <div id="waldoNotification">
-      <span id="waldoMessage">👋 Welcome back! Ready to earn some WALDO?</span>
+      <span id="waldoMessage">👋 Welcome back! Ready to participate?</span>
       <button type="button" onclick="dismissWaldoNotification()" class="dismiss-btn">Dismiss</button>
     </div>
     <div class="container">
@@ -3601,7 +3601,7 @@
         <h1 class="dashboard-title" style="color: #25c2a0; text-align: center; margin-bottom: 10px;">💰 WALDOcoin
           Dashboard</h1>
         <p class="dashboard-subtitle" style="text-align: center; color: #ccc; margin-bottom: 20px;">Track your memes,
-          earn rewards, and battle for the leaderboard.</p>
+          claim allocations, and battle for the leaderboard.</p>
 
         <!-- Page Navigation Buttons -->
         <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
@@ -4078,7 +4078,7 @@
           </div>
 
           <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 15px 0;">
-            <h3 style="color: #25c2a0; margin: 0 0 15px 0;">📊 Example: Your Meme Earns 10 WALDO</h3>
+            <h3 style="color: #25c2a0; margin: 0 0 15px 0;">📊 Example: Your Meme Unlocks 10 WALDO</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 15px;">
               <div style="padding: 15px; background: #2a2a2a; border-radius: 6px;">
                 <div style="color: #ff6b6b; font-weight: bold; margin-bottom: 10px; text-align: center;">❌ Get It Now
@@ -6012,7 +6012,7 @@
             status.className = "xp-multiplier-status active";
           } else {
             card.className = "xp-multiplier-card inactive";
-            desc.textContent = "Stake WALDO tokens to earn XP bonuses";
+            desc.textContent = "Stake WALDO tokens for XP bonuses";
             status.textContent = "No Active Bonus";
             status.className = "xp-multiplier-status inactive";
           }
@@ -6066,7 +6066,7 @@
             status.className = "xp-multiplier-status active";
           } else {
             card.className = "xp-multiplier-card inactive";
-            desc.textContent = "Win meme battles to earn XP bonuses";
+            desc.textContent = "Win meme battles for XP bonuses";
             status.textContent = "No Wins Yet";
             status.className = "xp-multiplier-status inactive";
           }
@@ -8793,7 +8793,7 @@
               <span>🎉</span>
               <div>
                 <div style="font-weight: 600;">Referral Registered!</div>
-                <div style="font-size: 12px; opacity: 0.9;">You and your referrer will both earn rewards!</div>
+                <div style="font-size: 12px; opacity: 0.9;">You and your referrer will both receive allocations!</div>
               </div>
             </div>
           `;
@@ -8842,6 +8842,13 @@
         <p>Waiting for wallet connection...</p>
       </div>
     </div>
+  </div>
+
+  <!-- Legal Disclaimer Footer -->
+  <div style="background: #1a1a1a; padding: 20px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #333; margin-top: 40px;">
+    <p style="max-width: 800px; margin: 0 auto; line-height: 1.6;">
+      <strong>Important Disclosure:</strong> WALDO MNFTs are digital collectibles with ecosystem utility. Any WALDO token allocations associated with NFT ownership are discretionary, variable, and non-guaranteed. These allocations do not represent revenue sharing, profit participation, dividends, or investment returns. NFT ownership does not create a partnership, ownership interest, or financial claim against WALDO or its operators. Cryptocurrency involves significant risk. Past performance is not indicative of future results.
+    </p>
   </div>
 
 </body>

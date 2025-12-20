@@ -6,22 +6,24 @@
 
 ## 📊 System Overview
 
+**DISCLAIMER:** NFT utility features are ecosystem access tools. Allocations are discretionary, variable, non-guaranteed, and do not represent revenue sharing or investment returns. NFT ownership does not create a partnership or financial claim.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    WALDO NFT UTILITIES                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  1️⃣  HOLDER TIER SYSTEM                                    │
-│      ├─ Platinum (10+ NFTs) → 5× shares                    │
-│      ├─ Gold (3-9 NFTs) → 2× shares                        │
-│      ├─ Silver (1-2 NFTs) → 1× share                       │
-│      └─ Non-Holder → 0× shares                             │
+│      ├─ Platinum (10+ NFTs) → 5× allocation priority       │
+│      ├─ Gold (3-9 NFTs) → 2× allocation priority           │
+│      ├─ Silver (1-2 NFTs) → Basic utility only             │
+│      └─ Non-Holder → 0× priority                           │
 │                                                             │
-	│  2️⃣  REVENUE-SHARE POOL                                    │
-	│      ├─ 10% of all platform fees (claims, staking, battles)│
-	│      ├─ 2% of secondary NFT sales (royalties)              │
-	│      ├─ Monthly distribution                               │
-	│      └─ Pro-rata rewards                                   │
+│  2️⃣  DISCRETIONARY ALLOCATION POOL                         │
+│      ├─ Variable portion of platform fees                  │
+│      ├─ Non-guaranteed, may change at any time             │
+│      ├─ Periodic distribution (not fixed schedule)         │
+│      └─ Pro-rata based on tier priority                    │
 │                                                             │
 │  3️⃣  XP BOOST SYSTEM                                       │
 │      ├─ Platinum: +25% XP                                  │
@@ -42,11 +44,11 @@
 │      ├─ Silver: 10% off entry                              │
 │      └─ Higher prize pools                                 │
 │                                                             │
-│  6️⃣  STAKING BOOST                                         │
-│      ├─ Platinum: +5% APY                                  │
-│      ├─ Gold: +3% APY                                      │
-│      ├─ Silver: +1% APY                                    │
-│      └─ Compound rewards                                   │
+│  6️⃣  STAKING BONUS                                         │
+│      ├─ Platinum: +5% bonus                                │
+│      ├─ Gold: +3% bonus                                    │
+│      ├─ Silver: +1% bonus                                  │
+│      └─ Enhanced participation                             │
 │                                                             │
 │  7️⃣  LEADERBOARD & RECOGNITION                            │
 │      ├─ Top 10 holders displayed                           │

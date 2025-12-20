@@ -51,16 +51,18 @@
 
 ## 📊 **FEE DISTRIBUTION (ALL FEES)**
 
-### **Revenue Share & Burn:**
+### **Utility Pool & Burn:**
 | Destination | Percentage | Eligible Holders |
 |-------------|------------|------------------|
-| **NFT Holder Revenue Pool** | **10%** | 3+ NFTs only (Gold, Platinum, KING) |
+| **NFT Holder Utility Pool** | **Variable** | 3+ NFTs only (Gold, Platinum, KING) |
 | **Burned** | **0.25%** | Deflationary mechanism |
-| **Platform** | **89.75%** | Remaining |
+| **Platform** | **Remainder** | Treasury |
+
+**DISCLAIMER:** Utility pool allocations are discretionary, variable, non-guaranteed, and do not represent revenue sharing or investment returns.
 
 **Applies to:**
-- ✅ Claim fees (5-10% of reward)
-- ✅ Staking rewards
+- ✅ Claim fees (5-10% of allocation)
+- ✅ Staking allocations
 - ✅ Battle fees
 - ✅ All platform fees
 
@@ -70,7 +72,7 @@
 
 | Action | Fee | Destination |
 |--------|-----|-------------|
-| **Secondary NFT Sale** | **2%** royalty | NFT Holder Revenue Pool (3+ NFTs only) |
+| **Secondary NFT Sale** | **2%** royalty | Utility Pool (3+ NFTs only) |
 
 ---
 
@@ -78,8 +80,8 @@
 
 | Method | Fee Rate | Distribution |
 |--------|----------|--------------|
-| **Instant Claim** | **10%** | 10% → Revenue, 0.25% → Burn, 89.75% → Platform |
-| **Staked Claim** (30 days) | **5%** | 10% → Revenue, 0.25% → Burn, 89.75% → Platform |
+| **Instant Claim** | **10%** | Utility Pool, 0.25% → Burn, Remainder → Platform |
+| **Staked Claim** (30 days) | **5%** | Utility Pool, 0.25% → Burn, Remainder → Platform |
 
 ---
 
@@ -113,24 +115,24 @@
 
 ---
 
-## 💎 **NFT HOLDER REVENUE SHARE**
+## 💎 **NFT HOLDER UTILITY ACCESS**
+
+**IMPORTANT DISCLAIMER:** Allocations are discretionary, variable, non-guaranteed, and do not represent revenue sharing, profit participation, or investment returns. NFT ownership does not create a partnership or financial claim against WALDO.
 
 ### **Eligibility:**
-- ❌ **Silver (1-2 NFTs)**: NO revenue share
-- ✅ **Gold (3-9 NFTs)**: 2× shares
-- ✅ **Platinum (10+ NFTs)**: 5× shares
-- ✅ **KING NFT**: 10× shares
+- ❌ **Silver (1-2 NFTs)**: Basic utility only (no allocation pool access)
+- ✅ **Gold (3-9 NFTs)**: 2× allocation priority
+- ✅ **Platinum (10+ NFTs)**: 5× allocation priority
+- ✅ **KING NFT**: 10× allocation priority
 
-### **Revenue Pool Sources:**
-1. **10%** of all claim fees
-2. **10%** of all staking rewards
-3. **10%** of all battle fees
-4. **2%** of secondary NFT sales
+### **Utility Pool Sources:**
+- Discretionary portion of platform fees (variable, capped)
+- Amounts may change based on platform conditions
 
 ### **Distribution:**
-- **Frequency:** Monthly (1st of each month at 00:00 UTC)
-- **Method:** Pro-rata based on tier shares
-- **Minimum Pool:** 100 WALDO to distribute
+- **Frequency:** Periodic (based on platform conditions)
+- **Method:** Pro-rata based on tier priority
+- **Guaranteed:** NO - allocations are discretionary
 
 ---
 

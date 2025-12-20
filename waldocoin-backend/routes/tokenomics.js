@@ -7,28 +7,29 @@ const router = express.Router();
 console.log("🧩 Loaded: routes/tokenomics.js - v2.0 (Telegram conflicts fixed)");
 
 // Fee structure constants (whitepaper compliant)
+// NOTE: Utility pool allocations are discretionary, variable, and non-guaranteed
 const FEE_STRUCTURE = {
   battle: {
     start: 150000,     // 150K WLO (challenger fee)
     accept: 75000,     // 75K WLO (acceptor fee)
     vote: 30000,       // 30K WLO (voting fee)
     burnRate: 0.0025,  // 0.25% burned
-    revenueShareRate: 0.10 // 10% to NFT holder revenue share
+    utilityPoolRate: 0.10 // Discretionary utility pool allocation
   },
   claim: {
     instantFeeRate: 0.10,  // 10%
     stakedFeeRate: 0.05,   // 5%
     burnRate: 0.0025,      // 0.25% of fee burned
-    revenueShareRate: 0.10 // 10% of fee to revenue share
+    utilityPoolRate: 0.10 // Discretionary utility pool allocation
   },
   staking: {
     longTermFee: 0.02,     // 2% fee for long-term staking
-    burnRate: 0.0025,      // 0.25% of rewards burned
-    revenueShareRate: 0.10 // 10% of rewards to revenue share
+    burnRate: 0.0025,      // 0.25% of allocations burned
+    utilityPoolRate: 0.10 // Discretionary utility pool allocation
   },
   nft: {
     mintCost: 500,         // 500 WLO
-    secondarySalesRate: 0.02 // 2% of secondary sales to revenue share
+    secondarySalesRate: 0.02 // 2% of secondary sales to utility pool
   },
   dao: {
     votingRequirement: 50000  // 50K WLO
