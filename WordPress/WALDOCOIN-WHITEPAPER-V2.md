@@ -60,14 +60,14 @@ Users earn WALDOcoin based on their engagement metrics on social media. Every 25
 | 4 | 500+ | 50+ | 25.00 WLO |
 | 5 | 1000+ | 100+ | 50.00 WLO |
 
-When claiming rewards, users choose between instant payout with a 10% fee or staking with only a 5% fee plus a 15% bonus after one month. All fees contribute to the ecosystem, with 2% burned and the remainder going to the treasury.
+When claiming rewards, users choose between instant payout with a 10% fee or staking with only a 5% fee plus a 15% bonus after one month. All fees contribute to the ecosystem: 10% of fees go to the NFT holder revenue pool, 0.25% of fees are burned, and the remainder goes to the treasury.
 
 | Method | Fee | Bonus | Example (50 WLO earned) |
 |--------|-----|-------|--------------------------|
 | Instant | 10% | None | Receive 45 WLO immediately |
 | Staking | 5% | +15% | Receive 54.63 WLO after 1 month |
 
-To prevent spam and maintain legitimacy, users must hold at least 6 XRP worth of WALDOcoin in their XRPL wallet to qualify for payouts.
+To prevent spam and maintain legitimacy, users must hold at least 3 XRP worth of WALDOcoin in their XRPL wallet to qualify for payouts.
 
 ---
 
@@ -154,14 +154,15 @@ Note that Silver tier holders are excluded from monthly revenue sharing. Users n
 
 ## 10. Meme Battle Arena
 
-The WALDOcoin Meme Battle Arena is a 24-hour showdown where creativity meets community. To initiate a battle, a user submits their meme along with a 100 WALDO entry fee. An opponent can accept the challenge by submitting their own meme with a 50 WALDO fee. The community then votes by staking 5 WALDO per vote, and after 24 hours, the meme with the most votes wins.
+The WALDOcoin Meme Battle Arena is a 24-hour showdown where creativity meets community. To initiate a battle, a user submits their meme along with a 150,000 WLO entry fee. An opponent can accept the challenge by submitting their own meme with a 75,000 WLO fee. The community then votes by staking 30,000 WLO per vote, and after 24 hours, the meme with the most votes wins.
 
 | Recipient | Share |
 |-----------|-------|
-| Winner | 65% of pool |
-| Winning Voters | 30% of pool (split equally) |
-| Token Burn | 2% of pool |
-| Treasury | 3% of pool |
+| Winner | 55% of prize pool |
+| Winning Voters | 45% of prize pool + losing side bets (split equally) |
+| House Fee | 2% of voting pool |
+
+House fee distribution: 10% to NFT holder revenue pool, 0.25% burned, remainder to treasury.
 
 | Outcome | XP Earned |
 |---------|-----------|
@@ -177,10 +178,12 @@ Live leaderboards display the top users by total XP, most battle wins, top memes
 
 The WALDO Staking Portal offers flexible staking options with MNFT-boosted returns:
 
-| Tier | Duration | Base APY | Lock Period |
-|------|----------|----------|-------------|
-| Short-Term | 7-30 days | 8-12% | Flexible |
-| Long-Term | 90-365 days | 15-25% | Fixed |
+| Duration | Base APY | Lock Period |
+|----------|----------|-------------|
+| 30 days | 12% | Fixed |
+| 90 days | 18% | Fixed |
+| 180 days | 25% | Fixed |
+| 365 days | 45% | Fixed |
 
 MNFT holders receive additional APY boosts on top of the base rates:
 
@@ -191,17 +194,17 @@ MNFT holders receive additional APY boosts on top of the base rates:
 | Platinum (10+ MNFTs) | +5% |
 | KING | +15% |
 
-The staking portal includes auto-compound rewards, real-time APY display, staking history tracking, and full XUMM wallet integration. Early withdrawal from long-term staking incurs a penalty.
+Long-term staking requires a minimum of 1,000 WLO and includes a 2% staking fee. Early withdrawal incurs a 15% penalty. The staking portal includes real-time APY display, staking history tracking, and full XUMM wallet integration.
 
 ---
 
 ## 12. DAO Governance
 
-WALDOcoin is transitioning toward a fully decentralized governance model where the community makes key decisions about the ecosystem's future. Users need a minimum WALDO balance to vote, with XP level and MNFT holdings providing additional voting power.
+WALDOcoin is transitioning toward a fully decentralized governance model where the community makes key decisions about the ecosystem's future. Users need a minimum of 50,000 WLO to vote (1 vote per 50,000 WLO held). MNFT holdings provide additional voting power multipliers:
 
 | Factor | Voting Multiplier |
 |--------|-------------------|
-| Base (per WLO) | 1× |
+| Base (per 50K WLO) | 1× |
 | MNFT Silver | 1.1× |
 | MNFT Gold | 1.25× |
 | MNFT Platinum | 1.5× |
@@ -262,14 +265,15 @@ The ecosystem generates revenue through multiple streams:
 
 | Source | Fee | Distribution |
 |--------|-----|--------------|
-| Meme Claims (Instant) | 10% | 2% burn, 8% treasury |
-| Meme Claims (Staked) | 5% | 2% burn, 3% treasury |
+| Meme Claims (Instant) | 10% | 10% to NFT holders, 0.25% burn, remainder treasury |
+| Meme Claims (Staked) | 5% | 10% to NFT holders, 0.25% burn, remainder treasury |
 | MNFT Minting | 500 WLO | Treasury |
 | Marketplace Sales | 5% | 2% burn, 3% treasury |
-| Battle Entry | 100/50 WLO | Prize pool + fees |
-| Battle Voting | 5 WLO | Prize pool |
+| Battle Entry | 150K/75K WLO | Prize pool |
+| Battle Voting | 30K WLO | Prize pool + 2% house fee |
+| Staking Fees | 2% | 10% to NFT holders, 0.25% burn, remainder treasury |
 
-The tokenomics include several deflationary mechanisms: a 2% burn on all transactions, burns from MNFT minting, burns from battle fees, and periodic buyback programs.
+The tokenomics include several deflationary mechanisms: 0.25% burn on platform fees, burns from battle house fees, and periodic buyback programs. NFT holders (Gold tier and above with 3+ MNFTs) receive 10% of all platform fees distributed monthly.
 
 Treasury funds are used for ecosystem development, bug bounties, community grants, liquidity provisions, and marketing initiatives.
 
