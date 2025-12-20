@@ -7,12 +7,12 @@ modified = 2025-12-19T00:00:00Z
 [[CURRENCIES]]
 code = "WLO"
 issuer = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
+network = "main"
 display_decimals = 6
 name = "WALDOcoin"
 desc = "The first meme-to-earn cryptocurrency on XRPL. Earn WALDO tokens by creating viral memes with #WaldoMeme hashtag."
 icon = "https://waldocoin.live/wp-content/uploads/waldo-icon-156.png"
 image = "https://waldocoin.live/wp-content/uploads/waldo-token-logo.png"
-domain = "waldocoin.live"
 
 # Social Media Links
 twitter = "https://x.com/W_A_L_D_O_coin"
