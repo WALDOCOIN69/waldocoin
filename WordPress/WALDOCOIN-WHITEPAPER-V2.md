@@ -102,13 +102,12 @@ To mint an MNFT, users need a minimum of 60 XP and pay a 500 WLO minting fee. Th
 
 MNFTs are classified by rarity based on engagement metrics:
 
-| Rarity | Engagement Score | XP Range |
-|--------|------------------|----------|
-| 🟤 Common | 0-99 | 60-99 |
-| 🟢 Uncommon | 100-499 | 100-199 |
-| 🔵 Rare | 500-999 | 200-499 |
-| 🟣 Epic | 1,000-4,999 | 500-999 |
-| 🟡 Legendary | 5,000+ | 1,000+ |
+| Rarity | Engagement Score | Multiplier |
+|--------|------------------|------------|
+| 🟤 Common | 0-999 | 1.0× |
+| 🔵 Rare | 1,000-4,999 | 2.0× |
+| 🟣 Epic | 5,000-9,999 | 3.0× |
+| 🟡 Legendary | 10,000+ | 5.0× |
 
 ---
 

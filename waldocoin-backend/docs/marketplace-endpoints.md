@@ -282,9 +282,8 @@ Get detailed information about a specific listing.
 Based on engagement metrics:
 - **Legendary**: Score ≥ 10,000 (5x multiplier)
 - **Epic**: Score ≥ 5,000 (3x multiplier)
-- **Rare**: Score ≥ 2,000 (2x multiplier)
-- **Uncommon**: Score ≥ 500 (1.5x multiplier)
-- **Common**: Score < 500 (1x multiplier)
+- **Rare**: Score ≥ 1,000 (2x multiplier)
+- **Common**: Score < 1,000 (1x multiplier)
 
 Score = (likes × 0.6) + (retweets × 1.4) + (xp × 10) × (1 + age_bonus)
 

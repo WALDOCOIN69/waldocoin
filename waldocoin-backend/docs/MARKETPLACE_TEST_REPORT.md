@@ -153,9 +153,8 @@ totalScore = engagementScore * (1 + ageBonus)
 
 Legendary:  >= 10000 (5.0x multiplier)
 Epic:       >= 5000  (3.0x multiplier)
-Rare:       >= 2000  (2.0x multiplier)
-Uncommon:   >= 500   (1.5x multiplier)
-Common:     < 500    (1.0x multiplier)
+Rare:       >= 1000  (2.0x multiplier)
+Common:     < 1000   (1.0x multiplier)
 ```
 
 ---

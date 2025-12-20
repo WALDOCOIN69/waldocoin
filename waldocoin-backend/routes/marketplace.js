@@ -14,8 +14,7 @@ function calculateNFTRarity(likes, retweets, xp, age) {
 
   if (totalScore >= 10000) return { rarity: 'Legendary', multiplier: 5.0, color: '#FFD700' };
   if (totalScore >= 5000) return { rarity: 'Epic', multiplier: 3.0, color: '#9C27B0' };
-  if (totalScore >= 2000) return { rarity: 'Rare', multiplier: 2.0, color: '#2196F3' };
-  if (totalScore >= 500) return { rarity: 'Uncommon', multiplier: 1.5, color: '#4CAF50' };
+  if (totalScore >= 1000) return { rarity: 'Rare', multiplier: 2.0, color: '#2196F3' };
   return { rarity: 'Common', multiplier: 1.0, color: '#9E9E9E' };
 }
 
