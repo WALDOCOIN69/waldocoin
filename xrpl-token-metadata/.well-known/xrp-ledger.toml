@@ -2,7 +2,7 @@
 # This file should be hosted at: https://waldocoin.live/.well-known/xrp-ledger.toml
 
 [METADATA]
-modified = 2025-12-19T00:00:00Z
+modified = 2025-12-20T00:00:00Z
 
 [[CURRENCIES]]
 code = "WLO"
@@ -11,6 +11,7 @@ network = "main"
 display_decimals = 6
 name = "WALDOcoin"
 desc = "The first meme-to-earn cryptocurrency on XRPL. Earn WALDO tokens by creating viral memes with #WaldoMeme hashtag."
+conditions = "WALDOcoin is a utility token for the WALDO ecosystem. Total supply is 876.69M tokens with no additional minting possible. Issuer account is blackholed."
 icon = "https://waldocoin.live/wp-content/uploads/waldo-icon-156.png"
 image = "https://waldocoin.live/wp-content/uploads/waldo-token-logo.png"
 
@@ -19,17 +20,71 @@ twitter = "https://x.com/W_A_L_D_O_coin"
 telegram = "https://t.me/WALDOCOINxrp"
 website = "https://waldocoin.live"
 whitepaper = "https://waldocoin.live/white-paper-waldocoin"
+documentation = "https://waldocoin.live/ecosystem"
 
 # Token Economics
 total_supply = "876690000"
 circulating_supply = "876690000"
 max_supply = "1000000000"
+supply_notes = "Total supply is 876,690,000 WLO. Original max supply was 1B, with 123,310,000 tokens burned/removed."
+
+# Use Cases
+use_cases = [
+    "Meme rewards and incentives",
+    "Staking for enhanced rewards",
+    "NFT minting and trading",
+    "Governance participation",
+    "Battle system entry fees",
+    "Premium features access"
+]
+
+# Technical Details
+blockchain = "XRPL"
+token_standard = "XRPL Native Token"
+contract_verified = true
+
+# Compliance
+kyc_required = false
+accredited_investors_only = false
+restricted_countries = []
+
+# Risk Warnings
+risks = [
+    "Cryptocurrency investments carry inherent risks",
+    "Token value may fluctuate significantly",
+    "Meme token with speculative nature",
+    "Regulatory changes may affect token utility"
+]
+
+# Contact Information
+support_email = "support@waldocoin.live"
+business_email = "business@waldocoin.live"
 
 # Additional Metadata
-conditions = "WALDOcoin is a utility token for the WALDO ecosystem. Total supply is 876.69M tokens with no additional minting possible. Issuer account is blackholed."
 launch_date = "2025-05-01"
 category = "Meme Token"
 tags = ["meme", "social", "rewards", "xrpl", "nft"]
+language = "en"
+region = "Global"
+
+# Token Utility Features
+features = [
+    "Meme-to-earn rewards system",
+    "Multi-tier staking with APY up to 45%",
+    "NFT minting for viral memes",
+    "Battle system for competitive rewards",
+    "Level-based progression system",
+    "Cross-platform social integration",
+    "DAO governance voting"
+]
+
+# Roadmap Highlights
+roadmap = [
+    "Q1 2025: Token launch and meme-to-earn system",
+    "Q2 2025: NFT minting and marketplace",
+    "Q3 2025: Battle arena and staking portal",
+    "Q4 2025: DAO governance and mobile app"
+]
 
 [[ACCOUNTS]]
 address = "rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY"
