@@ -115,24 +115,28 @@
 
 ---
 
-## 💎 **NFT HOLDER UTILITY ACCESS**
+## 🎰 **MONTHLY LOTTERY SYSTEM (NOT REVENUE SHARING)**
 
-**IMPORTANT DISCLAIMER:** Allocations are discretionary, variable, non-guaranteed, and do not represent revenue sharing, profit participation, or investment returns. NFT ownership does not create a partnership or financial claim against WALDO.
+**LEGAL NOTICE:** This is a prize drawing/giveaway, NOT revenue sharing or profit distribution. No purchase necessary beyond NFT ownership. NFT ownership = automatic lottery entry. This does not constitute an investment or security.
 
-### **Eligibility:**
-- ❌ **Silver (1-2 NFTs)**: Basic utility only (no allocation pool access)
-- ✅ **Gold (3-9 NFTs)**: 2× allocation priority
-- ✅ **Platinum (10+ NFTs)**: 5× allocation priority
-- ✅ **KING NFT**: 10× allocation priority
+### **Monthly Drawing:**
+- **5 random winners** selected from all NFT holders
+- **KING holders** are **GUARANTEED winners** (split 50% of pool)
+- Lottery winners split remaining 50% equally
 
-### **Utility Pool Sources:**
-- Discretionary portion of platform fees (variable, capped)
-- Amounts may change based on platform conditions
+### **Lottery Tickets:**
+| Tier | Tickets Per NFT | Example |
+|------|-----------------|---------|
+| 🥈 **Silver (1-2 NFTs)** | 1 ticket | 2 NFTs = 2 tickets |
+| 🥇 **Gold (3-9 NFTs)** | 2 tickets | 5 NFTs = 10 tickets |
+| 💎 **Platinum (10+ NFTs)** | 3 tickets | 12 NFTs = 36 tickets |
+| 👑 **KING NFT** | N/A | **AUTO-WINNER** |
 
-### **Distribution:**
-- **Frequency:** Periodic (based on platform conditions)
-- **Method:** Pro-rata based on tier priority
-- **Guaranteed:** NO - allocations are discretionary
+### **Prize Pool:**
+- Variable based on platform activity (non-guaranteed)
+- 0.25% of all fees burned as deflationary mechanism
+- Pool size varies month to month
+- Past winners may win again
 
 ---
 

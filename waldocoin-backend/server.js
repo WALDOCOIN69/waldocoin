@@ -98,6 +98,7 @@ import adminNewWalletRoute from "./routes/admin/newWallet.js";
 import adminPriceRoute from "./routes/admin/price.js";
 import adminSetRegularKeyRoute from "./routes/admin/setRegularKey.js";
 import adminKingNFTRoute from "./routes/admin/kingNFT.js";
+import adminLotteryRoute from "./routes/admin/lottery.js";
 import { requireAdmin } from "./utils/adminAuth.js";
 
 
@@ -274,6 +275,7 @@ const startServer = async () => {
   app.use("/api/admin/price", adminPriceRoute);
   app.use("/api/admin/set-regular-key", adminSetRegularKeyRoute);
   app.use("/api/admin/king-nft", adminKingNFTRoute);
+  app.use("/api/admin/lottery", adminLotteryRoute);
   app.use("/api/admin", adminClearStakingRoute);
 
   // Admin fixes for missing endpoints

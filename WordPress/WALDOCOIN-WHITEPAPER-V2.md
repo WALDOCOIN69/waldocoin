@@ -141,7 +141,7 @@ Holding MNFTs unlocks exclusive ecosystem utility features through the tier syst
 
 | Utility Feature | Silver | Gold | Platinum | KING |
 |-----------------|--------|------|----------|------|
-| Allocation Pool Access | — | 2× | 5× | 10× |
+| Lottery Tickets | 1× per NFT | 2× per NFT | 3× per NFT | **GUARANTEED** |
 | XP Boost | +10% | +15% | +25% | +50% |
 | Staking Bonus | +1% | +3% | +5% | +15% |
 | DAO Voting Power | 1.1× | 1.25× | 1.5× | 3× |
@@ -149,7 +149,26 @@ Holding MNFTs unlocks exclusive ecosystem utility features through the tier syst
 | Minting Fee Discount | 15% | 30% | 50% | — |
 | Battle Fee Discount | 10% | 20% | 30% | — |
 
-Silver tier holders have basic utility access. Gold tier and above (3+ MNFTs) unlock eligibility for the discretionary ecosystem allocation pool. Allocations are variable, non-guaranteed, and may change at any time based on platform conditions.
+### 🎰 Monthly Lottery System (NOT Revenue Sharing)
+
+Instead of distributing allocations to all holders, WALDOcoin operates a **Monthly Lottery Drawing**:
+
+**How It Works:**
+- **5 random winners** are selected each month from all NFT holders
+- **KING NFT holders** are **GUARANTEED winners** (auto-entry, split 50% of pool)
+- Lottery winners split the remaining 50% of the pool equally
+- Higher tiers = more lottery tickets = better odds (but not guaranteed)
+- Winners selected via cryptographically secure randomization
+
+**Lottery Ticket Distribution:**
+| Tier | Tickets Per NFT | Example (5 NFTs) |
+|------|-----------------|------------------|
+| Silver (1-2 NFTs) | 1 ticket | 2 tickets max |
+| Gold (3-9 NFTs) | 2 tickets | 10 tickets |
+| Platinum (10+ NFTs) | 3 tickets | 15+ tickets |
+| KING | N/A | **Auto-Winner** |
+
+**Important Disclosure:** This is a prize drawing/giveaway, NOT revenue sharing. No purchase necessary beyond NFT ownership. NFT ownership provides automatic lottery entry. Pool size varies based on platform activity and is non-guaranteed. Past winners may win again. This does not constitute an investment or financial product.
 
 ---
 

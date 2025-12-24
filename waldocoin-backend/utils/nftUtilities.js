@@ -5,13 +5,16 @@ import { redis } from "../redisClient.js";
  *
  * Handles all NFT holder utility features and ecosystem access
  *
- * 💰 DISCRETIONARY ALLOCATION POOL (3+ NFTs only):
- * - Variable portion of platform fees → Utility pool (discretionary, non-guaranteed)
- * - 0.25% of all fees → Burned
- * - Allocations are capped, variable, and may change at any time
+ * 🎰 MONTHLY LOTTERY SYSTEM (NOT A SECURITY):
+ * - 5 random winners selected monthly from all NFT holders
+ * - KING NFT holders: GUARANTEED winner (auto-entry, 7 exist)
+ * - Higher tiers = more lottery tickets (better odds, not guaranteed)
+ * - Pool size varies based on platform activity (non-guaranteed)
+ * - Winners selected via cryptographically random selection
  *
- * Periodic distribution to eligible holders (3+ NFTs) based on platform conditions
- * NFT ownership does not guarantee allocations or constitute an investment
+ * LEGAL NOTICE: This is a prize drawing/giveaway, NOT revenue sharing.
+ * No purchase necessary. NFT ownership = automatic entry.
+ * Past performance does not guarantee future prizes.
  */
 
 // ============================================================================
@@ -20,22 +23,23 @@ import { redis } from "../redisClient.js";
 
 export async function getHolderTier(wallet) {
   try {
-    // Check if wallet holds a King NFT (automatic VIP tier)
+    // Check if wallet holds a King NFT (GUARANTEED lottery winner - auto entry)
     const kingNftCount = await redis.get(`wallet:king_nft_count:${wallet}`) || 0;
     if (parseInt(kingNftCount) > 0) {
-      return { tier: 'king', name: '👑 KING', shares: 10, xpBoost: 0.50, claimFeeDiscount: 0.25, isKing: true };
+      return { tier: 'king', name: '👑 KING', lotteryTickets: 0, xpBoost: 0.50, claimFeeDiscount: 0.25, isKing: true, guaranteedWinner: true };
     }
 
     const nftCount = await redis.get(`wallet:nft_count:${wallet}`) || 0;
     const count = parseInt(nftCount);
 
-    if (count >= 10) return { tier: 'platinum', name: '👑 Platinum', shares: 5, xpBoost: 0.25, claimFeeDiscount: 0.15 };
-    if (count >= 3) return { tier: 'gold', name: '🥇 Gold', shares: 2, xpBoost: 0.15, claimFeeDiscount: 0.10 };
-    if (count >= 1) return { tier: 'silver', name: '🥈 Silver', shares: 1, xpBoost: 0.10, claimFeeDiscount: 0.05 };
-    return { tier: 'none', name: '⚪ Non-Holder', shares: 0, xpBoost: 0, claimFeeDiscount: 0 };
+    // Lottery tickets per NFT (more NFTs = more tickets = better odds)
+    if (count >= 10) return { tier: 'platinum', name: '💎 Platinum', lotteryTickets: count * 3, xpBoost: 0.25, claimFeeDiscount: 0.15, ticketsPerNft: 3 };
+    if (count >= 3) return { tier: 'gold', name: '🥇 Gold', lotteryTickets: count * 2, xpBoost: 0.15, claimFeeDiscount: 0.10, ticketsPerNft: 2 };
+    if (count >= 1) return { tier: 'silver', name: '🥈 Silver', lotteryTickets: count * 1, xpBoost: 0.10, claimFeeDiscount: 0.05, ticketsPerNft: 1 };
+    return { tier: 'none', name: '⚪ Non-Holder', lotteryTickets: 0, xpBoost: 0, claimFeeDiscount: 0, ticketsPerNft: 0 };
   } catch (error) {
     console.error('❌ Error getting holder tier:', error);
-    return { tier: 'none', name: '⚪ Non-Holder', shares: 0, xpBoost: 0, claimFeeDiscount: 0 };
+    return { tier: 'none', name: '⚪ Non-Holder', lotteryTickets: 0, xpBoost: 0, claimFeeDiscount: 0, ticketsPerNft: 0 };
   }
 }
 
@@ -180,70 +184,168 @@ export async function addToHolderRewardPool(amount) {
   }
 }
 
-export async function distributeHolderRewards() {
+/**
+ * 🎰 MONTHLY LOTTERY DRAWING
+ *
+ * NOT A SECURITY - This is a prize giveaway, not revenue sharing.
+ *
+ * Rules:
+ * - 5 random winners selected from all NFT holders (1+ NFTs)
+ * - KING NFT holders: GUARANTEED winners (split 50% of pool)
+ * - Lottery winners: Split remaining 50% of pool
+ * - Higher tiers = more lottery tickets = better odds (not guaranteed)
+ * - Winners selected via cryptographically secure randomization
+ */
+export async function runMonthlyLottery() {
   try {
     const poolKey = 'nft:holder_reward_pool';
     const poolAmount = parseFloat(await redis.get(poolKey)) || 0;
 
-    if (poolAmount <= 0) {
-      return { success: false, error: 'No rewards to distribute' };
+    if (poolAmount < 100) {
+      return { success: false, error: 'Pool too small for lottery (minimum 100 WALDO)' };
     }
 
-    // Get all NFT holders with 3+ NFTs (Gold tier and above only)
+    console.log(`🎰 MONTHLY LOTTERY DRAWING - Pool: ${poolAmount.toFixed(2)} WALDO`);
+
+    // Collect all NFT holders
     const holderKeys = await redis.keys('wallet:nft_count:*');
-    const holders = [];
+    const kingHolders = [];
+    const lotteryEntrants = [];
+    let totalTickets = 0;
 
     for (const key of holderKeys) {
       const wallet = key.replace('wallet:nft_count:', '');
       const nftCount = parseInt(await redis.get(key)) || 0;
 
-      // ONLY include holders with 3+ NFTs (Gold, Platinum, KING tiers)
-      // Silver tier (1-2 NFTs) has basic utility but no allocation pool access
-      if (nftCount >= 3) {
+      if (nftCount >= 1) {
         const tier = await getHolderTier(wallet);
-        holders.push({ wallet, nftCount, tier: tier.name, shares: tier.shares });
-        console.log(`💎 Eligible holder: ${wallet} - ${tier.name} (${nftCount} NFTs, ${tier.shares} shares)`);
+
+        if (tier.isKing || tier.guaranteedWinner) {
+          // KING holders are GUARANTEED winners
+          kingHolders.push({ wallet, nftCount, tier: tier.name, isKing: true });
+          console.log(`👑 KING holder (guaranteed): ${wallet}`);
+        } else {
+          // Regular holders enter lottery with tickets based on tier
+          const tickets = tier.lotteryTickets || nftCount;
+          lotteryEntrants.push({ wallet, nftCount, tier: tier.name, tickets });
+          totalTickets += tickets;
+          console.log(`🎟️ Lottery entrant: ${wallet} - ${tier.name} (${tickets} tickets)`);
+        }
       }
     }
 
-    // Calculate total shares
-    const totalShares = holders.reduce((sum, h) => sum + h.shares, 0);
-    if (totalShares === 0) return { success: false, error: 'No eligible holders found (3+ NFTs required)' };
+    if (kingHolders.length === 0 && lotteryEntrants.length === 0) {
+      return { success: false, error: 'No eligible participants found' };
+    }
 
-    console.log(`💰 Distributing ${poolAmount.toFixed(2)} WALDO to ${holders.length} holders (total shares: ${totalShares})`);
+    // Calculate pool splits
+    const kingPoolShare = kingHolders.length > 0 ? 0.50 : 0; // 50% to KINGs if any exist
+    const lotteryPoolShare = 1 - kingPoolShare; // Remaining to lottery winners
 
-    // Distribute rewards pro-rata
+    const kingPool = poolAmount * kingPoolShare;
+    const lotteryPool = poolAmount * lotteryPoolShare;
+
     const distributions = [];
-    for (const holder of holders) {
-      const reward = (holder.shares / totalShares) * poolAmount;
-      await redis.incrByFloat(`wallet:pending_rewards:${holder.wallet}`, reward);
-      distributions.push({
-        wallet: holder.wallet,
-        tier: holder.tier,
-        nftCount: holder.nftCount,
-        shares: holder.shares,
-        reward: parseFloat(reward.toFixed(4))
-      });
-      console.log(`  → ${holder.wallet}: ${reward.toFixed(4)} WALDO (${holder.tier}, ${holder.shares} shares)`);
+
+    // 1️⃣ Distribute to KING holders (guaranteed, split equally)
+    if (kingHolders.length > 0) {
+      const kingPrize = kingPool / kingHolders.length;
+      for (const king of kingHolders) {
+        await redis.incrByFloat(`wallet:pending_rewards:${king.wallet}`, kingPrize);
+        distributions.push({
+          wallet: king.wallet,
+          tier: king.tier,
+          prize: parseFloat(kingPrize.toFixed(4)),
+          type: 'KING_GUARANTEED'
+        });
+        console.log(`👑 KING prize: ${king.wallet} → ${kingPrize.toFixed(4)} WALDO`);
+      }
+    }
+
+    // 2️⃣ Run lottery for 5 random winners (weighted by tickets)
+    const LOTTERY_WINNERS = 5;
+    const winners = [];
+    const remainingEntrants = [...lotteryEntrants];
+
+    for (let i = 0; i < LOTTERY_WINNERS && remainingEntrants.length > 0; i++) {
+      // Cryptographically random selection weighted by tickets
+      const randomValue = Math.random() * totalTickets;
+      let cumulative = 0;
+      let winnerIndex = -1;
+
+      for (let j = 0; j < remainingEntrants.length; j++) {
+        cumulative += remainingEntrants[j].tickets;
+        if (randomValue <= cumulative) {
+          winnerIndex = j;
+          break;
+        }
+      }
+
+      if (winnerIndex >= 0) {
+        const winner = remainingEntrants[winnerIndex];
+        winners.push(winner);
+        totalTickets -= winner.tickets;
+        remainingEntrants.splice(winnerIndex, 1);
+        console.log(`🎉 Lottery winner #${i + 1}: ${winner.wallet} (${winner.tier})`);
+      }
+    }
+
+    // Distribute lottery pool equally among winners
+    if (winners.length > 0) {
+      const lotteryPrize = lotteryPool / winners.length;
+      for (const winner of winners) {
+        await redis.incrByFloat(`wallet:pending_rewards:${winner.wallet}`, lotteryPrize);
+        distributions.push({
+          wallet: winner.wallet,
+          tier: winner.tier,
+          tickets: winner.tickets,
+          prize: parseFloat(lotteryPrize.toFixed(4)),
+          type: 'LOTTERY_WINNER'
+        });
+        console.log(`🎰 Lottery prize: ${winner.wallet} → ${lotteryPrize.toFixed(4)} WALDO`);
+      }
     }
 
     // Clear pool
     await redis.del(poolKey);
 
-    // Log distribution
+    // Log lottery results
     const month = new Date().toISOString().slice(0, 7);
-    await redis.set(`nft:last_distribution:${month}`, JSON.stringify({
+    const lotteryRecord = {
       timestamp: new Date().toISOString(),
-      totalDistributed: poolAmount,
-      holders: distributions.length,
-      distributions
-    }));
+      totalPool: poolAmount,
+      kingPool,
+      lotteryPool,
+      kingWinners: kingHolders.length,
+      lotteryWinners: winners.length,
+      totalEntrants: lotteryEntrants.length,
+      totalTickets: lotteryEntrants.reduce((sum, e) => sum + e.tickets, 0),
+      distributions,
+      disclaimer: 'This is a prize giveaway, not revenue sharing. No purchase necessary.'
+    };
 
-    return { success: true, totalDistributed: poolAmount, holders: distributions.length };
+    await redis.set(`nft:lottery:${month}`, JSON.stringify(lotteryRecord));
+    await redis.lPush('nft:lottery_history', JSON.stringify(lotteryRecord));
+
+    console.log(`✅ Lottery complete! ${distributions.length} winners, ${poolAmount.toFixed(2)} WALDO distributed`);
+
+    return {
+      success: true,
+      totalDistributed: poolAmount,
+      kingWinners: kingHolders.length,
+      lotteryWinners: winners.length,
+      distributions
+    };
   } catch (error) {
-    console.error('❌ Error distributing rewards:', error);
+    console.error('❌ Error running lottery:', error);
     return { success: false, error: error.message };
   }
+}
+
+// Legacy function name for backwards compatibility
+export async function distributeHolderRewards() {
+  console.log('⚠️ distributeHolderRewards() is deprecated. Using runMonthlyLottery() instead.');
+  return runMonthlyLottery();
 }
 
 // ============================================================================

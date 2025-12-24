@@ -882,6 +882,7 @@
         <button type="button" class="nav-btn" onclick="showSection('dao')">🗳️ DAO Override</button>
         <button type="button" class="nav-btn" onclick="showSection('volumebot')">🤖 Trading Bot</button>
         <button type="button" class="nav-btn" onclick="showSection('memeology')">🎨 Memeology Templates</button>
+        <button type="button" class="nav-btn" onclick="showSection('lottery')">🎰 NFT Lottery</button>
         <button type="button" class="nav-btn" onclick="showSection('system')">⚙️ Emergency Controls</button>
         <button type="button" class="nav-btn" onclick="runDiagnostics()" style="background: #f39c12;">🔍
           Diagnostics</button>
@@ -2507,6 +2508,92 @@
               <button type="button" class="btn btn-danger" onclick="emergencyStop()">🛑 SYSTEM EMERGENCY STOP</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- NFT Lottery Section -->
+      <div id="lottery" class="admin-section">
+        <div class="alert alert-info margin-bottom-20">
+          🎰 <strong>MONTHLY NFT HOLDER LOTTERY</strong><br>
+          NOT revenue sharing - this is a prize giveaway. 5 random winners + all KING holders (guaranteed).
+        </div>
+
+        <div class="grid-2">
+          <!-- Lottery Status -->
+          <div class="admin-card">
+            <div class="card-title">📊 Current Pool Status</div>
+            <div id="lotteryPoolStatus" class="loading">
+              <div class="spinner"></div> Loading lottery status...
+            </div>
+          </div>
+
+          <!-- Run Lottery -->
+          <div class="admin-card">
+            <div class="card-title">🎲 Run Monthly Lottery</div>
+            <div class="alert alert-warning alert-small margin-bottom-15">
+              ⚠️ This will randomly select 5 winners from NFT holders + all KING holders get guaranteed prizes.
+            </div>
+            <button type="button" class="btn btn-success" onclick="runLottery()" style="width: 100%; padding: 15px; font-size: 18px;">
+              🎰 RUN MONTHLY LOTTERY
+            </button>
+            <div id="lotteryRunResult" style="margin-top: 15px;"></div>
+          </div>
+        </div>
+
+        <!-- Lottery Rules -->
+        <div class="admin-card margin-top-20">
+          <div class="card-title">📋 Lottery Rules (from Whitepaper)</div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 15px;">
+            <div style="background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px;">🥈</div>
+              <div style="color: #c0c0c0; font-weight: bold;">Silver (1-2 NFTs)</div>
+              <div style="color: #25c2a0; font-size: 18px; margin-top: 5px;">1 ticket/NFT</div>
+            </div>
+            <div style="background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px;">🥇</div>
+              <div style="color: #ffd700; font-weight: bold;">Gold (3-9 NFTs)</div>
+              <div style="color: #25c2a0; font-size: 18px; margin-top: 5px;">2 tickets/NFT</div>
+            </div>
+            <div style="background: #2a2a2a; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px;">💎</div>
+              <div style="color: #b9f2ff; font-weight: bold;">Platinum (10+)</div>
+              <div style="color: #25c2a0; font-size: 18px; margin-top: 5px;">3 tickets/NFT</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #ffd700, #ff6b00); padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px;">👑</div>
+              <div style="color: #000; font-weight: bold;">KING NFT</div>
+              <div style="color: #000; font-size: 18px; margin-top: 5px;">✅ GUARANTEED</div>
+            </div>
+          </div>
+          <div style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border-left: 4px solid #ff3df7;">
+            <strong>Pool Split:</strong> 50% to KING holders (guaranteed) | 50% to 5 random lottery winners
+          </div>
+        </div>
+
+        <!-- Eligible Holders -->
+        <div class="admin-card margin-top-20">
+          <div class="card-title">👥 Eligible NFT Holders</div>
+          <div id="lotteryHoldersList" class="loading">
+            <div class="spinner"></div> Loading holders...
+          </div>
+        </div>
+
+        <!-- Lottery History -->
+        <div class="admin-card margin-top-20">
+          <div class="card-title">📜 Lottery History</div>
+          <div id="lotteryHistory" class="loading">
+            <div class="spinner"></div> Loading history...
+          </div>
+        </div>
+
+        <!-- Add to Pool -->
+        <div class="admin-card margin-top-20">
+          <div class="card-title">💰 Add to Lottery Pool</div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="number" id="addPoolAmount" class="form-control" placeholder="Amount (WALDO)" style="flex: 1;">
+            <button type="button" class="btn btn-primary" onclick="addToLotteryPool()">Add to Pool</button>
+          </div>
+          <div id="addPoolResult" style="margin-top: 10px;"></div>
         </div>
       </div>
 
@@ -4377,6 +4464,9 @@
           case 'memeology':
             await loadCustomTemplates();
             await loadPendingSubmissions();
+            break;
+          case 'lottery':
+            await loadLotteryStatus();
             break;
         }
       } catch (error) {
@@ -9095,6 +9185,169 @@ This action cannot be undone. Continue?`;
       } catch (error) {
         console.error('Review error:', error);
         showAlert(`Network error ${actionText}ing template`, 'error');
+      }
+    }
+
+    // ========================================
+    // 🎰 LOTTERY FUNCTIONS
+    // ========================================
+
+    async function loadLotteryStatus() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/lottery/status`, {
+          headers: { 'x-admin-key': adminKey }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          // Pool Status
+          document.getElementById('lotteryPoolStatus').innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+              <div style="font-size: 48px; color: #25c2a0; font-weight: bold;">${Number(data.currentPool).toLocaleString()} WALDO</div>
+              <div style="color: #888; margin-top: 5px;">Current Prize Pool</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+              <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; color: #ffd700;">👑 ${data.kingHolders.count}</div>
+                <div style="color: #888;">KING Holders (Guaranteed)</div>
+              </div>
+              <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; color: #ff3df7;">${data.regularHolders.count}</div>
+                <div style="color: #888;">Lottery Entrants</div>
+              </div>
+            </div>
+          `;
+
+          // Holders List
+          let holdersHtml = '<div style="max-height: 300px; overflow-y: auto;">';
+
+          if (data.kingHolders.list.length > 0) {
+            holdersHtml += '<div style="margin-bottom: 15px;"><strong style="color: #ffd700;">👑 KING Holders (Guaranteed Winners):</strong></div>';
+            holdersHtml += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">';
+            data.kingHolders.list.forEach(h => {
+              holdersHtml += `<span style="background: linear-gradient(135deg, #ffd700, #ff6b00); color: #000; padding: 5px 12px; border-radius: 20px; font-size: 12px;">${h.wallet}</span>`;
+            });
+            holdersHtml += '</div>';
+          }
+
+          holdersHtml += `<div style="margin-bottom: 15px;"><strong style="color: #ff3df7;">🎟️ Lottery Entrants (${data.regularHolders.totalTickets} total tickets):</strong></div>`;
+          holdersHtml += '<table style="width: 100%; font-size: 12px;"><thead><tr><th>Wallet</th><th>Tier</th><th>NFTs</th><th>Tickets</th></tr></thead><tbody>';
+          data.regularHolders.list.forEach(h => {
+            holdersHtml += `<tr><td>${h.wallet}</td><td>${h.tier}</td><td>${h.nftCount}</td><td style="color: #25c2a0;">${h.tickets}</td></tr>`;
+          });
+          holdersHtml += '</tbody></table></div>';
+          document.getElementById('lotteryHoldersList').innerHTML = holdersHtml;
+
+          // History
+          let historyHtml = '';
+          if (data.recentHistory && data.recentHistory.length > 0) {
+            historyHtml = '<div style="max-height: 300px; overflow-y: auto;">';
+            data.recentHistory.forEach(lottery => {
+              historyHtml += `
+                <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <strong>${new Date(lottery.timestamp).toLocaleDateString()}</strong>
+                    <span style="color: #25c2a0;">${Number(lottery.totalPool).toLocaleString()} WALDO</span>
+                  </div>
+                  <div style="font-size: 12px;">
+                    👑 ${lottery.kingWinners} KING winners | 🎰 ${lottery.lotteryWinners} lottery winners
+                  </div>
+                </div>
+              `;
+            });
+            historyHtml += '</div>';
+          } else {
+            historyHtml = '<div style="text-align: center; color: #666; padding: 20px;">No lottery history yet</div>';
+          }
+          document.getElementById('lotteryHistory').innerHTML = historyHtml;
+
+        } else {
+          document.getElementById('lotteryPoolStatus').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        console.error('Lottery status error:', error);
+        document.getElementById('lotteryPoolStatus').innerHTML = `<div class="alert alert-error">Failed to load: ${error.message}</div>`;
+      }
+    }
+
+    async function runLottery() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) { showAlert('Admin key required', 'error'); return; }
+
+      if (!confirm('🎰 Run the monthly lottery?\n\nThis will:\n- Select 5 random winners from NFT holders\n- Award all KING holders (guaranteed)\n- Distribute the current prize pool\n\nContinue?')) {
+        return;
+      }
+
+      document.getElementById('lotteryRunResult').innerHTML = '<div class="spinner"></div> Running lottery...';
+
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/lottery/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          let resultHtml = `
+            <div class="alert alert-success">
+              🎉 <strong>Lottery Complete!</strong><br>
+              Total Distributed: ${Number(data.totalDistributed).toLocaleString()} WALDO<br>
+              👑 KING Winners: ${data.kingWinners} | 🎰 Lottery Winners: ${data.lotteryWinners}
+            </div>
+            <div style="margin-top: 15px;"><strong>Winners:</strong></div>
+            <div style="max-height: 200px; overflow-y: auto;">
+          `;
+          data.distributions.forEach(d => {
+            const icon = d.type === 'KING_GUARANTEED' ? '👑' : '🎰';
+            resultHtml += `<div style="background: #1a1a1a; padding: 10px; margin: 5px 0; border-radius: 5px;">
+              ${icon} ${d.wallet.slice(0,8)}...${d.wallet.slice(-4)} (${d.tier}) → <span style="color: #25c2a0;">${Number(d.prize).toLocaleString()} WALDO</span>
+            </div>`;
+          });
+          resultHtml += '</div>';
+          document.getElementById('lotteryRunResult').innerHTML = resultHtml;
+          showAlert('🎰 Lottery completed successfully!', 'success');
+          loadLotteryStatus();
+        } else {
+          document.getElementById('lotteryRunResult').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+          showAlert(data.error, 'error');
+        }
+      } catch (error) {
+        console.error('Lottery run error:', error);
+        document.getElementById('lotteryRunResult').innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+        showAlert('Failed to run lottery: ' + error.message, 'error');
+      }
+    }
+
+    async function addToLotteryPool() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) { showAlert('Admin key required', 'error'); return; }
+
+      const amount = parseFloat(document.getElementById('addPoolAmount').value);
+      if (!amount || amount <= 0) {
+        showAlert('Enter a valid amount', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/lottery/add-to-pool`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+          body: JSON.stringify({ amount })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('addPoolResult').innerHTML = `<div class="alert alert-success">Added ${amount} WALDO. New total: ${Number(data.newPoolTotal).toLocaleString()}</div>`;
+          document.getElementById('addPoolAmount').value = '';
+          loadLotteryStatus();
+        } else {
+          document.getElementById('addPoolResult').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        document.getElementById('addPoolResult').innerHTML = `<div class="alert alert-error">${error.message}</div>`;
       }
     }
 

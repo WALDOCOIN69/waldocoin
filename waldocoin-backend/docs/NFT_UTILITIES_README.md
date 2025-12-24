@@ -12,7 +12,7 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 
 | Feature | Benefit | Tier |
 |---------|---------|------|
-| 💰 Allocation Pool Access | Discretionary ecosystem allocations | Gold+ |
+| 🎰 Monthly Lottery | Prize drawing with tickets | All NFT holders |
 | 🚀 XP Boost | +10-25% XP on memes | All |
 | 💳 Fee Discounts | 5-15% off claim fees | All |
 | 🎟️ Battle Access | Exclusive holder battles | All |
@@ -29,8 +29,8 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 
 ### Platinum (10+ NFTs)
 ```
-👑 Platinum Tier
-├─ 5× allocation priority
+💎 Platinum Tier
+├─ 3 lottery tickets per NFT (best odds)
 ├─ +25% XP boost
 ├─ 15% claim fee discount
 ├─ 30% battle fee discount
@@ -45,7 +45,7 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 ### Gold (3-9 NFTs)
 ```
 🥇 Gold Tier
-├─ 2× allocation priority
+├─ 2 lottery tickets per NFT
 ├─ +15% XP boost
 ├─ 10% claim fee discount
 ├─ 20% battle fee discount
@@ -60,7 +60,7 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 ### Silver (1-2 NFTs)
 ```
 🥈 Silver Tier
-├─ Basic utility access (no allocation pool)
+├─ 1 lottery ticket per NFT
 ├─ +10% XP boost
 ├─ 5% claim fee discount
 ├─ 10% battle fee discount
@@ -70,22 +70,43 @@ The WALDO NFT Utilities System provides 10 comprehensive benefits to NFT holders
 └─ Silver Discord lounge
 ```
 
+### KING NFT (7 Total)
+```
+👑 KING Tier
+├─ GUARANTEED lottery winner every month
+├─ Split 50% of prize pool (among all KING holders)
+├─ +50% XP boost
+├─ 25% claim fee discount
+├─ +15% staking bonus
+├─ 3× voting power
+└─ Ultimate VIP status
+```
+
 ---
 
-## 💰 Discretionary Ecosystem Allocation Pool
+## 🎰 Monthly Lottery System (NOT Revenue Sharing)
 
 ### How It Works
 
-**IMPORTANT:** Allocations are discretionary, variable, non-guaranteed, and do not represent revenue sharing, profit participation, or investment returns. NFT ownership does not create a partnership or financial claim.
+**LEGAL NOTICE:** This is a prize drawing/giveaway, NOT revenue sharing. No purchase necessary beyond NFT ownership. NFT ownership = automatic lottery entry. This does not constitute an investment.
 
-1. **Pool Funding**
-   - Discretionary portion of platform fees (variable)
-   - 0.25% of all fees are burned as a deflationary mechanism
+1. **Monthly Drawing**
+   - 5 random winners selected from all NFT holders
+   - KING holders are GUARANTEED winners (split 50% of pool)
+   - Lottery winners split remaining 50% equally
 
-2. **Periodic Distribution**
-   - Distribution based on platform conditions
-   - Pro-rata allocation based on tier priority
-   - Allocations may change or be discontinued at any time
+2. **Lottery Tickets**
+   | Tier | Tickets Per NFT |
+   |------|-----------------|
+   | Silver (1-2 NFTs) | 1 ticket |
+   | Gold (3-9 NFTs) | 2 tickets |
+   | Platinum (10+ NFTs) | 3 tickets |
+   | KING | Auto-Winner |
+
+3. **Prize Pool**
+   - Variable based on platform activity (non-guaranteed)
+   - 0.25% of all fees burned as deflationary mechanism
+   - Pool size may change month to month
 
 3. **Example**
    ```
