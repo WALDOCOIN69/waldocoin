@@ -28,14 +28,14 @@ async function testNFTDetection() {
       console.log('⚠️  NO NFT HOLDERS FOUND!');
     } else {
       // Group by tier
-      const kingHolders = holders.filter(h => h.hasKingNFT || h.guaranteed);
-      const platinumHolders = holders.filter(h => h.tier === 'Platinum');
-      const goldHolders = holders.filter(h => h.tier === 'Gold');
-      const silverHolders = holders.filter(h => h.tier === 'Silver');
+      const kingHolders = holders.filter(h => h.hasKingNFT);
+      const platinumHolders = holders.filter(h => h.tier === 'Platinum' && !h.hasKingNFT);
+      const goldHolders = holders.filter(h => h.tier === 'Gold' && !h.hasKingNFT);
+      const silverHolders = holders.filter(h => h.tier === 'Silver' && !h.hasKingNFT);
 
       if (kingHolders.length > 0) {
-        console.log('👑 KING HOLDERS (GUARANTEED WINNERS):');
-        kingHolders.forEach(h => console.log(`   ${h.wallet.slice(0,12)}...${h.wallet.slice(-6)} | ${h.nftCount} NFTs | ✅ AUTO-WIN`));
+        console.log('👑 KING HOLDERS (5 tickets/NFT - Best Odds):');
+        kingHolders.forEach(h => console.log(`   ${h.wallet.slice(0,12)}...${h.wallet.slice(-6)} | ${h.nftCount} NFTs | ${h.totalTickets} tickets`));
         console.log();
       }
 

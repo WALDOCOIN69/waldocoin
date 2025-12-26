@@ -10,7 +10,7 @@ WALDOCoin is a community-driven meme token without guarantees of financial retur
 
 WALDOcoin ("WLO") is a decentralized utility token operating on the XRP Ledger (XRPL). The total supply of 1,000,000,000 WLO has been fully minted and permanently locked through issuer blackholing at address rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY. No additional WLO tokens can ever be created.
 
-**Important Disclosure:** WALDO MNFTs are digital collectibles with ecosystem utility. Any WALDO token allocations associated with NFT ownership are discretionary, variable, and non-guaranteed. These allocations do not represent revenue sharing, profit participation, dividends, or investment returns. NFT ownership does not create a partnership, ownership interest, or financial claim against WALDO or its operators. Allocations may increase, decrease, or be discontinued at any time.
+**Important Disclosure:** WALDO MNFTs/NFTs are digital collectibles with ecosystem utility. Any WALDO token allocations associated with NFT ownership are discretionary, variable, and non-guaranteed. These allocations do not represent revenue sharing, profit participation, dividends, or investment returns. NFT ownership does not create a partnership, ownership interest, or financial claim against WALDO or its operators. Allocations may increase, decrease, or be discontinued at any time.
 
 In short: Don't bet your life savings, don't sue us, and most importantly, have fun.
 
@@ -141,7 +141,7 @@ Holding MNFTs unlocks exclusive ecosystem utility features through the tier syst
 
 | Utility Feature | Silver | Gold | Platinum | KING |
 |-----------------|--------|------|----------|------|
-| Lottery Tickets | 1× per NFT | 2× per NFT | 3× per NFT | **GUARANTEED** |
+| Lottery Tickets | 1× per NFT | 2× per NFT | 3× per NFT | 5× per NFT |
 | XP Boost | +10% | +15% | +25% | +50% |
 | Staking Bonus | +1% | +3% | +5% | +15% |
 | DAO Voting Power | 1.1× | 1.25× | 1.5× | 3× |
@@ -155,18 +155,18 @@ Instead of distributing allocations to all holders, WALDOcoin operates a **Month
 
 **How It Works:**
 - **5 random winners** are selected each month from all NFT holders
-- **KING NFT holders** are **GUARANTEED winners** (auto-entry, split 50% of pool)
-- Lottery winners split the remaining 50% of the pool equally
-- Higher tiers = more lottery tickets = better odds (but not guaranteed)
+- Higher tiers = more lottery tickets = better odds of winning
+- KING NFT holders get the most tickets (5× per NFT) for best odds
+- All winners split the prize pool equally
 - Winners selected via cryptographically secure randomization
 
 **Lottery Ticket Distribution:**
-| Tier | Tickets Per NFT | Example (5 NFTs) |
-|------|-----------------|------------------|
-| Silver (1-2 NFTs) | 1 ticket | 2 tickets max |
-| Gold (3-9 NFTs) | 2 tickets | 10 tickets |
-| Platinum (10+ NFTs) | 3 tickets | 15+ tickets |
-| KING | N/A | **Auto-Winner** |
+| Tier | NFTs Held | Tickets Per NFT | Example |
+|------|-----------|-----------------|---------|
+| Silver | 1-2 NFTs | 1 ticket | 2 NFTs = 2 tickets |
+| Gold | 3-9 NFTs | 2 tickets | 5 NFTs = 10 tickets |
+| Platinum | 10+ NFTs | 3 tickets | 12 NFTs = 36 tickets |
+| KING | Has KING NFT | 5 tickets | 3 NFTs = 15 tickets |
 
 **Important Disclosure:** This is a prize drawing/giveaway, NOT revenue sharing. No purchase necessary beyond NFT ownership. NFT ownership provides automatic lottery entry. Pool size varies based on platform activity and is non-guaranteed. Past winners may win again. This does not constitute an investment or financial product.
 

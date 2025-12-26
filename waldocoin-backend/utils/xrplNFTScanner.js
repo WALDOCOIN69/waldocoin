@@ -53,7 +53,8 @@ function getWaldoNFTInfo(nft) {
 }
 
 function getTierInfo(nftCount, hasKingNFT) {
-  if (hasKingNFT) return { tier: 'KING', ticketsPerNFT: 10, emoji: '👑', guaranteed: true };
+  // KING NFT holders get most tickets but are NOT guaranteed winners
+  if (hasKingNFT) return { tier: 'KING', ticketsPerNFT: 5, emoji: '👑', guaranteed: false };
   if (nftCount >= 10) return { tier: 'Platinum', ticketsPerNFT: 3, emoji: '💎', guaranteed: false };
   if (nftCount >= 3) return { tier: 'Gold', ticketsPerNFT: 2, emoji: '🥇', guaranteed: false };
   return { tier: 'Silver', ticketsPerNFT: 1, emoji: '🥈', guaranteed: false };
