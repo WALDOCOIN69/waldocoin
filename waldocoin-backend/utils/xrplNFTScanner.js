@@ -243,7 +243,7 @@ export async function runMonthlyLottery() {
     }
   }
 
-  const numWinners = Math.min(5, regularHolders.length);
+  const numWinners = Math.min(1, regularHolders.length);
   const selectedWallets = new Set();
   const lotteryWinners = [];
 

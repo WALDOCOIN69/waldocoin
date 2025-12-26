@@ -154,11 +154,11 @@ Holding MNFTs unlocks exclusive ecosystem utility features through the tier syst
 Instead of distributing allocations to all holders, WALDOcoin operates a **Monthly Lottery Drawing**:
 
 **How It Works:**
-- **5 random winners** are selected each month from all NFT holders
+- **1 random winner** is selected each month from all NFT holders
 - Higher tiers = more lottery tickets = better odds of winning
 - KING NFT holders get the most tickets (5× per NFT) for best odds
-- All winners split the prize pool equally
-- Winners selected via cryptographically secure randomization
+- Winner takes the entire prize pool
+- Winner selected via cryptographically secure randomization
 
 **Lottery Ticket Distribution:**
 | Tier | NFTs Held | Tickets Per NFT | Example |
