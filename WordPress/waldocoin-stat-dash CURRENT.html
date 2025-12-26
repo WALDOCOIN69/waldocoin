@@ -3635,14 +3635,16 @@
         <!-- Linked Twitter Profile Display (hidden by default) -->
         <div id="twitterLinkedSection" style="display: none;">
           <h3 class="center-text" style="color: #25c2a0;">✅ X Account Linked</h3>
-          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 15px; background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 12px; border: 1px solid #25c2a0;">
-            <img id="linkedTwitterAvatar" src="" alt="X Profile" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid #25c2a0; object-fit: cover;">
-            <div style="text-align: center;">
-              <div id="linkedTwitterName" style="font-weight: bold; color: #fff; font-size: 1.1em;"></div>
-              <a id="linkedTwitterHandle" href="#" target="_blank" style="color: #1DA1F2; text-decoration: none; font-size: 0.95em;">@handle</a>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px; background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 12px; border: 1px solid #25c2a0;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img id="linkedTwitterAvatar" src="https://waldocoin.live/wp-content/uploads/waldo-icon-156.png" alt="WALDO" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #25c2a0;">
+              <div style="text-align: left;">
+                <div id="linkedTwitterName" style="font-weight: bold; color: #fff; font-size: 1.1em;"></div>
+                <a id="linkedTwitterHandle" href="#" target="_blank" style="color: #1DA1F2; text-decoration: none; font-size: 0.9em;">@handle</a>
+              </div>
             </div>
-            <div style="font-size: 0.8em; color: #888; display: flex; align-items: center; gap: 5px;">
-              <span style="color: #25c2a0;">🔒</span> Permanently linked
+            <div style="font-size: 0.75em; color: #666; display: flex; align-items: center; gap: 5px;">
+              🔒 Permanently linked to this wallet
             </div>
           </div>
         </div>
@@ -7590,7 +7592,10 @@
 
         if (!linkSection || !linkedSection) return;
 
-        if (isLinked && twitterHandle) {
+        // Check for valid linked handle (not null, not empty string)
+        const hasValidHandle = isLinked === true && twitterHandle && typeof twitterHandle === 'string' && twitterHandle.trim().length > 0;
+
+        if (hasValidHandle) {
           // Hide input, show linked profile
           linkSection.style.display = 'none';
           linkedSection.style.display = 'block';
@@ -7608,11 +7613,11 @@
             name.textContent = `@${twitterHandle}`;
           }
           if (avatar) {
-            // Use Twitter/X profile image API
+            // Fetch X profile picture via unavatar.io
             avatar.src = `https://unavatar.io/twitter/${twitterHandle}`;
             avatar.onerror = function() {
-              // Fallback to WALDO logo if avatar fails
-              this.src = 'https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg';
+              // Fallback to WALDO icon if profile pic fetch fails
+              this.src = 'https://waldocoin.live/wp-content/uploads/waldo-icon-156.png';
             };
           }
         } else {

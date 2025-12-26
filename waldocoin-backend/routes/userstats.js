@@ -211,7 +211,11 @@ router.get("/", async (req, res) => {
     // Get linked Twitter handle (locked once set)
     let twitterHandle = null;
     try {
-      twitterHandle = await redis.hGet(`user:${wallet}`, 'twitterHandle');
+      const rawHandle = await redis.hGet(`user:${wallet}`, 'twitterHandle');
+      // Only set if it's a non-empty string
+      if (rawHandle && typeof rawHandle === 'string' && rawHandle.trim().length > 0) {
+        twitterHandle = rawHandle.trim();
+      }
     } catch (e) {
       // non-fatal
     }
@@ -226,8 +230,8 @@ router.get("/", async (req, res) => {
       memes,
       battles,
       referrals,
-      twitterHandle: twitterHandle || null,
-      twitterLinked: !!twitterHandle,
+      twitterHandle: twitterHandle,
+      twitterLinked: twitterHandle !== null,
       xpBreakdown: {
         likes: likesXP,
         retweets: retweetsXP,
