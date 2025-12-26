@@ -12,24 +12,44 @@ dotenv.config();
 const WALDO_ISSUER = process.env.WALDO_ISSUER || 'rstjAWDiqKsUMhHqiJShRSkuaZ44TXZyDY';
 const DISTRIBUTOR = process.env.DISTRIBUTOR_WALLET || 'rMFoici99gcnXMjKwzJWP2WGe9bK4E5iLL';
 const WALDO_NFT_IPFS_CID = 'QmbMEsDMd3XEHEVEtbZQdfXegERhHoXkW9a39C4BQRmKjY';
+const WALDO_NFT_IPFS_CID_ALT = 'QmT1K3mkcpZRyHyiFm7iwsMRtE1bqA64iPCkuJ29Gi2bDu';
 const CACHE_KEY = 'lottery:nft_holders';
 const CACHE_TTL = 3600;
 const LAST_SCAN_KEY = 'lottery:last_scan';
+
+// KING NFTs are #1, #2, #3, #4, #5 (verified from metadata: "Bonus Group": "king")
+const KING_NFT_NUMBERS = [1, 2, 3, 4, 5];
 
 function isWaldoNFT(nft) {
   if (!nft.URI) return false;
   try {
     const uri = Buffer.from(nft.URI, 'hex').toString();
-    return uri.includes('waldo') || uri.includes(WALDO_NFT_IPFS_CID);
+    return uri.includes('waldo') || uri.includes(WALDO_NFT_IPFS_CID) || uri.includes(WALDO_NFT_IPFS_CID_ALT);
   } catch { return false; }
 }
 
-function isKingNFT(nft) {
-  if (!nft.URI) return false;
+function getWaldoNFTInfo(nft) {
+  if (!nft.URI) return null;
   try {
-    const uri = Buffer.from(nft.URI, 'hex').toString().toLowerCase();
-    return uri.includes('king') || uri.includes('monarch') || uri.includes('royal');
-  } catch { return false; }
+    const uri = Buffer.from(nft.URI, 'hex').toString();
+    if (!uri.includes('waldo') && !uri.includes(WALDO_NFT_IPFS_CID) && !uri.includes(WALDO_NFT_IPFS_CID_ALT)) {
+      return null;
+    }
+
+    // Extract NFT number from URI (e.g., "/165.json" -> 165)
+    const match = uri.match(/\/([0-9]+)\.json/);
+    const nftNumber = match ? parseInt(match[1]) : null;
+
+    // KING NFTs are #1-5
+    const isKing = nftNumber !== null && KING_NFT_NUMBERS.includes(nftNumber);
+
+    return {
+      uri,
+      nftNumber,
+      isKing,
+      nftId: nft.NFTokenID
+    };
+  } catch { return null; }
 }
 
 function getTierInfo(nftCount, hasKingNFT) {
@@ -45,7 +65,8 @@ export async function scanXRPLForNFTHolders() {
     await client.connect();
     console.log('✅ Connected to XRPL for NFT scan');
 
-    let allHolders = [];
+    // Step 1: Get all WALDO trustline holders
+    let walletsToCheck = new Set();
     let marker = undefined;
     do {
       const resp = await client.request({
@@ -54,31 +75,66 @@ export async function scanXRPLForNFTHolders() {
         limit: 400,
         marker
       });
-      allHolders = allHolders.concat(resp.result.lines.map(l => l.account));
+      resp.result.lines.forEach(l => walletsToCheck.add(l.account));
       marker = resp.result.marker;
     } while (marker);
 
-    console.log(`📋 Found ${allHolders.length} WALDO trustline holders`);
+    console.log(`📋 Found ${walletsToCheck.size} WALDO trustline holders`);
+
+    // Step 2: Also get NFT buyers from distributor transaction history
+    console.log('📋 Scanning distributor transaction history for NFT buyers...');
+    marker = undefined;
+    do {
+      const txs = await client.request({
+        command: 'account_tx',
+        account: DISTRIBUTOR,
+        limit: 400,
+        marker
+      });
+      for (const item of txs.result.transactions) {
+        const tx = item.tx_json || item.tx || {};
+        // NFTokenAcceptOffer = confirmed NFT purchase
+        if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.Account) {
+          walletsToCheck.add(tx.Account);
+        }
+        // Also check offer destinations
+        if (tx.Destination) {
+          walletsToCheck.add(tx.Destination);
+        }
+      }
+      marker = txs.result.marker;
+    } while (marker);
+
+    console.log(`📋 Total wallets to scan: ${walletsToCheck.size}`);
 
     const nftHolders = [];
     let scanned = 0;
+    const totalWallets = walletsToCheck.size;
 
-    for (const wallet of allHolders) {
+    for (const wallet of walletsToCheck) {
       if (wallet === DISTRIBUTOR || wallet === WALDO_ISSUER) continue;
       scanned++;
 
       try {
-        const nfts = await client.request({ command: 'account_nfts', account: wallet, limit: 100 });
+        const nfts = await client.request({ command: 'account_nfts', account: wallet, limit: 400 });
         if (nfts.result.account_nfts?.length > 0) {
           let waldoNFTCount = 0;
           let hasKingNFT = false;
+          let kingNFTCount = 0;
           const nftIds = [];
+          const nftNumbers = [];
 
           for (const nft of nfts.result.account_nfts) {
-            if (isWaldoNFT(nft)) {
+            const nftInfo = getWaldoNFTInfo(nft);
+            if (nftInfo) {
               waldoNFTCount++;
-              nftIds.push(nft.NFTokenID);
-              if (isKingNFT(nft)) hasKingNFT = true;
+              nftIds.push(nftInfo.nftId);
+              if (nftInfo.nftNumber) nftNumbers.push(nftInfo.nftNumber);
+              if (nftInfo.isKing) {
+                hasKingNFT = true;
+                kingNFTCount++;
+                console.log(`👑 KING NFT #${nftInfo.nftNumber} found on ${wallet.slice(0,12)}...`);
+              }
             }
           }
 
@@ -88,19 +144,21 @@ export async function scanXRPLForNFTHolders() {
               wallet,
               nftCount: waldoNFTCount,
               hasKingNFT,
+              kingNFTCount,
               tier: tierInfo.tier,
               tierEmoji: tierInfo.emoji,
               ticketsPerNFT: tierInfo.ticketsPerNFT,
               totalTickets: waldoNFTCount * tierInfo.ticketsPerNFT,
               guaranteed: tierInfo.guaranteed,
-              nftIds
+              nftIds,
+              nftNumbers
             });
-            console.log(`✅ ${tierInfo.emoji} ${wallet.slice(0,12)}... : ${waldoNFTCount} NFT(s)`);
+            console.log(`✅ ${tierInfo.emoji} ${wallet.slice(0,12)}... : ${waldoNFTCount} NFT(s)${hasKingNFT ? ' (includes ' + kingNFTCount + ' KING)' : ''}`);
           }
         }
       } catch (e) { /* skip */ }
 
-      if (scanned % 100 === 0) console.log(`  Progress: ${scanned}/${allHolders.length}`);
+      if (scanned % 100 === 0) console.log(`  Progress: ${scanned}/${totalWallets}`);
     }
 
     await client.disconnect();
