@@ -3622,11 +3622,29 @@
             Wallet</button>
         </div>
         <p id="walletAddress" class="wallet-address">Wallet: Not Connected</p>
-        <h3 class="center-text">🔗 Link Twitter Account</h3>
-        <div class="twitter-link-container">
-          <input type="text" id="twitterHandleInput" placeholder="Enter Twitter handle" class="input-style">
-          <button id="linkButton" type="button" onclick="linkTwitterAccount()" class="button-style">Link
-            Twitter</button>
+
+        <!-- Twitter Link Section - Shows input OR linked profile -->
+        <div id="twitterLinkSection">
+          <h3 class="center-text">🔗 Link X Account</h3>
+          <div class="twitter-link-container" id="twitterInputContainer">
+            <input type="text" id="twitterHandleInput" placeholder="Enter X handle (e.g. @waldocoin)" class="input-style">
+            <button id="linkButton" type="button" onclick="linkTwitterAccount()" class="button-style">Link X</button>
+          </div>
+        </div>
+
+        <!-- Linked Twitter Profile Display (hidden by default) -->
+        <div id="twitterLinkedSection" style="display: none;">
+          <h3 class="center-text" style="color: #25c2a0;">✅ X Account Linked</h3>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 15px; background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 12px; border: 1px solid #25c2a0;">
+            <img id="linkedTwitterAvatar" src="" alt="X Profile" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid #25c2a0; object-fit: cover;">
+            <div style="text-align: center;">
+              <div id="linkedTwitterName" style="font-weight: bold; color: #fff; font-size: 1.1em;"></div>
+              <a id="linkedTwitterHandle" href="#" target="_blank" style="color: #1DA1F2; text-decoration: none; font-size: 0.95em;">@handle</a>
+            </div>
+            <div style="font-size: 0.8em; color: #888; display: flex; align-items: center; gap: 5px;">
+              <span style="color: #25c2a0;">🔒</span> Permanently linked
+            </div>
+          </div>
         </div>
         <h2>🎮 Member Level</h2>
         <p id="userLevelTitle" class="center-text level-title-centered">Loading...</p>
@@ -5798,6 +5816,9 @@
           // Update XP multipliers
           updateXPMultipliers(stats);
 
+          // 🐦 Update Twitter/X link section based on linked status
+          updateTwitterLinkDisplay(stats.twitterHandle, stats.twitterLinked);
+
           // Level logic
           const level = stats.level || 1, xp = stats.xp || 0;
           const xpFloor = levelThresholds[level - 1] || 0, xpCeil = levelThresholds[level] || (xpFloor + 1000);
@@ -7562,12 +7583,51 @@
         }
       }
 
+      // Twitter/X Account Linking Display Update
+      function updateTwitterLinkDisplay(twitterHandle, isLinked) {
+        const linkSection = $("twitterLinkSection");
+        const linkedSection = $("twitterLinkedSection");
+
+        if (!linkSection || !linkedSection) return;
+
+        if (isLinked && twitterHandle) {
+          // Hide input, show linked profile
+          linkSection.style.display = 'none';
+          linkedSection.style.display = 'block';
+
+          // Update profile display
+          const avatar = $("linkedTwitterAvatar");
+          const name = $("linkedTwitterName");
+          const handle = $("linkedTwitterHandle");
+
+          if (handle) {
+            handle.textContent = `@${twitterHandle}`;
+            handle.href = `https://x.com/${twitterHandle}`;
+          }
+          if (name) {
+            name.textContent = `@${twitterHandle}`;
+          }
+          if (avatar) {
+            // Use Twitter/X profile image API
+            avatar.src = `https://unavatar.io/twitter/${twitterHandle}`;
+            avatar.onerror = function() {
+              // Fallback to WALDO logo if avatar fails
+              this.src = 'https://waldocoin.live/wp-content/uploads/2025/04/1737843965114.jpg';
+            };
+          }
+        } else {
+          // Show input, hide linked profile
+          linkSection.style.display = 'block';
+          linkedSection.style.display = 'none';
+        }
+      }
+
       // Twitter Account Linking
       async function linkTwitterAccount() {
         const twitterHandle = document.getElementById("twitterHandleInput").value.trim();
 
         if (!twitterHandle) {
-          showToast("Please enter a Twitter handle", "error");
+          showToast("Please enter your X handle", "error");
           return;
         }
 
@@ -7587,21 +7647,24 @@
           const data = await res.json();
 
           if (data.success) {
-            showToast(`✅ Twitter @${cleanHandle} linked successfully!`, "success");
+            showToast(`✅ X account @${cleanHandle} linked successfully! +100 XP`, "success");
             document.getElementById("twitterHandleInput").value = "";
 
-            // Refresh user stats to show updated social info
+            // Immediately update UI to show linked profile
+            updateTwitterLinkDisplay(cleanHandle, true);
+
+            // Refresh user stats to get full updated data
             setTimeout(() => {
               fetchUserStats(getWallet());
             }, 1000);
 
           } else {
-            showToast(data.error || "Failed to link Twitter account", "error");
+            showToast(data.error || "Failed to link X account", "error");
           }
 
         } catch (error) {
-          console.error("Twitter linking error:", error);
-          showToast("Error linking Twitter account. Please try again.", "error");
+          console.error("X linking error:", error);
+          showToast("Error linking X account. Please try again.", "error");
         }
       }
 

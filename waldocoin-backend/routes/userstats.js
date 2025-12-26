@@ -208,6 +208,14 @@ router.get("/", async (req, res) => {
       // non-fatal
     }
 
+    // Get linked Twitter handle (locked once set)
+    let twitterHandle = null;
+    try {
+      twitterHandle = await redis.hGet(`user:${wallet}`, 'twitterHandle');
+    } catch (e) {
+      // non-fatal
+    }
+
     res.json({
       wallet,
       xp,
@@ -218,6 +226,8 @@ router.get("/", async (req, res) => {
       memes,
       battles,
       referrals,
+      twitterHandle: twitterHandle || null,
+      twitterLinked: !!twitterHandle,
       xpBreakdown: {
         likes: likesXP,
         retweets: retweetsXP,
