@@ -2572,10 +2572,16 @@
 
         <!-- Eligible Holders -->
         <div class="admin-card margin-top-20">
-          <div class="card-title">👥 Eligible NFT Holders</div>
+          <div class="card-title">
+            👥 Eligible NFT Holders
+            <button type="button" class="btn btn-secondary btn-small" onclick="refreshNFTHolders()" style="float: right; font-size: 12px;">
+              🔄 Refresh from XRPL
+            </button>
+          </div>
           <div id="lotteryHoldersList" class="loading">
             <div class="spinner"></div> Loading holders...
           </div>
+          <div id="lastScanInfo" style="margin-top: 10px; font-size: 12px; color: #888;"></div>
         </div>
 
         <!-- Lottery History -->
@@ -9203,58 +9209,87 @@ This action cannot be undone. Continue?`;
         const data = await response.json();
 
         if (data.success) {
-          // Pool Status
+          // Pool Status with stats
+          const stats = data.stats || { totalHolders: 0, totalNFTs: 0, totalTickets: 0 };
           document.getElementById('lotteryPoolStatus').innerHTML = `
             <div style="text-align: center; padding: 20px;">
-              <div style="font-size: 48px; color: #25c2a0; font-weight: bold;">${Number(data.currentPool).toLocaleString()} WALDO</div>
+              <div style="font-size: 48px; color: #25c2a0; font-weight: bold;">${Number(data.currentPool || 0).toLocaleString()} WALDO</div>
               <div style="color: #888; margin-top: 5px;">Current Prize Pool</div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
-              <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 24px; color: #ffd700;">👑 ${data.kingHolders.count}</div>
-                <div style="color: #888;">KING Holders (Guaranteed)</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px;">
+              <div style="background: #1a1a1a; padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; color: #ffd700;">👑 ${data.kingHolders?.count || 0}</div>
+                <div style="color: #888; font-size: 11px;">KING (Auto-Win)</div>
               </div>
-              <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 24px; color: #ff3df7;">${data.regularHolders.count}</div>
-                <div style="color: #888;">Lottery Entrants</div>
+              <div style="background: #1a1a1a; padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; color: #ff3df7;">${data.regularHolders?.count || 0}</div>
+                <div style="color: #888; font-size: 11px;">Lottery Entrants</div>
+              </div>
+              <div style="background: #1a1a1a; padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; color: #25c2a0;">🎟️ ${stats.totalTickets || 0}</div>
+                <div style="color: #888; font-size: 11px;">Total Tickets</div>
+              </div>
+              <div style="background: #1a1a1a; padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; color: #4fc3f7;">🖼️ ${stats.totalNFTs || 0}</div>
+                <div style="color: #888; font-size: 11px;">Total NFTs</div>
               </div>
             </div>
           `;
 
-          // Holders List
-          let holdersHtml = '<div style="max-height: 300px; overflow-y: auto;">';
+          // Last Scan Info
+          const lastScanEl = document.getElementById('lastScanInfo');
+          if (lastScanEl && data.lastScan) {
+            lastScanEl.innerHTML = `📡 Last XRPL scan: ${new Date(data.lastScan).toLocaleString()}`;
+          }
 
-          if (data.kingHolders.list.length > 0) {
+          // Holders List
+          let holdersHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+
+          if (data.kingHolders?.list?.length > 0) {
             holdersHtml += '<div style="margin-bottom: 15px;"><strong style="color: #ffd700;">👑 KING Holders (Guaranteed Winners):</strong></div>';
             holdersHtml += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">';
             data.kingHolders.list.forEach(h => {
-              holdersHtml += `<span style="background: linear-gradient(135deg, #ffd700, #ff6b00); color: #000; padding: 5px 12px; border-radius: 20px; font-size: 12px;">${h.wallet}</span>`;
+              holdersHtml += `<span style="background: linear-gradient(135deg, #ffd700, #ff6b00); color: #000; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">${h.emoji || '👑'} ${h.wallet} (${h.nftCount} NFTs)</span>`;
             });
             holdersHtml += '</div>';
           }
 
-          holdersHtml += `<div style="margin-bottom: 15px;"><strong style="color: #ff3df7;">🎟️ Lottery Entrants (${data.regularHolders.totalTickets} total tickets):</strong></div>`;
-          holdersHtml += '<table style="width: 100%; font-size: 12px;"><thead><tr><th>Wallet</th><th>Tier</th><th>NFTs</th><th>Tickets</th></tr></thead><tbody>';
-          data.regularHolders.list.forEach(h => {
-            holdersHtml += `<tr><td>${h.wallet}</td><td>${h.tier}</td><td>${h.nftCount}</td><td style="color: #25c2a0;">${h.tickets}</td></tr>`;
-          });
-          holdersHtml += '</tbody></table></div>';
+          if (data.regularHolders?.list?.length > 0) {
+            holdersHtml += `<div style="margin-bottom: 15px;"><strong style="color: #ff3df7;">🎟️ Lottery Entrants (${data.regularHolders.totalTickets || 0} total tickets):</strong></div>`;
+            holdersHtml += '<table style="width: 100%; font-size: 12px;"><thead><tr><th>Wallet</th><th>Tier</th><th>NFTs</th><th>Tickets</th></tr></thead><tbody>';
+            data.regularHolders.list.forEach(h => {
+              const emoji = h.emoji || (h.tier === 'Platinum' ? '💎' : h.tier === 'Gold' ? '🥇' : '🥈');
+              holdersHtml += `<tr><td>${h.wallet}</td><td>${emoji} ${h.tier}</td><td>${h.nftCount}</td><td style="color: #25c2a0; font-weight: bold;">${h.tickets}</td></tr>`;
+            });
+            holdersHtml += '</tbody></table>';
+          } else {
+            holdersHtml += '<div style="text-align: center; color: #888; padding: 20px;">No NFT holders found. Click "Refresh from XRPL" to scan.</div>';
+          }
+          holdersHtml += '</div>';
           document.getElementById('lotteryHoldersList').innerHTML = holdersHtml;
 
           // History
           let historyHtml = '';
-          if (data.recentHistory && data.recentHistory.length > 0) {
+          const history = data.lastResult ? [data.lastResult] : [];
+          if (history.length > 0) {
             historyHtml = '<div style="max-height: 300px; overflow-y: auto;">';
-            data.recentHistory.forEach(lottery => {
+            history.forEach(lottery => {
+              const kingCount = lottery.kingWinners?.length || 0;
+              const lotteryCount = lottery.lotteryWinners?.length || 0;
               historyHtml += `
                 <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
                   <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <strong>${new Date(lottery.timestamp).toLocaleDateString()}</strong>
-                    <span style="color: #25c2a0;">${Number(lottery.totalPool).toLocaleString()} WALDO</span>
+                    <strong>📅 ${new Date(lottery.date).toLocaleDateString()}</strong>
+                    <span style="color: #25c2a0; font-weight: bold;">${Number(lottery.totalPool || 0).toLocaleString()} WALDO</span>
                   </div>
-                  <div style="font-size: 12px;">
-                    👑 ${lottery.kingWinners} KING winners | 🎰 ${lottery.lotteryWinners} lottery winners
+                  <div style="font-size: 12px; margin-bottom: 10px;">
+                    👑 ${kingCount} KING winners | 🎰 ${lotteryCount} lottery winners
                   </div>
+                  ${lottery.lotteryWinners?.length > 0 ? `
+                    <div style="font-size: 11px; color: #888;">
+                      <strong>Winners:</strong> ${lottery.lotteryWinners.map(w => `${w.emoji || '🎰'} ${w.wallet.slice(0,8)}...`).join(', ')}
+                    </div>
+                  ` : ''}
                 </div>
               `;
             });
@@ -9270,6 +9305,32 @@ This action cannot be undone. Continue?`;
       } catch (error) {
         console.error('Lottery status error:', error);
         document.getElementById('lotteryPoolStatus').innerHTML = `<div class="alert alert-error">Failed to load: ${error.message}</div>`;
+      }
+    }
+
+    async function refreshNFTHolders() {
+      const adminKey = localStorage.getItem('adminKey');
+      if (!adminKey) { showAlert('Admin key required', 'error'); return; }
+
+      document.getElementById('lotteryHoldersList').innerHTML = '<div class="spinner"></div> Scanning XRPL blockchain for NFT holders... (this may take a minute)';
+
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/lottery/refresh`, {
+          method: 'POST',
+          headers: { 'x-admin-key': adminKey }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(`✅ Found ${data.holdersFound} NFT holders with ${data.totalNFTs} total NFTs!`, 'success');
+          loadLotteryStatus();
+        } else {
+          showAlert(data.error, 'error');
+          document.getElementById('lotteryHoldersList').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        showAlert('Failed to refresh: ' + error.message, 'error');
+        document.getElementById('lotteryHoldersList').innerHTML = `<div class="alert alert-error">${error.message}</div>`;
       }
     }
 
