@@ -378,7 +378,8 @@ The 7-level progression system rewards long-term engagement and provides increas
 | 4 | Waldo Commander | 7,000 | 8,000 | 100 | ![](level-4-commander.png) |
 | 5 | Waldo Legend | 15,000 | 15,000 | 200 | ![](level-5-legend.png) |
 | 6 | Waldo Master | 30,000 | 20,000 | 500 | ![](level-6-master.png) |
-| 7 | Waldo King | 50,000 | MAX | Unlimited | ![](level-7-king.png) |
+| 7 | Waldo King | 50,000 | MAX | 1,000 | ![](level-7-king.png) |
+| KING NFT | Special | N/A | N/A | 2,000 | 👑 |
 
 ### Level Benefits Summary
 
@@ -428,12 +429,19 @@ In addition to XP, levels 2-7 have optional activity requirements that can accel
 
 ## Appendix C: Battle Arena Payout Examples
 
-| Pool Size | Winner (65%) | Voters (30%) | Burn (2%) | Treasury (3%) |
-|-----------|--------------|--------------|-----------|---------------|
-| 200 WLO | 130 WLO | 60 WLO | 4 WLO | 6 WLO |
-| 500 WLO | 325 WLO | 150 WLO | 10 WLO | 15 WLO |
-| 1,000 WLO | 650 WLO | 300 WLO | 20 WLO | 30 WLO |
-| 5,000 WLO | 3,250 WLO | 1,500 WLO | 100 WLO | 150 WLO |
+**Prize Pool Distribution:**
+- Winner: 55% of prize pool
+- Winning Voters: 45% of prize pool + losing side bets (split equally)
+- House Fee: 2% of voting pool only (10% to NFT holders, 0.25% burned, remainder to treasury)
+
+| Prize Pool | Winner (55%) | Voters (45%) | House Fee (2% of votes) |
+|------------|--------------|--------------|-------------------------|
+| 200 WLO | 110 WLO | 90 WLO | ~4 WLO |
+| 500 WLO | 275 WLO | 225 WLO | ~10 WLO |
+| 1,000 WLO | 550 WLO | 450 WLO | ~20 WLO |
+| 5,000 WLO | 2,750 WLO | 2,250 WLO | ~100 WLO |
+
+**Note:** Losing side bets are redistributed to winning voters on top of their 45% share.
 
 ---
 

@@ -255,6 +255,29 @@ async function getWLOBalance(wallet) {
   }
 }
 
+// WALDO NFT IPFS CIDs for identification
+const WALDO_NFT_IPFS_CID = 'QmbMEsDMd3XEHEVEtbZQdfXegERhHoXkW9a39C4BQRmKjY';
+const WALDO_NFT_IPFS_CID_ALT = 'QmT1K3mkcpZRyHyiFm7iwsMRtE1bqA64iPCkuJ29Gi2bDu';
+// KING NFTs are #1, #2, #3, #4, #5 (verified from metadata: "Bonus Group": "king")
+const KING_NFT_NUMBERS = [1, 2, 3, 4, 5];
+
+// Helper: Check if NFT is a WALDO NFT and get its info
+function getWaldoNFTInfo(nft) {
+  if (!nft.URI) return null;
+  try {
+    const uri = Buffer.from(nft.URI, 'hex').toString();
+    if (!uri.includes('waldo') && !uri.includes(WALDO_NFT_IPFS_CID) && !uri.includes(WALDO_NFT_IPFS_CID_ALT)) {
+      return null;
+    }
+    // Extract NFT number from URI (e.g., "/165.json" -> 165)
+    const match = uri.match(/\/([0-9]+)\.json/);
+    const nftNumber = match ? parseInt(match[1]) : null;
+    // KING NFTs are #1-5
+    const isKing = nftNumber !== null && KING_NFT_NUMBERS.includes(nftNumber);
+    return { uri, nftNumber, isKing, nftId: nft.NFTokenID };
+  } catch { return null; }
+}
+
 // Helper: Get NFT count and check for KING NFTs
 async function getNFTTier(wallet) {
   try {
@@ -269,28 +292,31 @@ async function getNFTTier(wallet) {
 
     await client.disconnect();
 
-    const nftCount = nfts.result.account_nfts?.length || 0;
+    // Filter for WALDO NFTs only and check for KING status
+    const waldoNFTs = [];
+    let kingNFTCount = 0;
 
-    // Check for KING NFTs (specific NFT IDs or issuer)
-    // TODO: Replace with actual KING NFT identifiers
-    const kingNFTs = nfts.result.account_nfts?.filter(nft => {
-      // Check if NFT is from WALDOCOIN collection
-      // You can check by issuer, URI, or specific NFT IDs
-      return nft.Issuer === WLO_ISSUER; // Adjust this logic based on your NFT collection
-    }) || [];
+    for (const nft of (nfts.result.account_nfts || [])) {
+      const info = getWaldoNFTInfo(nft);
+      if (info) {
+        waldoNFTs.push(info);
+        if (info.isKing) kingNFTCount++;
+      }
+    }
 
-    const hasKingNFT = kingNFTs.length > 0;
-    const isPremiumTier = nftCount >= 10; // Premium tier: 10+ NFTs
+    const nftCount = waldoNFTs.length;
+    const hasKingNFT = kingNFTCount > 0;
+    const isPremiumTier = nftCount >= 10; // Platinum tier: 10+ NFTs
     const isGoldTier = nftCount >= 3 && nftCount <= 9; // Gold tier: 3-9 NFTs
 
-    console.log(`🖼️ NFT Check for ${wallet}: ${nftCount} NFTs, Gold (3-9): ${isGoldTier}, Premium (10+): ${isPremiumTier}, KING: ${hasKingNFT}`);
+    console.log(`🖼️ NFT Check for ${wallet}: ${nftCount} WALDO NFTs, Gold (3-9): ${isGoldTier}, Platinum (10+): ${isPremiumTier}, KING: ${hasKingNFT} (${kingNFTCount})`);
 
     return {
       nftCount,
       isGoldTier,
       isPremiumTier,
       hasKingNFT,
-      kingNFTCount: kingNFTs.length
+      kingNFTCount
     };
   } catch (error) {
     console.error('❌ Error getting NFT tier:', error);
