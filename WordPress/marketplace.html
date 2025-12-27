@@ -717,56 +717,52 @@
         font-size: 0.9rem;
       }
     }
-    /* Navigation Header */
+    /* Navigation Header - Matches Stats Page */
     .nav-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 15px 30px;
-      background: linear-gradient(135deg, rgba(17, 17, 17, 0.98) 0%, rgba(26, 26, 26, 0.98) 100%);
-      border-bottom: 1px solid var(--border-color);
+      padding: 15px 30px 15px 20px;
+      background: #000;
+      border-bottom: 2px solid #25c2a0;
       position: sticky;
       top: 0;
-      z-index: 100;
-      backdrop-filter: blur(20px);
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
     }
 
     .nav-logo {
       font-size: 1.5rem;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--primary-light) 0%, var(--accent-color) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-weight: bold;
+      color: #25c2a0;
       text-decoration: none;
     }
 
     .nav-links {
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+      align-items: center;
+      gap: 15px;
     }
 
     .nav-link {
-      padding: 10px 16px;
-      color: var(--text-muted);
+      padding: 8px 14px;
+      color: #25c2a0;
       text-decoration: none;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 600;
+      border-radius: 20px;
+      background: #333;
+      font-size: 0.9rem;
       transition: all 0.3s ease;
-      border: 1px solid transparent;
     }
 
     .nav-link:hover {
-      color: var(--text-light);
-      background: rgba(37, 194, 160, 0.1);
-      border-color: var(--border-light);
+      background: #444;
+      transform: translateY(-1px);
     }
 
     .nav-link.active {
-      color: var(--primary-light);
-      background: rgba(37, 194, 160, 0.15);
-      border-color: var(--primary-color);
+      background: rgba(37, 194, 160, 0.2);
+      border: 1px solid #25c2a0;
     }
 
     /* Search Bar */
@@ -1221,18 +1217,17 @@
   </style>
 
   <!-- Navigation Header -->
-  <nav class="nav-header">
-    <a href="/" class="nav-logo">🦊 WALDO</a>
+  <div class="nav-header">
+    <div class="nav-logo">🏪 WALDO MNFT Marketplace</div>
     <div class="nav-links">
-      <a href="/stats" class="nav-link">📊 Stats</a>
-      <a href="/staking" class="nav-link">💎 Staking</a>
-      <a href="/dao" class="nav-link">🗳️ DAO</a>
-      <a href="/marketplace" class="nav-link active">🏪 Marketplace</a>
-      <a href="/my-nfts" class="nav-link">🎨 My MNFTs</a>
-      <a href="/hall-of-fame" class="nav-link">🏆 Hall of Fame</a>
-      <a href="/battle-arena" class="nav-link">⚔️ Arena</a>
+      <a href="https://stats-page.waldocoin.live" class="nav-link">📊 Stats</a>
+      <a href="https://dao-portal.waldocoin.live" class="nav-link">🗳️ DAO</a>
+      <a href="https://battle-arena.waldocoin.live" class="nav-link">⚔️ Battle</a>
+      <a href="https://staking.waldocoin.live" class="nav-link">💰 Staking</a>
+      <a href="https://hall-of-fame.waldocoin.live" class="nav-link">🏆 Fame</a>
+      <a href="https://memeology.fun" class="nav-link">🎨 Memeology</a>
     </div>
-  </nav>
+  </div>
 
   <div class="container">
     <div class="header">
