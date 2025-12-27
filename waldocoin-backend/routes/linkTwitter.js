@@ -61,4 +61,85 @@ router.post("/", async (req, res) => {
   }
 });
 
+// 🗑️ ADMIN: Clear Twitter link for a wallet (temporary for debugging)
+// DELETE /api/linkTwitter/clear?wallet=XXX&adminKey=XXX
+router.delete("/clear", async (req, res) => {
+  const { wallet, adminKey } = req.query;
+
+  // Simple admin key check (should match Render env var)
+  if (adminKey !== process.env.ADMIN_KEY) {
+    return res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+
+  if (!wallet) {
+    return res.status(400).json({ success: false, error: "Missing wallet parameter" });
+  }
+
+  try {
+    // Get current handle to delete all related keys
+    const currentHandle = await redis.hGet(`user:${wallet}`, 'twitterHandle');
+
+    const deleted = {
+      twitterHandle: currentHandle || null,
+      keysDeleted: []
+    };
+
+    if (currentHandle) {
+      // Delete twitter:{handle} -> wallet mapping
+      await redis.del(`twitter:${currentHandle}`);
+      deleted.keysDeleted.push(`twitter:${currentHandle}`);
+
+      // Delete wallet:handle:{wallet} -> handle mapping
+      await redis.del(`wallet:handle:${wallet}`);
+      deleted.keysDeleted.push(`wallet:handle:${wallet}`);
+
+      // Delete twitterHandle field from user hash
+      await redis.hDel(`user:${wallet}`, 'twitterHandle');
+      deleted.keysDeleted.push(`user:${wallet}:twitterHandle (field)`);
+    }
+
+    console.log(`🗑️ Admin cleared Twitter data for wallet ${wallet}:`, deleted);
+
+    return res.json({
+      success: true,
+      message: `Twitter data cleared for wallet ${wallet}`,
+      ...deleted
+    });
+
+  } catch (err) {
+    console.error("❌ Error clearing Twitter data:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 🔍 ADMIN: Check Twitter link status for a wallet
+// GET /api/linkTwitter/status?wallet=XXX
+router.get("/status", async (req, res) => {
+  const { wallet } = req.query;
+
+  if (!wallet) {
+    return res.status(400).json({ success: false, error: "Missing wallet parameter" });
+  }
+
+  try {
+    const twitterHandle = await redis.hGet(`user:${wallet}`, 'twitterHandle');
+    const twitterKey = twitterHandle ? await redis.get(`twitter:${twitterHandle}`) : null;
+    const walletHandleKey = await redis.get(`wallet:handle:${wallet}`);
+
+    return res.json({
+      success: true,
+      wallet,
+      data: {
+        'user:{wallet}:twitterHandle': twitterHandle || null,
+        'twitter:{handle}': twitterKey || null,
+        'wallet:handle:{wallet}': walletHandleKey || null
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error checking Twitter status:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
