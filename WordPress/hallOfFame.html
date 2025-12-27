@@ -1291,12 +1291,45 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   @media (max-width: 768px) {
+    /* Navigation Header Mobile */
+    .nav-header {
+      flex-direction: column !important;
+      gap: 15px !important;
+      padding: 15px !important;
+    }
+
+    .nav-links {
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      gap: 8px !important;
+    }
+
+    .nav-link {
+      font-size: 0.8rem !important;
+      padding: 6px 12px !important;
+    }
+
+    /* Hero Section Mobile */
+    .hero-section {
+      padding: 40px 15px 30px !important;
+    }
+
     #waldo-hof-title {
-      font-size: 2.5rem;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      padding: 0 10px;
     }
 
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat-card {
+      padding: 15px;
     }
 
     .leaderboard-table {
@@ -1312,6 +1345,24 @@ document.addEventListener('DOMContentLoaded', () => {
       padding: 8px 15px;
       margin: 5px;
       font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #waldo-hof-title {
+      font-size: 1.6rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+      padding: 12px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
     }
   }
 </style>
