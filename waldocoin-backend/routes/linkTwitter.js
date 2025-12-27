@@ -61,6 +61,60 @@ router.post("/", async (req, res) => {
   }
 });
 
+// 🗑️ ADMIN: Clear ALL Twitter links (nuclear option)
+// DELETE /api/linkTwitter/clearAll?adminKey=XXX
+router.delete("/clearAll", async (req, res) => {
+  const { adminKey } = req.query;
+
+  if (adminKey !== process.env.ADMIN_KEY) {
+    return res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+
+  try {
+    const results = { twitterKeys: 0, walletHandleKeys: 0, userFields: 0 };
+
+    // 1. Delete all twitter:* keys
+    const twitterKeys = await redis.keys("twitter:*");
+    for (const key of twitterKeys) {
+      await redis.del(key);
+      results.twitterKeys++;
+    }
+
+    // 2. Delete all wallet:handle:* keys
+    const walletHandleKeys = await redis.keys("wallet:handle:*");
+    for (const key of walletHandleKeys) {
+      await redis.del(key);
+      results.walletHandleKeys++;
+    }
+
+    // 3. Clear twitterHandle field from all user:* hashes
+    const userKeys = await redis.keys("user:*");
+    for (const key of userKeys) {
+      if (key.split(':').length === 2) {
+        try {
+          const hasField = await redis.hExists(key, "twitterHandle");
+          if (hasField) {
+            await redis.hDel(key, "twitterHandle");
+            results.userFields++;
+          }
+        } catch (e) { /* not a hash */ }
+      }
+    }
+
+    console.log("🗑️ Admin cleared ALL Twitter data:", results);
+
+    return res.json({
+      success: true,
+      message: "All Twitter data cleared!",
+      ...results
+    });
+
+  } catch (err) {
+    console.error("❌ Error clearing all Twitter data:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 🗑️ ADMIN: Clear Twitter link for a wallet (temporary for debugging)
 // DELETE /api/linkTwitter/clear?wallet=XXX&adminKey=XXX
 router.delete("/clear", async (req, res) => {
