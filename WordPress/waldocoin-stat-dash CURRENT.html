@@ -5819,6 +5819,7 @@
           updateXPMultipliers(stats);
 
           // 🐦 Update Twitter/X link section based on linked status
+          console.log('🐦 API returned:', { twitterHandle: stats.twitterHandle, twitterLinked: stats.twitterLinked });
           updateTwitterLinkDisplay(stats.twitterHandle, stats.twitterLinked);
 
           // Level logic
@@ -7587,13 +7588,19 @@
 
       // Twitter/X Account Linking Display Update
       function updateTwitterLinkDisplay(twitterHandle, isLinked) {
+        console.log('🐦 updateTwitterLinkDisplay called with:', { twitterHandle, isLinked, typeOfHandle: typeof twitterHandle });
+
         const linkSection = $("twitterLinkSection");
         const linkedSection = $("twitterLinkedSection");
 
-        if (!linkSection || !linkedSection) return;
+        if (!linkSection || !linkedSection) {
+          console.log('🐦 ERROR: Could not find link sections in DOM');
+          return;
+        }
 
         // Check for valid linked handle (not null, not empty string)
         const hasValidHandle = isLinked === true && twitterHandle && typeof twitterHandle === 'string' && twitterHandle.trim().length > 0;
+        console.log('🐦 hasValidHandle:', hasValidHandle);
 
         if (hasValidHandle) {
           // Hide input, show linked profile
