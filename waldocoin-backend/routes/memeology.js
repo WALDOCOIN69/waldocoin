@@ -1823,57 +1823,53 @@ function getFallbackSuggestion(templateName, position) {
 }
 
 // GET /api/memeology/gifs/search - Search for GIF templates
-// Uses Tenor API (like X/Twitter) for cleaner GIFs without text overlays
+// Prioritizes stickers and clean animations without text overlays
 router.get('/gifs/search', async (req, res) => {
   try {
-    const { q, source = 'tenor' } = req.query;
+    const { q, source = 'all' } = req.query;
 
     if (!q) {
       return res.status(400).json({ error: 'Search query required' });
     }
 
     let gifs = [];
+    const tenorKey = process.env.TENOR_API_KEY || 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ';
 
-    // Primary: Use Tenor API (Google's GIF platform - same as X/Twitter uses)
-    // Tenor GIFs are generally cleaner with less text overlays
-    if (source === 'tenor' || source === 'all') {
-      try {
-        const tenorKey = process.env.TENOR_API_KEY || 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ'; // Public API key
-        const tenorResponse = await axios.get('https://tenor.googleapis.com/v2/search', {
-          params: {
-            key: tenorKey,
-            q: q,
-            limit: 30,
-            media_filter: 'gif,tinygif', // Only GIF formats
-            contentfilter: 'medium', // Safe content
-            ar_range: 'all' // All aspect ratios
-          }
-        });
-
-        if (tenorResponse.data.results) {
-          const tenorGifs = tenorResponse.data.results.map(gif => ({
-            id: `tenor_${gif.id}`,
-            title: gif.content_description || gif.title || 'GIF',
-            url: gif.media_formats.tinygif?.url || gif.media_formats.gif?.url,
-            preview: gif.media_formats.tinygif?.url,
-            original: gif.media_formats.gif?.url,
-            width: gif.media_formats.gif?.dims?.[0] || 300,
-            height: gif.media_formats.gif?.dims?.[1] || 300,
-            source: 'tenor'
-          }));
-          gifs = gifs.concat(tenorGifs);
+    // 1. BEST SOURCE: Tenor Stickers (cleanest - no text, transparent backgrounds)
+    try {
+      const stickerResponse = await axios.get('https://tenor.googleapis.com/v2/search', {
+        params: {
+          key: tenorKey,
+          q: `${q} sticker`,  // Add "sticker" to get cleaner results
+          limit: 20,
+          media_filter: 'gif,tinygif',
+          contentfilter: 'medium',
+          searchfilter: 'sticker'  // Prioritize stickers
         }
-      } catch (tenorError) {
-        console.log('Tenor API error, falling back to Giphy:', tenorError.message);
+      });
+
+      if (stickerResponse.data.results) {
+        const stickerGifs = stickerResponse.data.results.map(gif => ({
+          id: `tenor_sticker_${gif.id}`,
+          title: gif.content_description || 'Sticker',
+          url: gif.media_formats.tinygif?.url || gif.media_formats.gif?.url,
+          preview: gif.media_formats.tinygif?.url,
+          original: gif.media_formats.gif?.url,
+          width: gif.media_formats.gif?.dims?.[0] || 300,
+          height: gif.media_formats.gif?.dims?.[1] || 300,
+          source: 'tenor_sticker'
+        }));
+        gifs = gifs.concat(stickerGifs);
+        console.log(`📌 Tenor stickers: ${stickerGifs.length} results`);
       }
+    } catch (e) {
+      console.log('Tenor stickers error:', e.message);
     }
 
-    // Fallback/Additional: Use Giphy Stickers API for cleaner animations
-    // Stickers generally don't have text overlays like regular GIFs
-    if ((source === 'giphy' || source === 'stickers' || gifs.length < 10) && GIPHY_API_KEY) {
+    // 2. Giphy Stickers (transparent, animated, no text)
+    if (GIPHY_API_KEY) {
       try {
-        // Use stickers endpoint for cleaner results
-        const giphyResponse = await axios.get('https://api.giphy.com/v1/stickers/search', {
+        const giphyStickerResponse = await axios.get('https://api.giphy.com/v1/stickers/search', {
           params: {
             api_key: GIPHY_API_KEY,
             q: q,
@@ -1882,45 +1878,115 @@ router.get('/gifs/search', async (req, res) => {
           }
         });
 
-        if (giphyResponse.data.data) {
-          const giphyGifs = giphyResponse.data.data.map(gif => ({
-            id: `giphy_${gif.id}`,
+        if (giphyStickerResponse.data.data) {
+          const giphyStickers = giphyStickerResponse.data.data.map(gif => ({
+            id: `giphy_sticker_${gif.id}`,
             title: gif.title || 'Sticker',
             url: gif.images.fixed_height.url,
             preview: gif.images.fixed_height_small?.url || gif.images.fixed_height.url,
             original: gif.images.original.url,
             width: parseInt(gif.images.fixed_height.width) || 300,
             height: parseInt(gif.images.fixed_height.height) || 300,
-            source: 'giphy_stickers'
+            source: 'giphy_sticker'
           }));
-          gifs = gifs.concat(giphyGifs);
+          gifs = gifs.concat(giphyStickers);
+          console.log(`📌 Giphy stickers: ${giphyStickers.length} results`);
         }
-      } catch (giphyError) {
-        console.log('Giphy stickers error:', giphyError.message);
+      } catch (e) {
+        console.log('Giphy stickers error:', e.message);
       }
     }
 
-    // If still no results, try regular Giphy as last resort
-    if (gifs.length === 0 && GIPHY_API_KEY) {
-      const response = await axios.get('https://api.giphy.com/v1/gifs/search', {
-        params: {
-          api_key: GIPHY_API_KEY,
-          q: q,
-          limit: 20,
-          rating: 'pg-13'
-        }
-      });
+    // 3. Tenor regular search with "reaction" modifier (reactions tend to be cleaner)
+    if (gifs.length < 30) {
+      try {
+        const tenorResponse = await axios.get('https://tenor.googleapis.com/v2/search', {
+          params: {
+            key: tenorKey,
+            q: `${q} reaction`,
+            limit: 15,
+            media_filter: 'gif,tinygif',
+            contentfilter: 'medium'
+          }
+        });
 
-      gifs = response.data.data.map(gif => ({
-        id: gif.id,
-        title: gif.title,
-        url: gif.images.fixed_height.url,
-        preview: gif.images.fixed_height_small?.url,
-        original: gif.images.original.url,
-        width: parseInt(gif.images.fixed_height.width) || 300,
-        height: parseInt(gif.images.fixed_height.height) || 300,
-        source: 'giphy'
-      }));
+        if (tenorResponse.data.results) {
+          const tenorGifs = tenorResponse.data.results.map(gif => ({
+            id: `tenor_${gif.id}`,
+            title: gif.content_description || 'GIF',
+            url: gif.media_formats.tinygif?.url || gif.media_formats.gif?.url,
+            preview: gif.media_formats.tinygif?.url,
+            original: gif.media_formats.gif?.url,
+            width: gif.media_formats.gif?.dims?.[0] || 300,
+            height: gif.media_formats.gif?.dims?.[1] || 300,
+            source: 'tenor'
+          }));
+          gifs = gifs.concat(tenorGifs);
+          console.log(`📌 Tenor reactions: ${tenorGifs.length} results`);
+        }
+      } catch (e) {
+        console.log('Tenor error:', e.message);
+      }
+    }
+
+    // 4. Giphy Clips (short video clips, very clean, no text)
+    if (GIPHY_API_KEY && gifs.length < 40) {
+      try {
+        const clipsResponse = await axios.get('https://api.giphy.com/v1/clips/search', {
+          params: {
+            api_key: GIPHY_API_KEY,
+            q: q,
+            limit: 10,
+            rating: 'pg-13'
+          }
+        });
+
+        if (clipsResponse.data.data) {
+          const clips = clipsResponse.data.data.map(clip => ({
+            id: `giphy_clip_${clip.id}`,
+            title: clip.title || 'Clip',
+            url: clip.images?.fixed_height?.url || clip.images?.original?.url,
+            preview: clip.images?.preview_gif?.url || clip.images?.fixed_height?.url,
+            original: clip.images?.original?.url,
+            width: parseInt(clip.images?.fixed_height?.width) || 300,
+            height: parseInt(clip.images?.fixed_height?.height) || 300,
+            source: 'giphy_clip'
+          })).filter(c => c.url); // Only include if URL exists
+          gifs = gifs.concat(clips);
+          console.log(`📌 Giphy clips: ${clips.length} results`);
+        }
+      } catch (e) {
+        console.log('Giphy clips error:', e.message);
+      }
+    }
+
+    // 5. Last resort: Regular Giphy GIFs (may have text, but better than nothing)
+    if (gifs.length < 10 && GIPHY_API_KEY) {
+      try {
+        const response = await axios.get('https://api.giphy.com/v1/gifs/search', {
+          params: {
+            api_key: GIPHY_API_KEY,
+            q: q,
+            limit: 15,
+            rating: 'pg-13'
+          }
+        });
+
+        const regularGifs = response.data.data.map(gif => ({
+          id: `giphy_${gif.id}`,
+          title: gif.title,
+          url: gif.images.fixed_height.url,
+          preview: gif.images.fixed_height_small?.url,
+          original: gif.images.original.url,
+          width: parseInt(gif.images.fixed_height.width) || 300,
+          height: parseInt(gif.images.fixed_height.height) || 300,
+          source: 'giphy'
+        }));
+        gifs = gifs.concat(regularGifs);
+        console.log(`📌 Giphy regular: ${regularGifs.length} results`);
+      } catch (e) {
+        console.log('Giphy regular error:', e.message);
+      }
     }
 
     // Remove duplicates by URL
@@ -1928,13 +1994,17 @@ router.get('/gifs/search', async (req, res) => {
       index === self.findIndex(g => g.url === gif.url)
     );
 
-    console.log(`🎬 GIF search for "${q}": ${uniqueGifs.length} results (Tenor + Giphy Stickers)`);
+    // Sort: stickers first (cleanest), then clips, then reactions, then regular
+    const sortOrder = { 'tenor_sticker': 0, 'giphy_sticker': 1, 'giphy_clip': 2, 'tenor': 3, 'giphy': 4 };
+    uniqueGifs.sort((a, b) => (sortOrder[a.source] || 5) - (sortOrder[b.source] || 5));
+
+    console.log(`🎬 GIF search for "${q}": ${uniqueGifs.length} total results`);
 
     res.json({
       success: true,
-      gifs: uniqueGifs.slice(0, 40), // Max 40 results
+      gifs: uniqueGifs.slice(0, 50), // Max 50 results
       count: uniqueGifs.length,
-      sources: ['tenor', 'giphy_stickers']
+      sources: ['tenor_sticker', 'giphy_sticker', 'giphy_clip', 'tenor', 'giphy']
     });
   } catch (error) {
     console.error('Error in /gifs/search:', error);
