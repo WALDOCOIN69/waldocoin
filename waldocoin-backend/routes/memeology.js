@@ -1823,43 +1823,118 @@ function getFallbackSuggestion(templateName, position) {
 }
 
 // GET /api/memeology/gifs/search - Search for GIF templates
+// Uses Tenor API (like X/Twitter) for cleaner GIFs without text overlays
 router.get('/gifs/search', async (req, res) => {
   try {
-    const { q } = req.query;
+    const { q, source = 'tenor' } = req.query;
 
     if (!q) {
       return res.status(400).json({ error: 'Search query required' });
     }
 
-    if (!GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY') {
-      return res.status(503).json({
-        error: 'GIF search is not configured',
-        message: 'Please add GIPHY_API_KEY to environment variables'
-      });
+    let gifs = [];
+
+    // Primary: Use Tenor API (Google's GIF platform - same as X/Twitter uses)
+    // Tenor GIFs are generally cleaner with less text overlays
+    if (source === 'tenor' || source === 'all') {
+      try {
+        const tenorKey = process.env.TENOR_API_KEY || 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ'; // Public API key
+        const tenorResponse = await axios.get('https://tenor.googleapis.com/v2/search', {
+          params: {
+            key: tenorKey,
+            q: q,
+            limit: 30,
+            media_filter: 'gif,tinygif', // Only GIF formats
+            contentfilter: 'medium', // Safe content
+            ar_range: 'all' // All aspect ratios
+          }
+        });
+
+        if (tenorResponse.data.results) {
+          const tenorGifs = tenorResponse.data.results.map(gif => ({
+            id: `tenor_${gif.id}`,
+            title: gif.content_description || gif.title || 'GIF',
+            url: gif.media_formats.tinygif?.url || gif.media_formats.gif?.url,
+            preview: gif.media_formats.tinygif?.url,
+            original: gif.media_formats.gif?.url,
+            width: gif.media_formats.gif?.dims?.[0] || 300,
+            height: gif.media_formats.gif?.dims?.[1] || 300,
+            source: 'tenor'
+          }));
+          gifs = gifs.concat(tenorGifs);
+        }
+      } catch (tenorError) {
+        console.log('Tenor API error, falling back to Giphy:', tenorError.message);
+      }
     }
 
-    // Search Giphy API
-    const response = await axios.get('https://api.giphy.com/v1/gifs/search', {
-      params: {
-        api_key: GIPHY_API_KEY,
-        q: q,
-        limit: 20,
-        rating: 'pg-13'
-      }
-    });
+    // Fallback/Additional: Use Giphy Stickers API for cleaner animations
+    // Stickers generally don't have text overlays like regular GIFs
+    if ((source === 'giphy' || source === 'stickers' || gifs.length < 10) && GIPHY_API_KEY) {
+      try {
+        // Use stickers endpoint for cleaner results
+        const giphyResponse = await axios.get('https://api.giphy.com/v1/stickers/search', {
+          params: {
+            api_key: GIPHY_API_KEY,
+            q: q,
+            limit: 20,
+            rating: 'pg-13'
+          }
+        });
 
-    const gifs = response.data.data.map(gif => ({
-      id: gif.id,
-      title: gif.title,
-      url: gif.images.fixed_height.url,
-      width: gif.images.fixed_height.width,
-      height: gif.images.fixed_height.height
-    }));
+        if (giphyResponse.data.data) {
+          const giphyGifs = giphyResponse.data.data.map(gif => ({
+            id: `giphy_${gif.id}`,
+            title: gif.title || 'Sticker',
+            url: gif.images.fixed_height.url,
+            preview: gif.images.fixed_height_small?.url || gif.images.fixed_height.url,
+            original: gif.images.original.url,
+            width: parseInt(gif.images.fixed_height.width) || 300,
+            height: parseInt(gif.images.fixed_height.height) || 300,
+            source: 'giphy_stickers'
+          }));
+          gifs = gifs.concat(giphyGifs);
+        }
+      } catch (giphyError) {
+        console.log('Giphy stickers error:', giphyError.message);
+      }
+    }
+
+    // If still no results, try regular Giphy as last resort
+    if (gifs.length === 0 && GIPHY_API_KEY) {
+      const response = await axios.get('https://api.giphy.com/v1/gifs/search', {
+        params: {
+          api_key: GIPHY_API_KEY,
+          q: q,
+          limit: 20,
+          rating: 'pg-13'
+        }
+      });
+
+      gifs = response.data.data.map(gif => ({
+        id: gif.id,
+        title: gif.title,
+        url: gif.images.fixed_height.url,
+        preview: gif.images.fixed_height_small?.url,
+        original: gif.images.original.url,
+        width: parseInt(gif.images.fixed_height.width) || 300,
+        height: parseInt(gif.images.fixed_height.height) || 300,
+        source: 'giphy'
+      }));
+    }
+
+    // Remove duplicates by URL
+    const uniqueGifs = gifs.filter((gif, index, self) =>
+      index === self.findIndex(g => g.url === gif.url)
+    );
+
+    console.log(`🎬 GIF search for "${q}": ${uniqueGifs.length} results (Tenor + Giphy Stickers)`);
 
     res.json({
       success: true,
-      gifs: gifs,
-      count: gifs.length
+      gifs: uniqueGifs.slice(0, 40), // Max 40 results
+      count: uniqueGifs.length,
+      sources: ['tenor', 'giphy_stickers']
     });
   } catch (error) {
     console.error('Error in /gifs/search:', error);
